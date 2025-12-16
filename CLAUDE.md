@@ -17,6 +17,17 @@ The stack embodies algebraic data types (sum types for states, product types for
 
 See `docs/notes/architecture/stack-component-selection.md` for detailed component rationale.
 
+### The Tao of Datastar (core principles)
+
+Ironstar embodies the principles from the Tao of Datastar (`~/projects/lakescope-workspace/datastar-doc/guide_the_tao_of_datastar.md`):
+
+1. **Backend is source of truth**: No optimistic updates. SSE delivers confirmed state changes.
+2. **Patch elements and signals**: Server drives frontend by patching HTML and signals via SSE.
+3. **Use signals sparingly**: Signals for UI state (form inputs, visibility); domain state lives in events.
+4. **CQRS pattern**: Single long-lived SSE connection for reads, short-lived POST/PUT/DELETE for writes.
+5. **In morph we trust**: Default to replacing entire DOM subtrees (fat morph) for resilience.
+6. **Loading indicators over deception**: Show progress via `data-indicator`, let SSE confirm completion.
+
 ## Stack overview
 
 | Layer | Component | Role |
@@ -51,6 +62,7 @@ All dependencies with local source code available for reference.
 | sqlx | `~/projects/rust-workspace/sqlx` | Async SQL with compile-time validation |
 | redb | `~/projects/rust-workspace/redb` | Embedded ACID KV store |
 | duckdb-rs | `~/projects/omicslake-workspace/duckdb-rs` | DuckDB Rust bindings |
+| ts-rs | `~/projects/rust-workspace/ts-rs` | TypeScript type generation from Rust structs |
 
 ### Datastar ecosystem
 
@@ -62,6 +74,21 @@ All dependencies with local source code available for reference.
 | datastar-rust-lince | `~/projects/rust-workspace/datastar-rust-lince` | Real-world usage example |
 | datastar-go | `~/projects/lakescope-workspace/datastar-go` | Go SDK (reference implementation) |
 | northstar | `~/projects/lakescope-workspace/datastar-go-nats-template-northstar` | Go template we're porting from |
+
+**Canonical SDK specification**: `~/projects/lakescope-workspace/datastar/sdk/ADR.md`
+
+All ironstar SSE implementations must conform to this specification.
+Key types: `PatchElements`, `PatchSignals`, `ReadSignals<T>`.
+
+### Alternative Datastar implementations (reference)
+
+| Implementation | Local Path | Description |
+|----------------|------------|-------------|
+| http-nu | `~/projects/rust-workspace/http-nu` | Nushell-scriptable HTTP server with Datastar SDK |
+| xs | `~/projects/rust-workspace/xs` | Event store with http-nu + Datastar examples |
+
+These projects take a different architectural approach (Nushell scripting vs compiled Rust) but contain useful Datastar integration patterns and edge case handling.
+See their TodoMVC implementations for SSE formatting and signal parsing patterns.
 
 ### Infrastructure and tooling
 
@@ -372,7 +399,8 @@ ironstar/
 │   │   ├── aggregates/
 │   │   ├── events/
 │   │   ├── commands/
-│   │   └── values/
+│   │   ├── values/
+│   │   └── signals.rs                  # Datastar signal types (derive TS for TypeScript)
 │   ├── application/                    # Pure business logic
 │   │   ├── mod.rs
 │   │   ├── command_handlers.rs
@@ -396,6 +424,8 @@ ironstar/
 │   ├── tsconfig.json
 │   ├── index.ts                        # CSS entry point
 │   ├── icons.ts                        # Lucide icons (build-time)
+│   ├── types/                          # Generated TypeScript types (from ts-rs)
+│   │   └── *.ts                        # Auto-generated, do not edit
 │   ├── components/                     # Vanilla web components
 │   │   ├── sortable-list.ts
 │   │   └── vega-chart.ts               # Vega-Lite chart wrapper
@@ -414,11 +444,21 @@ ironstar/
 
 ## Related documentation
 
+### Ironstar architecture docs
+
 - Component selection rationale: `docs/notes/architecture/stack-component-selection.md`
-- datastar SDK spec: `~/projects/lakescope-workspace/datastar/sdk/ADR.md`
-- datastar documentation: `~/projects/lakescope-workspace/datastar-doc/`
-- northstar patterns: `~/projects/lakescope-workspace/datastar-go-nats-template-northstar/`
-- hypertext + Tailwind + Nix patterns: `~/projects/rust-workspace/hypertext-typst-nix-youwen5-web/`
+- Event sourcing + SSE pipeline: `docs/notes/architecture/event-sourcing-sse-pipeline.md`
+- Third-party library integration: `docs/notes/architecture/integration-patterns.md`
+- TypeScript signal contracts: `docs/notes/architecture/signal-contracts.md`
+- Frontend build pipeline: `docs/notes/architecture/frontend-build-pipeline.md`
+
+### External references
+
+- Datastar SDK specification: `~/projects/lakescope-workspace/datastar/sdk/ADR.md`
+- Datastar documentation: `~/projects/lakescope-workspace/datastar-doc/`
+- Tao of Datastar: `~/projects/lakescope-workspace/datastar-doc/guide_the_tao_of_datastar.md`
+- Northstar (Go template): `~/projects/lakescope-workspace/datastar-go-nats-template-northstar/`
+- Hypertext + Tailwind + Nix patterns: `~/projects/rust-workspace/hypertext-typst-nix-youwen5-web/`
 - redb design: `~/projects/rust-workspace/redb/docs/design.md`
 - vega-embed API: `~/projects/lakescope-workspace/vega-embed/src/embed.ts`
-- mosaic documentation: `~/projects/lakescope-workspace/mosaic/docs/`
+- Mosaic documentation: `~/projects/lakescope-workspace/mosaic/docs/`
