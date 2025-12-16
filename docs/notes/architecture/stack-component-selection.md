@@ -159,6 +159,81 @@ fn page(items: &[Item]) -> impl Renderable {
 - No runtime template parsing errors
 - Datastar attributes (`data-signals`, `data-on:*`) are stringly-typed at the HTML level but structurally validated by the macro
 
+**Hypertext + Datastar integration:**
+
+Datastar attributes use quoted strings in maud syntax since they are custom attributes:
+
+```rust
+use hypertext::prelude::*;
+
+// Signal binding and event handlers
+fn counter_component(count: i32) -> impl Renderable {
+    maud! {
+        div
+            #counter
+            "data-signals"=(format!(r#"{{count: {}}}"#, count))
+        {
+            p { "Count: " (count) }
+            button
+                "data-on:click"="@post('/api/increment')"
+                class="btn btn-primary"
+            {
+                "Increment"
+            }
+        }
+    }
+}
+
+// Two-way binding
+fn input_field() -> impl Renderable {
+    maud! {
+        input
+            type="text"
+            "data-bind:value"="$todoText"
+            placeholder="What needs to be done?"
+            {}
+    }
+}
+
+// Conditional rendering
+fn loading_indicator() -> impl Renderable {
+    maud! {
+        div "data-show"="$loading" class="spinner" { "Loading..." }
+    }
+}
+```
+
+**Converting Renderable to PatchElements:**
+
+```rust
+use hypertext::Renderable;
+use datastar::prelude::*;
+
+// Helper trait for ergonomic conversion
+pub trait RenderableToDatastar: Renderable {
+    fn to_patch_elements(&self) -> PatchElements {
+        PatchElements::new(self.render().into_inner())
+    }
+
+    fn append_to(&self, selector: &str) -> PatchElements {
+        PatchElements::new(self.render().into_inner())
+            .selector(selector)
+            .mode(ElementPatchMode::Append)
+    }
+}
+
+impl<T: Renderable> RenderableToDatastar for T {}
+
+// Usage in handler
+async fn get_todos(State(store): State<TodoStore>) -> impl IntoResponse {
+    let todos = store.list().await;
+    let html = todo_list(&todos);
+    Sse::new(stream::once(async move {
+        Ok::<_, Infallible>(html.to_patch_elements().into())
+    }))
+}
+```
+
 ---
 
 ### 2. axum — effect boundaries via extractors
@@ -423,6 +498,93 @@ async fn counter_stream() -> Sse<impl Stream<Item = Result<Event, Infallible>>> 
     Sse::new(stream)
 }
 ```
+
+**ReadSignals extractor — type-safe signal parsing:**
+
+The `ReadSignals<T>` extractor provides ergonomic, type-safe parsing of incoming Datastar signals.
+It handles both GET (query param) and POST (JSON body) transparently:
+
+```rust
+use datastar::axum::ReadSignals;
+use serde::Deserialize;
+
+// Signal contract as algebraic product type
+#[derive(Deserialize)]
+struct TodoSignals {
+    input: Option<String>,
+    filter: TodoFilter,
+    editing_id: Option<uuid::Uuid>,
+}
+
+#[derive(Deserialize)]
+enum TodoFilter {
+    All,
+    Active,
+    Completed,
+}
+
+// ReadSignals extracts and deserializes in one step
+// Morphism: Request -> Result<T, Rejection>
+async fn handle_add_todo(
+    State(store): State<EventStore>,
+    ReadSignals(signals): ReadSignals<TodoSignals>,
+) -> impl IntoResponse {
+    // signals.input, signals.filter available as typed values
+    if let Some(text) = signals.input {
+        store.append(TodoEvent::Added { text }).await?;
+    }
+    StatusCode::ACCEPTED
+}
+```
+
+This pattern is preferred over manual JSON parsing.
+The alternative (wrapping with `Query<Wrapper>` and `serde_json::from_str`) is verbose and error-prone.
+
+**ts-rs integration for type-safe signal contracts:**
+
+Signal types defined in Rust can generate corresponding TypeScript definitions via ts-rs, ensuring frontend and backend contracts stay synchronized:
+
+```rust
+use ts_rs::TS;
+use serde::{Serialize, Deserialize};
+
+// Derive TS alongside Serialize/Deserialize
+#[derive(Serialize, Deserialize, TS)]
+#[ts(export, export_to = "web-components/types/")]
+pub struct TodoSignals {
+    #[ts(optional)]
+    pub input: Option<String>,
+    pub filter: TodoFilter,
+    #[ts(optional)]
+    pub editing_id: Option<uuid::Uuid>,
+}
+
+#[derive(Serialize, Deserialize, TS)]
+pub enum TodoFilter {
+    #[serde(rename = "all")]
+    All,
+    #[serde(rename = "active")]
+    Active,
+    #[serde(rename = "completed")]
+    Completed,
+}
+```
+
+Running `cargo test --lib` generates TypeScript in `web-components/types/`:
+
+```typescript
+// TodoSignals.ts (auto-generated)
+export type TodoSignals = {
+  input?: string;
+  filter: TodoFilter;
+  editing_id?: string;
+};
+
+export type TodoFilter = "all" | "active" | "completed";
+```
+
+This ensures the JSON structure in `data-signals` attributes matches what `ReadSignals<T>` expects.
+See `docs/notes/architecture/signal-contracts.md` for detailed integration patterns.
 
 ---
 
