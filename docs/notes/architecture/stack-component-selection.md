@@ -20,6 +20,102 @@ This translates to concrete selection criteria:
 
 ---
 
+## Frontend tooling philosophy
+
+Datastar's core principle is *server-driven UI*: the server sends HTML fragments and signal updates via SSE, and the browser renders them.
+This inverts the SPA model where the client manages state and the server provides JSON APIs.
+The Tao of Datastar states: "Most state should live in the backend. Since the frontend is exposed to the user, the backend should be the source of truth."
+
+This architectural constraint dramatically simplifies frontend tooling requirements.
+When the server drives state, client-side reactivity frameworks become redundant rather than complementary.
+We need only thin presentation layers that compose with Datastar's signal system rather than competing with it.
+
+**What we use and why:**
+
+| Tool | Role | Why |
+|------|------|-----|
+| DaisyUI | CSS components | Pure CSS, zero runtime, Tailwind plugin architecture |
+| Rolldown | JS/CSS bundler | Rust-native (over Go-based esbuild), Vite 8 default |
+| Vanilla Web Components | Third-party lib wrappers | Thin encapsulation, no reactivity system |
+| Lucide | Icons | Build-time SVG inlining, zero runtime |
+| TypeScript | Type safety | For minimal JS (web components only) |
+
+**What we avoid and why:**
+
+| Tool | Why Not |
+|------|---------|
+| Lit | Redundant reactivity: Lit's reactive properties duplicate Datastar signals |
+| React / Vue / Svelte | SPA philosophy contradicts hypermedia-driven architecture |
+| Leptos / Dioxus | Rust WASM frameworks would duplicate Datastar's role entirely |
+| esbuild | Go-based; prefer Rust-native Rolldown for toolchain consistency |
+| Shadcn/ui | Requires React runtime; DaisyUI achieves similar aesthetics with pure CSS |
+
+**Anti-pattern: client-side reactivity duplication**
+
+Lit, React, Vue, and Svelte each provide their own reactivity systems.
+When paired with Datastar, you would have two competing reactivity graphs: the framework's internal state and Datastar's signals.
+This leads to state synchronization bugs, increased bundle size, and architectural incoherence.
+
+Datastar already provides:
+
+- Signals (`$foo`) — reactive variables with automatic change propagation
+- Computed signals (`data-computed`) — derived state
+- Two-way binding (`data-bind`) — form inputs synchronized with signals
+- Conditional rendering (`data-show`) — declarative visibility
+- Class binding (`data-class`) — reactive styling
+
+These capabilities cover 90% of what React hooks or Vue reactivity provide, but with server-driven truth.
+The remaining 10% (complex client-only interactions like drag-and-drop, rich text editing, or data visualization) are handled via thin vanilla web components that emit events for Datastar to process.
+
+**Anti-pattern: Rust WASM frameworks**
+
+Leptos and Dioxus are excellent frameworks for building SPAs in Rust with WASM.
+However, they embody the SPA philosophy: compile Rust to WASM, run a reactive framework in the browser, manage state on the client.
+
+This directly contradicts the hypermedia-driven architecture:
+
+```
+SPA Model:      Server → JSON → Client (WASM/JS) → Virtual DOM → Render
+Hypermedia:     Server → HTML → Browser native DOM
+```
+
+Using Leptos or Dioxus alongside Datastar would create two parallel systems for the same job.
+Ironstar commits to the hypermedia approach fully, using the browser's native capabilities augmented by Datastar's signal system.
+
+**Web component pattern for Datastar integration:**
+
+When third-party JavaScript libraries require client-side DOM manipulation (charts, drag-and-drop, rich editors), wrap them in vanilla web components that emit custom events:
+
+```typescript
+// Thin wrapper: no reactivity system, just encapsulation
+class SortableList extends HTMLElement {
+  connectedCallback() {
+    Sortable.create(this, {
+      onEnd: (evt) => {
+        // Dispatch event for Datastar to handle
+        this.dispatchEvent(new CustomEvent('reorder', {
+          detail: { oldIndex: evt.oldIndex, newIndex: evt.newIndex },
+          bubbles: true
+        }));
+      }
+    });
+  }
+}
+customElements.define('sortable-list', SortableList);
+```
+
+```html
+<!-- Datastar handles all state and server communication -->
+<sortable-list data-on:reorder="@post('/api/reorder', {body: evt.detail})">
+  <!-- Items rendered by server -->
+</sortable-list>
+```
+
+The web component is a thin adapter.
+All state management flows through Datastar signals and server SSE responses.
+
+---
+
 ## Component justifications
 
 ### 1. hypertext — HTML as pure functions
@@ -356,7 +452,96 @@ maud! {
 
 ---
 
-### 10. process-compose — orchestration as declarative spec
+### 10. DaisyUI — component classes as higher-order combinators
+
+**Algebraic justification:**
+
+DaisyUI extends Tailwind's combinator algebra to the component level.
+Where Tailwind provides morphisms from class names to CSS properties, DaisyUI provides morphisms from semantic names to *compositions* of those morphisms:
+
+```rust
+// Tailwind: individual property morphisms
+// "flex" -> { display: flex }
+// "p-4"  -> { padding: 1rem }
+
+// DaisyUI: composed morphisms (higher-order)
+// "btn" -> flex + items-center + justify-center + font-semibold + ...
+// "card" -> bg-base-100 + rounded-box + shadow-xl + ...
+
+maud! {
+    // DaisyUI class is a pre-composed combinator
+    button class="btn btn-primary" {
+        // btn: base button styles (many Tailwind utilities composed)
+        // btn-primary: color variant (product with color scheme)
+        "Submit"
+    }
+
+    // Extensible: add Tailwind utilities alongside DaisyUI
+    div class="card card-compact w-96 bg-base-100 shadow-xl" {
+        // card: structural combinator
+        // card-compact: variant modifier (sum type selector)
+        // w-96, shadow-xl: additional Tailwind morphisms
+    }
+}
+```
+
+This is a *functor* lifting: DaisyUI lifts Tailwind's `Class -> Style` morphisms into `ComponentName -> [Class]`, where composition happens at a higher level of abstraction.
+
+**Categorical property: product of combinators**
+
+DaisyUI components are products of orthogonal concerns:
+
+```rust
+// btn = Structure x Variant x Size x State
+// Each dimension is independently selectable
+
+maud! {
+    // Structure: btn (vs link, etc.)
+    // Variant: btn-primary (vs btn-secondary, btn-accent, etc.)
+    // Size: btn-lg (vs btn-sm, btn-xs, etc.)
+    // State: btn-disabled, btn-loading (optional modifiers)
+    button class="btn btn-primary btn-lg" { "Large Primary" }
+
+    // Different product selection
+    button class="btn btn-outline btn-sm" { "Small Outline" }
+}
+```
+
+This product structure means `|variants| x |sizes| x |states|` combinations emerge from a small set of primitive classes.
+
+**Why DaisyUI over alternatives:**
+
+- *Pure CSS*: No JavaScript runtime, no hydration, no client-side framework dependency
+- *Tailwind plugin*: Composes with existing Tailwind workflow and tooling
+- *Semantic naming*: `btn` is more readable than `inline-flex items-center justify-center rounded-md text-sm font-medium`
+- *Theming via CSS variables*: 35+ built-in themes, zero JS theme switching
+- *Framework agnostic*: Works identically with hypertext, React, or plain HTML
+
+**Why not Shadcn/ui:**
+
+Shadcn/ui provides similar aesthetics but requires React:
+
+```tsx
+// Shadcn: React component with JS runtime
+import { Button } from "@/components/ui/button"
+<Button variant="primary" size="lg">Submit</Button>
+```
+
+```rust
+// DaisyUI: Pure CSS class, no runtime
+maud! { button class="btn btn-primary btn-lg" { "Submit" } }
+```
+
+When Datastar already provides reactivity, adding React for UI components introduces redundant complexity.
+
+**Effect boundary: build time**
+
+DaisyUI's CSS is generated at build time via Tailwind's JIT compiler.
+No effects occur at runtime—the browser simply applies static CSS rules.
+
+---
+
+### 11. process-compose — orchestration as declarative spec
 
 **Algebraic justification:**
 
@@ -417,8 +602,8 @@ processes:
 ├─────────────────────────────────────────────────────────────────────┤
 │  Presentation Layer (Lazy Rendering)                                │
 │  ┌─────────────┬─────────────┬─────────────┬─────────────────────┐ │
-│  │ hypertext   │ datastar    │ tailwindcss │ Static assets       │ │
-│  │ (thunks)    │ (signals)   │ (classes)   │                     │ │
+│  │ hypertext   │ datastar    │ tailwindcss │ DaisyUI             │ │
+│  │ (thunks)    │ (signals)   │ (classes)   │ (components)        │ │
 │  └─────────────┴─────────────┴─────────────┴─────────────────────┘ │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -438,6 +623,7 @@ processes:
 | **Zenoh** | Distribution | Free monoid | `.put()` / `.subscribe()` |
 | **datastar-rust** | Frontend | FRP signals | SSE emit |
 | **tailwindcss** | Styling | Class combinators | Build time |
+| **DaisyUI** | CSS Components | Higher-order combinators | Build time |
 | **process-compose** | Orchestration | Product spec | Process start |
 
 This stack achieves the goal: **effects explicit in types, isolated at boundaries, with a pure functional core**.
