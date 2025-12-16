@@ -318,3 +318,59 @@ For now, the Vega-Lite pattern covers most visualization needs in Ironstar.
 
 The unifying principle: *Datastar owns state, the library owns DOM*.
 Web components provide the encapsulation boundary, `data-ignore-morph` prevents morphing conflicts, and custom events enable communication back to the signal world.
+
+---
+
+## Hypertext to SSE integration
+
+When integrating hypertext templates with Datastar SSE, use the `RenderableToDatastar` helper trait defined in `stack-component-selection.md`:
+
+```rust
+use hypertext::Renderable;
+use datastar::prelude::*;
+
+pub trait RenderableToDatastar: Renderable {
+    fn to_patch_elements(&self) -> PatchElements {
+        PatchElements::new(self.render().into_inner())
+    }
+
+    fn append_to(&self, selector: &str) -> PatchElements {
+        PatchElements::new(self.render().into_inner())
+            .selector(selector)
+            .mode(ElementPatchMode::Append)
+    }
+
+    fn replace_inner(&self, selector: &str) -> PatchElements {
+        PatchElements::new(self.render().into_inner())
+            .selector(selector)
+            .mode(ElementPatchMode::Inner)
+    }
+}
+
+impl<T: Renderable> RenderableToDatastar for T {}
+```
+
+This enables ergonomic conversion from hypertext components to Datastar SSE events:
+
+```rust
+async fn get_todo_list(State(store): State<TodoStore>) -> impl IntoResponse {
+    let todos = store.list().await;
+    let html = todo_list_component(&todos);
+
+    // Single SSE event with the rendered HTML
+    Sse::new(stream::once(async move {
+        Ok::<_, Infallible>(html.to_patch_elements().into())
+    }))
+}
+```
+
+For complete SSE streaming patterns including event replay and projection updates, see `docs/notes/architecture/event-sourcing-sse-pipeline.md`.
+
+---
+
+## Related documentation
+
+- Hypertext + Datastar syntax: `docs/notes/architecture/stack-component-selection.md` (hypertext section)
+- Event sourcing and SSE: `docs/notes/architecture/event-sourcing-sse-pipeline.md`
+- Signal type contracts: `docs/notes/architecture/signal-contracts.md`
+- Frontend build pipeline: `docs/notes/architecture/frontend-build-pipeline.md`
