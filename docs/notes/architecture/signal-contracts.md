@@ -423,4 +423,4 @@ struct TreeNode {
 
 - datastar-rust ReadSignals: `~/projects/rust-workspace/datastar-rust/src/axum.rs`
 - ts-rs documentation: `~/projects/rust-workspace/ts-rs/`
-- Signal extraction patterns: `docs/notes/architecture/stack-component-selection.md` (datastar-rust section)
+- Signal extraction patterns: see the "datastar-rust — frontend as signal algebra" section in `docs/notes/architecture/architecture-decisions.md`
