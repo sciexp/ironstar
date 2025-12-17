@@ -961,7 +961,7 @@ const cameraIcon: string = Camera;  // Pure SVG markup
 // The SVG string is embedded at compile time
 maud! {
     button class="btn" {
-        (PreEscaped(include_str!("../static/icons/camera.svg")))
+        (Raw::dangerously_create(include_str!("../static/icons/camera.svg")))
         "Upload"
     }
 }
@@ -1014,7 +1014,7 @@ use crate::icons;
 fn icon_button(icon: &str, label: &str) -> impl Renderable {
     maud! {
         button class="btn btn-icon" {
-            (PreEscaped(icon))
+            (Raw::dangerously_create(icon))
             span { (label) }
         }
     }
