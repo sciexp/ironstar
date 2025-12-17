@@ -300,11 +300,14 @@ impl EventBus {
 }
 ```
 
-**Replacing NATS KV Watch:**
+**In-process event notification:**
 
-- NATS Watch is effectful and external
-- tokio broadcast is in-process, deterministic, and composable
+NATS KV Watch could accomplish the same goal with an external server.
+tokio broadcast provides an embedded alternative:
+
+- In-process, deterministic, and composable
 - No network effects in the notification path
+- No additional server to deploy
 
 ---
 
@@ -355,10 +358,10 @@ pub async fn append(&self, events: Vec<NewEvent>) -> Result<Vec<StoredEvent>> {
 }
 ```
 
-**Why SQLite over NATS:**
+**Why SQLite for event storage:**
 
-- SQLite's durability model is *synchronous* by default (WAL + fsync)
-- No lazy fsync surprises—effects happen when you commit
+- Embedded: no external server dependency
+- Durability model is *synchronous* by default (WAL + fsync)
 - Single-writer semantics prevent split-brain by construction
 
 ---
@@ -391,9 +394,9 @@ db.set_two_phase_commit(true);
 
 **Why redb for session state:**
 
+- Embedded: no external server dependency
 - Session state is ephemeral but should survive restarts
 - TTL logic is application-level (functional, testable)
-- No NATS KV durability surprises
 
 ---
 
@@ -960,21 +963,25 @@ This stack achieves the goal: **effects explicit in types, isolated at boundarie
 
 ---
 
-## Context: why not NATS?
+## Architectural context: embedded vs. external services
 
-This stack was designed in part as a response to the [Jepsen analysis of NATS 2.12.1](https://jepsen.io/analyses/nats-2.12.1), which identified critical durability failures:
+This stack prioritizes embedded Rust-native solutions over external server dependencies.
 
-1. **Lazy fsync default** — acknowledged writes lost on crash (2-minute flush window)
-2. **Minority corruption propagation** — single-node file corruption caused majority data loss
-3. **Split-brain from single OS crash** — persistent replica divergence after power failure
+**Why embedded:**
 
-For event sourcing, these issues are catastrophic—you cannot lose events from the middle of a stream without corrupting all downstream state.
+- Single binary deployment (no orchestration of multiple services)
+- No network effects in the critical path (in-process communication)
+- Rust-native dependencies align with the stack's language choice
+- Simpler operational model for single-node deployments
 
-The SQLite + tokio broadcast approach avoids all these:
+**NATS as a valid alternative:**
 
-- SQLite's WAL + fsync is synchronous by default
-- Single-node means no split-brain by construction
-- No corruption propagation between replicas
-- tokio broadcast is in-memory notification only (events already durably stored)
+NATS is an excellent choice for teams willing to run an external server.
+It provides streaming, key-value storage, and pub/sub in a unified abstraction, and the Rust client (nats.rs) is production-ready.
 
-When distribution is needed, Zenoh provides safer alternatives with explicit durability controls and production-ready status (Eclipse Foundation, April 2025 Gozuryū release).
+For Ironstar, the embedded approach was chosen because the template targets single-node deployments where the operational complexity of a separate server is unnecessary.
+The [Jepsen analysis of NATS 2.12.1](https://jepsen.io/analyses/nats-2.12.1) also reinforced confidence in SQLite's well-understood durability model for the event store, though NATS's durability can be configured appropriately for many use cases.
+
+**Future distribution:**
+
+When distributed deployment is needed, Zenoh provides Rust-native pub/sub with storage backends (RocksDB, S3), offering a migration path that maintains the embedded philosophy per node while enabling cross-node communication.
