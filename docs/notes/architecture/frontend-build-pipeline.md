@@ -1,7 +1,7 @@
 # Frontend build pipeline
 
-Ironstar uses Rolldown for JavaScript/CSS bundling, with Tailwind CSS v4 and DaisyUI for styling.
-This document covers the build configuration, development workflow, and comparison with northstar's Go-based approach.
+Ironstar uses Rolldown for JavaScript/CSS bundling, with Open Props design tokens and Open Props UI component library for styling.
+This document covers the build configuration, development workflow, browser compatibility requirements, and comparison with northstar's Go-based approach.
 
 ## Overview
 
@@ -9,12 +9,17 @@ This document covers the build configuration, development workflow, and comparis
 web-components/
 ├── index.ts              # Main entry point
 ├── styles/
-│   └── main.css          # Tailwind entry (@import "tailwindcss")
-├── components/           # Vanilla web components
+│   ├── main.css          # Entry point: imports Open Props + theme + components
+│   ├── theme.css         # Theme layer: app-specific variables from Open Props tokens
+│   └── components/       # Copied Open Props UI component CSS (owned by project)
+│       ├── button.css
+│       ├── card.css
+│       ├── dialog.css
+│       └── ...
+├── components/           # Vanilla web components (TypeScript/JavaScript)
 ├── types/                # Generated TypeScript (from ts-rs)
 ├── rolldown.config.ts    # Bundler configuration
-├── postcss.config.js     # PostCSS/Tailwind configuration
-├── tailwind.config.js    # Tailwind customization
+├── postcss.config.js     # PostCSS configuration (simpler than Tailwind)
 └── package.json
 
 static/dist/              # Build output
@@ -22,6 +27,11 @@ static/dist/              # Build output
 ├── bundle.[hash].js      # Compiled JS
 └── components.[hash].js  # Web component bundle
 ```
+
+### Local repository references
+
+- **Open Props**: `~/projects/lakescope-workspace/open-props` - CSS design tokens and custom properties
+- **Open Props UI**: `~/projects/lakescope-workspace/open-props-ui` - Pure CSS component library (copy-paste ownership model)
 
 ---
 
@@ -64,29 +74,81 @@ export default defineConfig({
 
 ```css
 /* web-components/styles/main.css */
-@import "tailwindcss";
 
-/* DaisyUI theme customization */
-@plugin "daisyui" {
-  themes: light --default, dark --prefersdark;
-}
+/* Import Open Props design tokens */
+@import "open-props/style";
 
-/* Custom theme (optional) */
-@plugin "daisyui/theme" {
-  name: "ironstar";
-  --color-base-100: "#0b1325";
-  --color-primary: "#c9a75f";
-  /* ... other colors */
-}
+/* Or selective imports for smaller bundle size */
+/* @import "open-props/colors"; */
+/* @import "open-props/sizes"; */
+/* @import "open-props/animations"; */
+/* @import "open-props/easings"; */
+/* @import "open-props/shadows"; */
+/* @import "open-props/borders"; */
+
+/* Theme layer - application-specific tokens */
+@import "./theme.css";
+
+/* Component styles (copied from Open Props UI, owned by project) */
+@import "./components/button.css";
+@import "./components/card.css";
+@import "./components/dialog.css";
+@import "./components/input.css";
+/* Add other components as needed */
 
 /* View transitions (optional) */
 @view-transition {
   navigation: auto;
 }
+```
 
-/* Source paths for Tailwind class scanning */
-@source "../**/*.ts";
-@source "../../src/**/*.rs";
+### Theme layer
+
+```css
+/* web-components/styles/theme.css */
+
+:root {
+  /* Primary color derived from Open Props */
+  --primary: var(--blue-7);
+  --primary-light: var(--blue-5);
+  --primary-dark: var(--blue-9);
+
+  /* Accent colors */
+  --accent: var(--orange-6);
+  --accent-light: var(--orange-4);
+  --accent-dark: var(--orange-8);
+
+  /* Surface colors using light-dark() function */
+  --surface-default: light-dark(var(--gray-0), var(--gray-9));
+  --surface-elevated: light-dark(var(--gray-1), var(--gray-8));
+  --surface-overlay: light-dark(var(--gray-2), var(--gray-7));
+
+  /* Text colors */
+  --text-primary: light-dark(var(--gray-9), var(--gray-1));
+  --text-secondary: light-dark(var(--gray-7), var(--gray-3));
+  --text-tertiary: light-dark(var(--gray-6), var(--gray-4));
+
+  /* Border colors */
+  --border-default: light-dark(var(--gray-3), var(--gray-7));
+  --border-emphasis: light-dark(var(--gray-4), var(--gray-6));
+
+  /* Shadows using Open Props */
+  --shadow-card: var(--shadow-2);
+  --shadow-elevated: var(--shadow-4);
+  --shadow-dialog: var(--shadow-6);
+
+  /* Border radius */
+  --radius-default: var(--radius-2);
+  --radius-large: var(--radius-3);
+  --radius-full: var(--radius-round);
+
+  /* Animation easings */
+  --ease-in-out: var(--ease-3);
+  --ease-spring: var(--ease-spring-3);
+}
+
+/* Dark mode handled automatically by light-dark() function - no JavaScript needed */
+/* Browser respects prefers-color-scheme and/or color-scheme meta tag */
 ```
 
 ### TypeScript entry
@@ -107,65 +169,88 @@ export type * from './types/TodoSignals';
 
 ---
 
-## Tailwind CSS v4 with DaisyUI
+## Open Props + Open Props UI architecture
 
-Tailwind v4 uses CSS-native configuration via `@import` and `@plugin` directives.
+Open Props provides design tokens as CSS custom properties, eliminating the need for JIT compilation or class scanning.
+Open Props UI provides pure CSS component styles that you copy into your project for full ownership and customization.
 
 ### PostCSS configuration
+
+PostCSS configuration is simpler than Tailwind since there is no JIT compilation or class scanning needed.
 
 ```javascript
 // web-components/postcss.config.js
 export default {
   plugins: {
-    '@tailwindcss/postcss': {},
-  },
+    'postcss-import': {},           // Handle @import statements
+    'postcss-custom-media': {},     // Open Props custom media queries
+    'autoprefixer': {},             // Vendor prefixes (minimal with modern CSS)
+    'cssnano': {                    // Minification (production only)
+      preset: 'default'
+    }
+  }
 };
 ```
 
-### Tailwind configuration (optional overrides)
+### Component ownership model
 
-```javascript
-// web-components/tailwind.config.js
-export default {
-  content: [
-    './index.ts',
-    './components/**/*.ts',
-    '../src/**/*.rs',  // Scan Rust templates for classes
-  ],
-  theme: {
-    extend: {
-      // Custom extensions
-    },
-  },
-};
-```
+Unlike utility-first frameworks, Open Props UI follows a copy-paste ownership model:
 
-### DaisyUI themes
+1. **Browse components** at Open Props UI repository (`~/projects/lakescope-workspace/open-props-ui`)
+2. **Copy CSS** for needed components into `web-components/styles/components/`
+3. **Customize freely** - you own the CSS, modify as needed
+4. **No npm dependency** - component CSS is not installed via npm
 
-DaisyUI provides 35+ themes.
-Configure via the `@plugin` directive in CSS:
+Example component structure:
 
 ```css
-/* Use built-in themes */
-@plugin "daisyui" {
-  themes: light --default, dark --prefersdark, cyberpunk, dracula;
-}
+/* web-components/styles/components/button.css */
+/* Copied from Open Props UI and customized for ironstar */
 
-/* Or define custom theme */
-@plugin "daisyui/theme" {
-  name: "ironstar";
-  --color-base-100: "#ffffff";
-  --color-base-200: "#f5f5f5";
-  --color-primary: "#3b82f6";
-  --color-secondary: "#6366f1";
-  --color-accent: "#f59e0b";
-  --color-neutral: "#374151";
-  --color-info: "#0ea5e9";
-  --color-success: "#22c55e";
-  --color-warning: "#eab308";
-  --color-error: "#ef4444";
+button,
+.button {
+  /* Base styles using Open Props tokens */
+  padding: var(--size-2) var(--size-4);
+  border-radius: var(--radius-default);
+  font-size: var(--font-size-1);
+  font-weight: var(--font-weight-6);
+
+  /* Colors using theme tokens */
+  background-color: var(--primary);
+  color: light-dark(var(--gray-0), var(--gray-9));
+
+  /* Interaction states */
+  transition: background-color 0.2s var(--ease-in-out);
+
+  &:hover {
+    background-color: var(--primary-dark);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  /* Variant: secondary */
+  &[data-variant="secondary"] {
+    background-color: var(--surface-elevated);
+    color: var(--text-primary);
+    border: 1px solid var(--border-default);
+  }
 }
 ```
+
+### Design tokens
+
+Open Props provides comprehensive design tokens across multiple categories:
+
+- **Colors**: Complete color scales in OKLch color space (better perceptual uniformity)
+- **Sizes**: Responsive spacing scale from `--size-000` to `--size-15`
+- **Typography**: Font sizes, line heights, weights, and tracking
+- **Shadows**: Elevation scales from `--shadow-1` to `--shadow-6`
+- **Borders**: Border radius values from `--radius-1` to `--radius-round`
+- **Easings**: Animation curves from `--ease-1` to `--ease-spring-5`
+- **Gradients**: Pre-defined gradient patterns
+- **Media queries**: Responsive breakpoints via custom media
 
 ---
 
@@ -265,30 +350,95 @@ let app = Router::new()
 
 ---
 
+## Browser compatibility
+
+Open Props and Open Props UI rely on modern CSS features.
+Browser support requirements are more stringent than traditional CSS frameworks.
+
+### Required browser versions
+
+- **Chrome/Edge**: 111+ (March 2023)
+- **Firefox**: 119+ (October 2023)
+- **Safari**: 17+ (September 2023)
+
+### Modern CSS features used
+
+| Feature | Purpose | Fallback strategy |
+|---------|---------|-------------------|
+| CSS custom properties | Design tokens | Required - no fallback |
+| `light-dark()` function | Automatic dark mode | Use `@media (prefers-color-scheme)` |
+| OKLch colors | Perceptual uniformity | Use fallback RGB/HSL values |
+| `color-mix()` function | Dynamic color blending | Pre-calculate mixed colors |
+| Container queries | Responsive components | Use media queries |
+| Cascade layers (`@layer`) | Style organization | Not critical - remove if needed |
+| CSS nesting | Component styling | PostCSS plugin transforms to flat CSS |
+
+### Graceful degradation patterns
+
+For projects requiring wider browser support, implement fallbacks:
+
+```css
+/* Fallback for light-dark() function */
+:root {
+  --surface-default: var(--gray-0);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface-default: var(--gray-9);
+  }
+}
+
+/* Fallback for OKLch colors */
+.button {
+  background: rgb(59, 130, 246);  /* RGB fallback */
+  background: oklch(0.6 0.15 250deg);  /* Modern syntax */
+}
+
+/* Fallback for color-mix() */
+.hover-state {
+  /* Pre-calculated mixed color */
+  background: rgb(49, 108, 207);
+  /* Modern dynamic mixing */
+  background: color-mix(in oklch, var(--primary) 80%, black);
+}
+```
+
+For ironstar, we target modern browsers exclusively and do not implement fallbacks.
+
+---
+
 ## Comparison with northstar
 
-Northstar uses a Go-native toolchain (gotailwind + esbuild).
-Ironstar prefers Rust-native tools where possible.
+Northstar uses a Go-native toolchain (gotailwind + esbuild) with Tailwind CSS v4 and DaisyUI.
+Ironstar uses Rust-native bundling with Open Props and Open Props UI, representing a different philosophical approach.
 
 | Aspect | Northstar | Ironstar |
 |--------|-----------|----------|
-| CSS tool | gotailwind (Go CLI) | PostCSS + Tailwind (Node) |
+| CSS approach | Utility-first (Tailwind) | Design tokens (Open Props) |
+| CSS tool | gotailwind (Go CLI) | PostCSS (Node) |
+| Component library | DaisyUI (generated classes) | Open Props UI (copy-paste CSS) |
 | JS bundler | esbuild (Go) | Rolldown (Rust) |
-| DaisyUI | Prebuilt plugins (committed) | npm package |
-| Config style | CSS `@plugin` directives | Same |
+| JIT compilation | Yes (scans for classes) | No (static tokens) |
+| Config style | CSS `@plugin` directives | CSS custom properties |
 | Dev workflow | Multi-process (air, gotailwind, esbuild) | Single `rolldown --watch` |
 | Asset versioning | hashfs (Go library) | Rolldown built-in `[hash]` |
 | Hot reload | HTTP ping from esbuild | Rolldown watch + browser reload |
+| Component ownership | Generated by framework | Copy-paste into project |
+| Browser requirements | Modern (CSS custom props) | Very modern (OKLch, light-dark()) |
 
-### Why the differences?
+### Philosophical differences
 
-**Rolldown over esbuild**: Rust-native aligns with the stack philosophy, and Rolldown provides Rollup-compatible plugin API for better ecosystem support.
+**Utility-first vs Design tokens**: Northstar uses Tailwind's utility-first approach where classes are applied directly in templates.
+Ironstar uses design token architecture where CSS custom properties define a system and semantic component classes are built on top.
 
-**PostCSS over gotailwind**: PostCSS is more widely supported and allows standard Tailwind plugins.
-gotailwind is a Go port that may lag behind upstream Tailwind features.
+**Generated vs Owned components**: Northstar's DaisyUI generates component classes via plugin system.
+Ironstar copies Open Props UI component CSS directly into the project for full ownership and customization.
 
-**npm DaisyUI over prebuilt plugins**: npm package receives updates automatically and allows standard configuration patterns.
-Northstar's prebuilt plugins are a workaround for avoiding Node.js in Go projects.
+**Build complexity**: Northstar requires JIT compilation and class scanning across Rust templates.
+Ironstar's Open Props tokens are static constants requiring no compilation step beyond standard PostCSS processing.
+
+**Modern CSS adoption**: Both use modern CSS features, but ironstar pushes further with OKLch color space, `light-dark()` function, and container queries, accepting narrower browser support in exchange for simpler architecture and better developer experience.
 
 ---
 
@@ -329,15 +479,25 @@ build: gen-types build-frontend
     "build": "rolldown",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "open-props": "^2.0.0-beta.5"
+  },
   "devDependencies": {
     "rolldown": "^0.x",
     "rolldown-plugin-postcss": "^0.x",
-    "@tailwindcss/postcss": "^4.x",
-    "daisyui": "^5.x",
+    "postcss": "^8.x",
+    "postcss-import": "^16.x",
+    "postcss-custom-media": "^10.x",
+    "autoprefixer": "^10.x",
+    "cssnano": "^6.x",
     "typescript": "^5.x"
   }
 }
 ```
+
+**Note**: `open-props-ui` is NOT an npm dependency.
+Component CSS is copied directly into your project from the local repository at `~/projects/lakescope-workspace/open-props-ui`.
+This follows the copy-paste ownership model where you own and customize the component styles.
 
 ### Process-compose integration
 
@@ -411,9 +571,51 @@ fn button_with_icon() -> impl Renderable {
 
 ---
 
+## Key differences from Tailwind pipeline
+
+Understanding the architectural shift from Tailwind v4 + DaisyUI to Open Props + Open Props UI.
+
+| Aspect | Tailwind v4 + DaisyUI | Open Props + Open Props UI |
+|--------|----------------------|---------------------------|
+| **Class scanning** | Required via `@source` directives | Not needed - tokens are static |
+| **JIT compilation** | Yes - generates CSS on-demand | No - imports pre-defined tokens |
+| **CSS generation** | Dynamic based on usage | Static imports only |
+| **Theme configuration** | `@plugin` directives in CSS | CSS custom properties in `:root` |
+| **Component CSS** | Generated by DaisyUI plugin | Copied into project (owned) |
+| **PostCSS plugins** | `@tailwindcss/postcss` (complex) | `postcss-import`, `postcss-custom-media` (simple) |
+| **npm dependencies** | `tailwindcss`, `@tailwindcss/postcss`, `daisyui` | `open-props`, standard PostCSS plugins |
+| **Component updates** | npm package update | Manual copy from reference repo |
+| **Customization** | Override via config or CSS layers | Direct CSS editing (full ownership) |
+| **Build speed** | Slower (class scanning + JIT) | Faster (no scanning, static imports) |
+| **Bundle size** | Smaller (tree-shaken) | Larger (all imported tokens) |
+| **Learning curve** | Learn utility classes | Learn CSS custom properties |
+| **Browser support** | Modern browsers | Very modern browsers (OKLch, light-dark()) |
+
+### When to use each approach
+
+**Choose Tailwind + DaisyUI if you need**:
+- Rapid prototyping with utility classes
+- Extensive pre-built component library
+- Automatic tree-shaking for minimal bundle size
+- Wide ecosystem of plugins and integrations
+- Broader browser support
+
+**Choose Open Props + Open Props UI if you need**:
+- Full control over component CSS
+- Simpler build pipeline without class scanning
+- Modern CSS features (OKLch, light-dark(), container queries)
+- Design token architecture
+- No framework lock-in
+
+Ironstar chooses Open Props because the project values CSS ownership, modern features, and build simplicity over framework convenience and wide browser support.
+
+---
+
 ## Related documentation
 
-- Rolldown component selection: `docs/notes/architecture/stack-component-selection.md` (section 12)
-- DaisyUI patterns: `docs/notes/architecture/stack-component-selection.md` (section 10)
-- Lucide integration: `docs/notes/architecture/stack-component-selection.md` (section 13)
-- Northstar reference: `~/projects/lakescope-workspace/datastar-go-nats-template-northstar/`
+- Open Props selection rationale: `docs/notes/architecture/stack-component-selection.md` (section 10)
+- Rolldown bundler selection: `docs/notes/architecture/stack-component-selection.md` (section 12)
+- Lucide icons integration: `docs/notes/architecture/stack-component-selection.md` (section 13)
+- Northstar reference (Tailwind approach): `~/projects/lakescope-workspace/datastar-go-nats-template-northstar/`
+- Open Props repository: `~/projects/lakescope-workspace/open-props`
+- Open Props UI repository: `~/projects/lakescope-workspace/open-props-ui`
