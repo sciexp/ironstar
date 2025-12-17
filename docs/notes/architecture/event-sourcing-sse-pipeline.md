@@ -100,7 +100,9 @@ async fn sse_feed(
 
 ```rust
 use axum::response::sse::{Event, Sse};
+use datastar::prelude::*;  // PatchElements, ExecuteScript, etc.
 use futures::stream::{self, Stream, StreamExt};
+use std::convert::Infallible;
 use tokio::sync::broadcast;
 use tokio_stream::wrappers::BroadcastStream;
 
@@ -130,22 +132,24 @@ async fn sse_feed(
         vec![app_state.projection.current_state_as_event().await]
     };
 
-    // Convert replayed events to SSE format
+    // Convert replayed events to SSE format using datastar-rust builders
     let replay_stream = stream::iter(replayed_events.into_iter().map(|evt| {
-        Ok(Event::default()
-            .id(evt.sequence.to_string())
-            .event("datastar-patch-elements")
-            .data(render_html(&evt)))
+        Ok::<_, Infallible>(
+            PatchElements::new(render_html(&evt))
+                .id(evt.sequence.to_string())
+                .into()  // Converts to axum::response::sse::Event
+        )
     }));
 
     // Convert broadcast receiver to stream for future events
     let live_stream = BroadcastStream::new(rx)
         .filter_map(|result| async move {
             result.ok().map(|evt| {
-                Ok(Event::default()
-                    .id(evt.sequence.to_string())
-                    .event("datastar-patch-elements")
-                    .data(render_html(&evt)))
+                Ok::<_, Infallible>(
+                    PatchElements::new(render_html(&evt))
+                        .id(evt.sequence.to_string())
+                        .into()
+                )
             })
         });
 
@@ -328,10 +332,8 @@ async fn sse_stream_with_lag_handling(
                     eprintln!("SSE consumer lagged, skipped {} events", skipped);
 
                     // In practice, you'd fetch the skipped events here
-                    // For now, send a signal to reconnect
-                    Some(Ok(Event::default()
-                        .event("datastar-execute-script")
-                        .data("window.location.reload()")))
+                    // For now, send a signal to reconnect using datastar-rust builder
+                    Some(Ok(ExecuteScript::new("window.location.reload()").into()))
                 }
                 Err(broadcast::error::RecvError::Closed) => None,
             }
