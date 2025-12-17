@@ -1,5 +1,13 @@
 # Ironstar development process orchestration
 #
+# STATUS: Draft template - will require revision after nix template integration
+#
+# This configuration is a structural template based on northstar patterns and
+# process-compose-flake documentation. It will need adjustment when:
+# - rust-nix-template and typescript-nix-template are instantiated
+# - process-compose-flake is integrated into flake.nix
+# - Actual project structure is finalized
+#
 # Usage:
 #   Nix (preferred):  nix run .#dev
 #   Standalone:       process-compose up
