@@ -471,8 +471,13 @@ ironstar/
   - Section 10: Open Props UI component library rationale
 - Event sourcing + SSE pipeline: `docs/notes/architecture/event-sourcing-sse-pipeline.md`
 - Third-party library integration: `docs/notes/architecture/integration-patterns.md`
+  - Pattern 1: Web component thin wrapper (vanilla)
+  - Pattern 1.5: When Lit is appropriate (complex lifecycle)
+  - Pattern 2: Vega-Lite chart integration
+  - Pattern 3: Apache ECharts integration via Lit (ds-echarts component)
 - TypeScript signal contracts: `docs/notes/architecture/signal-contracts.md`
 - Frontend build pipeline: `docs/notes/architecture/frontend-build-pipeline.md`
+  - Includes Lit component bundling options (Rolldown vs esbuild)
 
 ### External references
 
