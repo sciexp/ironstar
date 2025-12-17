@@ -182,7 +182,7 @@ duckdb = { version = "1.4", features = ["bundled"] }
 rust-embed = { version = "8", features = ["include-exclude"] }
 
 # ts-rs for TypeScript type generation
-ts-rs = { version = "10", features = ["serde-json-impl"] }
+ts-rs = { version = "11.1", features = ["serde-compat", "uuid-impl"] }
 ```
 
 **Feature notes:**
