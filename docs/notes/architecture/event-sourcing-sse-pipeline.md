@@ -133,6 +133,9 @@ async fn sse_feed(
     };
 
     // Convert replayed events to SSE format using datastar-rust builders
+    // Note: SSE wire format uses lowercase strings ("outer", "inner", "append"),
+    // while the Rust API uses PascalCase enum variants (ElementPatchMode::Outer).
+    // The datastar-rust SDK handles conversion automatically.
     let replay_stream = stream::iter(replayed_events.into_iter().map(|evt| {
         Ok::<_, Infallible>(
             PatchElements::new(render_html(&evt))
@@ -529,7 +532,7 @@ impl Projections {
 
 ```rust
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
-use datastar::axum::ReadSignals;
+use datastar::axum::ReadSignals;  // Requires datastar = { features = ["axum"] }
 use uuid::Uuid;
 use chrono::Utc;
 

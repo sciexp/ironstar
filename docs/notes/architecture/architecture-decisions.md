@@ -170,6 +170,14 @@ pub trait RenderableToDatastar: Renderable {
 
 impl<T: Renderable> RenderableToDatastar for T {}
 
+// ElementPatchMode variants:
+// - Outer (default): morph entire element
+// - Inner: morph inner HTML only
+// - Remove: delete element
+// - Replace: full replace without morphing
+// - Prepend, Append: insert inside at start/end
+// - Before, After: insert outside element
+
 // Usage in handler
 async fn get_todos(State(store): State<TodoStore>) -> impl IntoResponse {
     let todos = store.list().await;
