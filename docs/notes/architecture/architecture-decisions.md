@@ -122,7 +122,7 @@ fn counter_component(count: i32) -> impl Renderable {
             p { "Count: " (count) }
             button
                 "data-on:click"="@post('/api/increment')"
-                class="btn btn-primary"
+                class="button filled"
             {
                 "Increment"
             }
@@ -151,6 +151,9 @@ fn loading_indicator() -> impl Renderable {
 
 **Converting Renderable to PatchElements:**
 
+Ironstar defines a helper trait to bridge hypertext's `Renderable` with datastar-rust's `PatchElements`.
+This trait is not part of either library; it lives in your application code.
+
 ```rust
 use hypertext::Renderable;
 use datastar::prelude::*;
@@ -166,6 +169,12 @@ pub trait RenderableToDatastar: Renderable {
             .selector(selector)
             .mode(ElementPatchMode::Append)
     }
+
+    fn replace_inner(&self, selector: &str) -> PatchElements {
+        PatchElements::new(self.render().into_inner())
+            .selector(selector)
+            .mode(ElementPatchMode::Inner)
+    }
 }
 
 impl<T: Renderable> RenderableToDatastar for T {}
@@ -177,8 +186,24 @@ impl<T: Renderable> RenderableToDatastar for T {}
 // - Replace: full replace without morphing
 // - Prepend, Append: insert inside at start/end
 // - Before, After: insert outside element
+```
 
-// Usage in handler
+**Placement:** Define this trait in `src/presentation/helpers.rs` and import where needed in your axum handlers.
+
+**Ergonomic benefit:** This trait provides a clean conversion from hypertext templates to datastar SSE events without manual `render()` and `into_inner()` boilerplate:
+
+```rust
+// Without helper trait (verbose)
+let html = todo_list(&todos);
+PatchElements::new(html.render().into_inner())
+
+// With helper trait (concise)
+todo_list(&todos).to_patch_elements()
+```
+
+**Usage in handler:**
+
+```rust
 async fn get_todos(State(store): State<TodoStore>) -> impl IntoResponse {
     let todos = store.list().await;
     let html = todo_list(&todos);
@@ -723,9 +748,9 @@ Rather than generating utility classes or requiring a JavaScript framework, it p
 
 // Layer 3: Component classes
 maud! {
-    button class="btn btn-primary" {
+    button class="button filled" {
         // .button uses theme variables
-        // .btn-primary uses --brand-primary
+        // .filled uses --brand-primary
         "Submit"
     }
 
@@ -794,7 +819,7 @@ This gives you **full ownership**:
 
 For Ironstar's hypermedia-driven architecture, Open Props UI provides:
 
-1. **Stable class names**: The server can emit `class="btn btn-primary"` without build-time coordination
+1. **Stable class names**: The server can emit `class="button filled"` without build-time coordination
 2. **No JIT scanning**: Backend templates don't need to be watched for class extraction
 3. **Modern CSS alignment**: Embraces browser-native features over build-time abstractions
 4. **Copy-paste ownership**: Full control over component CSS without override complexity
@@ -811,7 +836,7 @@ import { Button } from "@/components/ui/button"
 
 ```rust
 // Open Props UI: Pure CSS class, no runtime
-maud! { button class="btn btn-primary btn-lg" { "Submit" } }
+maud! { button class="button filled large" { "Submit" } }
 ```
 
 When Datastar already provides reactivity, adding React for UI components introduces redundant complexity.
@@ -836,7 +861,7 @@ When Datastar already provides reactivity, adding React for UI components introd
 
 // 3. Use semantic classes in templates
 maud! {
-    button class="btn btn-primary btn-lg" {
+    button class="button filled large" {
         "Submit"
     }
 
@@ -1041,7 +1066,7 @@ use crate::icons;
 
 fn icon_button(icon: &str, label: &str) -> impl Renderable {
     maud! {
-        button class="btn btn-icon" {
+        button class="button icon-only" {
             (Raw::dangerously_create(icon))
             span { (label) }
         }
