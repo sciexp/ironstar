@@ -391,6 +391,26 @@ let results = conn.execute(
 - DuckDB: OLAP (analytical projections)
 - This is the *CQRS* pattern: commands and queries have different algebra
 
+**Threading constraints:**
+
+DuckDB-rs is a synchronous, blocking library with specific thread safety characteristics:
+- `Connection` is `Send` but NOT `Sync` — can be moved between threads but not shared
+- `Statement` is `!Send` and `!Sync` — must stay on the thread where created
+
+For async axum handlers, wrap DuckDB operations:
+
+```rust
+// Quick queries: use block_in_place
+let result = tokio::task::block_in_place(|| {
+    conn.prepare("SELECT ...")?.query_map([], |row| Ok(row.get(0)?))
+})?;
+
+// Long-running queries: use spawn_blocking
+let result = tokio::task::spawn_blocking(move || {
+    // DuckDB operations here
+}).await??;
+```
+
 ---
 
 ### 7. Zenoh — future distribution via unified abstraction
