@@ -1119,7 +1119,7 @@ pub enum Command {
 - `serde` (v1.0): Serialization/deserialization
 - `thiserror` (v1.0): Error derive macros
 - `chrono` (v0.4): Date/time types
-- `sqlx` (v0.7): Database errors
+- `sqlx` (v0.9): Database errors
 
 **Implementation notes:**
 
