@@ -111,7 +111,7 @@ The `rustlings-workspace` patterns (workspace.dependencies, per-crate crate.nix)
 Effects explicit in type signatures, isolated at boundaries to preserve compositionality.
 The stack embodies algebraic data types (sum types for states, product types for data), lawful abstractions, and referential transparency where possible.
 
-See `docs/notes/architecture/stack-component-selection.md` for detailed component rationale.
+See `docs/notes/architecture/design-principles.md` and `docs/notes/architecture/architecture-decisions.md` for detailed design rationale and technology choices.
 
 ### The Tao of Datastar (core principles)
 
@@ -502,7 +502,8 @@ ironstar/
 ├── docs/
 │   └── notes/
 │       └── architecture/
-│           └── stack-component-selection.md
+│           ├── design-principles.md
+│           └── architecture-decisions.md
 ├── src/
 │   ├── main.rs
 │   ├── lib.rs
@@ -562,9 +563,10 @@ ironstar/
 
 ### Ironstar architecture docs
 
-- Component selection rationale: `docs/notes/architecture/stack-component-selection.md`
-  - Section 9: Open Props design tokens rationale
-  - Section 10: Open Props UI component library rationale
+- Design principles: `docs/notes/architecture/design-principles.md`
+- Architecture decisions: `docs/notes/architecture/architecture-decisions.md`
+  - Open Props design tokens rationale
+  - Open Props UI component library rationale
 - Event sourcing + SSE pipeline: `docs/notes/architecture/event-sourcing-sse-pipeline.md`
 - Third-party library integration: `docs/notes/architecture/integration-patterns.md`
   - Pattern 1: Web component thin wrapper (vanilla)
