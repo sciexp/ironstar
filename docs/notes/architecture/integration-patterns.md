@@ -647,7 +647,7 @@ The styling system has three layers:
 
 1. **Open Props** (`~/projects/lakescope-workspace/open-props`): provides design tokens as CSS custom properties (size scales, color palettes, easing functions, shadows, etc.)
 
-2. **Open Props UI** (`~/projects/lakescope-workspace/open-props-ui`): provides semantic component classes (`.btn`, `.card`, etc.) which are copied into the project's `web/resources/static/css/` directory
+2. **Open Props UI** (`~/projects/lakescope-workspace/open-props-ui`): provides semantic component classes (`.button`, `.card`, etc.) which are copied into the project's `web/resources/static/css/` directory
 
 3. **Theme layer** (`theme.css`): derives app-specific tokens from Open Props primitives, enabling theming via CSS custom properties without JavaScript
 

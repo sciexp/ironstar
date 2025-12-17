@@ -696,7 +696,7 @@ Rather than generating utility classes or requiring a JavaScript framework, it p
 // Layer 3: Component classes
 maud! {
     button class="btn btn-primary" {
-        // .btn uses theme variables
+        // .button uses theme variables
         // .btn-primary uses --brand-primary
         "Submit"
     }
