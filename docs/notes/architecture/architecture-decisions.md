@@ -927,7 +927,7 @@ The composition happens in your own CSS rules, not in generated utilities.
 
 Open Props provides "sub-atomic styles" organized into semantic categories:
 
-- **Colors**: 18 palettes (gray, red, pink, purple, violet, indigo, blue, cyan, teal, green, lime, yellow, orange, choco, brown, sand, camo, jungle) with OKLCH variants for modern color spaces
+- **Colors**: 19 color palettes (gray, red, pink, purple, violet, indigo, blue, cyan, teal, green, lime, yellow, orange, choco, brown, sand, camo, jungle) with OKLCH variants for modern color spaces
 - **Sizing**: `--size-*` (rem-based), `--size-fluid-*` (clamp-based responsive), `--size-content-*`, `--size-header-*`, `--size-*-px` (pixel-based)
 - **Typography**: `--font-sans`, `--font-serif`, `--font-mono`, `--font-weight-*`, `--font-size-*`, `--font-lineheight-*`
 - **Spacing**: `--space-*` for margins/padding

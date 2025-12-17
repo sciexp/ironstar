@@ -67,7 +67,7 @@ process-compose logs backend         # View specific process logs
 ## Hot reload pattern
 
 Ironstar implements server-driven hot reload following the northstar pattern.
-The browser maintains an SSE connection to `/dev/reload` that triggers page refresh when the server signals a rebuild completion.
+The browser maintains an SSE connection to `/hotreload` that triggers page refresh when the server signals a rebuild completion.
 
 ### Architecture
 
