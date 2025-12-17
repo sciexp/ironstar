@@ -106,6 +106,22 @@ ironstar/
 
 The `rustlings-workspace` patterns (workspace.dependencies, per-crate crate.nix) enable this migration without restructuring the Nix configuration.
 
+### Intentional divergences from Northstar
+
+Ironstar adapts Northstar's patterns for Rust's type system and ecosystem conventions.
+These divergences are deliberate architectural choices reflecting Rust-native tooling preferences and single-node deployment targets.
+The Northstar Go template and datastar-go SDK remain valuable reference implementations for understanding Datastar's SSE streaming architecture and web component integration patterns.
+
+| Northstar Pattern | Ironstar Adaptation | Rationale |
+|-------------------|---------------------|-----------|
+| Tailwind + DaisyUI | Open Props + Open Props UI | Design tokens over utility classes; better alignment with server-rendered HTML |
+| esbuild (Go) | Rolldown (Rust) | Rust-native toolchain consistency |
+| Embedded NATS | tokio::sync::broadcast | Single-node deployment target; no external server dependency |
+| hashfs runtime hashing | Rolldown content hashing | Hash computed at build time via bundler, not at runtime |
+| Templ (Go templates) | hypertext (Rust macros) | Compile-time type-checked HTML with lazy evaluation |
+| Air hot reload | cargo-watch + process-compose | Rust ecosystem tooling |
+| Task runner (Taskfile) | justfile | Rust ecosystem convention |
+
 ## Design philosophy
 
 Effects explicit in type signatures, isolated at boundaries to preserve compositionality.
