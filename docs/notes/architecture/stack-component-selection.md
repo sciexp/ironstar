@@ -34,7 +34,7 @@ We need only thin presentation layers that compose with Datastar's signal system
 
 | Tool | Role | Why |
 |------|------|-----|
-| DaisyUI | CSS components | Pure CSS, zero runtime, Tailwind plugin architecture |
+| Open Props + Open Props UI | CSS tokens & components | Pure CSS, zero runtime, modern CSS features |
 | Rolldown | JS/CSS bundler | Rust-native (over Go-based esbuild), Vite 8 default |
 | Vanilla Web Components | Third-party lib wrappers | Thin encapsulation, no reactivity system |
 | Lucide | Icons | Build-time SVG inlining, zero runtime |
@@ -48,7 +48,8 @@ We need only thin presentation layers that compose with Datastar's signal system
 | React / Vue / Svelte | SPA philosophy contradicts hypermedia-driven architecture |
 | Leptos / Dioxus | Rust WASM frameworks would duplicate Datastar's role entirely |
 | esbuild | Go-based; prefer Rust-native Rolldown for toolchain consistency |
-| Shadcn/ui | Requires React runtime; DaisyUI achieves similar aesthetics with pure CSS |
+| Shadcn/ui | Requires React runtime; Open Props UI achieves similar aesthetics with pure CSS |
+| Tailwind CSS | JIT compiler requires build-time template scanning; Open Props uses runtime CSS variables |
 
 **Anti-pattern: client-side reactivity duplication**
 
@@ -591,96 +592,208 @@ See `docs/notes/architecture/signal-contracts.md` for detailed integration patte
 
 ---
 
-### 9. tailwindcss — styling as data
+### 9. open-props — design tokens as constants
 
 **Algebraic justification:**
 
-Tailwind classes are a *combinator language* for styles:
+Open Props provides design tokens as CSS custom properties, representing a fundamentally different abstraction than utility-class systems.
+Rather than a combinator language that generates styles at build time, Open Props is a *vocabulary* of constants that exist at runtime as CSS variables:
 
 ```rust
-// Classes compose via string concatenation (monoid)
-// Each class is a morphism: ClassName -> CSSProperty
+// Open Props tokens are constant lookups: TokenName -> Value
+// This is dictionary access, not morphism application
 maud! {
-    div class="flex items-center justify-between p-4 bg-gray-100" {
-        // flex: display -> flex
-        // items-center: align-items -> center
-        // Composition is associative, order-independent for non-conflicting properties
+    div style="
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--size-4);
+        background: var(--gray-2);
+        border-radius: var(--radius-2);
+    " {
+        // --size-4: constant value from sizing scale
+        // --gray-2: constant value from color palette
+        // var() performs lookup, not generation
     }
 }
 ```
 
-**Nix integration:**
+**Algebraic model: constants vs. morphisms**
 
-- tailwindcss CLI installed via flake
-- Build-time CSS generation (no runtime)
-- Deterministic output
+Where Tailwind implements `ClassName -> CSSProperty` (a morphism from class to generated style), Open Props implements `TokenName -> Value` (a constant lookup).
+The key difference is that Open Props tokens are *pre-defined values* referenced directly in CSS, while Tailwind classes are *instructions* for generating CSS at build time.
+
+This makes Open Props closer to a **map data structure** than a combinator algebra.
+The composition happens in your own CSS rules, not in generated utilities.
+
+**Token categories:**
+
+Open Props provides "sub-atomic styles" organized into semantic categories:
+
+- **Colors**: 18 palettes (gray, red, pink, purple, violet, indigo, blue, cyan, teal, green, lime, yellow, orange, choco, brown, sand, camo, jungle) with OKLCH variants for modern color spaces
+- **Sizing**: `--size-*` (rem-based), `--size-fluid-*` (clamp-based responsive), `--size-content-*`, `--size-header-*`, `--size-*-px` (pixel-based)
+- **Typography**: `--font-sans`, `--font-serif`, `--font-mono`, `--font-weight-*`, `--font-size-*`, `--font-lineheight-*`
+- **Spacing**: `--space-*` for margins/padding
+- **Animations**: 15+ keyframe animations (`@keyframes` defined, ready to use)
+- **Easings**: 60+ easing functions including spring, elastic, bounce variations
+- **Shadows**: `--shadow-*` (elevation-based), `--inner-shadow-*`
+- **Borders**: `--border-size-*`, `--radius-*` (border radius), `--radius-*-px`
+- **Gradients**: predefined gradient values
+- **Z-index**: `--layer-*` (semantic layering)
+- **Aspect ratios**: `--ratio-*` (square, landscape, portrait, widescreen, ultrawide, golden)
+
+**Framework-agnostic abstraction:**
+
+CSS custom properties are browser-native.
+This means:
+
+- No build-time class scanning or JIT compilation required
+- Works with any templating system (hypertext, JSX, plain HTML)
+- Tokens are defined once, available everywhere
+- No purging step needed (tokens are referenced, not generated)
+
+**Why chosen:**
+
+Open Props aligns better with Datastar's hypermedia philosophy.
+When the server generates complete HTML fragments, it needs to reference *known class names* or *CSS properties*.
+Open Props provides stable token names that can be referenced in inline styles or custom CSS classes without requiring a build-time scanning step to detect which utilities are used.
+
+The backend-driven model means: server knows exact styling -> emits HTML with tokens -> browser applies via native CSS variables.
+There's no need for a JIT compiler to watch template files and generate utility classes.
+
+**Local repository:**
+
+- `open-props` at `~/projects/lakescope-workspace/open-props` - CSS design tokens library
+
+**Integration pattern:**
+
+```rust
+// Import Open Props tokens in your CSS
+// @import "open-props/style";
+// Or selective imports:
+// @import "open-props/colors";
+// @import "open-props/sizes";
+
+// Then reference in templates via inline styles or custom classes
+maud! {
+    button style="
+        padding: var(--size-2) var(--size-4);
+        background: var(--blue-6);
+        color: var(--gray-0);
+        border-radius: var(--radius-2);
+        font-weight: var(--font-weight-6);
+    " {
+        "Submit"
+    }
+}
+```
+
+**Effect boundary:**
+
+Open Props CSS is imported at load time as standard CSS.
+No build-time generation step required beyond standard CSS concatenation/minification.
+The browser's CSS engine resolves `var()` lookups during style computation.
 
 ---
 
-### 10. DaisyUI — component classes as higher-order combinators
+### 10. open-props-ui — semantic components via modern CSS
 
 **Algebraic justification:**
 
-DaisyUI extends Tailwind's combinator algebra to the component level.
-Where Tailwind provides morphisms from class names to CSS properties, DaisyUI provides morphisms from semantic names to *compositions* of those morphisms:
+Open Props UI extends Open Props tokens into a component layer using pure CSS and modern browser features.
+Rather than generating utility classes or requiring a JavaScript framework, it provides semantic component classes that compose via a three-layer architecture:
 
 ```rust
-// Tailwind: individual property morphisms
-// "flex" -> { display: flex }
-// "p-4"  -> { padding: 1rem }
+// Three-layer composition:
+// 1. Open Props tokens (constants)
+// 2. Theme variables (application-specific derivations)
+// 3. Component classes (semantic composition)
 
-// DaisyUI: composed morphisms (higher-order)
-// "btn" -> flex + items-center + justify-center + font-semibold + ...
-// "card" -> bg-base-100 + rounded-box + shadow-xl + ...
+// Layer 1: Token constants
+// --blue-6, --size-2, --radius-2 (from Open Props)
 
+// Layer 2: Theme variables (your app-level CSS)
+// --brand-primary: var(--blue-6);
+// --spacing-md: var(--size-2);
+// --corner-md: var(--radius-2);
+
+// Layer 3: Component classes
 maud! {
-    // DaisyUI class is a pre-composed combinator
     button class="btn btn-primary" {
-        // btn: base button styles (many Tailwind utilities composed)
-        // btn-primary: color variant (product with color scheme)
+        // .btn uses theme variables
+        // .btn-primary uses --brand-primary
         "Submit"
     }
 
-    // Extensible: add Tailwind utilities alongside DaisyUI
-    div class="card card-compact w-96 bg-base-100 shadow-xl" {
-        // card: structural combinator
-        // card-compact: variant modifier (sum type selector)
-        // w-96, shadow-xl: additional Tailwind morphisms
+    div class="card" {
+        // .card uses theme variables for padding, radius, shadow
+        h2 { "Card Title" }
+        p { "Card content goes here." }
     }
 }
 ```
 
-This is a *functor* lifting: DaisyUI lifts Tailwind's `Class -> Style` morphisms into `ComponentName -> [Class]`, where composition happens at a higher level of abstraction.
+**Modern CSS features:**
 
-**Categorical property: product of combinators**
+Open Props UI leverages CSS capabilities from 2023+ browsers:
 
-DaisyUI components are products of orthogonal concerns:
+- **OKLCH colors**: Perceptually uniform color space via `oklch()` function
+- **Container queries**: `@container` for component-scoped responsive behavior
+- **CSS layers**: `@layer` for cascade management
+- **color-mix()**: Dynamic color blending without preprocessor
+- **light-dark()**: Native light/dark theme switching without JavaScript
+- **Nesting**: Native CSS nesting without Sass/PostCSS
+- **:has()**: Parent selector for relational styling
 
-```rust
-// btn = Structure x Variant x Size x State
-// Each dimension is independently selectable
+Browser requirements: Chrome 111+, Firefox 119+, Safari 17+ (mid-2023 forward).
 
-maud! {
-    // Structure: btn (vs link, etc.)
-    // Variant: btn-primary (vs btn-secondary, btn-accent, etc.)
-    // Size: btn-lg (vs btn-sm, btn-xs, etc.)
-    // State: btn-disabled, btn-loading (optional modifiers)
-    button class="btn btn-primary btn-lg" { "Large Primary" }
+**Component catalog:**
 
-    // Different product selection
-    button class="btn btn-outline btn-sm" { "Small Outline" }
-}
+Open Props UI provides 31 component types:
+
+- **Forms**: button, field (input/textarea/select), checkbox, radio, switch, slider
+- **Layout**: card, dialog (modal), drawer (side panel), tabs, accordion
+- **Navigation**: navbar, breadcrumb, menu, pagination
+- **Feedback**: alert, toast, tooltip, badge, progress, skeleton
+- **Data**: table, avatar, chip/tag
+- **Media**: image, video wrapper
+- **Utilities**: divider, spacer
+
+**Copy-paste ownership model:**
+
+Open Props UI differs from traditional component libraries.
+Components are *copied into your project*, not imported from node_modules:
+
+```bash
+# Typical workflow
+cp node_modules/open-props-ui/components/button.css src/components/
+# Edit button.css to match your needs
 ```
 
-This product structure means `|variants| x |sizes| x |states|` combinations emerge from a small set of primitive classes.
+This gives you **full ownership**:
 
-**Why DaisyUI over alternatives:**
+- Modify component styles directly (no overrides needed)
+- No breaking changes from library updates
+- Complete transparency (you own the CSS)
+- Tree-shake automatically (only include what you use)
 
-- *Pure CSS*: No JavaScript runtime, no hydration, no client-side framework dependency
-- *Tailwind plugin*: Composes with existing Tailwind workflow and tooling
-- *Semantic naming*: `btn` is more readable than `inline-flex items-center justify-center rounded-md text-sm font-medium`
-- *Theming via CSS variables*: 35+ built-in themes, zero JS theme switching
-- *Framework agnostic*: Works identically with hypertext, React, or plain HTML
+**Why chosen over DaisyUI:**
+
+| Consideration | DaisyUI | Open Props UI |
+|--------------|---------|---------------|
+| Build dependencies | Tailwind JIT compiler, PostCSS | None (pure CSS) |
+| Class generation | Build-time utility scanning | No generation step |
+| Modern CSS | Limited (Tailwind constraints) | Full (OKLch, container queries, :has()) |
+| Ownership model | NPM dependency, version updates | Copy-paste, full control |
+| Server-side HTML | Requires JIT to scan templates | Direct token/class reference |
+| Theme system | CSS variables via Tailwind config | Native CSS custom properties |
+
+For Ironstar's hypermedia-driven architecture, Open Props UI provides:
+
+1. **Stable class names**: The server can emit `class="btn btn-primary"` without build-time coordination
+2. **No JIT scanning**: Backend templates don't need to be watched for class extraction
+3. **Modern CSS alignment**: Embraces browser-native features over build-time abstractions
+4. **Copy-paste ownership**: Full control over component CSS without override complexity
 
 **Why not Shadcn/ui:**
 
@@ -693,16 +806,52 @@ import { Button } from "@/components/ui/button"
 ```
 
 ```rust
-// DaisyUI: Pure CSS class, no runtime
+// Open Props UI: Pure CSS class, no runtime
 maud! { button class="btn btn-primary btn-lg" { "Submit" } }
 ```
 
 When Datastar already provides reactivity, adding React for UI components introduces redundant complexity.
 
-**Effect boundary: build time**
+**Local repository:**
 
-DaisyUI's CSS is generated at build time via Tailwind's JIT compiler.
-No effects occur at runtime—the browser simply applies static CSS rules.
+- `open-props-ui` at `~/projects/lakescope-workspace/open-props-ui` - Pure CSS component library
+
+**Integration pattern:**
+
+```rust
+// 1. Import Open Props and component CSS in your stylesheet
+// @import "open-props/style";
+// @import "./components/button.css";  // Copied from open-props-ui
+// @import "./components/card.css";
+
+// 2. Define theme variables (optional customization layer)
+// :root {
+//   --brand-primary: var(--blue-6);
+//   --brand-secondary: var(--purple-6);
+// }
+
+// 3. Use semantic classes in templates
+maud! {
+    button class="btn btn-primary btn-lg" {
+        "Submit"
+    }
+
+    div class="card" {
+        div class="card-header" {
+            h2 { "Title" }
+        }
+        div class="card-body" {
+            p { "Content goes here." }
+        }
+    }
+}
+```
+
+**Effect boundary:**
+
+Open Props UI CSS is loaded as standard stylesheets.
+Theme switching via `light-dark()` is handled by the browser's native color scheme support (no JavaScript).
+Component styles apply immediately via the browser's CSS engine with no runtime compilation.
 
 ---
 
@@ -718,12 +867,12 @@ processes:
   ironstar:
     command: ./result/bin/ironstar
     depends_on:
-      tailwind: { condition: process_completed_successfully }
+      styles: { condition: process_completed_successfully }
     environment:
       DATABASE_URL: "sqlite:./data/ironstar.db"
 
-  tailwind:
-    command: tailwindcss -i input.css -o static/output.css --minify
+  styles:
+    command: rolldown build
 ```
 
 **Why not docker-compose:**
@@ -769,7 +918,7 @@ export default defineConfig({
   },
   plugins: [
     // PostCSS runs within the bundle pipeline
-    // Tailwind's @apply expansion is a macro: ClassName -> CSS properties
+    // Open Props imports and custom CSS processed as standard CSS
     postcss({
       config: './postcss.config.js',
       extract: 'bundle.css',
@@ -808,9 +957,9 @@ The effect completes atomically: either all outputs are written or none are (via
 
 **PostCSS integration:**
 
-PostCSS plugins (including `@tailwindcss/postcss`) run as transforms within the bundle pipeline.
-Tailwind's class extraction is a *fold* over the source AST: `Fold(Source, ClassSet) -> CSS`.
-The `@source` directive scopes this fold to specific paths, making the dependency explicit in the configuration rather than implicit via file watchers.
+PostCSS plugins run as transforms within the bundle pipeline.
+For Open Props, this primarily handles CSS imports, autoprefixing, and minification.
+No class extraction or template scanning is required—Open Props tokens are referenced directly in CSS via `var()`, making the pipeline a straightforward transform: `Import(CSS) -> Optimize(CSS) -> Output`.
 
 ---
 
@@ -933,8 +1082,8 @@ fn icon_button(icon: &str, label: &str) -> impl Renderable {
 ├─────────────────────────────────────────────────────────────────────┤
 │  Presentation Layer (Lazy Rendering)                                │
 │  ┌─────────────┬─────────────┬─────────────┬─────────────────────┐ │
-│  │ hypertext   │ datastar    │ tailwindcss │ DaisyUI             │ │
-│  │ (thunks)    │ (signals)   │ (classes)   │ (components)        │ │
+│  │ hypertext   │ datastar    │ open-props  │ open-props-ui       │ │
+│  │ (thunks)    │ (signals)   │ (tokens)    │ (components)        │ │
 │  └─────────────┴─────────────┴─────────────┴─────────────────────┘ │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -953,8 +1102,8 @@ fn icon_button(icon: &str, label: &str) -> impl Renderable {
 | **DuckDB** | Analytics | Pure query | `.execute()` |
 | **Zenoh** | Distribution | Free monoid | `.put()` / `.subscribe()` |
 | **datastar-rust** | Frontend | FRP signals | SSE emit |
-| **tailwindcss** | Styling | Class combinators | Build time |
-| **DaisyUI** | CSS Components | Higher-order combinators | Build time |
+| **open-props** | CSS Tokens | Constants (map/dictionary) | CSS `var()` resolution |
+| **open-props-ui** | CSS Components | Three-layer composition | Style application |
 | **process-compose** | Orchestration | Product spec | Process start |
 | **Rolldown** | JS/CSS bundler | Pure morphism (deterministic) | `rolldown build` |
 | **Lucide** | Icons | Constants (Yoneda embedding) | Build time |
