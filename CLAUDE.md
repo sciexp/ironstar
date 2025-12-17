@@ -66,6 +66,9 @@ All dependencies with local source code available for reference.
 
 ### Datastar ecosystem
 
+The Datastar core developers are primarily Go developers, so the Go SDK and templates represent the most mature, fleshed-out examples of high-performance Datastar integration patterns.
+When implementing ironstar, study the Go examples (especially northstar) as primary references for patterns like Tailwind+DaisyUI styling, Lit/vanilla web component integration, and SSE streaming architecture, then adapt them for Rust's type system and functional idioms.
+
 | Dependency | Local Path | Description |
 |------------|------------|-------------|
 | datastar | `~/projects/lakescope-workspace/datastar` | Main datastar repository (frontend JS + SDK specs) |
@@ -73,7 +76,8 @@ All dependencies with local source code available for reference.
 | datastar-rust | `~/projects/rust-workspace/datastar-rust` | Rust SDK for SSE generation |
 | datastar-rust-lince | `~/projects/rust-workspace/datastar-rust-lince` | Real-world usage example |
 | datastar-go | `~/projects/lakescope-workspace/datastar-go` | Go SDK (reference implementation) |
-| northstar | `~/projects/lakescope-workspace/datastar-go-nats-template-northstar` | Go template we're porting from |
+| datastar-go-template-minimal | `~/projects/lakescope-workspace/datastar-go-template-minimal` | Minimal Go template (SSE basics without NATS) |
+| northstar | `~/projects/lakescope-workspace/datastar-go-nats-template-northstar` | Full-featured Go template with NATS, Templ, web components |
 
 **Canonical SDK specification**: `~/projects/lakescope-workspace/datastar/sdk/ADR.md`
 
