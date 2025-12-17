@@ -714,7 +714,7 @@ This approach maintains the design system while preserving component ownership.
 
 ## Hypertext to SSE integration
 
-When integrating hypertext templates with Datastar SSE, use the `RenderableToDatastar` helper trait defined in `stack-component-selection.md`:
+When integrating hypertext templates with Datastar SSE, use the `RenderableToDatastar` helper trait defined in the hypertext section of `architecture-decisions.md`:
 
 ```rust
 use hypertext::Renderable;
@@ -763,7 +763,7 @@ For complete SSE streaming patterns including event replay and projection update
 
 ### Ironstar architecture
 
-- Hypertext + Datastar syntax: `docs/notes/architecture/stack-component-selection.md` (hypertext section)
+- Hypertext + Datastar syntax: see the hypertext section in `architecture-decisions.md`
 - Event sourcing and SSE: `docs/notes/architecture/event-sourcing-sse-pipeline.md`
 - Signal type contracts: `docs/notes/architecture/signal-contracts.md`
 - Frontend build pipeline: `docs/notes/architecture/frontend-build-pipeline.md` (includes Lit bundling options)
