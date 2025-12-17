@@ -130,7 +130,7 @@ Ironstar embodies the principles from the Tao of Datastar (`~/projects/lakescope
 |-------|-----------|------|
 | Web Framework | axum | HTTP, SSE, extractors as Reader monad |
 | Async Runtime | tokio | Async effects |
-| HTML Templating | hypertext | Lazy monoid (thunks) |
+| HTML Templating | hypertext | Lazy rendering (thunks) |
 | Frontend Reactivity | datastar-rust | FRP signals via SSE |
 | CSS Framework | Open Props + Open Props UI | Design tokens + pure CSS components |
 | CSS/JS Build | Rolldown + PostCSS | Rust-native bundler |
@@ -143,6 +143,37 @@ Ironstar embodies the principles from the Tao of Datastar (`~/projects/lakescope
 | Distribution (future) | Zenoh | Distributed pub/sub + storage |
 | Orchestration | process-compose | Declarative process management |
 | Environment | Nix flake | Reproducible builds |
+
+### Dependency configuration
+
+Required Cargo feature flags for key dependencies:
+
+```toml
+[dependencies]
+# axum with SSE support (default features are sufficient)
+axum = { version = "0.8", features = ["default"] }
+
+# datastar-rust with axum integration
+datastar = { version = "0.3", features = ["axum"] }
+
+# sqlx with SQLite and runtime-tokio
+sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite", "json"] }
+
+# DuckDB with bundled build (compiles DuckDB from source)
+duckdb = { version = "1.4", features = ["bundled"] }
+
+# rust-embed for asset embedding (conditional)
+rust-embed = { version = "8", features = ["include-exclude"] }
+
+# ts-rs for TypeScript type generation
+ts-rs = { version = "10", features = ["serde-json-impl"] }
+```
+
+**Feature notes:**
+
+- `datastar` feature `axum` is required for the ReadSignals extractor and Event conversion
+- `sqlx` features must match your async runtime (tokio) and database (sqlite)
+- `duckdb` feature `bundled` is strongly recommended to avoid system DuckDB version mismatches
 
 ## Local dependency paths
 
