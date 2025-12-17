@@ -36,7 +36,7 @@ Ironstar embodies the principles from the Tao of Datastar (`~/projects/lakescope
 | Async Runtime | tokio | Async effects |
 | HTML Templating | hypertext | Lazy monoid (thunks) |
 | Frontend Reactivity | datastar-rust | FRP signals via SSE |
-| CSS Framework | Tailwind v4 + DaisyUI | Utility classes + component combinators |
+| CSS Framework | Open Props + Open Props UI | Design tokens + pure CSS components |
 | CSS/JS Build | Rolldown + PostCSS | Rust-native bundler |
 | Icons | Lucide (build-time) | Zero-runtime SVG inlining |
 | Web Components | Vanilla (when needed) | Thin wrappers for third-party libs |
@@ -67,7 +67,8 @@ All dependencies with local source code available for reference.
 ### Datastar ecosystem
 
 The Datastar core developers are primarily Go developers, so the Go SDK and templates represent the most mature, fleshed-out examples of high-performance Datastar integration patterns.
-When implementing ironstar, study the Go examples (especially northstar) as primary references for patterns like Tailwind+DaisyUI styling, Lit/vanilla web component integration, and SSE streaming architecture, then adapt them for Rust's type system and functional idioms.
+When implementing ironstar, study the Go examples (especially northstar) as primary references for patterns like web component integration and SSE streaming architecture, then adapt them for Rust's type system and functional idioms.
+Note: northstar uses Tailwind+DaisyUI while ironstar uses Open Props + Open Props UI, so CSS styling patterns will differ.
 
 | Dependency | Local Path | Description |
 |------------|------------|-------------|
@@ -100,7 +101,13 @@ See their TodoMVC implementations for SSE formatting and signal parsing patterns
 |------------|------------|-------------|
 | process-compose | `~/projects/nix-workspace/process-compose` | Process orchestration |
 | process-compose-flake | `~/projects/nix-workspace/process-compose-flake` | Nix flake integration |
-| tailwindcss | `~/projects/lakescope-workspace/tailwindcss` | CSS framework |
+
+### CSS and styling
+
+| Dependency | Local Path | Description |
+|------------|------------|-------------|
+| open-props | `~/projects/lakescope-workspace/open-props` | CSS design tokens library |
+| open-props-ui | `~/projects/lakescope-workspace/open-props-ui` | Pure CSS component library (copy-paste model) |
 
 ### Reference implementations (alternative approaches)
 
@@ -118,7 +125,7 @@ See their TodoMVC implementations for SSE formatting and signal parsing patterns
 | rust-nix-template | `~/projects/rust-workspace/rust-nix-template` | Rust + Nix template pattern |
 | typescript-nix-template | `~/projects/nix-workspace/typescript-nix-template` | TypeScript + Nix template pattern |
 | python-nix-template | `~/projects/nix-workspace/python-nix-template` | Python + Nix template pattern |
-| hypertext-typst-nix-youwen5-web | `~/projects/rust-workspace/hypertext-typst-nix-youwen5-web` | Hypertext + Tailwind + Nix pattern (no datastar) |
+| hypertext-typst-nix-youwen5-web | `~/projects/rust-workspace/hypertext-typst-nix-youwen5-web` | Hypertext + Nix pattern (uses Tailwind, not datastar) |
 
 ### Integration pattern references
 
@@ -155,10 +162,10 @@ git clone https://github.com/rolldown/rolldown.git
 │                         Ironstar Template                            │
 ├─────────────────────────────────────────────────────────────────────┤
 │  Frontend (Browser)                                                 │
-│    datastar.js (signals), Tailwind + DaisyUI (CSS), Vanilla WC      │
+│    datastar.js (signals), Open Props + Open Props UI (CSS), WC      │
 ├─────────────────────────────────────────────────────────────────────┤
 │  Build Pipeline                                                     │
-│    Rolldown (bundler), PostCSS (Tailwind), TypeScript (WC only)     │
+│    Rolldown (bundler), PostCSS (Open Props imports), TypeScript     │
 ├─────────────────────────────────────────────────────────────────────┤
 │  Boundary Layer (Effects)                                           │
 │    axum extractors, SSE streams, HTTP request/response              │
@@ -186,11 +193,22 @@ This means most reactivity lives in datastar signals, not client-side frameworks
 
 | Tool | Why |
 |------|-----|
-| DaisyUI | Pure CSS components, zero runtime, Tailwind plugin |
+| Open Props | CSS design tokens, zero build complexity |
+| Open Props UI | Pure CSS components, copy-paste ownership model |
 | Rolldown | Rust-native bundler (over esbuild which is Go-based) |
 | Vanilla Web Components | Thin wrappers when encapsulating third-party libs |
 | Lucide | Build-time SVG icons, zero runtime |
 | TypeScript | Type safety for the minimal JS we write |
+
+**Modern CSS features:**
+
+Open Props + Open Props UI leverage modern CSS capabilities that require recent browsers:
+- **OKLch color space**: Perceptually uniform colors with consistent lightness
+- **light-dark() function**: Native theme switching without class toggles
+- **Container queries**: Component-level responsive design
+- **:has() selector**: Parent-aware styling
+
+**Browser requirements**: Chrome 111+, Firefox 119+, Safari 17+ (all released 2023)
 
 **What we avoid:**
 
@@ -428,8 +446,12 @@ ironstar/
 │   │   ├── sortable-list.ts
 │   │   └── vega-chart.ts               # Vega-Lite chart wrapper
 │   └── styles/
-│       ├── main.css                    # Tailwind import + @source
-│       └── daisyui-theme.js            # Custom theme
+│       ├── main.css                    # Open Props imports + theme + components
+│       ├── theme.css                   # Custom theme tokens
+│       └── components/                 # Copied Open Props UI CSS
+│           ├── button.css
+│           ├── card.css
+│           └── *.css                   # Other component styles
 ├── static/
 │   ├── dist/                           # Built assets (from web-components)
 │   │   ├── bundle.css
@@ -445,6 +467,8 @@ ironstar/
 ### Ironstar architecture docs
 
 - Component selection rationale: `docs/notes/architecture/stack-component-selection.md`
+  - Section 9: Open Props design tokens rationale
+  - Section 10: Open Props UI component library rationale
 - Event sourcing + SSE pipeline: `docs/notes/architecture/event-sourcing-sse-pipeline.md`
 - Third-party library integration: `docs/notes/architecture/integration-patterns.md`
 - TypeScript signal contracts: `docs/notes/architecture/signal-contracts.md`
@@ -456,7 +480,8 @@ ironstar/
 - Datastar documentation: `~/projects/lakescope-workspace/datastar-doc/`
 - Tao of Datastar: `~/projects/lakescope-workspace/datastar-doc/guide_the_tao_of_datastar.md`
 - Northstar (Go template): `~/projects/lakescope-workspace/datastar-go-nats-template-northstar/`
-- Hypertext + Tailwind + Nix patterns: `~/projects/rust-workspace/hypertext-typst-nix-youwen5-web/`
+- Open Props design tokens: `~/projects/lakescope-workspace/open-props/`
+- Open Props UI components: `~/projects/lakescope-workspace/open-props-ui/`
 - redb design: `~/projects/rust-workspace/redb/docs/design.md`
 - vega-embed API: `~/projects/lakescope-workspace/vega-embed/src/embed.ts`
 - Mosaic documentation: `~/projects/lakescope-workspace/mosaic/docs/`
