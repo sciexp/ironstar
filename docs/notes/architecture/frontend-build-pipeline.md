@@ -785,10 +785,10 @@ Ironstar chooses Open Props because the project values CSS ownership, modern fea
 
 ## Related documentation
 
-- Open Props tokens rationale: `docs/notes/architecture/stack-component-selection.md` (section 9)
-- Open Props UI components rationale: `docs/notes/architecture/stack-component-selection.md` (section 10)
-- Rolldown bundler selection: `docs/notes/architecture/stack-component-selection.md` (section 12)
-- Lucide icons integration: `docs/notes/architecture/stack-component-selection.md` (section 13)
+- Open Props tokens: see the Open Props section in `architecture-decisions.md`
+- Open Props UI components: see the Open Props UI section in `architecture-decisions.md`
+- Rolldown bundler: see the Rolldown section in `architecture-decisions.md`
+- Lucide icons: see the Lucide section in `architecture-decisions.md`
 - Northstar reference (Tailwind approach): `~/projects/lakescope-workspace/datastar-go-nats-template-northstar/`
 - Open Props repository: `~/projects/lakescope-workspace/open-props`
 - Open Props UI repository: `~/projects/lakescope-workspace/open-props-ui`
