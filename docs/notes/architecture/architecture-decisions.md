@@ -398,6 +398,274 @@ db.set_two_phase_commit(true);
 - Session state is ephemeral but should survive restarts
 - TTL logic is application-level (functional, testable)
 
+**Session management pattern:**
+
+Session management implements the cookie-session pattern: HTTP-only cookies contain session IDs, while redb stores session data server-side.
+This separation follows the algebraic principle of referential transparency—the cookie is a *reference* (opaque identifier), and redb provides the *dereferencing function* (ID → SessionData).
+
+```rust
+use redb::{Database, TableDefinition, ReadableTable};
+use axum::{
+    extract::{FromRequestParts, State},
+    http::{request::Parts, StatusCode},
+    response::{IntoResponse, Response},
+};
+use axum_extra::extract::cookie::{Cookie, CookieJar};
+use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+
+// Table definition as a type-level constant
+const SESSIONS: TableDefinition<&str, &[u8]> = TableDefinition::new("sessions");
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct SessionData {
+    pub user_id: Option<String>,
+    pub created_at: u64,
+    pub last_accessed: u64,
+    // Application-specific fields
+}
+
+// Session store wraps redb database
+pub struct SessionStore {
+    db: Arc<Database>,
+}
+
+impl SessionStore {
+    pub fn new(path: &str) -> Result<Self, redb::Error> {
+        let db = Database::create(path)?;
+
+        // Initialize table if needed
+        let txn = db.begin_write()?;
+        {
+            let _ = txn.open_table(SESSIONS)?;
+        }
+        txn.commit()?;
+
+        Ok(Self { db: Arc::new(db) })
+    }
+
+    // Pure read: ID -> Option<SessionData>
+    pub fn get(&self, session_id: &str) -> Result<Option<SessionData>, redb::Error> {
+        let txn = self.db.begin_read()?;
+        let table = txn.open_table(SESSIONS)?;
+
+        match table.get(session_id)? {
+            Some(bytes) => {
+                let data: SessionData = bincode::deserialize(bytes.value())
+                    .map_err(|_| redb::Error::Corrupted)?;
+                Ok(Some(data))
+            }
+            None => Ok(None),
+        }
+    }
+
+    // Effect: create or update session
+    pub fn put(&self, session_id: &str, data: &SessionData) -> Result<(), redb::Error> {
+        let txn = self.db.begin_write()?;
+        {
+            let mut table = txn.open_table(SESSIONS)?;
+            let bytes = bincode::serialize(data)
+                .map_err(|_| redb::Error::Corrupted)?;
+            table.insert(session_id, bytes.as_slice())?;
+        }
+        txn.commit()?;
+        Ok(())
+    }
+
+    // Effect: delete session
+    pub fn delete(&self, session_id: &str) -> Result<(), redb::Error> {
+        let txn = self.db.begin_write()?;
+        {
+            let mut table = txn.open_table(SESSIONS)?;
+            table.remove(session_id)?;
+        }
+        txn.commit()?;
+        Ok(())
+    }
+}
+
+// Axum extractor for sessions
+pub struct Session {
+    pub id: String,
+    pub data: SessionData,
+}
+
+#[async_trait::async_trait]
+impl FromRequestParts<AppState> for Session {
+    type Rejection = (StatusCode, &'static str);
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
+        let jar = CookieJar::from_request_parts(parts, state).await
+            .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Cookie extraction failed"))?;
+
+        // Get or create session ID
+        let session_id = match jar.get("session_id") {
+            Some(cookie) => cookie.value().to_string(),
+            None => {
+                // Generate new session ID
+                let id = generate_session_id();
+                id
+            }
+        };
+
+        // Load or initialize session data
+        let data = state.session_store
+            .get(&session_id)
+            .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Session read failed"))?
+            .unwrap_or_else(|| SessionData {
+                user_id: None,
+                created_at: unix_timestamp(),
+                last_accessed: unix_timestamp(),
+            });
+
+        Ok(Session {
+            id: session_id,
+            data,
+        })
+    }
+}
+
+// Helper to update session and set cookie
+pub async fn save_session(
+    jar: CookieJar,
+    store: &SessionStore,
+    session: &Session,
+) -> Result<CookieJar, redb::Error> {
+    store.put(&session.id, &session.data)?;
+
+    // Create HTTP-only, secure, SameSite cookie
+    let cookie = Cookie::build(("session_id", session.id.clone()))
+        .http_only(true)
+        .secure(true)  // HTTPS only in production
+        .same_site(axum_extra::extract::cookie::SameSite::Lax)
+        .path("/")
+        .max_age(time::Duration::days(30))
+        .build();
+
+    Ok(jar.add(cookie))
+}
+
+// Usage in handlers
+async fn login_handler(
+    State(state): State<AppState>,
+    jar: CookieJar,
+    mut session: Session,
+) -> Result<impl IntoResponse, StatusCode> {
+    // Update session after authentication
+    session.data.user_id = Some("user123".to_string());
+    session.data.last_accessed = unix_timestamp();
+
+    // Save and return with cookie
+    let jar = save_session(jar, &state.session_store, &session).await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok((jar, StatusCode::OK))
+}
+
+fn generate_session_id() -> String {
+    use rand::Rng;
+    let bytes: [u8; 32] = rand::thread_rng().gen();
+    base64::encode_config(&bytes, base64::URL_SAFE_NO_PAD)
+}
+
+fn unix_timestamp() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs()
+}
+```
+
+**Security considerations:**
+
+| Cookie Attribute | Value | Rationale |
+|------------------|-------|-----------|
+| `HttpOnly` | `true` | Prevents JavaScript access, mitigates XSS |
+| `Secure` | `true` (prod) | HTTPS-only transmission |
+| `SameSite` | `Lax` | CSRF protection, allows top-level navigation |
+| `Path` | `/` | Scope to entire application |
+| `Max-Age` | `30 days` | Session lifetime (application-specific) |
+
+**TTL and cleanup:**
+
+Session expiration is application-level logic, not database-enforced:
+
+```rust
+impl SessionStore {
+    // Functional TTL check: pure predicate
+    fn is_expired(data: &SessionData, ttl_seconds: u64) -> bool {
+        let now = unix_timestamp();
+        now - data.last_accessed > ttl_seconds
+    }
+
+    // Effect: periodic cleanup task
+    pub fn cleanup_expired(&self, ttl_seconds: u64) -> Result<usize, redb::Error> {
+        let txn = self.db.begin_write()?;
+        let mut removed = 0;
+
+        {
+            let mut table = txn.open_table(SESSIONS)?;
+            let to_remove: Vec<String> = table.iter()?
+                .filter_map(|entry| {
+                    let (key, value) = entry.ok()?;
+                    let data: SessionData = bincode::deserialize(value.value()).ok()?;
+                    if Self::is_expired(&data, ttl_seconds) {
+                        Some(key.value().to_string())
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+
+            for key in to_remove {
+                table.remove(key.as_str())?;
+                removed += 1;
+            }
+        }
+
+        txn.commit()?;
+        Ok(removed)
+    }
+}
+
+// Spawn background cleanup task
+pub async fn spawn_session_cleanup(store: Arc<SessionStore>) {
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(Duration::from_secs(3600)); // 1 hour
+        loop {
+            interval.tick().await;
+            let ttl = 30 * 24 * 60 * 60; // 30 days in seconds
+            match store.cleanup_expired(ttl) {
+                Ok(count) => tracing::info!("Cleaned up {} expired sessions", count),
+                Err(e) => tracing::error!("Session cleanup failed: {}", e),
+            }
+        }
+    });
+}
+```
+
+**Comparison to Northstar's pattern:**
+
+Northstar uses gorilla/sessions with cookie-based storage (encrypted session data in cookie) and NATS KV for persistence.
+Ironstar separates concerns: cookies contain only the session ID (opaque reference), and redb stores the session payload server-side.
+
+| Northstar (Go) | Ironstar (Rust) |
+|----------------|-----------------|
+| gorilla/sessions cookie store | axum-extra CookieJar + redb |
+| Encrypted session data in cookie | Session ID in cookie, data in redb |
+| NATS KV for server-side state | redb for server-side state |
+| `sess.Values["id"]` map access | Typed `SessionData` struct |
+
+The Rust pattern provides stronger type safety (no `interface{}` or type assertions) and explicit separation between client-side identifier and server-side state.
+
+**Relevant source paths:**
+
+- redb implementation: `~/projects/rust-workspace/redb/`
+- Northstar session pattern: `~/projects/lakescope-workspace/datastar-go-nats-template-northstar/features/index/services/todo_service.go` (lines 53-76, 165-182)
+
 ---
 
 ### 6. DuckDB — analytics as pure queries
