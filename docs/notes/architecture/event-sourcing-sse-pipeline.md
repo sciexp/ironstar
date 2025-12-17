@@ -806,6 +806,9 @@ See sections 1 and 4 above for SSE and command handler implementations.
 
 ### Default architecture
 
+The module structure below is a simplified view focused on event sourcing components.
+See `architecture-decisions.md` for the complete structure including the explicit `application/` layer for command and query handlers.
+
 ```
 src/
 ├── domain/
