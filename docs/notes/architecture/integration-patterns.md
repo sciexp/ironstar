@@ -321,6 +321,81 @@ Web components provide the encapsulation boundary, `data-ignore-morph` prevents 
 
 ---
 
+## Styling web components with Open Props
+
+Ironstar uses Open Props for design tokens and Open Props UI for component styling, following an ownership model where component CSS is copied into the project rather than imported as a dependency.
+
+### CSS framework architecture
+
+The styling system has three layers:
+
+1. **Open Props** (`~/projects/lakescope-workspace/open-props`): provides design tokens as CSS custom properties (size scales, color palettes, easing functions, shadows, etc.)
+
+2. **Open Props UI** (`~/projects/lakescope-workspace/open-props-ui`): provides semantic component classes (`.btn`, `.card`, etc.) which are copied into the project's `web/resources/static/css/` directory
+
+3. **Theme layer** (`theme.css`): derives app-specific tokens from Open Props primitives, enabling theming via CSS custom properties without JavaScript
+
+### Dark mode support
+
+Open Props includes the `light-dark()` CSS function for automatic dark mode support without JavaScript:
+
+```css
+.component {
+  background: light-dark(var(--gray-1), var(--gray-9));
+  color: light-dark(var(--gray-9), var(--gray-1));
+}
+```
+
+The browser automatically switches between light and dark values based on the user's `prefers-color-scheme` preference.
+
+### Styling patterns for web components
+
+When creating web components that need styling, use Open Props tokens and semantic classes:
+
+```typescript
+class StyledComponent extends HTMLElement {
+  connectedCallback() {
+    // Container with Open Props UI semantic class
+    const container = document.createElement('div');
+    container.className = 'card';
+
+    // Custom sizing with Open Props tokens
+    container.style.width = 'var(--size-content-3)';
+    container.style.padding = 'var(--size-4)';
+
+    // Button with semantic class
+    const button = document.createElement('button');
+    button.className = 'btn btn-primary';
+    button.textContent = 'Submit';
+
+    container.appendChild(button);
+    this.appendChild(container);
+  }
+}
+```
+
+### Integration with hypertext templates
+
+When web components are embedded in hypertext templates, apply Open Props classes and inline styles:
+
+```rust
+use hypertext::{html_elements, maud_move, Renderable};
+
+fn component_container() -> impl Renderable {
+    maud_move! {
+        // Semantic class from Open Props UI
+        div class="card" style="width: var(--size-content-3);" {
+            button class="btn btn-primary" { "Submit" }
+        }
+    }
+}
+```
+
+For components that need custom styling beyond Open Props UI's semantic classes, use inline styles with Open Props tokens rather than utility classes.
+This approach maintains the design system while preserving component ownership.
+
+---
+
 ## Hypertext to SSE integration
 
 When integrating hypertext templates with Datastar SSE, use the `RenderableToDatastar` helper trait defined in `stack-component-selection.md`:
