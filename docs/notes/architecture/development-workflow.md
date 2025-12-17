@@ -521,21 +521,23 @@ FRONTEND_DEV_URL=http://localhost:5173
 
 ### Loading environment variables
 
-process-compose.yaml loads the environment file:
+process-compose auto-loads `.env` from the working directory by default (disable with `is_dotenv_disabled: true`).
+For development, either rename `.env.development` to `.env` or use `env_cmds` for dynamic generation.
 
 ```yaml
-environment:
-  - .env.development
-
 processes:
   backend:
     command: cargo watch -x run
     environment:
-      DATABASE_URL: ${DATABASE_URL}
-      LOG_LEVEL: ${LOG_LEVEL}
+      - DATABASE_URL=${DATABASE_URL}
+      - LOG_LEVEL=${LOG_LEVEL}
+    # Or use env_cmds for dynamic env generation:
+    # env_cmds:
+    #   - "cat .env.development"
 ```
 
-Variables are interpolated at process startup.
+The `environment` field accepts a list of `KEY=VALUE` strings, not file paths.
+Variables are interpolated at process startup from the auto-loaded `.env` file.
 
 ### Git ignore pattern
 
