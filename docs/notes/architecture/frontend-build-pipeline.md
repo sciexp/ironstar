@@ -528,6 +528,178 @@ processes:
 
 ---
 
+## Lit component bundling options
+
+When using Lit components (see Pattern 1.5 in `integration-patterns.md`), ironstar supports two bundling approaches: extending Rolldown configuration for Lit, or using esbuild specifically for Lit components.
+
+### Option A: Rolldown for all assets (recommended for consistency)
+
+Extend the existing Rolldown configuration to handle Lit components with TypeScript decorators:
+
+```typescript
+// web-components/rolldown.config.ts
+import { defineConfig } from 'rolldown';
+import postcss from 'rolldown-plugin-postcss';
+import typescript from '@rollup/plugin-typescript';
+
+export default defineConfig({
+  input: {
+    bundle: 'index.ts',
+    components: 'components/index.ts',
+    lit: 'lit/index.ts',  // Lit component entry point
+  },
+  output: {
+    dir: '../static/dist',
+    format: 'esm',
+    entryFileNames: '[name].[hash].js',
+    chunkFileNames: '[name].[hash].js',
+  },
+  plugins: [
+    typescript({
+      tsconfig: './lit/tsconfig.json',
+      compilerOptions: {
+        experimentalDecorators: true,     // Required for Lit @customElement
+        useDefineForClassFields: false,   // Required for Lit decorator behavior
+      },
+    }),
+    postcss({
+      config: './postcss.config.js',
+      extract: 'bundle.css',
+      minimize: true,
+    }),
+  ],
+});
+```
+
+TypeScript configuration for Lit:
+
+```json
+// web-components/lit/tsconfig.json
+{
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "target": "ES2020",
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "include": ["**/*.ts"]
+}
+```
+
+### Option B: esbuild for Lit components (pragmatic alternative)
+
+esbuild provides the fastest TypeScript compilation with battle-tested Lit support.
+This approach uses esbuild for Lit components while maintaining Rolldown for CSS and vanilla web components.
+
+**When to choose esbuild**:
+- Fastest possible TypeScript compilation (10-100x faster than tsc)
+- Proven pattern from Northstar template
+- Zero configuration needed for decorators
+- Acceptable to include Go binary in toolchain per project decision
+
+**Reference implementation**: `~/projects/lakescope-workspace/datastar-go-nats-template-northstar/cmd/web/build/main.go`
+
+```go
+// cmd/web/build/main.go (adapted from Northstar pattern)
+package main
+
+import (
+    "github.com/evanw/esbuild/pkg/api"
+)
+
+func build() error {
+    opts := api.BuildOptions{
+        EntryPointsAdvanced: []api.EntryPoint{
+            {
+                InputPath:  "web-components/lit/index.ts",
+                OutputPath: "libs/lit",
+            },
+        },
+        Bundle:            true,
+        Format:            api.FormatESModule,
+        MinifyIdentifiers: true,
+        MinifySyntax:      true,
+        MinifyWhitespace:  true,
+        Outdir:            "static/dist",
+        Sourcemap:         api.SourceMapLinked,
+        Target:            api.ESNext,
+        Write:             true,
+    }
+
+    result := api.Build(opts)
+    return checkBuildErrors(result)
+}
+```
+
+With process-compose for parallel builds:
+
+```yaml
+# process-compose.yaml (extended)
+processes:
+  lit-components:
+    command: go run cmd/web/build/main.go --watch
+    availability:
+      restart: on_failure
+
+  frontend-assets:
+    command: pnpm dev
+    working_dir: ./web-components
+    availability:
+      restart: on_failure
+
+  backend:
+    command: cargo watch -x run
+    depends_on:
+      lit-components:
+        condition: process_healthy
+      frontend-assets:
+        condition: process_healthy
+```
+
+### Lit component dependencies
+
+Add to package.json for Lit components:
+
+```json
+{
+  "dependencies": {
+    "lit": "^3.3.1",
+    "echarts": "^5.5.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "@lit/reactive-element": "^2.0.4"
+  }
+}
+```
+
+### Decision matrix
+
+| Criterion | Rolldown | esbuild |
+|-----------|----------|---------|
+| Build speed | Fast (~1-2s) | Extremely fast (~100-200ms) |
+| TypeScript decorators | Plugin required | Built-in |
+| Single tool | Yes | No (hybrid with Rolldown for CSS) |
+| Rust-native | Yes | No (Go binary) |
+| Proven for Lit | Less mature | Battle-tested (Northstar) |
+| Development workflow | Single `rolldown --watch` | Requires process coordination |
+
+**Recommendation**: Start with Option B (esbuild) for rapid development, especially if referencing Northstar patterns.
+Migrate to Option A (Rolldown) later for tool consolidation if needed.
+
+### Source code references
+
+- **Northstar esbuild config**: `~/projects/lakescope-workspace/datastar-go-nats-template-northstar/cmd/web/build/main.go`
+- **Northstar Lit components**: `~/projects/lakescope-workspace/datastar-go-nats-template-northstar/web/libs/lit/`
+- **esbuild source**: `~/projects/lakescope-workspace/esbuild/`
+- **Lit framework**: `~/projects/lakescope-workspace/lit-web-components/`
+
+---
+
 ## Lucide icons integration
 
 Lucide icons are inlined at build time, not loaded at runtime.
