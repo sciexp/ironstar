@@ -189,6 +189,12 @@ async fn get_todos(State(store): State<TodoStore>) -> impl IntoResponse {
 Axum's extractor pattern is essentially a *Reader monad* reified as types:
 
 ```rust
+use axum::{
+    extract::{State, Path, Json},
+    response::IntoResponse,
+};
+use std::convert::Infallible;
+
 // Extractors are Reader<Request, Result<T, Rejection>>
 async fn handler(
     State(db): State<Pool>,           // Reader effect: access environment
@@ -196,6 +202,7 @@ async fn handler(
     Json(cmd): Json<Command>,         // Parser effect: deserialize body
 ) -> Result<impl IntoResponse, AppError> {  // Error effect explicit
     // Pure business logic here
+    // Note: AppError is application-defined, see event-sourcing-sse-pipeline.md appendix
 }
 ```
 
@@ -208,6 +215,10 @@ async fn handler(
 **SSE as a lazy stream:**
 
 ```rust
+use axum::response::sse::{Event, Sse};
+use futures::stream::{Stream, StreamExt};
+use std::convert::Infallible;
+
 // Sse<S> is essentially Free[Stream, Event] — description of effects
 async fn events(State(store): State<EventStore>) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let stream = store.subscribe()
@@ -225,6 +236,9 @@ async fn events(State(store): State<EventStore>) -> Sse<impl Stream<Item = Resul
 The broadcast channel implements the *Observer pattern* as a pure data flow:
 
 ```rust
+use tokio::sync::{broadcast, mpsc};
+use tokio::sync::broadcast::error::SendError;
+
 // Sender<T> + Receiver<T> form a comonadic structure
 // - Sender: coalgebraic (produces values)
 // - Receiver: algebraic (consumes values)
@@ -264,6 +278,8 @@ tokio broadcast provides an embedded alternative:
 sqlx provides compile-time query validation—the query is a *type-level proof* that it's valid:
 
 ```rust
+use sqlx::SqlitePool;
+
 // query_as! validates SQL at compile time against actual schema
 // This is a dependent type approximation: Query<SQL, Schema> -> Result<T, E>
 let events = sqlx::query_as!(
@@ -283,6 +299,8 @@ let events = sqlx::query_as!(
 **Event sourcing as append-only:**
 
 ```rust
+use sqlx::{SqlitePool, Transaction, Sqlite};
+
 // Events form a monoid (concatenation) with identity (empty stream)
 // Append is the only mutation — no update, no delete
 pub async fn append(&self, events: Vec<NewEvent>) -> Result<Vec<StoredEvent>> {
@@ -301,6 +319,7 @@ pub async fn append(&self, events: Vec<NewEvent>) -> Result<Vec<StoredEvent>> {
     }
 
     Ok(stored)
+    // Note: Result type is application-specific, see event-sourcing-sse-pipeline.md appendix
 }
 ```
 
@@ -319,6 +338,8 @@ pub async fn append(&self, events: Vec<NewEvent>) -> Result<Vec<StoredEvent>> {
 redb's transaction model is a *bracket* pattern:
 
 ```rust
+use redb::{Database, WriteTransaction, TableDefinition};
+
 // WriteTransaction is a linear type (must be committed or dropped)
 // This enforces the bracket law: acquire -> use -> release
 let txn = db.begin_write()?;  // Acquire
@@ -353,6 +374,8 @@ db.set_two_phase_commit(true);
 DuckDB queries are *referentially transparent*—same input, same output:
 
 ```rust
+use duckdb::Connection;
+
 // Analytical query is a pure function: Projection -> Result<DataFrame>
 let results = conn.execute(
     "SELECT aggregate_type, COUNT(*) as event_count
@@ -398,6 +421,9 @@ let subscriber = session.subscribe("events/**").await?;
 **Migration path:**
 
 ```rust
+use async_trait::async_trait;
+use futures::stream::Stream;
+
 // Trait abstraction allows swapping implementations
 #[async_trait]
 pub trait EventStore: Send + Sync {
@@ -437,6 +463,11 @@ PatchElements::new(render_component(state))
 **SSE as a stream of patches:**
 
 ```rust
+use axum::response::sse::{Event, Sse};
+use datastar::prelude::*;  // PatchSignals
+use futures::stream::{self, Stream};
+use std::{convert::Infallible, time::Duration};
+
 // The SSE stream is Free[Patch, DOM] — a program describing UI updates
 async fn counter_stream() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let stream = stream::unfold(0, |count| async move {
@@ -1328,6 +1359,9 @@ Each crate has a dedicated `crate.nix` file for Nix integration (per `rustlings-
 Dependency injection uses axum's `State` extractor with a shared state struct:
 
 ```rust
+use std::sync::Arc;
+use tokio::sync::broadcast;
+
 #[derive(Clone)]
 pub struct AppState {
     pub event_store: Arc<SqliteEventStore>,
@@ -1359,12 +1393,17 @@ impl AppState {
             reload_tx: broadcast::channel(16).0,
         })
     }
+    // Note: Error type is application-specific, see event-sourcing-sse-pipeline.md appendix
 }
 ```
 
 Handlers extract what they need:
 
 ```rust
+use axum::extract::State;
+use axum::response::IntoResponse;
+use datastar::axum::ReadSignals;
+
 async fn add_todo(
     State(state): State<AppState>,
     ReadSignals(signals): ReadSignals<TodoSignals>,
