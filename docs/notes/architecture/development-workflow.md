@@ -86,7 +86,7 @@ The browser maintains an SSE connection to `/dev/reload` that triggers page refr
 ┌─────────────────────────────────────────────────────────────┐
 │                    Axum Server                               │
 │  ┌─────────────────────────────────────────────────────┐    │
-│  │ GET /dev/reload                                      │    │
+│  │ GET /hotreload                                        │    │
 │  │   - Blocks on reload channel                         │    │
 │  │   - On signal: ExecuteScript("window.location.reload()") │
 │  │   - Client reconnects automatically via Datastar      │    │
@@ -94,7 +94,7 @@ The browser maintains an SSE connection to `/dev/reload` that triggers page refr
 │                          ▲                                   │
 │                          │ broadcast::Sender                 │
 │  ┌─────────────────────────────────────────────────────┐    │
-│  │ POST /dev/trigger-reload                             │    │
+│  │ POST /hotreload/trigger                              │    │
 │  │   - Sends signal to reload channel                   │    │
 │  │   - Called by hotreload process on build complete    │    │
 │  └─────────────────────────────────────────────────────┘    │
@@ -114,14 +114,15 @@ mod dev {
         routing::{get, post},
         Router,
     };
+    use datastar::prelude::ExecuteScript;
     use std::convert::Infallible;
     use tokio::sync::broadcast;
     use tokio_stream::{wrappers::BroadcastStream, StreamExt};
 
     pub fn routes(reload_tx: broadcast::Sender<()>) -> Router {
         Router::new()
-            .route("/dev/reload", get(reload_sse))
-            .route("/dev/trigger-reload", post(trigger_reload))
+            .route("/hotreload", get(reload_sse))
+            .route("/hotreload/trigger", post(trigger_reload))
             .with_state(reload_tx)
     }
 
@@ -130,9 +131,8 @@ mod dev {
     ) -> Sse<impl futures::Stream<Item = Result<Event, Infallible>>> {
         let rx = reload_tx.subscribe();
         let stream = BroadcastStream::new(rx).filter_map(|_| async {
-            Some(Ok(Event::default()
-                .event("datastar-execute-script")
-                .data("window.location.reload()")))
+            Some(Ok(ExecuteScript::new("window.location.reload()")
+                .write_as_axum_sse_event()))
         });
         Sse::new(stream)
     }
@@ -152,7 +152,7 @@ fn base_layout(content: impl Renderable) -> impl Renderable {
             head { /* ... */ }
             body {
                 @if cfg!(debug_assertions) {
-                    div "data-init"="@get('/dev/reload', {retryMaxCount: 1000, retryInterval: 20})" {}
+                    div "data-init"="@get('/hotreload', {retryMaxCount: 1000, retryInterval: 20})" {}
                 }
                 (content)
             }
@@ -168,7 +168,7 @@ The `hotreload` process in process-compose watches for build artifacts and trigg
 ```yaml
 hotreload:
   command: |
-    cargo watch -w src -w static/dist -s 'curl -s http://localhost:3000/dev/trigger-reload || true'
+    cargo watch -w src -w static/dist -s 'curl -s http://localhost:3000/hotreload/trigger || true'
   depends_on:
     backend:
       condition: process_healthy

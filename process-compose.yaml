@@ -78,11 +78,11 @@ processes:
       SESSION_SECRET: "dev-session-secret-change-in-prod"
 
   # Hot reload coordinator (SSE endpoint for browser refresh)
-  # Browser connects to /dev/reload, this process signals when rebuild completes
+  # Browser connects to /hotreload, this process signals when rebuild completes
   hotreload:
     command: |
       # Watch for cargo build completion and signal reload
-      cargo watch -w src -w static/dist -s 'curl -s http://localhost:3000/dev/trigger-reload || true'
+      cargo watch -w src -w static/dist -s 'curl -s http://localhost:3000/hotreload/trigger || true'
     depends_on:
       backend:
         condition: process_healthy
