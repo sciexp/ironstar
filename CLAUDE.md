@@ -567,6 +567,13 @@ ironstar/
 - Architecture decisions: `docs/notes/architecture/architecture-decisions.md`
   - Open Props design tokens rationale
   - Open Props UI component library rationale
+  - Asset embedding (rust-embed)
+  - Module organization and scaling path
+- Development workflow: `docs/notes/architecture/development-workflow.md`
+  - Process orchestration (process-compose)
+  - Hot reload pattern
+  - Asset serving modes (dev/prod)
+  - TypeScript type generation (ts-rs)
 - Event sourcing + SSE pipeline: `docs/notes/architecture/event-sourcing-sse-pipeline.md`
 - Third-party library integration: `docs/notes/architecture/integration-patterns.md`
   - Pattern 1: Web component thin wrapper (vanilla)
