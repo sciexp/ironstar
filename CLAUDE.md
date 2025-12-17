@@ -343,21 +343,15 @@ CREATE TABLE events (
 );
 ```
 
-## Why not NATS?
+## Architectural context: embedded vs. external services
 
-This stack was designed as a response to the [Jepsen analysis of NATS 2.12.1](https://jepsen.io/analyses/nats-2.12.1), which identified critical durability failures:
+This stack prioritizes embedded Rust-native solutions over external server dependencies.
+NATS is an excellent choice for teams willing to run an external server — it provides streaming, key-value storage, and pub/sub in a unified abstraction.
 
-1. Lazy fsync default — acknowledged writes lost on crash
-2. Minority corruption propagation — single-node corruption caused majority data loss
-3. Split-brain from single OS crash — persistent replica divergence
+For Ironstar, the embedded approach (SQLite + tokio broadcast + redb) was chosen because the template targets single-node deployments where a separate server is unnecessary.
+The [Jepsen analysis of NATS 2.12.1](https://jepsen.io/analyses/nats-2.12.1) also reinforced confidence in SQLite's durability model, though NATS can be configured appropriately for many use cases.
 
-SQLite + tokio broadcast avoids these issues:
-
-- SQLite WAL + fsync is synchronous by default
-- Single-node means no split-brain by construction
-- tokio broadcast is in-memory notification (events already durably stored)
-
-When distribution is needed, Zenoh provides safer alternatives with explicit durability controls.
+When distribution is needed, Zenoh provides Rust-native pub/sub with storage backends.
 
 ## Build commands
 
