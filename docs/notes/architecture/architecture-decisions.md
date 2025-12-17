@@ -70,9 +70,11 @@ HTML generation is a *monoid* under concatenation.
 Hypertext makes this explicit:
 
 ```rust
-// Renderable is a monoid: empty element + associative composition
+// Renderable is the core trait for lazy HTML generation.
+// Actual signature: fn render_to(&self, buffer: &mut Buffer<C>) where C: Context
+// Simplified here for exposition; the Buffer wrapper prevents XSS.
 trait Renderable {
-    fn render_to(&self, output: &mut String);
+    fn render_to(&self, buffer: &mut Buffer);
 }
 
 // Pure function: no allocation, no side effects
@@ -128,12 +130,12 @@ fn counter_component(count: i32) -> impl Renderable {
     }
 }
 
-// Two-way binding
+// Two-way binding (data-bind for inputs, not data-bind:value)
 fn input_field() -> impl Renderable {
     maud! {
         input
             type="text"
-            "data-bind:value"="$todoText"
+            "data-bind"="$todoText"
             placeholder="What needs to be done?"
             {}
     }

@@ -70,7 +70,7 @@ web-components/
 static/dist/
 ├── bundle.[hash].js
 ├── bundle.[hash].css
-└── .vite/manifest.json         # Maps entry → hashed filename
+└── manifest.json               # Maps entry → hashed filename
         │
         ▼ (cargo build --release)
 target/release/ironstar          # Single binary with embedded static/dist/
