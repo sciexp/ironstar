@@ -1046,15 +1046,16 @@ Browser requirements: Chrome 111+, Firefox 119+, Safari 17+ (mid-2023 forward).
 
 **Component catalog:**
 
-Open Props UI provides 31 component types:
+Open Props UI provides 31 component types as semantic CSS classes.
+Note: naming conventions differ from common patterns: dialog (not modal), snackbar (not toast), range (not slider), chip (not tag), tab-buttons (not tabs).
 
-- **Forms**: button, field (input/textarea/select), checkbox, radio, switch, slider
-- **Layout**: card, dialog (modal), drawer (side panel), tabs, accordion
-- **Navigation**: navbar, breadcrumb, menu, pagination
-- **Feedback**: alert, toast, tooltip, badge, progress, skeleton
-- **Data**: table, avatar, chip/tag
-- **Media**: image, video wrapper
-- **Utilities**: divider, spacer
+Available components:
+- **Forms**: button, button-group, checkbox-radio, field, field-group, icon-button, link, range, select, switch, text-field, textarea, toggle-button-group
+- **Layout**: card, dialog, divider
+- **Navigation**: tab-buttons
+- **Feedback**: alert, badge, progress, snackbar, spinner, tooltip
+- **Data**: avatar, chip, definition-list, list, table, typography
+- **Utilities**: accordion, rich-text
 
 **Copy-paste ownership model:**
 
