@@ -177,13 +177,21 @@ Open Props UI provides pure CSS component styles that you copy into your project
 ### PostCSS configuration
 
 PostCSS configuration is simpler than Tailwind since there is no JIT compilation or class scanning needed.
+However, Open Props and Open Props UI use modern CSS features that require `postcss-preset-env` for proper processing.
 
 ```javascript
 // web-components/postcss.config.js
 export default {
   plugins: {
     'postcss-import': {},           // Handle @import statements
-    'postcss-custom-media': {},     // Open Props custom media queries
+    'postcss-preset-env': {         // Modern CSS features (required for Open Props)
+      stage: 2,
+      features: {
+        'oklab-function': true,     // OKLab/OKLch color spaces
+        'light-dark-function': true, // light-dark() for theme switching
+        'custom-media-queries': true // Open Props media queries
+      }
+    },
     'autoprefixer': {},             // Vendor prefixes (minimal with modern CSS)
     'cssnano': {                    // Minification (production only)
       preset: 'default'
@@ -191,6 +199,11 @@ export default {
   }
 };
 ```
+
+The `postcss-preset-env` plugin is critical for Open Props integration because it:
+- Processes `oklch()` and `oklab()` color functions used throughout Open Props
+- Handles `light-dark()` function for automatic dark mode support in Open Props UI
+- Supports custom media queries defined by Open Props for responsive design
 
 ### Component ownership model
 
