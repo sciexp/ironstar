@@ -196,6 +196,11 @@ Trade-offs:
 #### Implementation pattern
 
 ```rust
+use async_trait::async_trait;
+use axum::response::sse::Event;
+use std::sync::Arc;
+use tokio::sync::{broadcast, RwLock};
+
 /// Projection trait for read models
 #[async_trait]
 pub trait Projection: Send + Sync {
@@ -217,6 +222,7 @@ pub struct ProjectionManager<P: Projection> {
     state: Arc<RwLock<P::State>>,
     event_bus_rx: broadcast::Receiver<StoredEvent>,
 }
+// Note: Error and StoredEvent types are defined in the appendix
 
 impl<P: Projection> ProjectionManager<P> {
     /// Initialize projection by replaying all events
@@ -294,14 +300,15 @@ This spawns the blocking work on a dedicated thread pool, preventing it from tyi
 #### Code examples
 
 ```rust
-use tokio::task;
 use axum::{extract::State, response::IntoResponse, Json};
 use std::sync::Arc;
+use tokio::task;
 
 // Quick query pattern - block_in_place
 async fn analytics_handler(
     State(analytics): State<Arc<AnalyticsService>>,
 ) -> Result<impl IntoResponse, AppError> {
+    // Note: AppError is defined in the appendix
     let analytics = analytics.clone();
 
     // block_in_place: allows blocking without spawning new thread
@@ -342,8 +349,8 @@ This means:
 **Connection pooling pattern**:
 
 ```rust
-use std::sync::{Arc, Mutex};
 use duckdb::Connection;
+use std::sync::{Arc, Mutex};
 
 // Simple approach: Mutex around single connection
 pub struct DuckDBService {
@@ -395,6 +402,7 @@ DuckDB handles concurrent access at the file level, so multiple connections to t
 #### Implementation
 
 ```rust
+use std::sync::Arc;
 use tokio::sync::broadcast;
 
 /// Application state shared across handlers
@@ -433,6 +441,12 @@ async fn sse_stream_with_lag_handling(
     rx: broadcast::Receiver<StoredEvent>,
     event_store: Arc<EventStore>,
 ) -> impl Stream<Item = Result<Event, Infallible>> {
+    // Note: Imports from replay_stream example also apply here
+    use axum::response::sse::Event;
+    use datastar::prelude::*;  // ExecuteScript
+    use futures::stream::{Stream, StreamExt};
+    use std::convert::Infallible;
+    use tokio_stream::wrappers::BroadcastStream;
     BroadcastStream::new(rx).filter_map(move |result| {
         let event_store = event_store.clone();
         async move {
@@ -472,6 +486,8 @@ broadcast::channel::<StoredEvent>(256)
 #### Multiple projection types
 
 ```rust
+use tokio::sync::broadcast;
+
 /// Projections manager supporting multiple projection types
 pub struct Projections {
     todo_list: ProjectionManager<TodoListProjection>,
@@ -514,12 +530,15 @@ impl Projections {
 ```rust
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use datastar::axum::ReadSignals;
+use uuid::Uuid;
+use chrono::Utc;
 
 /// Command handler example
 async fn handle_add_todo(
     State(app_state): State<AppState>,
     ReadSignals(signals): ReadSignals<AddTodoCommand>,
 ) -> impl IntoResponse {
+    // Note: ValidationError type is defined in the appendix
     // 1. Validate command (pure function)
     let events = match validate_and_emit_events(signals) {
         Ok(events) => events,
@@ -652,6 +671,9 @@ This way, timing doesn't matter: SSE is the single source of truth for when the 
 ### Event store trait
 
 ```rust
+use async_trait::async_trait;
+use sqlx::SqlitePool;
+
 #[async_trait]
 pub trait EventStore: Send + Sync {
     /// Append event and return assigned sequence number
@@ -670,6 +692,7 @@ pub trait EventStore: Send + Sync {
         aggregate_id: &str,
     ) -> Result<Vec<StoredEvent>, Error>;
 }
+// Note: Error, DomainEvent, and StoredEvent types are defined in the appendix
 
 /// SQLite implementation
 pub struct SqliteEventStore {
@@ -834,6 +857,8 @@ rebuild_on_startup = true
 #### SQLite tuning
 
 ```rust
+use sqlx::SqlitePool;
+
 // Optimize SQLite for event sourcing workload
 sqlx::query("PRAGMA journal_mode=WAL").execute(&pool).await?;
 sqlx::query("PRAGMA synchronous=FULL").execute(&pool).await?;
@@ -846,6 +871,7 @@ sqlx::query("PRAGMA temp_store=MEMORY").execute(&pool).await?;
 Enable Brotli compression for SSE responses:
 
 ```rust
+use axum::{Router, routing::get};
 use tower_http::compression::CompressionLayer;
 
 let app = Router::new()
@@ -865,6 +891,7 @@ pub struct Metrics {
     sse_connections: IntGauge,
     projection_lag: IntGauge,
 }
+// Note: Prometheus metrics require the prometheus crate in Cargo.toml
 ```
 
 Track:
@@ -912,6 +939,8 @@ Track:
 When moving to distributed deployment, replace `tokio::sync::broadcast` with Zenoh pub/sub:
 
 ```rust
+use zenoh::prelude::*;
+
 // Future Zenoh integration
 let session = zenoh::open(config).await?;
 let publisher = session.declare_publisher("events/**").await?;
@@ -938,6 +967,8 @@ Zenoh provides:
 Add periodic snapshots when event count grows:
 
 ```rust
+use sqlx::SqlitePool;
+
 pub struct SnapshotStore {
     pool: sqlx::SqlitePool,
 }
