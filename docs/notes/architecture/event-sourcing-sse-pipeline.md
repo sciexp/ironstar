@@ -865,6 +865,120 @@ impl SnapshotStore {
 
 Trigger snapshot every N events or on a schedule.
 
+## Appendix: Common type definitions
+
+The code examples throughout this document reference types like `AppError`, `StoredEvent`, `DomainEvent`, and `ValidationError`.
+These are example types that would typically live in `src/domain/` and `src/infrastructure/`.
+Adapt them to your specific domain requirements.
+
+```rust
+//! Common types used in event sourcing examples
+//! These would typically live in src/domain/ and src/infrastructure/
+
+use serde::{Deserialize, Serialize};
+use thiserror::Error;
+
+/// Application error type for handler responses
+#[derive(Error, Debug)]
+pub enum AppError {
+    #[error("validation failed: {0}")]
+    Validation(#[from] ValidationError),
+
+    #[error("not found: {entity} with id {id}")]
+    NotFound { entity: &'static str, id: String },
+
+    #[error("database error: {0}")]
+    Database(#[from] sqlx::Error),
+
+    #[error("internal error: {0}")]
+    Internal(String),
+}
+
+/// Validation errors for command handling
+#[derive(Error, Debug)]
+pub enum ValidationError {
+    #[error("field '{field}' is required")]
+    Required { field: &'static str },
+
+    #[error("field '{field}' must be at most {max} characters")]
+    TooLong { field: &'static str, max: usize },
+
+    #[error("invalid state transition from {from} to {to}")]
+    InvalidTransition { from: String, to: String },
+}
+
+/// Event stored in SQLite event store
+/// Note: Derives Clone for use in tokio::sync::broadcast channels
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct StoredEvent {
+    pub sequence: i64,
+    pub aggregate_type: String,
+    pub aggregate_id: String,
+    pub event_type: String,
+    pub payload: serde_json::Value,
+    pub metadata: Option<serde_json::Value>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+}
+
+/// Domain events (example for a Todo aggregate)
+/// Sum type representing all possible events in the domain
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum DomainEvent {
+    TodoCreated { id: String, text: String },
+    TodoCompleted { id: String },
+    TodoDeleted { id: String },
+    TodoTextUpdated { id: String, text: String },
+}
+
+impl DomainEvent {
+    /// Extract event type name for storage in event_type column
+    pub fn event_type(&self) -> &'static str {
+        match self {
+            Self::TodoCreated { .. } => "TodoCreated",
+            Self::TodoCompleted { .. } => "TodoCompleted",
+            Self::TodoDeleted { .. } => "TodoDeleted",
+            Self::TodoTextUpdated { .. } => "TodoTextUpdated",
+        }
+    }
+
+    /// Extract aggregate ID for storage in aggregate_id column
+    pub fn aggregate_id(&self) -> &str {
+        match self {
+            Self::TodoCreated { id, .. }
+            | Self::TodoCompleted { id }
+            | Self::TodoDeleted { id }
+            | Self::TodoTextUpdated { id, .. } => id,
+        }
+    }
+}
+
+/// Commands (requests to change state)
+/// Product types containing validated user input
+#[derive(Clone, Debug, Deserialize)]
+#[serde(tag = "type")]
+pub enum Command {
+    CreateTodo { text: String },
+    CompleteTodo { id: String },
+    DeleteTodo { id: String },
+    UpdateTodoText { id: String, text: String },
+}
+```
+
+**Dependencies referenced in these types:**
+
+- `serde` (v1.0): Serialization/deserialization
+- `thiserror` (v1.0): Error derive macros
+- `chrono` (v0.4): Date/time types
+- `sqlx` (v0.7): Database errors
+
+**Implementation notes:**
+
+- `StoredEvent` derives `Clone` because it's sent through `tokio::sync::broadcast` channels, which require cloneable types.
+- `DomainEvent` uses `#[serde(tag = "type")]` for tagged union JSON serialization, making event payloads human-readable.
+- `ValidationError` uses `thiserror::Error` to automatically implement `std::error::Error` with proper Display formatting.
+- `AppError` uses `#[from]` attribute to enable automatic conversion from `ValidationError` and `sqlx::Error` via the `?` operator.
+
 ## References
 
 - Datastar SDK ADR: `/Users/crs58/projects/lakescope-workspace/datastar/sdk/ADR.md`
