@@ -10,6 +10,102 @@ retained in production quality docs for users or developers should go in an aptl
 Early design phase.
 Component selection complete, implementation not yet started.
 
+## Template synthesis sources
+
+Ironstar is instantiated as a deliberate synthesis of patterns from multiple template repositories, each contributing specific architectural elements.
+
+### Pattern sources
+
+| Source Repository | Patterns Extracted |
+|-------------------|-------------------|
+| `~/projects/nix-workspace/typescript-nix-template` | Flake structure with `import-tree`, deferred module composition, category-based CI with content-addressed caching, om CLI instantiation, custom devShell helper scripts |
+| `~/projects/rust-workspace/rust-nix-template` | rust-flake integration (crane + rust-overlay), `rust-toolchain.toml` pattern, per-crate `crane.args` configuration, layered devShell composition |
+| `~/projects/rust-workspace/rustlings-workspace` | Cargo workspace organization with `resolver = "2"`, `workspace.dependencies` for DRY, `crates/` subdirectory structure, per-crate `crate.nix` files |
+| `~/projects/lakescope-workspace/datastar-go-nats-template-northstar` | Datastar SSE architecture, web component integration, single-binary asset embedding, dev/prod mode separation, three-stage build pipeline |
+
+### Template instantiation
+
+Ironstar uses omnix `om` CLI for parameterized instantiation.
+Example from `typescript-nix-template` README adapted for ironstar:
+
+```bash
+PROJECT_DIRECTORY=my-ironstar-app && \
+PARAMS=$(cat <<EOF
+{
+  "project-name": "$PROJECT_DIRECTORY",
+  "crate-name": "my_ironstar_app",
+  "github-ci": true,
+  "example-todo": true,
+  "nix-template": false
+}
+EOF
+) && \
+om init github:user/ironstar/main \
+  -o "$PROJECT_DIRECTORY" --non-interactive --params "$PARAMS"
+```
+
+The template machinery (omnix params, path-conditional includes) follows the pattern from `typescript-nix-template/modules/template.nix`.
+
+### Single-binary asset embedding
+
+Northstar embeds static assets into the Go binary using `//go:embed` + `hashfs` for content-hashed URLs.
+Ironstar replicates this pattern for Rust:
+
+| Go (northstar) | Rust (ironstar) |
+|----------------|-----------------|
+| `//go:embed static` | `rust-embed` crate with `#[derive(RustEmbed)]` |
+| `hashfs.NewFS()` content hashing | Rolldown's `[hash]` in output filenames + `manifest.json` |
+| Build tags (`!dev` / `dev`) | Conditional compilation (`#[cfg(debug_assertions)]`) |
+| `os.DirFS()` for dev | `tower-http::services::ServeDir` for dev |
+| `hashfs.FileServer()` for prod | Custom axum handler serving embedded assets |
+
+The build pipeline:
+
+```
+web-components/
+├── index.ts                    # Entry point
+└── styles/main.css             # Open Props imports
+        │
+        ▼ (Rolldown build)
+static/dist/
+├── bundle.[hash].js
+├── bundle.[hash].css
+└── .vite/manifest.json         # Maps entry → hashed filename
+        │
+        ▼ (cargo build --release)
+target/release/ironstar          # Single binary with embedded static/dist/
+```
+
+Dev mode serves directly from `static/` via `ServeDir` with no caching.
+Prod mode embeds `static/dist/` and serves with `Cache-Control: max-age=31536000, immutable`.
+
+### Workspace scaling path
+
+Ironstar starts as a single crate but the workspace structure supports future decomposition:
+
+```
+# Initial (single crate)
+ironstar/
+├── Cargo.toml
+└── src/
+    ├── main.rs
+    ├── domain/
+    ├── application/
+    ├── infrastructure/
+    └── presentation/
+
+# Future (multi-crate workspace)
+ironstar/
+├── Cargo.toml                    # [workspace] with members
+├── crates/
+│   ├── ironstar-domain/          # Algebraic types, pure logic
+│   ├── ironstar-infra/           # SQLite, redb, DuckDB
+│   └── ironstar-web/             # axum, hypertext, datastar
+└── ironstar/                     # Main binary, wires crates together
+```
+
+The `rustlings-workspace` patterns (workspace.dependencies, per-crate crate.nix) enable this migration without restructuring the Nix configuration.
+
 ## Design philosophy
 
 Effects explicit in type signatures, isolated at boundaries to preserve compositionality.
