@@ -86,6 +86,8 @@ processes:
     depends_on:
       backend:
         condition: process_healthy
+      frontend:
+        condition: process_started
     availability:
       restart: on_failure
       backoff_seconds: 2

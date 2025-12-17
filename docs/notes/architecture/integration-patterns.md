@@ -647,7 +647,7 @@ The styling system has three layers:
 
 1. **Open Props** (`~/projects/lakescope-workspace/open-props`): provides design tokens as CSS custom properties (size scales, color palettes, easing functions, shadows, etc.)
 
-2. **Open Props UI** (`~/projects/lakescope-workspace/open-props-ui`): provides semantic component classes (`.button`, `.card`, etc.) which are copied into the project's `web/resources/static/css/` directory
+2. **Open Props UI** (`~/projects/lakescope-workspace/open-props-ui`): provides semantic component classes (`.button`, `.card`, etc.) which are copied into the project's `web-components/styles/components/` directory
 
 3. **Theme layer** (`theme.css`): derives app-specific tokens from Open Props primitives, enabling theming via CSS custom properties without JavaScript
 
@@ -681,7 +681,7 @@ class StyledComponent extends HTMLElement {
 
     // Button with semantic class
     const button = document.createElement('button');
-    button.className = 'btn btn-primary';
+    button.className = 'button filled';
     button.textContent = 'Submit';
 
     container.appendChild(button);
@@ -701,7 +701,7 @@ fn component_container() -> impl Renderable {
     maud_move! {
         // Semantic class from Open Props UI
         div class="card" style="width: var(--size-content-3);" {
-            button class="btn btn-primary" { "Submit" }
+            button class="button filled" { "Submit" }
         }
     }
 }

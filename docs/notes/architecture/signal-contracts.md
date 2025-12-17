@@ -209,6 +209,9 @@ TS_RS_EXPORT_DIR = { value = "web-components/types", relative = true }
 
 ### Cargo.toml dependencies
 
+The `#[ts(export, export_to = "...")]` attribute syntax requires ts-rs version 10.0 or later.
+Earlier versions used a different export mechanism.
+
 ```toml
 [dependencies]
 ts-rs = { version = "11.1", features = ["serde-compat", "uuid-impl"] }
