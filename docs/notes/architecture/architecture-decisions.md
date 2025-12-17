@@ -992,6 +992,137 @@ fn icon_button(icon: &str, label: &str) -> impl Renderable {
 
 ---
 
+### 14. rust-embed — static assets as compile-time constants
+
+**Algebraic justification:**
+
+Static assets (CSS, JS, images) in a web application form a *constant set* at deployment time.
+The embedding decision determines when this constant is bound: build time (embedded) or runtime (filesystem).
+rust-embed implements the *Yoneda lemma* for assets: instead of representing "the asset at path X", it embeds the asset's content directly, eliminating the indirection.
+
+```rust
+// Embedding is a functor from Path -> Content
+// rust-embed lifts this to compile time
+#[derive(RustEmbed)]
+#[folder = "static/dist"]
+pub struct Assets;
+
+// Access is now a pure lookup, not an IO operation
+let content: Option<Cow<'static, [u8]>> = Assets::get("bundle.js");
+```
+
+**Dual-mode pattern:**
+
+Ironstar requires different asset serving behavior in development and production:
+
+| Mode | Behavior | Headers |
+|------|----------|---------|
+| Development | Serve from filesystem | `Cache-Control: no-store` |
+| Production | Serve from embedded binary | `Cache-Control: max-age=31536000, immutable` |
+
+rust-embed's behavior changes automatically based on build profile.
+In debug builds (`cargo build`), it reads from the filesystem; in release builds (`cargo build --release`), it embeds files at compile time.
+
+**Conditional compilation pattern:**
+
+```rust
+#[cfg(debug_assertions)]
+pub fn static_routes() -> Router {
+    // Dev: ServeDir for hot reload
+    Router::new()
+        .nest_service("/static", ServeDir::new("static/dist"))
+        .layer(SetResponseHeaderLayer::if_not_present(
+            CACHE_CONTROL,
+            HeaderValue::from_static("no-store"),
+        ))
+}
+
+#[cfg(not(debug_assertions))]
+pub fn static_routes() -> Router {
+    // Prod: Embedded assets with immutable caching
+    #[derive(RustEmbed)]
+    #[folder = "static/dist"]
+    struct Assets;
+
+    async fn serve_asset(Path(path): Path<String>) -> Result<impl IntoResponse, StatusCode> {
+        Assets::get(&path)
+            .map(|asset| {
+                let mime = mime_guess::from_path(&path).first_or_octet_stream();
+                ([(CONTENT_TYPE, mime.as_ref())], asset.data)
+            })
+            .ok_or(StatusCode::NOT_FOUND)
+    }
+
+    Router::new()
+        .route("/static/*path", get(serve_asset))
+        .layer(SetResponseHeaderLayer::overriding(
+            CACHE_CONTROL,
+            HeaderValue::from_static("public, max-age=31536000, immutable"),
+        ))
+}
+```
+
+**Content hashing strategy:**
+
+Unlike Go's `hashfs` crate which computes content hashes at runtime, ironstar delegates hashing to the build tool.
+Rolldown generates content-hashed filenames (`bundle.[hash].js`) and a manifest mapping logical names to hashed filenames:
+
+```json
+{
+  "index.ts": { "file": "bundle.a1b2c3d4.js", "css": ["bundle.x9y8z7w6.css"] }
+}
+```
+
+At runtime, templates resolve hashed URLs via manifest lookup:
+
+```rust
+pub struct AssetManifest {
+    entries: HashMap<String, ManifestEntry>,
+}
+
+impl AssetManifest {
+    pub fn load() -> Self {
+        #[cfg(debug_assertions)]
+        let content = std::fs::read_to_string("static/dist/manifest.json")
+            .unwrap_or_else(|_| "{}".to_string());
+
+        #[cfg(not(debug_assertions))]
+        let content = String::from_utf8_lossy(
+            &Assets::get("manifest.json").expect("manifest.json missing").data
+        ).into_owned();
+
+        serde_json::from_str(&content).unwrap_or_default()
+    }
+
+    pub fn get(&self, name: &str) -> Option<&str> {
+        self.entries.get(name).map(|e| e.file.as_str())
+    }
+}
+
+// In templates
+fn asset_url(manifest: &AssetManifest, name: &str) -> String {
+    format!("/static/{}", manifest.get(name).unwrap_or(name))
+}
+```
+
+**Why rust-embed over alternatives:**
+
+| Crate | Pros | Cons |
+|-------|------|------|
+| **rust-embed** | Auto dev/prod switching, derive macro, framework integration | No built-in hashing |
+| include_dir | Fine-grained control | No dev mode, high compile overhead (730MB RAM for 64MB files) |
+| static-files | Simple API | Outdated, no conditional compilation |
+
+rust-embed's automatic mode switching aligns with Rust's `debug_assertions` convention, eliminating feature flag complexity.
+
+**Effect boundary:**
+
+Embedding is a *compile-time effect*—the filesystem read occurs during `cargo build`, not at runtime.
+In production, asset access is pure lookup with no IO.
+In development, IO occurs but is transparent to application code.
+
+---
+
 ## Architecture summary
 
 ```
@@ -1050,6 +1181,7 @@ fn icon_button(icon: &str, label: &str) -> impl Renderable {
 | **process-compose** | Orchestration | Product spec | Process start |
 | **Rolldown** | JS/CSS bundler | Pure morphism (deterministic) | `rolldown build` |
 | **Lucide** | Icons | Constants (Yoneda embedding) | Build time |
+| **rust-embed** | Asset embedding | Compile-time constants | `cargo build --release` |
 
 This stack achieves the goal: **effects explicit in types, isolated at boundaries, with a pure functional core**.
 
@@ -1080,9 +1212,171 @@ When distributed deployment is needed, Zenoh provides Rust-native pub/sub with s
 
 ---
 
+## Module organization and scaling path
+
+Ironstar's module structure follows CQRS boundaries with clear separation between domain, application, infrastructure, and presentation layers.
+
+### Initial structure (single crate)
+
+```
+src/
+├── main.rs                      # Entry point, router composition
+├── lib.rs                       # Public API, re-exports
+├── config.rs                    # Environment configuration
+├── domain/                      # Algebraic types (pure)
+│   ├── mod.rs
+│   ├── aggregates/              # State machines (sum types)
+│   ├── events.rs                # Domain events (sum type)
+│   ├── commands.rs              # Command types (product types)
+│   └── signals.rs               # Datastar signal types (ts-rs derives)
+├── application/                 # Business logic (pure functions)
+│   ├── mod.rs
+│   ├── command_handlers.rs      # Command → Events
+│   ├── query_handlers.rs        # Query → ReadModel
+│   └── projections.rs           # Event → ReadModel updates
+├── infrastructure/              # Effect implementations
+│   ├── mod.rs
+│   ├── event_store.rs           # SQLite event persistence
+│   ├── session_store.rs         # redb session KV
+│   ├── analytics.rs             # DuckDB queries
+│   └── event_bus.rs             # tokio::broadcast coordination
+├── presentation/                # HTTP + HTML (effects at boundary)
+│   ├── mod.rs
+│   ├── routes.rs                # Router composition
+│   ├── handlers/                # Axum handlers
+│   │   ├── sse.rs               # SSE feed handlers
+│   │   └── commands.rs          # POST command handlers
+│   ├── templates/               # hypertext components
+│   │   ├── layouts.rs           # Base layouts
+│   │   ├── pages/               # Full page templates
+│   │   └── components/          # Reusable fragments
+│   └── assets.rs                # Static asset serving (rust-embed)
+└── features/                    # Optional: feature-based grouping
+    └── todos/                   # Self-contained feature module
+        ├── mod.rs
+        ├── routes.rs
+        ├── handlers.rs
+        └── templates.rs
+```
+
+### Layer responsibilities
+
+| Layer | Purity | Dependencies | Responsibility |
+|-------|--------|--------------|----------------|
+| **Domain** | Pure | None | Types, validation, business rules |
+| **Application** | Pure | Domain | Command/query handling, projections |
+| **Infrastructure** | Effectful | Domain, Application | Persistence, external services |
+| **Presentation** | Effectful | All | HTTP, HTML, routing |
+
+### Feature module pattern
+
+For larger applications, self-contained feature modules group related functionality:
+
+```rust
+// src/features/todos/mod.rs
+pub mod routes;
+pub mod handlers;
+pub mod templates;
+
+// src/features/todos/routes.rs
+use axum::{routing::{get, post}, Router};
+use super::handlers;
+
+pub fn routes() -> Router<AppState> {
+    Router::new()
+        .route("/", get(handlers::index_page))
+        .route("/api/todos", get(handlers::todos_sse))
+        .route("/api/todos", post(handlers::add_todo))
+        .route("/api/todos/:id/toggle", post(handlers::toggle_todo))
+}
+
+// src/main.rs - Compose feature routers
+let app = Router::new()
+    .merge(features::todos::routes())
+    .merge(features::counter::routes())
+    .with_state(app_state);
+```
+
+This pattern mirrors northstar's `features/*/routes.go` organization.
+
+### Workspace scaling path
+
+When the codebase grows, extract layers into separate crates:
+
+```
+ironstar/
+├── Cargo.toml                    # [workspace] with members
+├── crates/
+│   ├── ironstar-domain/          # Pure types, no dependencies
+│   │   └── Cargo.toml
+│   ├── ironstar-app/             # Business logic
+│   │   └── Cargo.toml            # depends on: ironstar-domain
+│   ├── ironstar-infra/           # Persistence, external services
+│   │   └── Cargo.toml            # depends on: ironstar-domain, ironstar-app
+│   └── ironstar-web/             # HTTP layer
+│       └── Cargo.toml            # depends on: all above
+└── ironstar/                     # Binary crate, wires everything
+    └── Cargo.toml                # depends on: ironstar-web
+```
+
+Each crate has a dedicated `crate.nix` file for Nix integration (per `rustlings-workspace` pattern).
+
+### AppState composition
+
+Dependency injection uses axum's `State` extractor with a shared state struct:
+
+```rust
+#[derive(Clone)]
+pub struct AppState {
+    pub event_store: Arc<SqliteEventStore>,
+    pub session_store: Arc<RedbSessionStore>,
+    pub analytics: Arc<DuckDbAnalytics>,
+    pub event_bus: broadcast::Sender<StoredEvent>,
+    pub projections: Arc<Projections>,
+    #[cfg(debug_assertions)]
+    pub reload_tx: broadcast::Sender<()>,
+}
+
+impl AppState {
+    pub async fn new(config: &Config) -> Result<Self, Error> {
+        let event_store = SqliteEventStore::new(&config.database_url).await?;
+        let session_store = RedbSessionStore::new(&config.session_path)?;
+        let analytics = DuckDbAnalytics::new(&config.analytics_path)?;
+        let (event_bus, _) = broadcast::channel(256);
+
+        // Initialize projections by replaying events
+        let projections = Projections::init(&event_store, event_bus.clone()).await?;
+
+        Ok(Self {
+            event_store: Arc::new(event_store),
+            session_store: Arc::new(session_store),
+            analytics: Arc::new(analytics),
+            event_bus,
+            projections: Arc::new(projections),
+            #[cfg(debug_assertions)]
+            reload_tx: broadcast::channel(16).0,
+        })
+    }
+}
+```
+
+Handlers extract what they need:
+
+```rust
+async fn add_todo(
+    State(state): State<AppState>,
+    ReadSignals(signals): ReadSignals<TodoSignals>,
+) -> impl IntoResponse {
+    // Access state.event_store, state.event_bus, etc.
+}
+```
+
+---
+
 ## Related documentation
 
 - Design principles: `design-principles.md`
+- Development workflow: `development-workflow.md`
 - Event sourcing patterns: `event-sourcing-sse-pipeline.md`
 - Third-party integration: `integration-patterns.md`
 - Signal contracts: `signal-contracts.md`
