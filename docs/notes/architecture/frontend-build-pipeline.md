@@ -951,7 +951,7 @@ use crate::presentation::icons;
 
 fn button_with_icon() -> impl Renderable {
     maud! {
-        button class="btn" {
+        button class="button" {
             (Raw::dangerously_create(icons::CAMERA))
             "Upload"
         }
@@ -998,6 +998,80 @@ Understanding the architectural shift from Tailwind v4 + DaisyUI to Open Props +
 - No framework lock-in
 
 Ironstar chooses Open Props because the project values CSS ownership, modern features, and build simplicity over framework convenience and wide browser support.
+
+---
+
+## Troubleshooting
+
+Common frontend build and development issues with diagnostic steps.
+
+### Rolldown build failures
+
+**Missing dependencies**:
+- Run `pnpm install` in `web-components/` directory
+- Verify `package.json` integrity and lock file consistency
+- Check `node_modules/` exists and is not corrupted
+
+**TypeScript errors**:
+- Run `pnpm typecheck` to see detailed type errors
+- Check `web-components/tsconfig.json` configuration
+- Verify generated types in `web-components/types/` are up-to-date (run `cargo test --lib`)
+
+**Invalid PostCSS syntax**:
+- Check `postcss.config.js` for correct plugin configuration
+- Verify all `@import` statements reference valid paths
+- Ensure `postcss-preset-env` is installed for modern CSS features
+
+### Open Props token issues
+
+**Tokens not resolving**:
+- Verify `@import "open-props/style"` is present in `web-components/styles/main.css`
+- Check `open-props` is installed via `pnpm install`
+- Ensure PostCSS processes imports correctly (check build output)
+
+**PostCSS not processing**:
+- Verify `postcss-preset-env` plugin is configured in `postcss.config.js`
+- Check that `features` option includes `oklab-function`, `light-dark-function`, and `custom-media-queries`
+- Run build with `--verbose` flag to see PostCSS processing steps
+
+**OKLch colors not working**:
+- Browser version requirements: Chrome 111+, Firefox 119+, Safari 17+ (all from 2023)
+- Check browser DevTools console for CSS parsing errors
+- Verify `postcss-preset-env` includes `oklab-function: true` feature
+
+### Hot reload not working
+
+**Backend not running**:
+- Check `process-compose logs backend` for errors
+- Verify backend is listening on expected port
+- Ensure `cargo watch` is installed and working
+
+**SSE connection issues**:
+- Verify `/hotreload` endpoint responds (check with `curl http://localhost:PORT/hotreload`)
+- Check browser DevTools Network tab for SSE connection status
+- Ensure no firewall or proxy blocking SSE connections
+
+**Static assets stale**:
+- Check that `static/dist/` directory is being watched by Rolldown
+- Verify `pnpm dev` is running and outputting rebuild messages
+- Clear browser cache or hard refresh (Cmd+Shift+R / Ctrl+Shift+F5)
+
+### TypeScript type generation issues
+
+**Types not updating**:
+- Run `cargo test --lib` manually to trigger ts-rs generation
+- Check that tests pass (type generation only happens on successful test runs)
+- Verify `TS_RS_EXPORT_DIR=web-components/types` environment variable is set
+
+**Path issues**:
+- Check `TS_RS_EXPORT_DIR` environment variable in shell or process-compose config
+- Verify path is relative to workspace root or absolute path
+- Ensure path separators match OS conventions
+
+**Types directory not created**:
+- Ensure `web-components/types/` directory exists before running type generation
+- Create manually if needed: `mkdir -p web-components/types`
+- Check file permissions on `web-components/` directory
 
 ---
 

@@ -362,6 +362,230 @@ nix run .#dev
 
 ---
 
+## Database schema management
+
+Ironstar uses SQLite for the event store with a simplified schema management workflow optimized for single-developer environments.
+
+### Schema location
+
+Database schema files live in `migrations/schema.sql` at the repository root:
+
+```sql
+-- migrations/schema.sql
+CREATE TABLE IF NOT EXISTS events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    aggregate_type TEXT NOT NULL,
+    aggregate_id TEXT NOT NULL,
+    sequence INTEGER NOT NULL,
+    event_type TEXT NOT NULL,
+    payload JSON NOT NULL,
+    metadata JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(aggregate_type, aggregate_id, sequence)
+);
+
+CREATE INDEX IF NOT EXISTS idx_events_aggregate
+    ON events(aggregate_type, aggregate_id, sequence);
+```
+
+### Schema initialization
+
+The `db-init` process in process-compose.yaml applies the schema on startup:
+
+```yaml
+db-init:
+  command: |
+    sqlite3 dev.db < migrations/schema.sql
+  disable_on_success: true
+```
+
+This ensures the database exists and has the correct schema before other processes start.
+
+### Development workflow
+
+For schema changes during development:
+
+1. Edit `migrations/schema.sql` with new DDL
+2. Restart process-compose (or run `db-init` manually):
+
+```bash
+sqlite3 dev.db < migrations/schema.sql
+```
+
+The `IF NOT EXISTS` and `IF NOT EXISTS` clauses make schema application idempotent.
+
+### Migration tooling consideration
+
+This simplified approach works well for single-developer workflows where the database can be recreated from events.
+For team environments or production systems requiring schema versioning, consider adding sqlx migrations:
+
+```bash
+# Future migration workflow (not implemented yet)
+sqlx migrate add create_events_table
+sqlx migrate run
+```
+
+The current pattern prioritizes development velocity over migration history.
+Event sourcing provides data durability independent of schema versions.
+
+---
+
+## Code quality commands
+
+Ironstar uses standard Rust and TypeScript tooling for formatting, linting, and type checking.
+
+### justfile targets
+
+Add these commands to `justfile`:
+
+```justfile
+# Format code
+fmt:
+    cargo fmt
+    cd web-components && pnpm format
+
+# Lint
+lint:
+    cargo clippy -- -D warnings
+    cd web-components && pnpm lint
+
+# Type check (no compilation)
+check:
+    cargo check
+    cd web-components && pnpm typecheck
+
+# All quality checks
+ci: fmt lint check test
+```
+
+### Pre-commit workflow
+
+Run before committing:
+
+```bash
+just fmt    # Auto-format Rust and TypeScript
+just lint   # Check for common issues
+just check  # Verify types without building
+```
+
+### CI integration
+
+The `ci` target runs all checks in sequence, suitable for pre-push hooks or GitHub Actions:
+
+```bash
+just ci
+```
+
+Failures in any step will halt the pipeline.
+
+### Tool configuration
+
+Rust tools use workspace defaults:
+
+- `cargo fmt`: Follows `rustfmt.toml` (if present)
+- `cargo clippy`: Uses pedantic lints defined in `Cargo.toml`:
+
+```toml
+[workspace.lints.clippy]
+pedantic = "warn"
+```
+
+TypeScript tools use `web-components/` configuration:
+
+- `pnpm format`: Runs Prettier via `package.json` script
+- `pnpm lint`: Runs ESLint with TypeScript rules
+- `pnpm typecheck`: Invokes `tsc --noEmit`
+
+---
+
+## Environment configuration
+
+Ironstar uses environment variables for development configuration.
+Production deployments use Nix-managed secrets (see `~/.claude/commands/preferences/secrets.md`).
+
+### Development environment file
+
+Create `.env.development` at the repository root:
+
+```bash
+# .env.development
+DATABASE_URL=dev.db
+LOG_LEVEL=debug
+SERVER_PORT=3000
+RELOAD_ENABLED=true
+
+# Asset paths (development only)
+STATIC_DIR=static/dist
+FRONTEND_DEV_URL=http://localhost:5173
+```
+
+### Loading environment variables
+
+process-compose.yaml loads the environment file:
+
+```yaml
+environment:
+  - .env.development
+
+processes:
+  backend:
+    command: cargo watch -x run
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      LOG_LEVEL: ${LOG_LEVEL}
+```
+
+Variables are interpolated at process startup.
+
+### Git ignore pattern
+
+Never commit secrets to version control.
+Ensure `.gitignore` contains:
+
+```gitignore
+# Environment files
+.env
+.env.development
+.env.production
+*.env.local
+
+# Development database
+dev.db
+dev.db-shm
+dev.db-wal
+```
+
+### Environment variable precedence
+
+Variables are resolved in this order (highest precedence first):
+
+1. Process-specific `environment` map in process-compose.yaml
+2. Variables from loaded `.env.development` file
+3. Shell environment variables
+
+This allows per-process overrides while sharing common configuration.
+
+### Production secrets
+
+Production deployments should never use `.env` files.
+Use Nix-managed secrets with sops-nix or similar:
+
+```nix
+# flake.nix (production example, not implemented)
+{
+  services.ironstar = {
+    enable = true;
+    secrets = {
+      DATABASE_URL = config.sops.secrets.database-url.path;
+    };
+  };
+}
+```
+
+See `~/.claude/commands/preferences/secrets.md` for detailed secrets management patterns.
+
+---
+
 ## Related documentation
 
 - Process orchestration details: `process-compose.yaml` (repository root)
