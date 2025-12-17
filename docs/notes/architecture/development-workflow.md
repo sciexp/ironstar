@@ -338,8 +338,16 @@ The flake exposes process-compose as a runnable package:
 # In perSystem
 process-compose."dev" = {
   settings.processes = {
-    # Process definitions imported from process-compose.yaml
-    # or defined inline using lib.getExe for reproducible paths
+    backend = {
+      command = lib.getExe' pkgs.cargo-watch "cargo-watch" + " -x run";
+      depends_on."db-init".condition = "process_completed_successfully";
+      readiness_probe.http_get = {
+        host = "localhost";
+        port = 3000;
+        path = "/health";
+      };
+    };
+    # ... other processes
   };
 };
 
