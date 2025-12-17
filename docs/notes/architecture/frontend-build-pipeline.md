@@ -952,7 +952,7 @@ use crate::presentation::icons;
 fn button_with_icon() -> impl Renderable {
     maud! {
         button class="btn" {
-            (PreEscaped(icons::CAMERA))
+            (Raw::dangerously_create(icons::CAMERA))
             "Upload"
         }
     }
