@@ -1,0 +1,95 @@
+# Ironstar development process orchestration
+#
+# Usage:
+#   Nix (preferred):  nix run .#dev
+#   Standalone:       process-compose up
+#
+# Processes start in dependency order. The backend waits for database
+# initialization and frontend build to complete before starting.
+
+version: "0.5"
+
+log_level: info
+log_length: 1000
+
+environment:
+  RUST_BACKTRACE: "1"
+  RUST_LOG: "debug,sqlx=warn,tower_http=debug"
+
+processes:
+  # Database initialization (runs once)
+  db-init:
+    command: |
+      mkdir -p data
+      if [ ! -f data/ironstar.db ]; then
+        echo "Creating new database..."
+        sqlite3 data/ironstar.db < migrations/schema.sql
+      else
+        echo "Database exists, skipping initialization"
+      fi
+    availability:
+      restart: "no"
+
+  # Frontend asset watcher (Rolldown)
+  frontend:
+    working_dir: web-components
+    command: pnpm dev
+    availability:
+      restart: on_failure
+      backoff_seconds: 2
+
+  # TypeScript type generation from Rust signal types (ts-rs)
+  typegen:
+    command: |
+      cargo watch -w src/domain/signals.rs -s 'cargo test --lib export_bindings'
+    availability:
+      restart: on_failure
+      backoff_seconds: 5
+    environment:
+      TS_RS_EXPORT_DIR: web-components/types
+
+  # Main application server
+  backend:
+    command: cargo watch -x run
+    depends_on:
+      db-init:
+        condition: process_completed_successfully
+      frontend:
+        condition: process_started
+    readiness_probe:
+      http_get:
+        host: localhost
+        port: 3000
+        path: /health
+      initial_delay_seconds: 5
+      period_seconds: 3
+      timeout_seconds: 2
+      failure_threshold: 10
+    environment:
+      DATABASE_URL: "sqlite:./data/ironstar.db"
+      SESSION_SECRET: "dev-session-secret-change-in-prod"
+
+  # Hot reload coordinator (SSE endpoint for browser refresh)
+  # Browser connects to /dev/reload, this process signals when rebuild completes
+  hotreload:
+    command: |
+      # Watch for cargo build completion and signal reload
+      cargo watch -w src -w static/dist -s 'curl -s http://localhost:3000/dev/trigger-reload || true'
+    depends_on:
+      backend:
+        condition: process_healthy
+    availability:
+      restart: on_failure
+      backoff_seconds: 2
+
+  # Integration test (creates flake check when using process-compose-flake)
+  test:
+    command: |
+      echo "Running integration tests..."
+      curl -sf http://localhost:3000/health || exit 1
+      echo "Health check passed"
+    depends_on:
+      backend:
+        condition: process_healthy
+    availability:
+      restart: "no"
