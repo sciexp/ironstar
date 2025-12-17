@@ -267,6 +267,211 @@ Open Props provides comprehensive design tokens across multiple categories:
 
 ---
 
+## CSS cascade layers organization
+
+CSS cascade layers (`@layer`) provide explicit control over style precedence independent of selector specificity or source order.
+This is particularly important when integrating Open Props UI components with custom application styles.
+
+### What are CSS cascade layers
+
+The `@layer` at-rule establishes a layered cascade where later layers override earlier layers, regardless of specificity.
+This eliminates specificity wars and makes style precedence predictable and declarative.
+
+```css
+/* Layer declaration - establishes order */
+@layer base, components, utilities;
+
+/* Styles in 'utilities' will override 'components',
+   which will override 'base', regardless of selector specificity */
+
+@layer base {
+  h1 { font-size: 2rem; }
+}
+
+@layer utilities {
+  .text-small { font-size: 1rem !important; }  /* Overrides h1.text-small */
+}
+```
+
+Without layers, the `.text-small` class would need higher specificity or `!important` to override the `h1` selector.
+With layers, the layer order determines precedence.
+
+### Open Props UI layer structure
+
+Open Props UI uses a specific layer structure for organizing styles.
+Reference implementation at `~/projects/lakescope-workspace/open-props-ui` uses:
+
+```css
+@layer openprops, normalize, theme, components.root, components.extended, utils;
+```
+
+**Layer precedence** (later layers override earlier ones):
+- `openprops`: Base design tokens and custom properties
+- `normalize`: CSS reset and normalization
+- `theme`: Theme-specific token overrides
+- `components.root`: Core component styles
+- `components.extended`: Extended component variants
+- `utils`: Utility classes (highest precedence)
+
+This means `utils` overrides `components.extended`, which overrides `components.root`, and so on.
+
+### Why this matters for Ironstar
+
+Understanding the layer structure prevents common pitfalls when customizing components:
+
+**Without layer awareness**:
+```css
+/* This might not work as expected */
+.button {
+  background: var(--custom-color);  /* May be overridden by component layer */
+}
+```
+
+**With layer awareness**:
+```css
+/* Place in higher-precedence layer to ensure override */
+@layer app {
+  .button {
+    background: var(--custom-color);  /* Guaranteed to override */
+  }
+}
+```
+
+Layers eliminate the need for specificity hacks like:
+- Nested selectors (`.page .button`)
+- ID selectors (`#app .button`)
+- `!important` flags
+- Inline styles
+
+### Recommended Ironstar layer structure
+
+```css
+/* web-components/styles/main.css */
+
+/* Declare layers upfront - establishes precedence */
+@layer openprops, normalize, theme, components, utilities, app;
+
+/* Import Open Props design tokens into dedicated layer */
+@import "open-props/style" layer(openprops);
+
+/* Normalization layer (if needed) */
+@layer normalize {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    line-height: 1.5;
+  }
+}
+
+/* Theme layer - application-specific token overrides */
+@layer theme {
+  :root {
+    --primary: var(--blue-7);
+    --surface-default: light-dark(var(--gray-0), var(--gray-9));
+    /* ... theme tokens */
+  }
+}
+
+/* Components layer - Open Props UI component styles */
+@layer components {
+  @import "./components/button.css";
+  @import "./components/card.css";
+  @import "./components/dialog.css";
+  /* Each component file can define sublayers if needed */
+}
+
+/* Utilities layer - single-purpose utility classes */
+@layer utilities {
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+
+  .truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* App layer - application-specific overrides (highest precedence) */
+@layer app {
+  /* Page-specific customizations */
+  .hero-section .button {
+    padding: var(--size-3) var(--size-6);
+  }
+}
+```
+
+### Component-specific layer usage
+
+Individual component files can use layers internally:
+
+```css
+/* web-components/styles/components/button.css */
+@layer components {
+  button,
+  .button {
+    /* Base button styles using Open Props tokens */
+    padding: var(--size-2) var(--size-4);
+    border-radius: var(--radius-default);
+    background-color: var(--primary);
+    color: light-dark(var(--gray-0), var(--gray-9));
+
+    /* Variants can be in same layer - specificity still applies within layer */
+    &[data-variant="secondary"] {
+      background-color: var(--surface-elevated);
+      color: var(--text-primary);
+      border: 1px solid var(--border-default);
+    }
+
+    &[data-size="large"] {
+      padding: var(--size-3) var(--size-6);
+      font-size: var(--font-size-2);
+    }
+  }
+}
+```
+
+### Unlayered styles
+
+Styles not placed in any `@layer` have the highest precedence of all, even higher than the last declared layer.
+This is intentional - it allows emergency overrides and inline customizations.
+
+```css
+/* These styles override ALL layers, including @layer app */
+.emergency-override {
+  display: none !important;
+}
+```
+
+For maintainability, avoid unlayered styles in production code.
+All styles should be in explicit layers.
+
+### Layers are optional but recommended
+
+CSS layers are **optional** for ironstar - the stack will work without them.
+However, they provide significant benefits:
+
+**Benefits of using layers**:
+- Predictable cascade behavior independent of specificity
+- Easier component customization without specificity hacks
+- Clear separation between base styles, components, and overrides
+- Scalable architecture as project grows
+
+**When to skip layers**:
+- Very simple projects with minimal CSS
+- Need to support older browsers (pre-2022)
+- Team unfamiliar with cascade layers
+
+For ironstar, layers are recommended as part of the modern CSS architecture, aligning with the project's preference for modern features over wide compatibility.
+
+---
+
 ## Development vs production
 
 ### Development mode
