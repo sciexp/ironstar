@@ -2,11 +2,12 @@
 set -euo pipefail
 
 ROLE="${1:-dev}"
+METHOD="${2:-ssh}"  # 'ssh' or 'age'
 
-echo "🔄 Quick rotation workflow for $ROLE key"
+echo "🔄 Quick rotation workflow for $ROLE key (method: $METHOD)"
 echo
 echo "Step 1/3: Bootstrap new key..."
-scripts/sops-bootstrap.sh "$ROLE"
+scripts/sops-bootstrap.sh "$ROLE" "$METHOD"
 echo
 read -p "Install/upload the new key, then press Enter to continue..." _
 echo
