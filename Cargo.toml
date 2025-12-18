@@ -1,0 +1,43 @@
+[workspace]
+resolver = "2"
+members = ["crates/ironstar"]
+
+[workspace.dependencies]
+# Web framework and async runtime
+axum = { version = "0.8", features = ["default"] }
+tokio = { version = "1.40", features = ["full"] }
+hypertext = { version = "0.6" }
+
+# Datastar SSE integration
+datastar = { version = "0.3", features = ["axum"] }
+
+# Database and persistence
+sqlx = { version = "0.9", features = ["runtime-tokio", "sqlite", "json"] }
+redb = { version = "2.4" }
+duckdb = { version = "1.2", features = ["bundled"] }
+
+# TypeScript type generation
+ts-rs = { version = "11.1", features = ["serde-compat", "uuid-impl"] }
+
+# Asset embedding
+rust-embed = { version = "8", features = ["include-exclude"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0" }
+
+# Error handling
+thiserror = { version = "2.0" }
+
+# Logging/tracing
+tracing = { version = "0.1" }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Common utilities
+uuid = { version = "1.0", features = ["serde", "v4"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+[profile.release]
+strip = true
+opt-level = "z"
+lto = true
