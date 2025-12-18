@@ -18,10 +18,11 @@ fi
 # Check if this is rotation (key already exists) or bootstrap (placeholder)
 CURRENT_KEY=$(grep "^  - &${ROLE} " .sops.yaml | awk '{print $3}')
 
-# Placeholder keys indicate this is a fresh bootstrap
-# gitleaks:allow - age public keys used as placeholders
-if [ "$CURRENT_KEY" = "age1dn8w7y4t4h23fmeenr3dghfz5qh53jcjq9qfv26km3mnv8l44g0sghptu3" ] || \
-   [ "$CURRENT_KEY" = "age1m9m8h5vqr7dqlmvnzcwshmm4uk8umcllazum6eaulkdp3qc88ugs22j3p8" ]; then
+# Placeholder keys indicate this is a fresh bootstrap (not real secrets)
+PLACEHOLDER_DEV="age1dn8w7y4t4h23fmeenr3dghfz5qh53jcjq9qfv26km3mnv8l44g0sghptu3" # gitleaks:allow
+PLACEHOLDER_CI="age1m9m8h5vqr7dqlmvnzcwshmm4uk8umcllazum6eaulkdp3qc88ugs22j3p8" # gitleaks:allow
+
+if [ "$CURRENT_KEY" = "$PLACEHOLDER_DEV" ] || [ "$CURRENT_KEY" = "$PLACEHOLDER_CI" ]; then
   IS_ROTATION=false
   echo "🆕 Placeholder key detected - this is BOOTSTRAP"
 else
