@@ -621,7 +621,7 @@ TASK_OMNIX_TEMPLATE=$(bd create "Create template parameters and conditional incl
     -p 2 --parent "$EPIC_DOCS" 2>&1 | extract_id)
 bd update "$TASK_OMNIX_TEMPLATE" --description "Implement nix/modules/template.nix defining omnix template parameters: project-name, crate-name, github-ci (conditional .github/workflows), example-todo (conditional examples/), nix-template (conditional nix/modules/template.nix). Follow typescript-nix-template pattern.
 Local refs: ~/projects/nix-workspace/typescript-nix-template/modules/template.nix"
-bd dep add "$TASK_OMNIX_TEMPLATE" "$TASK_NIX_MODULES"
+bd dep add "$TASK_OMNIX_TEMPLATE" "$TASK_RUST_FLAKE"
 
 TASK_OMNIX_TESTS=$(bd create "Define om CLI instantiation tests and metadata" \
     -p 3 --parent "$EPIC_DOCS" 2>&1 | extract_id)
