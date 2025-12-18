@@ -2,8 +2,10 @@
 
 Ironstar is a Rust + Datastar template for building reactive, event-sourced web applications with hypermedia-driven architecture.
 To a first approximation, it is the Rust equivalent of [northstar](https://github.com/zangster300/northstar), whose source code we have a local copy of (see "Datastar ecosystem" table below), adapted for Rust's type system, functional programming idioms, and broader integration of ecosystem components to improve the ability of the template to illustrate how to scale applications.
-For now we will not build a documentation site and keep documentation work in the docs/ subtree. Any documents that are not eventually intended to be
-retained in production quality docs for users or developers should go in an aptly named subfolder within the docs/notes/ subtree.
+Documentation follows the typescript-nix-template pattern with Astro Starlight for the production documentation site.
+The `docs/` subtree uses symlinks to make Starlight content accessible from the repository root while keeping the actual content in `packages/docs/src/content/docs/`.
+Working notes and ephemeral planning documents go in `docs/notes/` (a real directory, not a symlink).
+Production documentation that will be published goes in `packages/docs/src/content/docs/` and is accessible via symlinks like `docs/guides/` → `../packages/docs/src/content/docs/guides/`.
 
 ## Project status
 
