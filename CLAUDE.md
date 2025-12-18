@@ -280,6 +280,7 @@ See their TodoMVC implementations for SSE formatting and signal parsing patterns
 
 | Library | Local Path | Description |
 |---------|------------|-------------|
+| echarts | `~/projects/lakescope-workspace/echarts` | Apache ECharts (see northstar ds-echarts Lit component for reference) |
 | vega-embed | `~/projects/lakescope-workspace/vega-embed` | Vega-Lite chart embedding (wrap in web component) |
 | mosaic | `~/projects/lakescope-workspace/mosaic` | Grammar of graphics for large datasets (candidate for integration) |
 
