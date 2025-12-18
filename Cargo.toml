@@ -2,6 +2,11 @@
 resolver = "2"
 members = ["crates/ironstar"]
 
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
 [workspace.dependencies]
 # Web framework and async runtime
 axum = { version = "0.8", features = ["default"] }
