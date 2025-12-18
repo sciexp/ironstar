@@ -23,6 +23,11 @@
     git-hooks.url = "github:cachix/git-hooks.nix";
     git-hooks.flake = false;
 
+    rust-flake = {
+      url = "github:juspay/rust-flake";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # playwright browsers pinned to match package.json (@playwright/test version)
     # sync this when upgrading @playwright/test in packages/docs/package.json
     playwright-web-flake.url = "github:pietdevries94/playwright-web-flake/1.57.0";
