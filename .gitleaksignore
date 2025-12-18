@@ -1,0 +1,8 @@
+# .gitleaksignore - Fingerprints of false positives safe to ignore
+# Format: <commit>:<file>:<rule>:<line>
+# These are age public keys used as placeholders in scripts (safe to commit)
+
+# Age public key placeholders in sops-bootstrap.sh (commit cad205a5)
+# These are template placeholder keys, not real secrets
+cad205a5ea2504541bd1e973a2a947fc989aedb8:scripts/sops-bootstrap.sh:generic-api-key:23
+cad205a5ea2504541bd1e973a2a947fc989aedb8:scripts/sops-bootstrap.sh:generic-api-key:24
