@@ -6,7 +6,7 @@
     args = {
       buildInputs =
         lib.optionals pkgs.stdenv.isDarwin (
-          with pkgs.darwin.apple_sdk.frameworks;
+          with pkgs.apple-sdk.frameworks;
           [
             IOKit
             Security
@@ -22,7 +22,7 @@
         pkgs.pkg-config
       ]
       ++ lib.optionals pkgs.stdenv.isDarwin [
-        pkgs.darwin.apple_sdk.frameworks.Cocoa
+        pkgs.apple-sdk.frameworks.Cocoa
       ];
     };
   };
