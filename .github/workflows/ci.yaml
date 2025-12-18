@@ -1,0 +1,613 @@
+name: "CI/CD"
+
+on:
+  workflow_dispatch:
+    inputs:
+      job:
+        description: "Specific job to run (leave empty for all)"
+        type: string
+        required: false
+      nix_installer:
+        description: "Nix installer strategy"
+        type: choice
+        options:
+          - full
+          - quick
+        default: quick
+        required: false
+      debug_enabled:
+        description: "Run the workflow with tmate.io debugging enabled"
+        required: true
+        type: boolean
+        default: false
+      deploy_enabled:
+        description: "Deploy to Cloudflare Workers"
+        required: false
+        type: boolean
+        default: false
+      force_run:
+        description: "Force execution even if already successful for this commit"
+        required: false
+        type: boolean
+        default: false
+  workflow_call:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths-ignore:
+      - "*.md"
+  push:
+    branches:
+      - "main"
+    paths-ignore:
+      - "*.md"
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+  deployments: write
+  actions: write
+  id-token: write
+
+jobs:
+  # job 1: secrets-scan
+  # scans repository for hardcoded secrets using gitleaks
+  # Security critical - runs for all commits
+  secrets-scan:
+    runs-on: ubuntu-latest
+    if: |
+      !cancelled() &&
+      (github.event_name != 'workflow_dispatch' ||
+       inputs.job == '' ||
+       inputs.job == 'secrets-scan')
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+        with:
+          fetch-depth: 0  # Required for git diff in composite action and comprehensive secret scanning
+
+      - name: Check execution cache
+        id: cache
+        uses: ./.github/actions/cached-ci-job
+        with:
+          force-run: ${{ inputs.force_run || 'false' }}
+          # No hash-sources - security scanning always relevant when code changes
+          # Cache provides value for workflow retries (don't re-scan unchanged commits)
+          # Commit SHA is content-addressed: same SHA = same content = same security posture
+
+      - name: Setup Nix
+        if: steps.cache.outputs.should-run == 'true'
+        uses: ./.github/actions/setup-nix
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+        with:
+          installer: ${{ inputs.nix_installer || 'quick' }}
+          system: x86_64-linux
+          enable-cachix: true
+
+      - name: Scan for secrets with gitleaks
+        if: steps.cache.outputs.should-run == 'true'
+        run: nix develop -c just scan-secrets
+
+  # job 2: set-variables
+  # determines deployment settings and variables based on event type
+  # Always runs - needed for production job routing and provides outputs
+  set-variables:
+    needs: [secrets-scan]
+    runs-on: ubuntu-latest
+    if: |
+      !cancelled() &&
+      (github.event_name != 'workflow_dispatch' ||
+       inputs.job == '' ||
+       inputs.job == 'set-variables')
+    outputs:
+      debug: ${{ steps.set-variables.outputs.debug }}
+      skip_ci: ${{ steps.set-variables.outputs.skip_ci }}
+      deploy_enabled: ${{ steps.set-variables.outputs.deploy_enabled }}
+      deploy_environment: ${{ steps.set-variables.outputs.deploy_environment }}
+      checkout_ref: ${{ steps.set-variables.outputs.checkout_ref }}
+      checkout_rev: ${{ steps.set-variables.outputs.checkout_rev }}
+      packages: ${{ steps.discover-packages.outputs.packages }}
+
+    steps:
+      - name: Set action variables
+        id: set-variables
+        run: |
+          DEBUG="false"
+          SKIP_CI="false"
+          DEPLOY_ENABLED="false"
+          DEPLOY_ENVIRONMENT="preview"
+
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            DEBUG="${{ inputs.debug_enabled }}"
+            DEPLOY_ENABLED="${{ inputs.deploy_enabled }}"
+          fi
+
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            if ${{ contains(github.event.pull_request.labels.*.name, 'skip-ci') }}; then
+              SKIP_CI="true"
+            fi
+            if ${{ contains(github.event.pull_request.labels.*.name, 'actions-debug') }}; then
+              DEBUG="true"
+            fi
+            if ${{ contains(github.event.pull_request.labels.*.name, 'docs-preview') }}; then
+              DEPLOY_ENABLED="true"
+              DEPLOY_ENVIRONMENT="preview"
+            fi
+            CHECKOUT_REF="${{ github.event.pull_request.head.ref }}"
+            CHECKOUT_REV="${{ github.event.pull_request.head.sha }}"
+          else
+            CHECKOUT_REF="${{ github.ref_name }}"
+            CHECKOUT_REV="${{ github.sha }}"
+          fi
+
+          # Enable deployment on push to main (production)
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
+            DEPLOY_ENABLED="true"
+            DEPLOY_ENVIRONMENT="production"
+          fi
+
+          echo "DEBUG=$DEBUG"
+          echo "SKIP_CI=$SKIP_CI"
+          echo "DEPLOY_ENABLED=$DEPLOY_ENABLED"
+          echo "DEPLOY_ENVIRONMENT=$DEPLOY_ENVIRONMENT"
+          echo "CHECKOUT_REF=$CHECKOUT_REF"
+          echo "CHECKOUT_REV=$CHECKOUT_REV"
+
+          echo "DEBUG=$DEBUG" >> $GITHUB_OUTPUT
+          echo "SKIP_CI=$SKIP_CI" >> $GITHUB_OUTPUT
+          echo "DEPLOY_ENABLED=$DEPLOY_ENABLED" >> $GITHUB_OUTPUT
+          echo "DEPLOY_ENVIRONMENT=$DEPLOY_ENVIRONMENT" >> $GITHUB_OUTPUT
+          echo "CHECKOUT_REF=$CHECKOUT_REF" >> $GITHUB_OUTPUT
+          echo "CHECKOUT_REV=$CHECKOUT_REV" >> $GITHUB_OUTPUT
+
+      - name: Checkout for package discovery
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+        with:
+          sparse-checkout: |
+            packages
+            justfile
+          sparse-checkout-cone-mode: false
+
+      - name: Discover packages
+        id: discover-packages
+        run: |
+          # Install just for package discovery
+          curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin
+          PACKAGES=$(just list-packages-json)
+          echo "packages=$PACKAGES" >> $GITHUB_OUTPUT
+          echo "Discovered packages: $PACKAGES"
+
+  # job 3: flake-validation
+  # validates flake structure and developer tooling (justfile recipes, nix flake check)
+  flake-validation:
+    needs: [secrets-scan, set-variables]
+    runs-on: ubuntu-latest
+    if: |
+      !cancelled() &&
+      needs.set-variables.outputs.skip_ci != 'true' &&
+      (github.event_name != 'workflow_dispatch' ||
+       inputs.job == '' ||
+       inputs.job == 'flake-validation')
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check execution cache
+        id: cache
+        uses: ./.github/actions/cached-ci-job
+        with:
+          hash-sources: '**/*.nix flake.lock justfile'
+          force-run: ${{ inputs.force_run || 'false' }}
+
+      - name: Setup Nix
+        if: steps.cache.outputs.should-run == 'true'
+        uses: ./.github/actions/setup-nix
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+        with:
+          installer: quick
+          system: x86_64-linux
+          enable-cachix: true
+          cachix-name: ${{ vars.CACHIX_CACHE_NAME }}
+          cachix-auth-token: ${{ secrets.CACHIX_AUTH_TOKEN }}
+
+      - name: Test justfile recipes
+        if: steps.cache.outputs.should-run == 'true'
+        run: |
+          # Use --summary instead of --list to avoid broken pipe with large output
+          JUST_RECIPES=$(nix develop --accept-flake-config -c just --summary)
+          echo "Available recipes (summary):"
+          echo "$JUST_RECIPES" | tr ' ' '\n' | head -20
+          echo "... (and more)"
+
+          # verify core recipes exist
+          echo ""
+          echo "verifying core recipes..."
+          for recipe in check lint; do
+            if echo "$JUST_RECIPES" | grep -qw "$recipe"; then
+              echo "● $recipe recipe found"
+            else
+              echo "⊘ $recipe recipe not found"
+              exit 1
+            fi
+          done
+
+      - name: Validate flake structure
+        if: steps.cache.outputs.should-run == 'true'
+        run: |
+          # Run full nix flake check
+          nix develop --accept-flake-config -c just check
+
+      - name: Create job result marker
+        if: success() && steps.cache.outputs.should-run == 'true' && steps.cache.outputs.cache-source == 'none'
+        shell: bash
+        run: |
+          mkdir -p "${{ steps.cache.outputs.cache-path }}"
+          cat > "${{ steps.cache.outputs.cache-path }}/marker" <<EOF
+          {
+            "success": true,
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "commit": "${{ github.sha }}",
+            "run_id": "${{ github.run_id }}",
+            "run_attempt": "${{ github.run_attempt }}"
+          }
+          EOF
+
+      - name: Save execution cache
+        if: success() && steps.cache.outputs.should-run == 'true' && steps.cache.outputs.cache-source == 'none'
+        uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684 # ratchet:actions/cache/save@v4
+        with:
+          path: ${{ steps.cache.outputs.cache-path }}
+          key: ${{ steps.cache.outputs.cache-key }}
+
+  # job 4: bootstrap-verification
+  # validates bootstrap.sh script and Makefile workflow on clean ubuntu system
+  bootstrap-verification:
+    needs: [secrets-scan, set-variables]
+    runs-on: ubuntu-latest
+    if: |
+      !cancelled() &&
+      needs.secrets-scan.result == 'success' &&
+      (github.event_name != 'workflow_dispatch' ||
+       inputs.job == '' ||
+       inputs.job == 'bootstrap-verification')
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check execution cache
+        id: cache
+        uses: ./.github/actions/cached-ci-job
+        with:
+          check-name: ${{ github.job }}
+          hash-sources: 'scripts/bootstrap.sh Makefile .envrc .github/actions/setup-nix/action.yml'
+          force-run: ${{ inputs.force_run || 'false' }}
+
+      - name: test bootstrap.sh --help
+        if: steps.cache.outputs.should-run == 'true'
+        run: |
+          echo "Testing --help flag..."
+          bash scripts/bootstrap.sh --help
+
+      - name: test bootstrap.sh --version
+        if: steps.cache.outputs.should-run == 'true'
+        run: |
+          echo "Testing --version flag..."
+          bash scripts/bootstrap.sh --version
+
+      - name: test bootstrap.sh --dry-run (local)
+        if: steps.cache.outputs.should-run == 'true'
+        run: |
+          echo "Testing --dry-run mode (local script)..."
+          bash scripts/bootstrap.sh --dry-run --yes
+
+      - name: test bootstrap.sh one-liner (remote curl)
+        if: steps.cache.outputs.should-run == 'true'
+        run: |
+          # Test the actual one-liner pattern users will use, but with PR branch
+          BRANCH="${{ github.head_ref || github.ref_name }}"
+          REPO="${{ github.repository }}"
+          URL="https://raw.githubusercontent.com/${REPO}/${BRANCH}/scripts/bootstrap.sh"
+          echo "Testing remote one-liner pattern..."
+          echo "URL: ${URL}"
+          echo ""
+          bash <(curl --proto '=https' --tlsv1.2 -sSf "${URL}") --dry-run --yes
+
+      - name: run bootstrap.sh (actual installation)
+        if: steps.cache.outputs.should-run == 'true'
+        run: |
+          echo "Running bootstrap script..."
+          bash scripts/bootstrap.sh --yes
+
+      - name: verify nix installed
+        if: steps.cache.outputs.should-run == 'true'
+        run: |
+          if ! command -v nix &> /dev/null; then
+            echo "nix not found in PATH"
+            exit 1
+          fi
+          echo "nix found at: $(command -v nix)"
+          echo "nix store path: $(readlink -f $(which nix))"
+          nix --version
+
+      - name: verify direnv configured
+        if: steps.cache.outputs.should-run == 'true'
+        run: |
+          if ! command -v direnv &> /dev/null; then
+            echo "direnv not found in PATH"
+            exit 1
+          fi
+          echo "direnv found at: $(command -v direnv)"
+
+      - name: run make verify
+        if: steps.cache.outputs.should-run == 'true'
+        run: make verify
+
+      - name: verify age key generated
+        if: steps.cache.outputs.should-run == 'true'
+        run: |
+          if [ ! -f ~/.config/sops/age/keys.txt ]; then
+            echo "age key not generated"
+            exit 1
+          fi
+          echo "age key generated successfully"
+          . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && \
+          nix shell nixpkgs#age -c age-keygen -y ~/.config/sops/age/keys.txt
+
+      - name: Create job result marker
+        if: success() && steps.cache.outputs.should-run == 'true' && steps.cache.outputs.cache-source == 'none'
+        shell: bash
+        run: |
+          mkdir -p "${{ steps.cache.outputs.cache-path }}"
+          cat > "${{ steps.cache.outputs.cache-path }}/marker" <<EOF
+          {
+            "success": true,
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "commit": "${{ github.sha }}",
+            "run_id": "${{ github.run_id }}",
+            "run_attempt": "${{ github.run_attempt }}"
+          }
+          EOF
+
+      - name: Save execution cache
+        if: success() && steps.cache.outputs.should-run == 'true' && steps.cache.outputs.cache-source == 'none'
+        uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684 # ratchet:actions/cache/save@v4
+        with:
+          path: ${{ steps.cache.outputs.cache-path }}
+          key: ${{ steps.cache.outputs.cache-key }}
+
+  # job 5: nix
+  # builds flake outputs via category-based matrix for disk space optimization
+  # distributes builds across multiple machines to avoid disk space exhaustion
+  # each job builds a specific category (packages, checks, devshells)
+  nix:
+    needs: [secrets-scan, set-variables]
+    runs-on: ${{ matrix.runner }}
+    if: |
+      !cancelled() &&
+      needs.set-variables.outputs.skip_ci != 'true' &&
+      (github.event_name != 'workflow_dispatch' ||
+       inputs.job == '' ||
+       inputs.job == 'nix')
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # x86_64-linux builds
+          - system: x86_64-linux
+            runner: ubuntu-latest
+            category: packages
+          - system: x86_64-linux
+            runner: ubuntu-latest
+            category: checks
+          - system: x86_64-linux
+            runner: ubuntu-latest
+            category: devshells
+    concurrency:
+      group: nix-${{ matrix.category }}-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref_name }}
+      cancel-in-progress: true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check execution cache
+        id: cache
+        uses: ./.github/actions/cached-ci-job
+        with:
+          check-name: nix (${{ matrix.category }}, ${{ matrix.system }})
+          hash-sources: '**/*.nix flake.lock justfile packages/**/*.ts packages/**/*.tsx packages/**/*.js packages/**/*.jsx **/*.config.ts **/*.config.js package.json **/*.lock .github/actions/**/*'
+          force-run: ${{ inputs.force_run || 'false' }}
+
+      - name: Setup Nix
+        if: steps.cache.outputs.should-run == 'true'
+        uses: ./.github/actions/setup-nix
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+        with:
+          installer: ${{ inputs.nix_installer || 'quick' }}
+          system: ${{ matrix.system }}
+          enable-cachix: true
+          cachix-name: ${{ vars.CACHIX_CACHE_NAME }}
+          cachix-auth-token: ${{ secrets.CACHIX_AUTH_TOKEN }}
+
+      - name: Setup tmate debug session
+        if: steps.cache.outputs.should-run == 'true' && needs.set-variables.outputs.debug == 'true'
+        uses: mxschmitt/action-tmate@e5c7151931ca95bad1c6f4190c730ecf8c7dde48 # ratchet:mxschmitt/action-tmate@v3
+
+      - name: Build ${{ matrix.category }}
+        if: steps.cache.outputs.should-run == 'true'
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+        run: |
+          echo "building ${{ matrix.category }} for ${{ matrix.system }}"
+          nix develop --accept-flake-config -c just ci-build-category "${{ matrix.system }}" "${{ matrix.category }}"
+
+      - name: Report disk usage
+        if: always()
+        run: df -h
+
+  # job 6: test
+  # Note: Reusable workflow calls cannot use composite action steps directly
+  # Per-matrix-element caching happens via GitHub Checks API based on job name: test (package-name)
+  test:
+    needs: [secrets-scan, set-variables]
+    if: |
+      !cancelled() &&
+      needs.set-variables.outputs.skip_ci != 'true' &&
+      (github.event_name != 'workflow_dispatch' ||
+       inputs.job == '' ||
+       inputs.job == 'test')
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJson(needs.set-variables.outputs.packages) }}
+    uses: ./.github/workflows/package-test.yaml
+    with:
+      package-name: ${{ matrix.package.name }}
+      package-path: ${{ matrix.package.path }}
+      debug-enabled: ${{ needs.set-variables.outputs.debug }}
+      nix-installer: ${{ inputs.nix_installer || 'quick' }}
+    secrets:
+      SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+
+  # job 7: preview-release-version
+  # Preview semantic-release version for each package (PR only, fast feedback)
+  preview-release-version:
+    needs: [set-variables]
+    if: |
+      !cancelled() &&
+      github.event_name == 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJson(needs.set-variables.outputs.packages) }}
+    runs-on: ubuntu-latest
+    # semantic-release verifyAuth requires push permission even in dry-run mode
+    # https://github.com/semantic-release/semantic-release/blob/v25.0.1/index.js#L87-L98
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}  # Checkout actual PR branch, not merge commit
+          fetch-depth: 0  # Full history needed for semantic-release analysis
+          fetch-tags: true  # Explicitly fetch all tags for version detection
+
+      - name: Fetch target branch for preview
+        run: |
+          git fetch origin
+          git branch -f main origin/main
+
+      - name: Configure git identity for temporary commits
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Setup Nix
+        uses: ./.github/actions/setup-nix
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+        with:
+          installer: quick
+          system: x86_64-linux
+          enable-cachix: true
+
+      - name: Install dependencies
+        run: nix develop -c bun install
+
+      - name: Setup tmate debug session
+        if: needs.set-variables.outputs.debug == 'true'
+        uses: mxschmitt/action-tmate@e5c7151931ca95bad1c6f4190c730ecf8c7dde48 # ratchet:mxschmitt/action-tmate@v3
+
+      - name: Preview version for ${{ matrix.package.name }}
+        run: |
+          echo "::group::Preview semantic-release version"
+          OUTPUT=$(nix develop --accept-flake-config -c just preview-version main ${{ matrix.package.path }} 2>&1 | tee /dev/stderr)
+          echo "::endgroup::"
+
+          # Extract and annotate the next version (grep returns 1 on no match, so suppress with || true)
+          VERSION=$(echo "$OUTPUT" | grep "next version:" | awk '{print $3}') || true
+          if [ -n "$VERSION" ]; then
+            echo "::notice title=Next Version (${{ matrix.package.name }})::$VERSION"
+          else
+            echo "::notice title=Next Version (${{ matrix.package.name }})::No release pending"
+          fi
+
+  # job 8: preview-docs-deploy
+  # Deploy docs to preview environment (PR only, fast feedback)
+  preview-docs-deploy:
+    needs: [set-variables]
+    if: |
+      !cancelled() &&
+      github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      deployments: write
+    uses: ./.github/workflows/deploy-docs.yaml
+    with:
+      branch: ${{ github.head_ref }}
+      environment: preview
+      debug_enabled: ${{ needs.set-variables.outputs.debug }}
+    secrets: inherit
+
+  # job 9: production-release-packages
+  # Release packages to production on main/beta branches
+  # Requires test+nix success/skipped (safe for fast-forward merge)
+  production-release-packages:
+    needs: [set-variables, test, nix]
+    if: |
+      github.repository_owner == 'sciexp' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/beta') &&
+      needs.set-variables.outputs.skip_ci != 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJson(needs.set-variables.outputs.packages) }}
+    permissions:
+      contents: write
+      id-token: write
+    uses: ./.github/workflows/package-release.yaml
+    with:
+      package-path: ${{ matrix.package.path }}
+      package-name: ${{ matrix.package.name }}
+      release-dry-run: false
+      debug-enabled: ${{ needs.set-variables.outputs.debug == 'true' }}
+      checkout-ref: ${{ needs.set-variables.outputs.checkout_ref }}
+    secrets:
+      SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+
+  # job 10: production-docs-deploy
+  # Documentation deployment to production (conditional)
+  # Depends on production-release-packages to ensure packages released first
+  production-docs-deploy:
+    needs: [set-variables, test, production-release-packages]
+    if: |
+      !cancelled() &&
+      needs.set-variables.outputs.skip_ci != 'true' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/beta') &&
+      needs.set-variables.outputs.deploy_enabled == 'true' &&
+      (github.event_name != 'workflow_dispatch' ||
+       inputs.job == '' ||
+       inputs.job == 'deploy')
+    uses: ./.github/workflows/deploy-docs.yaml
+    with:
+      debug_enabled: ${{ needs.set-variables.outputs.debug }}
+      branch: ${{ needs.set-variables.outputs.checkout_ref }}
+      environment: ${{ needs.set-variables.outputs.deploy_environment }}
+    secrets: inherit

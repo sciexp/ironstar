@@ -1,0 +1,149 @@
+name: Deploy docs to Cloudflare
+
+on:
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        description: "Run with tmate.io debugging enabled"
+        required: false
+        type: string
+        default: "false"
+      branch:
+        description: "Git branch or ref to checkout"
+        required: true
+        type: string
+      sanitized_branch:
+        description: "URL-safe branch name for preview alias (auto-computed if empty)"
+        required: false
+        type: string
+        default: ""
+      environment:
+        description: "Deployment environment (preview or production)"
+        required: false
+        type: string
+        default: "preview"
+      force_run:
+        description: "Force execution even if already successful"
+        required: false
+        type: string
+        default: "false"
+  workflow_call:
+    inputs:
+      debug_enabled:
+        description: "Run with tmate.io debugging enabled"
+        required: false
+        type: string
+        default: "false"
+      branch:
+        description: "Git branch or ref to checkout"
+        required: true
+        type: string
+      sanitized_branch:
+        description: "URL-safe branch name for preview alias (auto-computed if empty)"
+        required: false
+        type: string
+        default: ""
+      environment:
+        description: "Deployment environment (preview or production)"
+        required: false
+        type: string
+        default: "production"
+      force_run:
+        description: "Force execution even if already successful"
+        required: false
+        type: string
+        default: "false"
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+  deployments: write
+
+jobs:
+  deploy-docs:
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment }}
+      url: ${{ inputs.environment == 'preview' && format('https://b-{0}-ironstar-docs.sciexp.workers.dev', inputs.sanitized_branch || inputs.branch) || 'https://ironstar.scientistexperience.net' }}
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+          fetch-depth: 0  # for git diff in composite action
+
+      - name: Check execution cache
+        id: cache
+        uses: ./.github/actions/cached-ci-job
+        with:
+          check-name: preview-docs-deploy
+          hash-sources: 'packages/docs/**/* .github/actions/setup-nix/action.yml .github/workflows/deploy-docs.yaml'
+          force-run: ${{ inputs.force_run }}
+
+      - name: Setup Nix
+        if: steps.cache.outputs.should-run == 'true'
+        uses: ./.github/actions/setup-nix
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+        with:
+          installer: quick
+          system: x86_64-linux
+
+      - name: Install dependencies
+        if: steps.cache.outputs.should-run == 'true'
+        run: nix develop --accept-flake-config -c just install
+
+      - name: Setup tmate debug session
+        if: inputs.debug_enabled == 'true' && steps.cache.outputs.should-run == 'true'
+        uses: mxschmitt/action-tmate@e5c7151931ca95bad1c6f4190c730ecf8c7dde48 # ratchet:mxschmitt/action-tmate@v3
+
+      - name: Validate documentation links
+        if: steps.cache.outputs.should-run == 'true'
+        run: nix develop --accept-flake-config -c just docs-linkcheck
+
+      - name: Deploy to Cloudflare Workers
+        if: steps.cache.outputs.should-run == 'true'
+        id: deployment
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+          GITHUB_ACTIONS: true
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_WORKFLOW: ${{ github.workflow }}
+        run: |
+          if [ "${{ inputs.environment }}" = "preview" ]; then
+            echo "Deploying preview for branch: ${{ inputs.branch }}"
+            nix develop --accept-flake-config -c just docs-deploy-preview ${{ inputs.branch }}
+          else
+            echo "Deploying to production (promoting existing version if available)"
+            nix develop --accept-flake-config -c just docs-deploy-production
+          fi
+
+      - name: Create job result marker
+        if: success() && steps.cache.outputs.should-run == 'true' && steps.cache.outputs.cache-source == 'none'
+        shell: bash
+        run: |
+          mkdir -p "${{ steps.cache.outputs.cache-path }}"
+          cat > "${{ steps.cache.outputs.cache-path }}/marker" <<EOF
+          {
+            "success": true,
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "commit": "${{ github.sha }}",
+            "cache_key": "${{ steps.cache.outputs.cache-key }}",
+            "workflow_run_id": "${{ github.run_id }}",
+            "environment": "${{ inputs.environment }}",
+            "branch": "${{ inputs.branch }}"
+          }
+          EOF
+
+      - name: Save job result to cache
+        if: success() && steps.cache.outputs.should-run == 'true' && steps.cache.outputs.cache-source == 'none'
+        uses: actions/cache/save@9255dc7a253b0ccc959486e2bca901246202afeb # v5
+        with:
+          path: ${{ steps.cache.outputs.cache-path }}
+          key: ${{ steps.cache.outputs.cache-key }}
