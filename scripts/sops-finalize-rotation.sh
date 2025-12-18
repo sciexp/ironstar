@@ -39,9 +39,9 @@ echo
 # Remove old key line
 sed -i.tmp "/^  - &${ROLE} ${OLD_KEY}/d" .sops.yaml
 
-# Rename -next to regular
+# Rename anchor definition, delete reference lines (original *dev now points to new key)
 sed -i.tmp "s/&${ROLE}-next/\&${ROLE}/g" .sops.yaml
-sed -i.tmp "s/\*${ROLE}-next/*${ROLE}/g" .sops.yaml
+sed -i.tmp "/- \*${ROLE}-next/d" .sops.yaml
 
 rm .sops.yaml.tmp
 
