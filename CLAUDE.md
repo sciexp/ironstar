@@ -244,6 +244,8 @@ See their TodoMVC implementations for SSE formatting and signal parsing patterns
 |------------|------------|-------------|
 | process-compose | `~/projects/nix-workspace/process-compose` | Process orchestration |
 | process-compose-flake | `~/projects/nix-workspace/process-compose-flake` | Nix flake integration |
+| rolldown | `~/projects/rust-workspace/rolldown` | Rust-native JS/CSS bundler |
+| zenoh | `~/projects/rust-workspace/zenoh` | Distributed pub/sub + storage (future) |
 
 ### CSS and styling
 
@@ -283,21 +285,6 @@ See their TodoMVC implementations for SSE formatting and signal parsing patterns
 | echarts | `~/projects/lakescope-workspace/echarts` | Apache ECharts (see northstar ds-echarts Lit component for reference) |
 | vega-embed | `~/projects/lakescope-workspace/vega-embed` | Vega-Lite chart embedding (wrap in web component) |
 | mosaic | `~/projects/lakescope-workspace/mosaic` | Grammar of graphics for large datasets (candidate for integration) |
-
-### Missing dependencies (need to clone)
-
-| Dependency | Clone URL | Description |
-|------------|-----------|-------------|
-| zenoh | `https://github.com/eclipse-zenoh/zenoh` | Future distributed pub/sub + storage |
-| rolldown | `https://github.com/rolldown/rolldown` | Rust-native JS/CSS bundler |
-
-Clone with:
-
-```bash
-cd ~/projects/rust-workspace
-git clone https://github.com/eclipse-zenoh/zenoh.git
-git clone https://github.com/rolldown/rolldown.git
-```
 
 ## Architecture
 
