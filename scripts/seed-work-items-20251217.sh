@@ -1,7 +1,24 @@
 #!/usr/bin/env bash
 # Ironstar Work Items Seed Script
 # Generated: 2025-12-17
-# Creates epics, tasks, and dependencies for the ironstar project development roadmap
+# Refactored: Restructured around template instantiation workflow
+#
+# Creates epics, tasks, and dependencies for the ironstar project development roadmap.
+# The workflow starts with template instantiation (not reference study) since only
+# implementation produces git diffs that can be tracked as "done".
+#
+# Epic structure (11 epics):
+#   1. Template Instantiation (om init, secrets, verification)
+#   2. Rust Workspace Integration (crane, rust-overlay, Cargo workspace)
+#   3. Process Compose Integration (flake integration, service orchestration)
+#   4. CI/CD Pipeline (GitHub Actions, flake checks, caching)
+#   5. Domain Layer (algebraic types, aggregates, signals)
+#   6. Frontend Build Pipeline (Rolldown, PostCSS, Open Props, web components)
+#   7. Event Sourcing Infrastructure (SQLite, redb, tokio broadcast, DuckDB)
+#   8. Presentation Layer (axum, SSE, hypertext templates)
+#   9. Example Application - Todo (complete demo)
+#   10. Testing and Integration (unit tests, integration tests, CI)
+#   11. Documentation and Template (bootstrap guide, om CLI integration)
 #
 # Usage: ./scripts/seed-work-items-20251217.sh
 #
@@ -50,94 +67,151 @@ create_issue() {
 }
 
 ###############################################################################
-# EPIC 1: Infrastructure Foundation
+# EPIC 1: Template Instantiation
 ###############################################################################
-log_info "Creating Epic 1: Infrastructure Foundation..."
+log_info "Creating Epic 1: Template Instantiation..."
 
-EPIC_INFRA=$(create_issue "Infrastructure foundation" -t epic -p 0)
-log_success "Created epic: $EPIC_INFRA"
+EPIC_TEMPLATE=$(create_issue "Template instantiation" -t epic -p 0)
+log_success "Created epic: $EPIC_TEMPLATE"
 
-# Nix flake setup
-TASK_FLAKE=$(bd create "Create base flake.nix with inputs and outputs structure" \
-    -p 0 --parent "$EPIC_INFRA" 2>&1 | extract_id)
-bd update "$TASK_FLAKE" --description "Bootstrap flake.nix at repository root with flake-parts integration, input declarations (nixpkgs, systems, rust-flake, process-compose-flake, git-hooks), and perSystem outputs structure. Establishes the foundation for all Nix module composition and reproducible builds.
-Local refs: ~/projects/rust-workspace/rust-nix-template/flake.nix, ~/projects/rust-workspace/rustlings-workspace/flake.nix"
+TASK_OM_INIT=$(bd create "Run om init with typescript-nix-template parameters" \
+    -p 0 --parent "$EPIC_TEMPLATE" 2>&1 | extract_id)
+bd update "$TASK_OM_INIT" --description "Execute om init github:user/typescript-nix-template/main with parameters: project-name (ironstar), github-ci (true), nix-template (true). This generates the initial flake structure with flake-parts, import-tree module composition, and GitHub Actions workflows.
+Local refs: ~/projects/nix-workspace/typescript-nix-template"
 
-TASK_NIX_MODULES=$(bd create "Implement Nix module composition via dynamic import-tree pattern" \
-    -p 0 --parent "$EPIC_INFRA" 2>&1 | extract_id)
-bd update "$TASK_NIX_MODULES" --description "Create nix/modules/ directory structure with dynamic flake-parts module loading following typescript-nix-template pattern. Enables deferred module composition for devShell, rust, pre-commit, and template modules.
-Local refs: ~/projects/nix-workspace/typescript-nix-template/flake.nix, ~/projects/rust-workspace/rust-nix-template/flake.nix"
-bd dep add "$TASK_NIX_MODULES" "$TASK_FLAKE"
+TASK_SECRETS_CONFIG=$(bd create "Configure secrets management and string replacement" \
+    -p 0 --parent "$EPIC_TEMPLATE" 2>&1 | extract_id)
+bd update "$TASK_SECRETS_CONFIG" --description "Create .env.development template with DATABASE_URL, LOG_LEVEL, SERVER_PORT, RELOAD_ENABLED. Replace template placeholder strings with ironstar-specific values. Add .env* to .gitignore to prevent secret commits.
+Local refs: ~/.claude/commands/preferences/secrets.md"
+bd dep add "$TASK_SECRETS_CONFIG" "$TASK_OM_INIT"
 
-TASK_RUST_FLAKE=$(bd create "Configure Rust toolchain and rust-flake integration" \
-    -p 0 --parent "$EPIC_INFRA" 2>&1 | extract_id)
-bd update "$TASK_RUST_FLAKE" --description "Create nix/modules/rust.nix to import rust-flake module and configure per-crate crane.args. Define rust-project.src and platform-specific buildInputs (darwin frameworks). Integrates crane + rust-overlay for deterministic Rust builds.
+TASK_VERIFY_SHELL=$(bd create "Verify nix develop enters working development shell" \
+    -p 0 --parent "$EPIC_TEMPLATE" 2>&1 | extract_id)
+bd update "$TASK_VERIFY_SHELL" --description "Test that nix develop successfully enters the devShell with basic tooling available. Verify nixd, direnv, and foundational utilities are present. This validates the template instantiation before proceeding to Rust integration."
+bd dep add "$TASK_VERIFY_SHELL" "$TASK_OM_INIT"
+
+TASK_INIT_COMMIT=$(bd create "Create initial git commit with generated structure" \
+    -p 0 --parent "$EPIC_TEMPLATE" 2>&1 | extract_id)
+bd update "$TASK_INIT_COMMIT" --description "Stage all generated files from om init and create initial commit with message: 'feat: initialize ironstar from typescript-nix-template'. Establishes baseline for tracking subsequent changes."
+bd dep add "$TASK_INIT_COMMIT" "$TASK_VERIFY_SHELL"
+bd dep add "$TASK_INIT_COMMIT" "$TASK_SECRETS_CONFIG"
+
+TASK_GITIGNORE=$(bd create "Create .gitignore with comprehensive patterns" \
+    -p 0 --parent "$EPIC_TEMPLATE" 2>&1 | extract_id)
+bd update "$TASK_GITIGNORE" --description "Create .gitignore at repository root with patterns: /target/, Cargo.lock, /static/dist/, web-components/dist, node_modules, .env*, dev.db*, .DS_Store, .direnv, result, .beads/. Protects against accidental secret commits and build artifacts."
+bd dep add "$TASK_GITIGNORE" "$TASK_INIT_COMMIT"
+
+###############################################################################
+# EPIC 2: Rust Workspace Integration
+###############################################################################
+log_info "Creating Epic 2: Rust Workspace Integration..."
+
+EPIC_RUST=$(create_issue "Rust workspace integration" -t epic -p 0)
+log_success "Created epic: $EPIC_RUST"
+bd dep add "$EPIC_RUST" "$EPIC_TEMPLATE"
+
+TASK_RUST_FLAKE=$(bd create "Integrate rust-flake patterns (crane, rust-overlay)" \
+    -p 0 --parent "$EPIC_RUST" 2>&1 | extract_id)
+bd update "$TASK_RUST_FLAKE" --description "Create nix/modules/rust.nix importing rust-flake module. Configure crane for Rust builds, rust-overlay for toolchain management, and per-crate crane.args pattern. Add platform-specific buildInputs (darwin frameworks, openssl). Establishes deterministic Rust build infrastructure.
 Local refs: ~/projects/rust-workspace/rust-nix-template/nix/modules/rust.nix, ~/projects/rust-workspace/rustlings-workspace/nix/modules/rust.nix"
-bd dep add "$TASK_RUST_FLAKE" "$TASK_NIX_MODULES"
 
-TASK_CARGO_WS=$(bd create "Create Cargo workspace configuration with resolver 2" \
-    -p 0 --parent "$EPIC_INFRA" 2>&1 | extract_id)
-bd update "$TASK_CARGO_WS" --description "Generate Cargo.toml at repository root with resolver = \"2\", workspace.dependencies for DRY dependency management (axum, tokio, sqlx, duckdb, ts-rs, datastar, hypertext, etc), and release profile optimizations.
+TASK_RUST_TOOLCHAIN=$(bd create "Add rust-toolchain.toml with required components" \
+    -p 0 --parent "$EPIC_RUST" 2>&1 | extract_id)
+bd update "$TASK_RUST_TOOLCHAIN" --description "Create rust-toolchain.toml at repository root specifying stable channel with components: rustfmt, clippy, rust-analyzer, rust-src. Ensures consistent Rust version across development environments and CI.
+Local refs: ~/projects/rust-workspace/rust-nix-template/rust-toolchain.toml"
+bd dep add "$TASK_RUST_TOOLCHAIN" "$TASK_RUST_FLAKE"
+
+TASK_CARGO_WS=$(bd create "Configure Cargo.toml with workspace structure (resolver = 2)" \
+    -p 0 --parent "$EPIC_RUST" 2>&1 | extract_id)
+bd update "$TASK_CARGO_WS" --description "Create Cargo.toml at repository root with [workspace], resolver = \"2\", members array, and workspace.dependencies section for DRY dependency management. Include all core dependencies: axum, tokio, sqlx, duckdb, ts-rs, datastar, hypertext, redb, rust-embed, thiserror. Add release profile optimizations.
 Local refs: ~/projects/rust-workspace/rustlings-workspace/Cargo.toml"
+bd dep add "$TASK_CARGO_WS" "$TASK_RUST_TOOLCHAIN"
 
-TASK_RUST_TOOLCHAIN=$(bd create "Initialize rust-toolchain.toml for consistent Rust version" \
-    -p 0 --parent "$EPIC_INFRA" 2>&1 | extract_id)
-bd update "$TASK_RUST_TOOLCHAIN" --description "Create rust-toolchain.toml at repository root specifying stable channel with components (rustfmt, clippy, rust-analyzer). Ensures reproducible Rust builds across development environments.
-Local refs: ~/projects/rust-workspace/rust-nix-template/"
-bd dep add "$TASK_RUST_TOOLCHAIN" "$TASK_CARGO_WS"
+TASK_CRATE_NIX=$(bd create "Set up per-crate crate.nix pattern for crane args" \
+    -p 0 --parent "$EPIC_RUST" 2>&1 | extract_id)
+bd update "$TASK_CRATE_NIX" --description "Create crate.nix files for each workspace crate defining crane-specific build arguments. Implements pattern from rustlings-workspace for granular build customization. Currently only needed for main ironstar crate, but establishes pattern for future workspace expansion.
+Local refs: ~/projects/rust-workspace/rustlings-workspace/"
+bd dep add "$TASK_CRATE_NIX" "$TASK_CARGO_WS"
 
-TASK_DEVSHELL=$(bd create "Create devShell module with tools and environment" \
-    -p 0 --parent "$EPIC_INFRA" 2>&1 | extract_id)
-bd update "$TASK_DEVSHELL" --description "Implement nix/modules/devshell.nix defining default devShell with inputsFrom rust devShell and pre-commit hooks, plus packages: just, cargo-watch, pnpm, nodejs, process-compose, sqlite3, nixd, bacon. Complete development environment.
-Local refs: ~/projects/rust-workspace/rust-nix-template/nix/modules/devshell.nix, ~/projects/nix-workspace/typescript-nix-template/modules/dev-shell.nix"
-bd dep add "$TASK_DEVSHELL" "$TASK_RUST_FLAKE"
+TASK_CARGO_CHECK=$(bd create "Verify cargo check passes with workspace configuration" \
+    -p 0 --parent "$EPIC_RUST" 2>&1 | extract_id)
+bd update "$TASK_CARGO_CHECK" --description "Run cargo check to validate workspace configuration, dependency resolution, and that all crates compile. Fix any issues with feature flags or dependency versions. Ensures Rust workspace is properly configured before proceeding to process orchestration."
+bd dep add "$TASK_CARGO_CHECK" "$TASK_CRATE_NIX"
 
-TASK_PRECOMMIT=$(bd create "Configure pre-commit hooks for code quality" \
-    -p 1 --parent "$EPIC_INFRA" 2>&1 | extract_id)
-bd update "$TASK_PRECOMMIT" --description "Create nix/modules/pre-commit.nix with git hooks for rustfmt, clippy, prettier (frontend), and linters. Set up .pre-commit-config.yaml to integrate with devShell via git-hooks.nix flake module.
-Local refs: ~/projects/rust-workspace/rust-nix-template/nix/modules/pre-commit.nix"
-bd dep add "$TASK_PRECOMMIT" "$TASK_DEVSHELL"
+###############################################################################
+# EPIC 3: Process Compose Integration
+###############################################################################
+log_info "Creating Epic 3: Process Compose Integration..."
 
-TASK_JUSTFILE=$(bd create "Add justfile with development and build tasks" \
-    -p 0 --parent "$EPIC_INFRA" 2>&1 | extract_id)
-bd update "$TASK_JUSTFILE" --description "Create justfile at repository root with recipes: dev, dev-bg, gen-types, build-frontend, build-backend, build (full), test, fmt, lint, check, ci. Centralizes task orchestration following Rust conventions.
-Local refs: ~/projects/rust-workspace/rust-nix-template/, ~/projects/nix-workspace/typescript-nix-template/justfile"
-bd dep add "$TASK_JUSTFILE" "$TASK_DEVSHELL"
+EPIC_PROCESS=$(create_issue "Process compose integration" -t epic -p 0)
+log_success "Created epic: $EPIC_PROCESS"
+bd dep add "$EPIC_PROCESS" "$EPIC_RUST"
 
-TASK_PC_FLAKE=$(bd create "Integrate process-compose-flake into flake.nix" \
-    -p 0 --parent "$EPIC_INFRA" 2>&1 | extract_id)
-bd update "$TASK_PC_FLAKE" --description "Create nix/modules/process-compose.nix importing process-compose-flake.flakeModule and defining perSystem process-compose configurations for dev environment. Expose as packages.dev runnable via nix run .#dev.
+TASK_PC_FLAKE=$(bd create "Integrate process-compose-flake patterns into devShell" \
+    -p 0 --parent "$EPIC_PROCESS" 2>&1 | extract_id)
+bd update "$TASK_PC_FLAKE" --description "Create nix/modules/process-compose.nix importing process-compose-flake.flakeModule. Define perSystem process-compose configurations. Expose as packages.dev runnable via nix run .#dev. Integrates declarative process orchestration into Nix workflow.
 Local refs: ~/projects/nix-workspace/process-compose-flake"
-bd dep add "$TASK_PC_FLAKE" "$TASK_NIX_MODULES"
 
-TASK_PC_YAML=$(bd create "Configure process-compose.yaml with all development processes" \
-    -p 0 --parent "$EPIC_INFRA" 2>&1 | extract_id)
-bd update "$TASK_PC_YAML" --description "Configure process-compose.yaml with processes: db-init (one-shot SQLite schema), frontend (Rolldown watch), typegen (ts-rs watch), backend (cargo watch), hotreload (browser SSE trigger). Define dependencies and readiness probes.
+TASK_PC_YAML=$(bd create "Configure process-compose.yaml for dev services" \
+    -p 0 --parent "$EPIC_PROCESS" 2>&1 | extract_id)
+bd update "$TASK_PC_YAML" --description "Create process-compose.yaml with processes: db-init (one-shot SQLite schema), frontend (Rolldown watch), typegen (ts-rs watch), backend (cargo watch), hotreload (browser SSE trigger). Define process dependencies, readiness probes, and log_location for each service.
 Local refs: ~/projects/nix-workspace/process-compose"
 bd dep add "$TASK_PC_YAML" "$TASK_PC_FLAKE"
 
-TASK_GITIGNORE=$(bd create "Create .gitignore with comprehensive patterns" \
-    -p 0 --parent "$EPIC_INFRA" 2>&1 | extract_id)
-bd update "$TASK_GITIGNORE" --description "Create .gitignore at repository root with patterns: /target/, Cargo.lock, /static/dist/, web-components/dist, node_modules, .env*, dev.db*, .DS_Store, .direnv. Protects against accidental secret commits."
+TASK_SERVICE_ORCH=$(bd create "Set up service orchestration (frontend bundler, cargo-watch)" \
+    -p 0 --parent "$EPIC_PROCESS" 2>&1 | extract_id)
+bd update "$TASK_SERVICE_ORCH" --description "Configure service startup order and dependencies in process-compose.yaml. Ensure db-init completes before backend starts, typegen runs when Rust files change, frontend rebuilds on TypeScript changes, backend restarts on Rust changes, hotreload triggers browser refresh after successful backend build."
+bd dep add "$TASK_SERVICE_ORCH" "$TASK_PC_YAML"
 
-TASK_SRC_STRUCTURE=$(bd create "Initialize src/ directory structure with modular organization" \
-    -p 0 --parent "$EPIC_INFRA" 2>&1 | extract_id)
-bd update "$TASK_SRC_STRUCTURE" --description "Create src/ subdirectories for domain/ (aggregates, events, commands, values, signals.rs), application/ (command_handlers, query_handlers, projections), infrastructure/ (event_store, session_store, analytics, event_bus), and presentation/ (routes, handlers, templates). Create placeholder mod.rs files.
-Local refs: CLAUDE.md Project structure section"
-bd dep add "$TASK_SRC_STRUCTURE" "$TASK_CARGO_WS"
-
-TASK_MIGRATIONS=$(bd create "Create database migrations/ directory with schema.sql" \
-    -p 0 --parent "$EPIC_INFRA" 2>&1 | extract_id)
-bd update "$TASK_MIGRATIONS" --description "Initialize migrations/ subdirectory with migrations/schema.sql containing SQLite DDL: events table (id, aggregate_type, aggregate_id, sequence, event_type, payload, metadata, created_at), unique constraint, indexes. Referenced by process-compose db-init."
+TASK_PC_VERIFY=$(bd create "Verify process-compose up works with all services" \
+    -p 0 --parent "$EPIC_PROCESS" 2>&1 | extract_id)
+bd update "$TASK_PC_VERIFY" --description "Test that process-compose up successfully starts all services in correct order. Verify readiness probes work, dependencies are respected, and logs are properly separated. Test that services restart appropriately when files change."
+bd dep add "$TASK_PC_VERIFY" "$TASK_SERVICE_ORCH"
 
 ###############################################################################
-# EPIC 2: Domain Layer
+# EPIC 4: CI/CD Pipeline
 ###############################################################################
-log_info "Creating Epic 2: Domain Layer..."
+log_info "Creating Epic 4: CI/CD Pipeline..."
+
+EPIC_CI=$(create_issue "CI/CD pipeline" -t epic -p 0)
+log_success "Created epic: $EPIC_CI"
+bd dep add "$EPIC_CI" "$EPIC_PROCESS"
+
+TASK_GHA_WORKFLOW=$(bd create "Create reusable GitHub Actions workflow for Rust builds" \
+    -p 0 --parent "$EPIC_CI" 2>&1 | extract_id)
+bd update "$TASK_GHA_WORKFLOW" --description "Create .github/workflows/ci.yml with jobs: check (cargo check), test (cargo test), lint (cargo fmt --check, cargo clippy), frontend (pnpm typecheck, pnpm lint). Use actions-rs/toolchain for Rust setup. Follows template CI structure pattern.
+Local refs: ~/projects/rust-workspace/rust-nix-template/.github/, ~/projects/nix-workspace/typescript-nix-template/.github/"
+
+TASK_TEMPLATE_CI=$(bd create "Integrate with template CI structure" \
+    -p 0 --parent "$EPIC_CI" 2>&1 | extract_id)
+bd update "$TASK_TEMPLATE_CI" --description "Adapt typescript-nix-template CI patterns for Rust: category-based workflows (build, test, lint), content-addressed caching, matrix builds for multiple platforms. Ensure CI integrates seamlessly with Nix flake checks.
+Local refs: ~/projects/nix-workspace/typescript-nix-template/.github/workflows/"
+bd dep add "$TASK_TEMPLATE_CI" "$TASK_GHA_WORKFLOW"
+
+TASK_FLAKE_CHECKS=$(bd create "Add flake checks and nix build verification" \
+    -p 0 --parent "$EPIC_CI" 2>&1 | extract_id)
+bd update "$TASK_FLAKE_CHECKS" --description "Create nix/modules/checks.nix defining perSystem.checks with: cargo test, cargo clippy (pedantic), cargo fmt --check, cargo doc --no-deps, frontend typecheck. Expose as flake.checks for nix flake check command.
+Local refs: ~/projects/nix-workspace/typescript-nix-template/modules/checks/"
+bd dep add "$TASK_FLAKE_CHECKS" "$TASK_GHA_WORKFLOW"
+
+TASK_CI_CACHING=$(bd create "Configure caching for cargo and nix" \
+    -p 1 --parent "$EPIC_CI" 2>&1 | extract_id)
+bd update "$TASK_CI_CACHING" --description "Set up GitHub Actions caching for: cargo registry/git/target directories, nix store paths. Use cachix for Nix binary cache if applicable. Reduces CI build times significantly for incremental changes."
+bd dep add "$TASK_CI_CACHING" "$TASK_TEMPLATE_CI"
+
+###############################################################################
+# EPIC 5: Domain Layer
+###############################################################################
+log_info "Creating Epic 5: Domain Layer..."
 
 EPIC_DOMAIN=$(create_issue "Domain layer" -t epic -p 0)
 log_success "Created epic: $EPIC_DOMAIN"
-bd dep add "$EPIC_DOMAIN" "$EPIC_INFRA"
+bd dep add "$EPIC_DOMAIN" "$EPIC_CI"
+
+TASK_SRC_STRUCTURE=$(bd create "Initialize src/ directory structure with modular organization" \
+    -p 0 --parent "$EPIC_DOMAIN" 2>&1 | extract_id)
+bd update "$TASK_SRC_STRUCTURE" --description "Create src/ subdirectories for domain/ (aggregates, events, commands, values, signals.rs), application/ (command_handlers, query_handlers, projections), infrastructure/ (event_store, session_store, analytics, event_bus), and presentation/ (routes, handlers, templates). Create placeholder mod.rs files.
+Local refs: CLAUDE.md Project structure section"
 
 TASK_DOMAIN_TYPES=$(bd create "Define algebraic domain types and aggregate structure" \
     -p 0 --parent "$EPIC_DOMAIN" 2>&1 | extract_id)
@@ -167,13 +241,95 @@ bd update "$TASK_APP_ERRORS" --description "Create AppError enum using thiserror
 bd dep add "$TASK_APP_ERRORS" "$TASK_DOMAIN_TYPES"
 
 ###############################################################################
-# EPIC 3: Event Sourcing Infrastructure
+# EPIC 6: Frontend Build Pipeline
 ###############################################################################
-log_info "Creating Epic 3: Event Sourcing Infrastructure..."
+log_info "Creating Epic 6: Frontend Build Pipeline..."
+
+EPIC_FRONTEND=$(create_issue "Frontend build pipeline" -t epic -p 1)
+log_success "Created epic: $EPIC_FRONTEND"
+bd dep add "$EPIC_FRONTEND" "$EPIC_CI"
+
+TASK_WC_DIR=$(bd create "Create web-components/ project structure with package.json" \
+    -p 0 --parent "$EPIC_FRONTEND" 2>&1 | extract_id)
+bd update "$TASK_WC_DIR" --description "Initialize web-components/ subdirectory with package.json (type: module, scripts: dev/build for Rolldown), tsconfig.json (target ES2020, experimentalDecorators, strict mode), and PostCSS configuration. Establishes the frontend asset build pipeline.
+Local refs: ~/projects/lakescope-workspace/open-props, ~/projects/lakescope-workspace/open-props-ui"
+
+TASK_ROLLDOWN=$(bd create "Configure Rolldown bundler with content-based hashing" \
+    -p 0 --parent "$EPIC_FRONTEND" 2>&1 | extract_id)
+bd update "$TASK_ROLLDOWN" --description "Create web-components/rolldown.config.ts with input entries (bundle: index.ts, components: components/index.ts), output directory (static/dist), ESM format, content-based hashing ([name].[hash].js), and postcss-plugin for CSS extraction. Enables cache-busting and single-binary asset embedding.
+Local refs: ~/projects/rust-workspace/rolldown (clone needed: https://github.com/rolldown/rolldown)"
+bd dep add "$TASK_ROLLDOWN" "$TASK_WC_DIR"
+
+TASK_POSTCSS=$(bd create "Setup PostCSS configuration for modern CSS features" \
+    -p 0 --parent "$EPIC_FRONTEND" 2>&1 | extract_id)
+bd update "$TASK_POSTCSS" --description "Create web-components/postcss.config.js with plugins: postcss-import, postcss-preset-env (stage 0 for OKLch/light-dark/custom-media), autoprefixer, cssnano. Enables Open Props and modern CSS features.
+Local refs: ~/projects/lakescope-workspace/open-props/"
+bd dep add "$TASK_POSTCSS" "$TASK_WC_DIR"
+
+TASK_OPEN_PROPS=$(bd create "Setup Open Props design tokens and theme layer" \
+    -p 0 --parent "$EPIC_FRONTEND" 2>&1 | extract_id)
+bd update "$TASK_OPEN_PROPS" --description "Create web-components/styles/main.css importing Open Props design tokens. Create web-components/styles/theme.css with CSS custom properties using light-dark() function for automatic dark mode. Establish CSS cascade layers: openprops, normalize, theme, components, utilities, app.
+Local refs: ~/projects/lakescope-workspace/open-props, ~/projects/lakescope-workspace/open-props-ui"
+bd dep add "$TASK_OPEN_PROPS" "$TASK_POSTCSS"
+
+TASK_OPUI_COMPONENTS=$(bd create "Copy Open Props UI component CSS files" \
+    -p 1 --parent "$EPIC_FRONTEND" 2>&1 | extract_id)
+bd update "$TASK_OPUI_COMPONENTS" --description "Copy component CSS from ~/projects/lakescope-workspace/open-props-ui into web-components/styles/components/ (button.css, card.css, dialog.css, input.css, field.css, etc). Customize for ironstar theming. This follows the copy-paste ownership model where project owns and customizes component CSS.
+Local refs: ~/projects/lakescope-workspace/open-props-ui"
+bd dep add "$TASK_OPUI_COMPONENTS" "$TASK_OPEN_PROPS"
+
+TASK_TSCONFIG=$(bd create "Create TypeScript configuration (tsconfig.json)" \
+    -p 0 --parent "$EPIC_FRONTEND" 2>&1 | extract_id)
+bd update "$TASK_TSCONFIG" --description "Create web-components/tsconfig.json with strict mode enabled, ESNext target and module, bundler moduleResolution, include glob patterns for all TypeScript files and generated types directory. Add path mapping for @types alias.
+Local refs: ~/projects/rust-workspace/ts-rs"
+bd dep add "$TASK_TSCONFIG" "$TASK_WC_DIR"
+
+TASK_WC_INDEX=$(bd create "Create web-components/index.ts entry point" \
+    -p 0 --parent "$EPIC_FRONTEND" 2>&1 | extract_id)
+bd update "$TASK_WC_INDEX" --description "Create index.ts that imports main.css (processed by PostCSS plugin) and auto-registers vanilla web components by importing from components/ subdirectory. Export TypeScript types from web-components/types/ for frontend type safety.
+Local refs: ~/projects/lakescope-workspace/datastar-go-nats-template-northstar/web/index.ts"
+bd dep add "$TASK_WC_INDEX" "$TASK_TSCONFIG"
+
+TASK_TSRS_CARGO=$(bd create "Add ts-rs dependency to Cargo.toml" \
+    -p 0 --parent "$EPIC_FRONTEND" 2>&1 | extract_id)
+bd update "$TASK_TSRS_CARGO" --description "Add ts-rs 11.1+ with features serde-compat and uuid-impl. Enables deriving TS traits on Rust types to generate TypeScript definitions. Ensures frontend and backend signal contracts stay synchronized.
+Local refs: ~/projects/rust-workspace/ts-rs"
+
+TASK_TSRS_CONFIG=$(bd create "Configure ts-rs export directory and justfile task" \
+    -p 0 --parent "$EPIC_FRONTEND" 2>&1 | extract_id)
+bd update "$TASK_TSRS_CONFIG" --description "Add [env] section to .cargo/config.toml setting TS_RS_EXPORT_DIR. Create gen-types task in justfile: TS_RS_EXPORT_DIR=web-components/types cargo test --lib. Centralizes type generation configuration.
+Local refs: ~/projects/rust-workspace/ts-rs"
+bd dep add "$TASK_TSRS_CONFIG" "$TASK_TSRS_CARGO"
+
+TASK_STATIC_DIST=$(bd create "Create static/dist/ output directory structure" \
+    -p 0 --parent "$EPIC_FRONTEND" 2>&1 | extract_id)
+bd update "$TASK_STATIC_DIST" --description "Initialize static/dist/ directory placeholder for Rolldown build outputs (bundle.[hash].css, bundle.[hash].js, manifest.json). Create static/datastar/ for runtime datastar.js. Aligns with single-binary asset embedding in production."
+bd dep add "$TASK_STATIC_DIST" "$TASK_ROLLDOWN"
+
+TASK_RUST_EMBED=$(bd create "Implement rust-embed conditional asset serving" \
+    -p 0 --parent "$EPIC_FRONTEND" 2>&1 | extract_id)
+bd update "$TASK_RUST_EMBED" --description "Create dual-mode asset serving: dev mode serves from filesystem via tower-http::ServeDir with no-store cache headers; prod mode embeds static/dist/ via rust-embed with immutable cache headers. Include AssetManifest loader for hashed filename resolution.
+Local refs: ~/projects/rust-workspace/rust-embed"
+bd dep add "$TASK_RUST_EMBED" "$TASK_STATIC_DIST"
+
+TASK_WC_COMPONENTS=$(bd create "Create web-components/components/ directory for vanilla web components" \
+    -p 1 --parent "$EPIC_FRONTEND" 2>&1 | extract_id)
+bd update "$TASK_WC_COMPONENTS" --description "Set up web-components/components/ directory structure for vanilla web components. Create index.ts that exports/registers all components. Contains thin wrapper web components for third-party libraries following the data-ignore-morph pattern with Datastar integration.
+Local refs: ~/projects/lakescope-workspace/datastar-go-nats-template-northstar/web/components/"
+bd dep add "$TASK_WC_COMPONENTS" "$TASK_WC_INDEX"
+
+###############################################################################
+# EPIC 7: Event Sourcing Infrastructure
+###############################################################################
+log_info "Creating Epic 7: Event Sourcing Infrastructure..."
 
 EPIC_EVENTSRC=$(create_issue "Event sourcing infrastructure" -t epic -p 0)
 log_success "Created epic: $EPIC_EVENTSRC"
 bd dep add "$EPIC_EVENTSRC" "$EPIC_DOMAIN"
+
+TASK_MIGRATIONS=$(bd create "Create database migrations/ directory with schema.sql" \
+    -p 0 --parent "$EPIC_EVENTSRC" 2>&1 | extract_id)
+bd update "$TASK_MIGRATIONS" --description "Initialize migrations/ subdirectory with migrations/schema.sql containing SQLite DDL: events table (id, aggregate_type, aggregate_id, sequence, event_type, payload, metadata, created_at), unique constraint, indexes. Referenced by process-compose db-init."
 
 TASK_ES_TRAIT=$(bd create "Create EventStore trait abstraction" \
     -p 0 --parent "$EPIC_EVENTSRC" 2>&1 | extract_id)
@@ -231,95 +387,30 @@ Local refs: ~/projects/omicslake-workspace/duckdb-rs"
 bd dep add "$TASK_DUCKDB" "$TASK_DOMAIN_TYPES"
 
 ###############################################################################
-# EPIC 4: Frontend Build Pipeline
+# EPIC 8: Presentation Layer
 ###############################################################################
-log_info "Creating Epic 4: Frontend Build Pipeline..."
-
-EPIC_FRONTEND=$(create_issue "Frontend build pipeline" -t epic -p 1)
-log_success "Created epic: $EPIC_FRONTEND"
-bd dep add "$EPIC_FRONTEND" "$EPIC_INFRA"
-
-TASK_WC_DIR=$(bd create "Create web-components/ project structure with package.json" \
-    -p 0 --parent "$EPIC_FRONTEND" 2>&1 | extract_id)
-bd update "$TASK_WC_DIR" --description "Initialize web-components/ subdirectory with package.json (type: module, scripts: dev/build for Rolldown), tsconfig.json (target ES2020, experimentalDecorators, strict mode), and PostCSS configuration. Establishes the frontend asset build pipeline.
-Local refs: ~/projects/lakescope-workspace/open-props, ~/projects/lakescope-workspace/open-props-ui"
-bd dep add "$TASK_WC_DIR" "$TASK_FLAKE"
-
-TASK_ROLLDOWN=$(bd create "Configure Rolldown bundler with content-based hashing" \
-    -p 0 --parent "$EPIC_FRONTEND" 2>&1 | extract_id)
-bd update "$TASK_ROLLDOWN" --description "Create web-components/rolldown.config.ts with input entries (bundle: index.ts, components: components/index.ts), output directory (static/dist), ESM format, content-based hashing ([name].[hash].js), and postcss-plugin for CSS extraction. Enables cache-busting and single-binary asset embedding.
-Local refs: ~/projects/rust-workspace/rolldown (clone needed: https://github.com/rolldown/rolldown)"
-bd dep add "$TASK_ROLLDOWN" "$TASK_WC_DIR"
-
-TASK_POSTCSS=$(bd create "Setup PostCSS configuration for modern CSS features" \
-    -p 0 --parent "$EPIC_FRONTEND" 2>&1 | extract_id)
-bd update "$TASK_POSTCSS" --description "Create web-components/postcss.config.js with plugins: postcss-import, postcss-preset-env (stage 0 for OKLch/light-dark/custom-media), autoprefixer, cssnano. Enables Open Props and modern CSS features.
-Local refs: ~/projects/lakescope-workspace/open-props/"
-bd dep add "$TASK_POSTCSS" "$TASK_WC_DIR"
-
-TASK_OPEN_PROPS=$(bd create "Setup Open Props design tokens and theme layer" \
-    -p 0 --parent "$EPIC_FRONTEND" 2>&1 | extract_id)
-bd update "$TASK_OPEN_PROPS" --description "Create web-components/styles/main.css importing Open Props design tokens. Create web-components/styles/theme.css with CSS custom properties using light-dark() function for automatic dark mode. Establish CSS cascade layers: openprops, normalize, theme, components, utilities, app.
-Local refs: ~/projects/lakescope-workspace/open-props, ~/projects/lakescope-workspace/open-props-ui"
-bd dep add "$TASK_OPEN_PROPS" "$TASK_POSTCSS"
-
-TASK_OPUI_COMPONENTS=$(bd create "Copy Open Props UI component CSS files" \
-    -p 1 --parent "$EPIC_FRONTEND" 2>&1 | extract_id)
-bd update "$TASK_OPUI_COMPONENTS" --description "Copy component CSS from ~/projects/lakescope-workspace/open-props-ui into web-components/styles/components/ (button.css, card.css, dialog.css, input.css, field.css, etc). Customize for ironstar theming. This follows the copy-paste ownership model where project owns and customizes component CSS.
-Local refs: ~/projects/lakescope-workspace/open-props-ui"
-bd dep add "$TASK_OPUI_COMPONENTS" "$TASK_OPEN_PROPS"
-
-TASK_TSCONFIG=$(bd create "Create TypeScript configuration (tsconfig.json)" \
-    -p 0 --parent "$EPIC_FRONTEND" 2>&1 | extract_id)
-bd update "$TASK_TSCONFIG" --description "Create web-components/tsconfig.json with strict mode enabled, ESNext target and module, bundler moduleResolution, include glob patterns for all TypeScript files and generated types directory. Add path mapping for @types alias.
-Local refs: ~/projects/rust-workspace/ts-rs"
-bd dep add "$TASK_TSCONFIG" "$TASK_WC_DIR"
-
-TASK_WC_INDEX=$(bd create "Create web-components/index.ts entry point" \
-    -p 0 --parent "$EPIC_FRONTEND" 2>&1 | extract_id)
-bd update "$TASK_WC_INDEX" --description "Create index.ts that imports main.css (processed by PostCSS plugin) and auto-registers vanilla web components by importing from components/ subdirectory. Export TypeScript types from web-components/types/ for frontend type safety.
-Local refs: ~/projects/lakescope-workspace/datastar-go-nats-template-northstar/web/index.ts"
-bd dep add "$TASK_WC_INDEX" "$TASK_TSCONFIG"
-
-TASK_TSRS_CARGO=$(bd create "Add ts-rs dependency to Cargo.toml" \
-    -p 0 --parent "$EPIC_FRONTEND" 2>&1 | extract_id)
-bd update "$TASK_TSRS_CARGO" --description "Add ts-rs 11.1+ with features serde-compat and uuid-impl. Enables deriving TS traits on Rust types to generate TypeScript definitions. Ensures frontend and backend signal contracts stay synchronized.
-Local refs: ~/projects/rust-workspace/ts-rs"
-bd dep add "$TASK_TSRS_CARGO" "$TASK_CARGO_WS"
-
-TASK_TSRS_CONFIG=$(bd create "Configure ts-rs export directory and justfile task" \
-    -p 0 --parent "$EPIC_FRONTEND" 2>&1 | extract_id)
-bd update "$TASK_TSRS_CONFIG" --description "Add [env] section to .cargo/config.toml setting TS_RS_EXPORT_DIR. Create gen-types task in justfile: TS_RS_EXPORT_DIR=web-components/types cargo test --lib. Centralizes type generation configuration.
-Local refs: ~/projects/rust-workspace/ts-rs"
-bd dep add "$TASK_TSRS_CONFIG" "$TASK_TSRS_CARGO"
-bd dep add "$TASK_TSRS_CONFIG" "$TASK_JUSTFILE"
-
-TASK_STATIC_DIST=$(bd create "Create static/dist/ output directory structure" \
-    -p 0 --parent "$EPIC_FRONTEND" 2>&1 | extract_id)
-bd update "$TASK_STATIC_DIST" --description "Initialize static/dist/ directory placeholder for Rolldown build outputs (bundle.[hash].css, bundle.[hash].js, manifest.json). Create static/datastar/ for runtime datastar.js. Aligns with single-binary asset embedding in production."
-bd dep add "$TASK_STATIC_DIST" "$TASK_ROLLDOWN"
-
-TASK_RUST_EMBED=$(bd create "Implement rust-embed conditional asset serving" \
-    -p 0 --parent "$EPIC_FRONTEND" 2>&1 | extract_id)
-bd update "$TASK_RUST_EMBED" --description "Create dual-mode asset serving: dev mode serves from filesystem via tower-http::ServeDir with no-store cache headers; prod mode embeds static/dist/ via rust-embed with immutable cache headers. Include AssetManifest loader for hashed filename resolution.
-Local refs: ~/projects/rust-workspace/rust-embed"
-bd dep add "$TASK_RUST_EMBED" "$TASK_STATIC_DIST"
-
-TASK_WC_COMPONENTS=$(bd create "Create web-components/components/ directory for vanilla web components" \
-    -p 1 --parent "$EPIC_FRONTEND" 2>&1 | extract_id)
-bd update "$TASK_WC_COMPONENTS" --description "Set up web-components/components/ directory structure for vanilla web components. Create index.ts that exports/registers all components. Contains thin wrapper web components for third-party libraries following the data-ignore-morph pattern with Datastar integration.
-Local refs: ~/projects/lakescope-workspace/datastar-go-nats-template-northstar/web/components/"
-bd dep add "$TASK_WC_COMPONENTS" "$TASK_WC_INDEX"
-
-###############################################################################
-# EPIC 5: Presentation Layer
-###############################################################################
-log_info "Creating Epic 5: Presentation Layer..."
+log_info "Creating Epic 8: Presentation Layer..."
 
 EPIC_PRESENTATION=$(create_issue "Presentation layer" -t epic -p 1)
 log_success "Created epic: $EPIC_PRESENTATION"
 bd dep add "$EPIC_PRESENTATION" "$EPIC_EVENTSRC"
 bd dep add "$EPIC_PRESENTATION" "$EPIC_FRONTEND"
+
+TASK_JUSTFILE=$(bd create "Add justfile with development and build tasks" \
+    -p 0 --parent "$EPIC_PRESENTATION" 2>&1 | extract_id)
+bd update "$TASK_JUSTFILE" --description "Create justfile at repository root with recipes: dev, dev-bg, gen-types, build-frontend, build-backend, build (full), test, fmt, lint, check, ci. Centralizes task orchestration following Rust conventions.
+Local refs: ~/projects/rust-workspace/rust-nix-template/, ~/projects/nix-workspace/typescript-nix-template/justfile"
+
+TASK_DEVSHELL=$(bd create "Create devShell module with tools and environment" \
+    -p 0 --parent "$EPIC_PRESENTATION" 2>&1 | extract_id)
+bd update "$TASK_DEVSHELL" --description "Implement nix/modules/devshell.nix defining default devShell with inputsFrom rust devShell and pre-commit hooks, plus packages: just, cargo-watch, pnpm, nodejs, process-compose, sqlite3, nixd, bacon. Complete development environment.
+Local refs: ~/projects/rust-workspace/rust-nix-template/nix/modules/devshell.nix, ~/projects/nix-workspace/typescript-nix-template/modules/dev-shell.nix"
+
+TASK_PRECOMMIT=$(bd create "Configure pre-commit hooks for code quality" \
+    -p 1 --parent "$EPIC_PRESENTATION" 2>&1 | extract_id)
+bd update "$TASK_PRECOMMIT" --description "Create nix/modules/pre-commit.nix with git hooks for rustfmt, clippy, prettier (frontend), and linters. Set up .pre-commit-config.yaml to integrate with devShell via git-hooks.nix flake module.
+Local refs: ~/projects/rust-workspace/rust-nix-template/nix/modules/pre-commit.nix"
+bd dep add "$TASK_PRECOMMIT" "$TASK_DEVSHELL"
 
 TASK_APPSTATE=$(bd create "Define AppState struct with all dependencies" \
     -p 0 --parent "$EPIC_PRESENTATION" 2>&1 | extract_id)
@@ -395,9 +486,9 @@ Local refs: ~/projects/rust-workspace/axum"
 bd dep add "$TASK_HEALTH" "$TASK_ROUTER"
 
 ###############################################################################
-# EPIC 6: Example Application (Todo)
+# EPIC 9: Example Application (Todo)
 ###############################################################################
-log_info "Creating Epic 6: Example Application (Todo)..."
+log_info "Creating Epic 9: Example Application (Todo)..."
 
 EPIC_EXAMPLE=$(create_issue "Example application (Todo)" -t epic -p 2)
 log_success "Created epic: $EPIC_EXAMPLE"
@@ -459,9 +550,9 @@ bd dep add "$TASK_TODO_ROUTES" "$TASK_TODO_DELETE"
 bd dep add "$TASK_TODO_ROUTES" "$TASK_TODO_TEMPLATES"
 
 ###############################################################################
-# EPIC 7: Third-Party Library Integration
+# EPIC 10: Third-Party Library Integration
 ###############################################################################
-log_info "Creating Epic 7: Third-Party Library Integration..."
+log_info "Creating Epic 10: Third-Party Library Integration..."
 
 EPIC_INTEGRATION=$(create_issue "Third-party library integration" -t epic -p 2)
 log_success "Created epic: $EPIC_INTEGRATION"
@@ -486,13 +577,13 @@ Local refs: ~/projects/lakescope-workspace/open-props-ui, ~/projects/rust-worksp
 bd dep add "$TASK_LUCIDE" "$TASK_ROLLDOWN"
 
 ###############################################################################
-# EPIC 8: Testing and CI
+# EPIC 11: Testing and Integration
 ###############################################################################
-log_info "Creating Epic 8: Testing and CI..."
+log_info "Creating Epic 11: Testing and Integration..."
 
-EPIC_TESTING=$(create_issue "Testing and CI" -t epic -p 2)
+EPIC_TESTING=$(create_issue "Testing and integration" -t epic -p 2)
 log_success "Created epic: $EPIC_TESTING"
-bd dep add "$EPIC_TESTING" "$EPIC_PRESENTATION"
+bd dep add "$EPIC_TESTING" "$EPIC_EXAMPLE"
 
 TASK_ES_TESTS=$(bd create "Create event store integration tests" \
     -p 2 --parent "$EPIC_TESTING" 2>&1 | extract_id)
@@ -512,22 +603,10 @@ bd update "$TASK_E2E_TESTS" --description "Write integration tests for complete 
 Local refs: ~/projects/rust-workspace/axum, ~/projects/rust-workspace/tokio"
 bd dep add "$TASK_E2E_TESTS" "$TASK_MAIN"
 
-TASK_CI_WORKFLOW=$(bd create "Create GitHub Actions workflow for CI with Nix" \
-    -p 1 --parent "$EPIC_TESTING" 2>&1 | extract_id)
-bd update "$TASK_CI_WORKFLOW" --description "Create .github/workflows/ci.yml workflow running cargo test, cargo check, cargo fmt --check, clippy lints via nix flake checks. Include separate matrix jobs for frontend (pnpm lint, pnpm typecheck) and integration tests.
-Local refs: ~/projects/rust-workspace/rust-nix-template/, ~/projects/nix-workspace/typescript-nix-template/"
-bd dep add "$TASK_CI_WORKFLOW" "$TASK_JUSTFILE"
-
-TASK_FLAKE_CHECKS=$(bd create "Create flake checks module for code quality" \
-    -p 1 --parent "$EPIC_TESTING" 2>&1 | extract_id)
-bd update "$TASK_FLAKE_CHECKS" --description "Implement nix/modules/checks.nix defining flake.checks with: cargo test, cargo clippy (pedantic), cargo fmt --check, cargo doc --no-deps, frontend typecheck. Creates enforceable quality gates in nix flake output.
-Local refs: ~/projects/nix-workspace/typescript-nix-template/modules/checks/"
-bd dep add "$TASK_FLAKE_CHECKS" "$TASK_JUSTFILE"
-
 ###############################################################################
-# EPIC 9: Documentation and Template
+# EPIC 12: Documentation and Template
 ###############################################################################
-log_info "Creating Epic 9: Documentation and Template..."
+log_info "Creating Epic 12: Documentation and Template..."
 
 EPIC_DOCS=$(create_issue "Documentation and template" -t epic -p 3)
 log_success "Created epic: $EPIC_DOCS"
@@ -559,34 +638,6 @@ TASK_TRACING=$(bd create "Add structured logging with tracing" \
     -p 2 --parent "$EPIC_DOCS" 2>&1 | extract_id)
 bd update "$TASK_TRACING" --description "Integrate tracing and tracing-subscriber crates for structured logging of events appended, handlers executed, projection updates, and errors. Use span context to correlate logs across request lifecycle."
 bd dep add "$TASK_TRACING" "$TASK_MAIN"
-
-###############################################################################
-# EPIC 10: Reference Implementation Study
-###############################################################################
-log_info "Creating Epic 10: Reference Implementation Study..."
-
-EPIC_REFERENCE=$(create_issue "Reference implementation study" -t epic -p 0)
-log_success "Created epic: $EPIC_REFERENCE"
-
-TASK_STUDY_NORTHSTAR=$(bd create "Study Northstar Go template for Datastar patterns" \
-    -p 0 --parent "$EPIC_REFERENCE" 2>&1 | extract_id)
-bd update "$TASK_STUDY_NORTHSTAR" --description "Read through ~/projects/lakescope-workspace/datastar-go-nats-template-northstar/ to understand: Templ HTML templating patterns, hashfs asset embedding, web component thin wrapper pattern, hot reload SSE implementation, three-stage build pipeline. Document key takeaways for Rust adaptation.
-Local refs: ~/projects/lakescope-workspace/datastar-go-nats-template-northstar"
-
-TASK_STUDY_LINCE=$(bd create "Study datastar-rust-lince for event sourcing patterns" \
-    -p 0 --parent "$EPIC_REFERENCE" 2>&1 | extract_id)
-bd update "$TASK_STUDY_LINCE" --description "Read through ~/projects/rust-workspace/datastar-rust-lince/ to understand real-world Rust + Datastar integration, projection implementations, handler patterns, and SSE streaming. Extract reusable patterns for ironstar example application.
-Local refs: ~/projects/rust-workspace/datastar-rust-lince"
-
-TASK_STUDY_SDK=$(bd create "Study Datastar SDK ADR specification for SSE wire format" \
-    -p 0 --parent "$EPIC_REFERENCE" 2>&1 | extract_id)
-bd update "$TASK_STUDY_SDK" --description "Read ~/projects/lakescope-workspace/datastar/sdk/ADR.md to understand canonical SSE event format, PatchElements/PatchSignals/ExecuteScript wire representations, ElementPatchMode enum variants, and behavior expectations. Ensures Rust SSE emission conforms to spec.
-Local refs: ~/projects/lakescope-workspace/datastar/sdk/ADR.md"
-
-TASK_STUDY_TAO=$(bd create "Study Tao of Datastar design principles" \
-    -p 0 --parent "$EPIC_REFERENCE" 2>&1 | extract_id)
-bd update "$TASK_STUDY_TAO" --description "Read ~/projects/lakescope-workspace/datastar-doc/guide_the_tao_of_datastar.md to internalize 6 core principles: (1) Backend is source of truth, (2) Patch elements and signals, (3) Use signals sparingly, (4) CQRS pattern, (5) In morph we trust (fat morph), (6) Loading indicators over deception.
-Local refs: ~/projects/lakescope-workspace/datastar-doc/guide_the_tao_of_datastar.md"
 
 ###############################################################################
 # Summary
