@@ -1,13 +1,13 @@
 # Beads Export
 
-*Generated: Thu, 18 Dec 2025 00:20:22 EST*
+*Generated: Thu, 18 Dec 2025 09:47:17 EST*
 
 ## Summary
 
 | Metric | Count |
 |--------|-------|
-| **Total** | 91 |
-| Open | 91 |
+| **Total** | 96 |
+| Open | 96 |
 | In Progress | 0 |
 | Blocked | 0 |
 | Closed | 0 |
@@ -17,107 +17,112 @@
 Ready-to-run commands for bulk operations:
 
 ```bash
-# Close open items (91 total, showing first 10)
-bd close ironstar-7h9.11 ironstar-7h9.9 ironstar-7h9.8 ironstar-7h9.7 ironstar-7h9.6 ironstar-7h9.5 ironstar-7h9.4 ironstar-7h9.2 ironstar-7h9.1 ironstar-x0e.7
+# Close open items (96 total, showing first 10)
+bd close ironstar-r62.12 ironstar-r62.11 ironstar-r62.9 ironstar-r62.8 ironstar-r62.7 ironstar-r62.6 ironstar-r62.5 ironstar-r62.4 ironstar-r62.2 ironstar-r62.1
 
 # View high-priority items (P0/P1)
-bd show ironstar-7h9.11 ironstar-7h9.9 ironstar-7h9.8 ironstar-7h9.7 ironstar-7h9.6 ironstar-7h9.5 ironstar-7h9.4 ironstar-7h9.2 ironstar-7h9.1 ironstar-x0e.7 ironstar-x0e.6 ironstar-x0e.5 ironstar-x0e.3 ironstar-x0e.2 ironstar-x0e.1 ironstar-x0e ironstar-3dv.11 ironstar-3dv.10 ironstar-3dv.9 ironstar-3dv.8 ironstar-3dv.7 ironstar-3dv.6 ironstar-3dv.4 ironstar-3dv.3 ironstar-3dv.2 ironstar-3dv.1 ironstar-3jp.5 ironstar-3jp.4 ironstar-3jp.3 ironstar-3jp.2 ironstar-3jp.1 ironstar-3jp ironstar-cvo.3 ironstar-cvo.2 ironstar-cvo.1 ironstar-cvo ironstar-8bw.4 ironstar-8bw.3 ironstar-8bw.2 ironstar-8bw.1 ironstar-8bw ironstar-g8e.5 ironstar-g8e.4 ironstar-g8e.3 ironstar-g8e.2 ironstar-g8e.1 ironstar-g8e ironstar-vho.5 ironstar-vho.4 ironstar-vho.3 ironstar-vho.2 ironstar-vho.1 ironstar-vho ironstar-jnv.8 ironstar-jnv.7 ironstar-jnv.6 ironstar-jnv.5 ironstar-jnv.4 ironstar-jnv.3 ironstar-jnv.2 ironstar-jnv.1 ironstar-7h9.12 ironstar-7h9.10 ironstar-7h9.3 ironstar-7h9 ironstar-x0e.9 ironstar-x0e.8 ironstar-x0e.4 ironstar-3dv.12 ironstar-3dv.5 ironstar-3dv ironstar-3jp.6 ironstar-cvo.4
+bd show ironstar-r62.12 ironstar-r62.11 ironstar-r62.9 ironstar-r62.8 ironstar-r62.7 ironstar-r62.6 ironstar-r62.5 ironstar-r62.4 ironstar-r62.2 ironstar-r62.1 ironstar-nyp.8 ironstar-nyp.7 ironstar-nyp.6 ironstar-nyp.5 ironstar-nyp.3 ironstar-nyp.2 ironstar-nyp.1 ironstar-nyp ironstar-ny3.13 ironstar-ny3.12 ironstar-ny3.11 ironstar-ny3.10 ironstar-ny3.9 ironstar-ny3.8 ironstar-ny3.7 ironstar-ny3.5 ironstar-ny3.4 ironstar-ny3.3 ironstar-ny3.2 ironstar-ny3.1 ironstar-2nt.7 ironstar-2nt.6 ironstar-2nt.5 ironstar-2nt.4 ironstar-2nt.3 ironstar-2nt.2 ironstar-2nt.1 ironstar-2nt ironstar-f8b.5 ironstar-f8b.4 ironstar-f8b.3 ironstar-f8b.2 ironstar-f8b.1 ironstar-f8b ironstar-6lq.7 ironstar-6lq.6 ironstar-6lq.5 ironstar-6lq.4 ironstar-6lq.3 ironstar-6lq.2 ironstar-6lq.1 ironstar-6lq ironstar-cxe.5 ironstar-cxe.4 ironstar-cxe.3 ironstar-cxe.2 ironstar-cxe.1 ironstar-cxe ironstar-e6k.8 ironstar-e6k.7 ironstar-e6k.6 ironstar-e6k.5 ironstar-e6k.4 ironstar-e6k.3 ironstar-e6k.2 ironstar-e6k.1 ironstar-r62.13 ironstar-r62.10 ironstar-r62.3 ironstar-r62 ironstar-nyp.11 ironstar-nyp.10 ironstar-nyp.9 ironstar-nyp.4 ironstar-ny3.14 ironstar-ny3.6 ironstar-ny3 ironstar-2nt.8
 
 ```
 
 ## Table of Contents
 
-- [🟢 ironstar-7h9.11 Implement router composition with feature routes](#ironstar-7h9-11)
-- [🟢 ironstar-7h9.9 Create base layout template with Datastar initialization](#ironstar-7h9-9)
-- [🟢 ironstar-7h9.8 Implement RenderableToDatastar conversion trait](#ironstar-7h9-8)
-- [🟢 ironstar-7h9.7 Implement query GET handlers](#ironstar-7h9-7)
-- [🟢 ironstar-7h9.6 Implement command POST handlers](#ironstar-7h9-6)
-- [🟢 ironstar-7h9.5 Implement SSE feed endpoint with event replay](#ironstar-7h9-5)
-- [🟢 ironstar-7h9.4 Define AppState struct with all dependencies](#ironstar-7h9-4)
-- [🟢 ironstar-7h9.2 Create devShell module with tools and environment](#ironstar-7h9-2)
-- [🟢 ironstar-7h9.1 Add justfile with development and build tasks](#ironstar-7h9-1)
-- [🟢 ironstar-x0e.7 Implement ProjectionManager with in-memory state](#ironstar-x0e-7)
-- [🟢 ironstar-x0e.6 Create Projection trait for read models](#ironstar-x0e-6)
-- [🟢 ironstar-x0e.5 Implement tokio broadcast event bus](#ironstar-x0e-5)
-- [🟢 ironstar-x0e.3 Implement SQLite event store with sqlx](#ironstar-x0e-3)
-- [🟢 ironstar-x0e.2 Create EventStore trait abstraction](#ironstar-x0e-2)
-- [🟢 ironstar-x0e.1 Create database migrations/ directory with schema.sql](#ironstar-x0e-1)
-- [🟢 ironstar-x0e Event sourcing infrastructure](#ironstar-x0e)
-- [🟢 ironstar-3dv.11 Implement rust-embed conditional asset serving](#ironstar-3dv-11)
-- [🟢 ironstar-3dv.10 Create static/dist/ output directory structure](#ironstar-3dv-10)
-- [🟢 ironstar-3dv.9 Configure ts-rs export directory and justfile task](#ironstar-3dv-9)
-- [🟢 ironstar-3dv.8 Add ts-rs dependency to Cargo.toml](#ironstar-3dv-8)
-- [🟢 ironstar-3dv.7 Create web-components/index.ts entry point](#ironstar-3dv-7)
-- [🟢 ironstar-3dv.6 Create TypeScript configuration (tsconfig.json)](#ironstar-3dv-6)
-- [🟢 ironstar-3dv.4 Setup Open Props design tokens and theme layer](#ironstar-3dv-4)
-- [🟢 ironstar-3dv.3 Setup PostCSS configuration for modern CSS features](#ironstar-3dv-3)
-- [🟢 ironstar-3dv.2 Configure Rolldown bundler with content-based hashing](#ironstar-3dv-2)
-- [🟢 ironstar-3dv.1 Create web-components/ project structure with package.json](#ironstar-3dv-1)
-- [🟢 ironstar-3jp.5 Create Datastar signal types with ts-rs derives](#ironstar-3jp-5)
-- [🟢 ironstar-3jp.4 Design aggregate root state machines](#ironstar-3jp-4)
-- [🟢 ironstar-3jp.3 Implement value objects and smart constructors](#ironstar-3jp-3)
-- [🟢 ironstar-3jp.2 Define algebraic domain types and aggregate structure](#ironstar-3jp-2)
-- [🟢 ironstar-3jp.1 Initialize src/ directory structure with modular organization](#ironstar-3jp-1)
-- [🟢 ironstar-3jp Domain layer](#ironstar-3jp)
-- [🟢 ironstar-cvo.3 Add flake checks and nix build verification](#ironstar-cvo-3)
-- [🟢 ironstar-cvo.2 Integrate with template CI structure](#ironstar-cvo-2)
-- [🟢 ironstar-cvo.1 Create reusable GitHub Actions workflow for Rust builds](#ironstar-cvo-1)
-- [🟢 ironstar-cvo CI/CD pipeline](#ironstar-cvo)
-- [🟢 ironstar-8bw.4 Verify process-compose up works with all services](#ironstar-8bw-4)
-- [🟢 ironstar-8bw.3 Set up service orchestration (frontend bundler, cargo-watch)](#ironstar-8bw-3)
-- [🟢 ironstar-8bw.2 Configure process-compose.yaml for dev services](#ironstar-8bw-2)
-- [🟢 ironstar-8bw.1 Integrate process-compose-flake patterns into devShell](#ironstar-8bw-1)
-- [🟢 ironstar-8bw Process compose integration](#ironstar-8bw)
-- [🟢 ironstar-g8e.5 Verify cargo check passes with workspace configuration](#ironstar-g8e-5)
-- [🟢 ironstar-g8e.4 Set up per-crate crate.nix pattern for crane args](#ironstar-g8e-4)
-- [🟢 ironstar-g8e.3 Configure Cargo.toml with workspace structure (resolver = 2)](#ironstar-g8e-3)
-- [🟢 ironstar-g8e.2 Add rust-toolchain.toml with required components](#ironstar-g8e-2)
-- [🟢 ironstar-g8e.1 Integrate rust-flake patterns (crane, rust-overlay)](#ironstar-g8e-1)
-- [🟢 ironstar-g8e Rust workspace integration](#ironstar-g8e)
-- [🟢 ironstar-vho.5 Create .gitignore with comprehensive patterns](#ironstar-vho-5)
-- [🟢 ironstar-vho.4 Create initial git commit with generated structure](#ironstar-vho-4)
-- [🟢 ironstar-vho.3 Verify nix develop enters working development shell](#ironstar-vho-3)
-- [🟢 ironstar-vho.2 Configure secrets management and string replacement](#ironstar-vho-2)
-- [🟢 ironstar-vho.1 Run om init with typescript-nix-template parameters](#ironstar-vho-1)
-- [🟢 ironstar-vho Template instantiation](#ironstar-vho)
-- [🟢 ironstar-jnv.8 Implement todo example route mounting](#ironstar-jnv-8)
-- [🟢 ironstar-jnv.7 Implement todo_list_template rendering function](#ironstar-jnv-7)
-- [🟢 ironstar-jnv.6 Implement GET /todos SSE feed endpoint](#ironstar-jnv-6)
-- [🟢 ironstar-jnv.5 Implement delete_todo handler (POST /delete-todo)](#ironstar-jnv-5)
-- [🟢 ironstar-jnv.4 Implement mark_todo handler (POST /mark-todo)](#ironstar-jnv-4)
-- [🟢 ironstar-jnv.3 Implement add_todo handler (POST /add-todo)](#ironstar-jnv-3)
-- [🟢 ironstar-jnv.2 Implement TodoListProjection with in-memory rebuild](#ironstar-jnv-2)
-- [🟢 ironstar-jnv.1 Define Todo domain model (aggregate, events, commands)](#ironstar-jnv-1)
-- [🟢 ironstar-7h9.12 Wire all components together in main.rs](#ironstar-7h9-12)
-- [🟢 ironstar-7h9.10 Implement component-level hypertext templates](#ironstar-7h9-10)
-- [🟢 ironstar-7h9.3 Configure pre-commit hooks for code quality](#ironstar-7h9-3)
-- [🟢 ironstar-7h9 Presentation layer](#ironstar-7h9)
-- [🟢 ironstar-x0e.9 Create Session axum extractor](#ironstar-x0e-9)
-- [🟢 ironstar-x0e.8 Implement redb session store with ACID guarantees](#ironstar-x0e-8)
-- [🟢 ironstar-x0e.4 Implement SQLite connection pooling and configuration](#ironstar-x0e-4)
-- [🟢 ironstar-3dv.12 Create web-components/components/ directory for vanilla web components](#ironstar-3dv-12)
-- [🟢 ironstar-3dv.5 Copy Open Props UI component CSS files](#ironstar-3dv-5)
-- [🟢 ironstar-3dv Frontend build pipeline](#ironstar-3dv)
-- [🟢 ironstar-3jp.6 Define application error types](#ironstar-3jp-6)
-- [🟢 ironstar-cvo.4 Configure caching for cargo and nix](#ironstar-cvo-4)
-- [🟢 ironstar-z01.5 Add structured logging with tracing](#ironstar-z01-5)
-- [🟢 ironstar-z01.4 Create .env.development template file](#ironstar-z01-4)
-- [🟢 ironstar-z01.2 Create template parameters and conditional includes](#ironstar-z01-2)
-- [🟢 ironstar-z01.1 Create BOOTSTRAP.md with complete setup instructions](#ironstar-z01-1)
-- [🟢 ironstar-1k8.3 Create end-to-end handler tests](#ironstar-1k8-3)
-- [🟢 ironstar-1k8.2 Create projection tests](#ironstar-1k8-2)
-- [🟢 ironstar-1k8.1 Create event store integration tests](#ironstar-1k8-1)
-- [🟢 ironstar-1k8 Testing and integration](#ironstar-1k8)
-- [🟢 ironstar-7ya.3 Set up Lucide icon build-time inlining](#ironstar-7ya-3)
-- [🟢 ironstar-7ya.2 Implement sortable-list web component wrapper](#ironstar-7ya-2)
-- [🟢 ironstar-7ya.1 Implement VegaChart web component wrapper](#ironstar-7ya-1)
-- [🟢 ironstar-7ya Third-party library integration](#ironstar-7ya)
-- [🟢 ironstar-jnv Example application (Todo)](#ironstar-jnv)
-- [🟢 ironstar-7h9.14 Implement health check endpoint for process-compose](#ironstar-7h9-14)
-- [🟢 ironstar-7h9.13 Implement dev-only hotreload SSE endpoint](#ironstar-7h9-13)
-- [🟢 ironstar-x0e.10 Implement DuckDB analytics service](#ironstar-x0e-10)
-- [🟢 ironstar-z01.3 Define om CLI instantiation tests and metadata](#ironstar-z01-3)
-- [🟢 ironstar-z01 Documentation and template](#ironstar-z01)
+- [🟢 ironstar-r62.12 Implement graceful shutdown signal handling](#ironstar-r62-12)
+- [🟢 ironstar-r62.11 Implement router composition with feature routes](#ironstar-r62-11)
+- [🟢 ironstar-r62.9 Create base layout template with Datastar initialization](#ironstar-r62-9)
+- [🟢 ironstar-r62.8 Implement RenderableToDatastar conversion trait](#ironstar-r62-8)
+- [🟢 ironstar-r62.7 Implement query GET handlers](#ironstar-r62-7)
+- [🟢 ironstar-r62.6 Implement command POST handlers](#ironstar-r62-6)
+- [🟢 ironstar-r62.5 Implement SSE feed endpoint with event replay](#ironstar-r62-5)
+- [🟢 ironstar-r62.4 Define AppState struct with all dependencies](#ironstar-r62-4)
+- [🟢 ironstar-r62.2 Create devShell module with tools and environment](#ironstar-r62-2)
+- [🟢 ironstar-r62.1 Add justfile with development and build tasks](#ironstar-r62-1)
+- [🟢 ironstar-nyp.8 Implement SSE 15-second keep-alive comment stream](#ironstar-nyp-8)
+- [🟢 ironstar-nyp.7 Implement ProjectionManager with in-memory state](#ironstar-nyp-7)
+- [🟢 ironstar-nyp.6 Create Projection trait for read models](#ironstar-nyp-6)
+- [🟢 ironstar-nyp.5 Implement tokio broadcast event bus](#ironstar-nyp-5)
+- [🟢 ironstar-nyp.3 Implement SQLite event store with sqlx](#ironstar-nyp-3)
+- [🟢 ironstar-nyp.2 Create EventStore trait abstraction](#ironstar-nyp-2)
+- [🟢 ironstar-nyp.1 Create database migrations/ directory with schema.sql](#ironstar-nyp-1)
+- [🟢 ironstar-nyp Event sourcing infrastructure](#ironstar-nyp)
+- [🟢 ironstar-ny3.13 Implement rust-embed conditional asset serving](#ironstar-ny3-13)
+- [🟢 ironstar-ny3.12 Implement manifest.json parser for hashed filename resolution](#ironstar-ny3-12)
+- [🟢 ironstar-ny3.11 Create static/dist/ output directory structure](#ironstar-ny3-11)
+- [🟢 ironstar-ny3.10 Configure ts-rs export directory and justfile task](#ironstar-ny3-10)
+- [🟢 ironstar-ny3.9 Add ts-rs dependency to Cargo.toml](#ironstar-ny3-9)
+- [🟢 ironstar-ny3.8 Create web-components/index.ts entry point](#ironstar-ny3-8)
+- [🟢 ironstar-ny3.7 Create TypeScript configuration (tsconfig.json)](#ironstar-ny3-7)
+- [🟢 ironstar-ny3.5 Configure CSS cascade layers for predictable specificity](#ironstar-ny3-5)
+- [🟢 ironstar-ny3.4 Setup Open Props design tokens and theme layer](#ironstar-ny3-4)
+- [🟢 ironstar-ny3.3 Setup PostCSS configuration for modern CSS features](#ironstar-ny3-3)
+- [🟢 ironstar-ny3.2 Configure Rolldown bundler with content-based hashing](#ironstar-ny3-2)
+- [🟢 ironstar-ny3.1 Create web-components/ project structure with package.json](#ironstar-ny3-1)
+- [🟢 ironstar-2nt.7 Implement command validation pattern with Result types](#ironstar-2nt-7)
+- [🟢 ironstar-2nt.6 Enforce camelCase convention for Datastar signal fields](#ironstar-2nt-6)
+- [🟢 ironstar-2nt.5 Create Datastar signal types with ts-rs derives](#ironstar-2nt-5)
+- [🟢 ironstar-2nt.4 Design aggregate root state machines](#ironstar-2nt-4)
+- [🟢 ironstar-2nt.3 Implement value objects and smart constructors](#ironstar-2nt-3)
+- [🟢 ironstar-2nt.2 Define algebraic domain types and aggregate structure](#ironstar-2nt-2)
+- [🟢 ironstar-2nt.1 Initialize src/ directory structure with modular organization](#ironstar-2nt-1)
+- [🟢 ironstar-2nt Domain layer](#ironstar-2nt)
+- [🟢 ironstar-f8b.5 Verify process-compose up works with all services](#ironstar-f8b-5)
+- [🟢 ironstar-f8b.4 Configure cargo-watch to curl hotreload trigger on success](#ironstar-f8b-4)
+- [🟢 ironstar-f8b.3 Set up service orchestration (frontend bundler, cargo-watch)](#ironstar-f8b-3)
+- [🟢 ironstar-f8b.2 Configure process-compose.yaml for dev services](#ironstar-f8b-2)
+- [🟢 ironstar-f8b.1 Integrate process-compose-flake patterns into devShell](#ironstar-f8b-1)
+- [🟢 ironstar-f8b Process compose integration](#ironstar-f8b)
+- [🟢 ironstar-6lq.7 Add Rust to CI matrix and extend inherited workflows](#ironstar-6lq-7)
+- [🟢 ironstar-6lq.6 Add Rust checks to flake.checks for CI integration](#ironstar-6lq-6)
+- [🟢 ironstar-6lq.5 Verify cargo check passes with workspace configuration](#ironstar-6lq-5)
+- [🟢 ironstar-6lq.4 Set up per-crate crate.nix pattern for crane args](#ironstar-6lq-4)
+- [🟢 ironstar-6lq.3 Configure Cargo.toml with workspace structure (resolver = 2)](#ironstar-6lq-3)
+- [🟢 ironstar-6lq.2 Add rust-toolchain.toml with required components](#ironstar-6lq-2)
+- [🟢 ironstar-6lq.1 Integrate rust-flake patterns (crane, rust-overlay)](#ironstar-6lq-1)
+- [🟢 ironstar-6lq Rust workspace integration](#ironstar-6lq)
+- [🟢 ironstar-cxe.5 Create .gitignore with comprehensive patterns](#ironstar-cxe-5)
+- [🟢 ironstar-cxe.4 Create initial git commit with generated structure](#ironstar-cxe-4)
+- [🟢 ironstar-cxe.3 Verify nix develop enters working development shell](#ironstar-cxe-3)
+- [🟢 ironstar-cxe.2 Configure secrets management and string replacement](#ironstar-cxe-2)
+- [🟢 ironstar-cxe.1 Run om init with typescript-nix-template parameters](#ironstar-cxe-1)
+- [🟢 ironstar-cxe Template instantiation](#ironstar-cxe)
+- [🟢 ironstar-e6k.8 Implement todo example route mounting](#ironstar-e6k-8)
+- [🟢 ironstar-e6k.7 Implement todo_list_template rendering function](#ironstar-e6k-7)
+- [🟢 ironstar-e6k.6 Implement GET /todos SSE feed endpoint](#ironstar-e6k-6)
+- [🟢 ironstar-e6k.5 Implement delete_todo handler (POST /delete-todo)](#ironstar-e6k-5)
+- [🟢 ironstar-e6k.4 Implement mark_todo handler (POST /mark-todo)](#ironstar-e6k-4)
+- [🟢 ironstar-e6k.3 Implement add_todo handler (POST /add-todo)](#ironstar-e6k-3)
+- [🟢 ironstar-e6k.2 Implement TodoListProjection with in-memory rebuild](#ironstar-e6k-2)
+- [🟢 ironstar-e6k.1 Define Todo domain model (aggregate, events, commands)](#ironstar-e6k-1)
+- [🟢 ironstar-r62.13 Wire all components together in main.rs](#ironstar-r62-13)
+- [🟢 ironstar-r62.10 Implement component-level hypertext templates](#ironstar-r62-10)
+- [🟢 ironstar-r62.3 Configure pre-commit hooks for code quality](#ironstar-r62-3)
+- [🟢 ironstar-r62 Presentation layer](#ironstar-r62)
+- [🟢 ironstar-nyp.11 Create Session axum extractor](#ironstar-nyp-11)
+- [🟢 ironstar-nyp.10 Add session TTL cleanup background task](#ironstar-nyp-10)
+- [🟢 ironstar-nyp.9 Implement redb session store with ACID guarantees](#ironstar-nyp-9)
+- [🟢 ironstar-nyp.4 Implement SQLite connection pooling and configuration](#ironstar-nyp-4)
+- [🟢 ironstar-ny3.14 Create web-components/components/ directory for vanilla web components](#ironstar-ny3-14)
+- [🟢 ironstar-ny3.6 Copy Open Props UI component CSS files](#ironstar-ny3-6)
+- [🟢 ironstar-ny3 Frontend build pipeline](#ironstar-ny3)
+- [🟢 ironstar-2nt.8 Define application error types](#ironstar-2nt-8)
+- [🟢 ironstar-apx.5 Add structured logging with tracing](#ironstar-apx-5)
+- [🟢 ironstar-apx.4 Create .env.development template file](#ironstar-apx-4)
+- [🟢 ironstar-apx.2 Create template parameters and conditional includes](#ironstar-apx-2)
+- [🟢 ironstar-apx.1 Create BOOTSTRAP.md with complete setup instructions](#ironstar-apx-1)
+- [🟢 ironstar-zuv.3 Create end-to-end handler tests](#ironstar-zuv-3)
+- [🟢 ironstar-zuv.2 Create projection tests](#ironstar-zuv-2)
+- [🟢 ironstar-zuv.1 Create event store integration tests](#ironstar-zuv-1)
+- [🟢 ironstar-zuv Testing and integration](#ironstar-zuv)
+- [🟢 ironstar-753.3 Set up Lucide icon build-time inlining](#ironstar-753-3)
+- [🟢 ironstar-753.2 Implement sortable-list web component wrapper](#ironstar-753-2)
+- [🟢 ironstar-753.1 Implement VegaChart web component wrapper](#ironstar-753-1)
+- [🟢 ironstar-753 Third-party library integration](#ironstar-753)
+- [🟢 ironstar-e6k Example application (Todo)](#ironstar-e6k)
+- [🟢 ironstar-r62.15 Implement health check endpoint for process-compose](#ironstar-r62-15)
+- [🟢 ironstar-r62.14 Implement dev-only hotreload SSE endpoint](#ironstar-r62-14)
+- [🟢 ironstar-nyp.12 Implement DuckDB analytics service](#ironstar-nyp-12)
+- [🟢 ironstar-apx.3 Define om CLI instantiation tests and metadata](#ironstar-apx-3)
+- [🟢 ironstar-apx Documentation and template](#ironstar-apx)
 
 ---
 
@@ -130,379 +135,456 @@ graph TD
     classDef blocked fill:#FF5555,stroke:#333,color:#000
     classDef closed fill:#6272A4,stroke:#333,color:#fff
 
-    ironstar-7h911["ironstar-7h9.11<br/>Implement router composition with fea..."]
-    class ironstar-7h911 open
-    ironstar-7h911 -.-> ironstar-7h9
-    ironstar-7h911 ==> ironstar-7h95
-    ironstar-7h911 ==> ironstar-7h96
-    ironstar-7h911 ==> ironstar-7h97
-    ironstar-7h99["ironstar-7h9.9<br/>Create base layout template with Data..."]
-    class ironstar-7h99 open
-    ironstar-7h99 -.-> ironstar-7h9
-    ironstar-7h99 ==> ironstar-7h98
-    ironstar-7h99 ==> ironstar-3dv11
-    ironstar-7h98["ironstar-7h9.8<br/>Implement RenderableToDatastar conver..."]
-    class ironstar-7h98 open
-    ironstar-7h98 -.-> ironstar-7h9
-    ironstar-7h97["ironstar-7h9.7<br/>Implement query GET handlers"]
-    class ironstar-7h97 open
-    ironstar-7h97 -.-> ironstar-7h9
-    ironstar-7h97 ==> ironstar-7h94
-    ironstar-7h97 ==> ironstar-x0e7
-    ironstar-7h96["ironstar-7h9.6<br/>Implement command POST handlers"]
-    class ironstar-7h96 open
-    ironstar-7h96 -.-> ironstar-7h9
-    ironstar-7h96 ==> ironstar-7h94
-    ironstar-7h96 ==> ironstar-3jp4
-    ironstar-7h95["ironstar-7h9.5<br/>Implement SSE feed endpoint with even..."]
-    class ironstar-7h95 open
-    ironstar-7h95 -.-> ironstar-7h9
-    ironstar-7h95 ==> ironstar-7h94
-    ironstar-7h94["ironstar-7h9.4<br/>Define AppState struct with all depen..."]
-    class ironstar-7h94 open
-    ironstar-7h94 -.-> ironstar-7h9
-    ironstar-7h94 ==> ironstar-x0e3
-    ironstar-7h94 ==> ironstar-x0e8
-    ironstar-7h94 ==> ironstar-x0e7
-    ironstar-7h94 ==> ironstar-x0e5
-    ironstar-7h92["ironstar-7h9.2<br/>Create devShell module with tools and..."]
-    class ironstar-7h92 open
-    ironstar-7h92 -.-> ironstar-7h9
-    ironstar-7h91["ironstar-7h9.1<br/>Add justfile with development and bui..."]
-    class ironstar-7h91 open
-    ironstar-7h91 -.-> ironstar-7h9
-    ironstar-x0e7["ironstar-x0e.7<br/>Implement ProjectionManager with in-m..."]
-    class ironstar-x0e7 open
-    ironstar-x0e7 -.-> ironstar-x0e
-    ironstar-x0e7 ==> ironstar-x0e6
-    ironstar-x0e7 ==> ironstar-x0e5
-    ironstar-x0e7 ==> ironstar-x0e3
-    ironstar-x0e6["ironstar-x0e.6<br/>Create Projection trait for read models"]
-    class ironstar-x0e6 open
-    ironstar-x0e6 -.-> ironstar-x0e
-    ironstar-x0e6 ==> ironstar-3jp2
-    ironstar-x0e5["ironstar-x0e.5<br/>Implement tokio broadcast event bus"]
-    class ironstar-x0e5 open
-    ironstar-x0e5 -.-> ironstar-x0e
-    ironstar-x0e5 ==> ironstar-3jp2
-    ironstar-x0e3["ironstar-x0e.3<br/>Implement SQLite event store with sqlx"]
-    class ironstar-x0e3 open
-    ironstar-x0e3 -.-> ironstar-x0e
-    ironstar-x0e3 ==> ironstar-x0e2
-    ironstar-x0e3 ==> ironstar-x0e1
-    ironstar-x0e2["ironstar-x0e.2<br/>Create EventStore trait abstraction"]
-    class ironstar-x0e2 open
-    ironstar-x0e2 -.-> ironstar-x0e
-    ironstar-x0e2 ==> ironstar-3jp2
-    ironstar-x0e1["ironstar-x0e.1<br/>Create database migrations/ directory..."]
-    class ironstar-x0e1 open
-    ironstar-x0e1 -.-> ironstar-x0e
-    ironstar-x0e["ironstar-x0e<br/>Event sourcing infrastructure"]
-    class ironstar-x0e open
-    ironstar-x0e ==> ironstar-3jp
-    ironstar-3dv11["ironstar-3dv.11<br/>Implement rust-embed conditional asse..."]
-    class ironstar-3dv11 open
-    ironstar-3dv11 -.-> ironstar-3dv
-    ironstar-3dv11 ==> ironstar-3dv10
-    ironstar-3dv10["ironstar-3dv.10<br/>Create static/dist/ output directory ..."]
-    class ironstar-3dv10 open
-    ironstar-3dv10 -.-> ironstar-3dv
-    ironstar-3dv10 ==> ironstar-3dv2
-    ironstar-3dv9["ironstar-3dv.9<br/>Configure ts-rs export directory and ..."]
-    class ironstar-3dv9 open
-    ironstar-3dv9 -.-> ironstar-3dv
-    ironstar-3dv9 ==> ironstar-3dv8
-    ironstar-3dv8["ironstar-3dv.8<br/>Add ts-rs dependency to Cargo.toml"]
-    class ironstar-3dv8 open
-    ironstar-3dv8 -.-> ironstar-3dv
-    ironstar-3dv7["ironstar-3dv.7<br/>Create web-components/index.ts entry ..."]
-    class ironstar-3dv7 open
-    ironstar-3dv7 -.-> ironstar-3dv
-    ironstar-3dv7 ==> ironstar-3dv6
-    ironstar-3dv6["ironstar-3dv.6<br/>Create TypeScript configuration (tsco..."]
-    class ironstar-3dv6 open
-    ironstar-3dv6 -.-> ironstar-3dv
-    ironstar-3dv6 ==> ironstar-3dv1
-    ironstar-3dv4["ironstar-3dv.4<br/>Setup Open Props design tokens and th..."]
-    class ironstar-3dv4 open
-    ironstar-3dv4 -.-> ironstar-3dv
-    ironstar-3dv4 ==> ironstar-3dv3
-    ironstar-3dv3["ironstar-3dv.3<br/>Setup PostCSS configuration for moder..."]
-    class ironstar-3dv3 open
-    ironstar-3dv3 -.-> ironstar-3dv
-    ironstar-3dv3 ==> ironstar-3dv1
-    ironstar-3dv2["ironstar-3dv.2<br/>Configure Rolldown bundler with conte..."]
-    class ironstar-3dv2 open
-    ironstar-3dv2 -.-> ironstar-3dv
-    ironstar-3dv2 ==> ironstar-3dv1
-    ironstar-3dv1["ironstar-3dv.1<br/>Create web-components/ project struct..."]
-    class ironstar-3dv1 open
-    ironstar-3dv1 -.-> ironstar-3dv
-    ironstar-3jp5["ironstar-3jp.5<br/>Create Datastar signal types with ts-..."]
-    class ironstar-3jp5 open
-    ironstar-3jp5 -.-> ironstar-3jp
-    ironstar-3jp5 ==> ironstar-3jp2
-    ironstar-3jp4["ironstar-3jp.4<br/>Design aggregate root state machines"]
-    class ironstar-3jp4 open
-    ironstar-3jp4 -.-> ironstar-3jp
-    ironstar-3jp4 ==> ironstar-3jp3
-    ironstar-3jp3["ironstar-3jp.3<br/>Implement value objects and smart con..."]
-    class ironstar-3jp3 open
-    ironstar-3jp3 -.-> ironstar-3jp
-    ironstar-3jp3 ==> ironstar-3jp2
-    ironstar-3jp2["ironstar-3jp.2<br/>Define algebraic domain types and agg..."]
-    class ironstar-3jp2 open
-    ironstar-3jp2 -.-> ironstar-3jp
-    ironstar-3jp2 ==> ironstar-3jp1
-    ironstar-3jp1["ironstar-3jp.1<br/>Initialize src/ directory structure w..."]
-    class ironstar-3jp1 open
-    ironstar-3jp1 -.-> ironstar-3jp
-    ironstar-3jp["ironstar-3jp<br/>Domain layer"]
-    class ironstar-3jp open
-    ironstar-3jp ==> ironstar-cvo
-    ironstar-cvo3["ironstar-cvo.3<br/>Add flake checks and nix build verifi..."]
-    class ironstar-cvo3 open
-    ironstar-cvo3 -.-> ironstar-cvo
-    ironstar-cvo3 ==> ironstar-cvo1
-    ironstar-cvo2["ironstar-cvo.2<br/>Integrate with template CI structure"]
-    class ironstar-cvo2 open
-    ironstar-cvo2 -.-> ironstar-cvo
-    ironstar-cvo2 ==> ironstar-cvo1
-    ironstar-cvo1["ironstar-cvo.1<br/>Create reusable GitHub Actions workfl..."]
-    class ironstar-cvo1 open
-    ironstar-cvo1 -.-> ironstar-cvo
-    ironstar-cvo["ironstar-cvo<br/>CI/CD pipeline"]
-    class ironstar-cvo open
-    ironstar-cvo ==> ironstar-8bw
-    ironstar-8bw4["ironstar-8bw.4<br/>Verify process-compose up works with ..."]
-    class ironstar-8bw4 open
-    ironstar-8bw4 -.-> ironstar-8bw
-    ironstar-8bw4 ==> ironstar-8bw3
-    ironstar-8bw3["ironstar-8bw.3<br/>Set up service orchestration (fronten..."]
-    class ironstar-8bw3 open
-    ironstar-8bw3 -.-> ironstar-8bw
-    ironstar-8bw3 ==> ironstar-8bw2
-    ironstar-8bw2["ironstar-8bw.2<br/>Configure process-compose.yaml for de..."]
-    class ironstar-8bw2 open
-    ironstar-8bw2 -.-> ironstar-8bw
-    ironstar-8bw2 ==> ironstar-8bw1
-    ironstar-8bw1["ironstar-8bw.1<br/>Integrate process-compose-flake patte..."]
-    class ironstar-8bw1 open
-    ironstar-8bw1 -.-> ironstar-8bw
-    ironstar-8bw["ironstar-8bw<br/>Process compose integration"]
-    class ironstar-8bw open
-    ironstar-8bw ==> ironstar-g8e
-    ironstar-g8e5["ironstar-g8e.5<br/>Verify cargo check passes with worksp..."]
-    class ironstar-g8e5 open
-    ironstar-g8e5 -.-> ironstar-g8e
-    ironstar-g8e5 ==> ironstar-g8e4
-    ironstar-g8e4["ironstar-g8e.4<br/>Set up per-crate crate.nix pattern fo..."]
-    class ironstar-g8e4 open
-    ironstar-g8e4 -.-> ironstar-g8e
-    ironstar-g8e4 ==> ironstar-g8e3
-    ironstar-g8e3["ironstar-g8e.3<br/>Configure Cargo.toml with workspace s..."]
-    class ironstar-g8e3 open
-    ironstar-g8e3 -.-> ironstar-g8e
-    ironstar-g8e3 ==> ironstar-g8e2
-    ironstar-g8e2["ironstar-g8e.2<br/>Add rust-toolchain.toml with required..."]
-    class ironstar-g8e2 open
-    ironstar-g8e2 -.-> ironstar-g8e
-    ironstar-g8e2 ==> ironstar-g8e1
-    ironstar-g8e1["ironstar-g8e.1<br/>Integrate rust-flake patterns (crane,..."]
-    class ironstar-g8e1 open
-    ironstar-g8e1 -.-> ironstar-g8e
-    ironstar-g8e["ironstar-g8e<br/>Rust workspace integration"]
-    class ironstar-g8e open
-    ironstar-g8e ==> ironstar-vho
-    ironstar-vho5["ironstar-vho.5<br/>Create .gitignore with comprehensive ..."]
-    class ironstar-vho5 open
-    ironstar-vho5 -.-> ironstar-vho
-    ironstar-vho5 ==> ironstar-vho4
-    ironstar-vho4["ironstar-vho.4<br/>Create initial git commit with genera..."]
-    class ironstar-vho4 open
-    ironstar-vho4 -.-> ironstar-vho
-    ironstar-vho4 ==> ironstar-vho3
-    ironstar-vho4 ==> ironstar-vho2
-    ironstar-vho3["ironstar-vho.3<br/>Verify nix develop enters working dev..."]
-    class ironstar-vho3 open
-    ironstar-vho3 -.-> ironstar-vho
-    ironstar-vho3 ==> ironstar-vho1
-    ironstar-vho2["ironstar-vho.2<br/>Configure secrets management and stri..."]
-    class ironstar-vho2 open
-    ironstar-vho2 -.-> ironstar-vho
-    ironstar-vho2 ==> ironstar-vho1
-    ironstar-vho1["ironstar-vho.1<br/>Run om init with typescript-nix-templ..."]
-    class ironstar-vho1 open
-    ironstar-vho1 -.-> ironstar-vho
-    ironstar-vho["ironstar-vho<br/>Template instantiation"]
-    class ironstar-vho open
-    ironstar-jnv8["ironstar-jnv.8<br/>Implement todo example route mounting"]
-    class ironstar-jnv8 open
-    ironstar-jnv8 -.-> ironstar-jnv
-    ironstar-jnv8 ==> ironstar-jnv6
-    ironstar-jnv8 ==> ironstar-jnv3
-    ironstar-jnv8 ==> ironstar-jnv4
-    ironstar-jnv8 ==> ironstar-jnv5
-    ironstar-jnv8 ==> ironstar-jnv7
-    ironstar-jnv7["ironstar-jnv.7<br/>Implement todo_list_template renderin..."]
-    class ironstar-jnv7 open
-    ironstar-jnv7 -.-> ironstar-jnv
-    ironstar-jnv7 ==> ironstar-7h910
-    ironstar-jnv6["ironstar-jnv.6<br/>Implement GET /todos SSE feed endpoint"]
-    class ironstar-jnv6 open
-    ironstar-jnv6 -.-> ironstar-jnv
-    ironstar-jnv6 ==> ironstar-jnv2
-    ironstar-jnv6 ==> ironstar-7h95
-    ironstar-jnv5["ironstar-jnv.5<br/>Implement delete_todo handler (POST /..."]
-    class ironstar-jnv5 open
-    ironstar-jnv5 -.-> ironstar-jnv
-    ironstar-jnv5 ==> ironstar-jnv3
-    ironstar-jnv4["ironstar-jnv.4<br/>Implement mark_todo handler (POST /ma..."]
-    class ironstar-jnv4 open
-    ironstar-jnv4 -.-> ironstar-jnv
-    ironstar-jnv4 ==> ironstar-jnv3
-    ironstar-jnv3["ironstar-jnv.3<br/>Implement add_todo handler (POST /add..."]
-    class ironstar-jnv3 open
-    ironstar-jnv3 -.-> ironstar-jnv
-    ironstar-jnv3 ==> ironstar-jnv2
-    ironstar-jnv3 ==> ironstar-7h96
-    ironstar-jnv2["ironstar-jnv.2<br/>Implement TodoListProjection with in-..."]
-    class ironstar-jnv2 open
-    ironstar-jnv2 -.-> ironstar-jnv
-    ironstar-jnv2 ==> ironstar-jnv1
-    ironstar-jnv2 ==> ironstar-x0e7
-    ironstar-jnv1["ironstar-jnv.1<br/>Define Todo domain model (aggregate, ..."]
-    class ironstar-jnv1 open
-    ironstar-jnv1 -.-> ironstar-jnv
-    ironstar-jnv1 ==> ironstar-3jp2
-    ironstar-7h912["ironstar-7h9.12<br/>Wire all components together in main.rs"]
-    class ironstar-7h912 open
-    ironstar-7h912 -.-> ironstar-7h9
-    ironstar-7h912 ==> ironstar-7h911
-    ironstar-7h910["ironstar-7h9.10<br/>Implement component-level hypertext t..."]
-    class ironstar-7h910 open
-    ironstar-7h910 -.-> ironstar-7h9
-    ironstar-7h910 ==> ironstar-7h99
-    ironstar-7h93["ironstar-7h9.3<br/>Configure pre-commit hooks for code q..."]
-    class ironstar-7h93 open
-    ironstar-7h93 -.-> ironstar-7h9
-    ironstar-7h93 ==> ironstar-7h92
-    ironstar-7h9["ironstar-7h9<br/>Presentation layer"]
-    class ironstar-7h9 open
-    ironstar-7h9 ==> ironstar-x0e
-    ironstar-7h9 ==> ironstar-3dv
-    ironstar-x0e9["ironstar-x0e.9<br/>Create Session axum extractor"]
-    class ironstar-x0e9 open
-    ironstar-x0e9 -.-> ironstar-x0e
-    ironstar-x0e9 ==> ironstar-x0e8
-    ironstar-x0e8["ironstar-x0e.8<br/>Implement redb session store with ACI..."]
-    class ironstar-x0e8 open
-    ironstar-x0e8 -.-> ironstar-x0e
-    ironstar-x0e8 ==> ironstar-3jp2
-    ironstar-x0e4["ironstar-x0e.4<br/>Implement SQLite connection pooling a..."]
-    class ironstar-x0e4 open
-    ironstar-x0e4 -.-> ironstar-x0e
-    ironstar-x0e4 ==> ironstar-x0e3
-    ironstar-3dv12["ironstar-3dv.12<br/>Create web-components/components/ dir..."]
-    class ironstar-3dv12 open
-    ironstar-3dv12 -.-> ironstar-3dv
-    ironstar-3dv12 ==> ironstar-3dv7
-    ironstar-3dv5["ironstar-3dv.5<br/>Copy Open Props UI component CSS files"]
-    class ironstar-3dv5 open
-    ironstar-3dv5 -.-> ironstar-3dv
-    ironstar-3dv5 ==> ironstar-3dv4
-    ironstar-3dv["ironstar-3dv<br/>Frontend build pipeline"]
-    class ironstar-3dv open
-    ironstar-3dv ==> ironstar-cvo
-    ironstar-3jp6["ironstar-3jp.6<br/>Define application error types"]
-    class ironstar-3jp6 open
-    ironstar-3jp6 -.-> ironstar-3jp
-    ironstar-3jp6 ==> ironstar-3jp2
-    ironstar-cvo4["ironstar-cvo.4<br/>Configure caching for cargo and nix"]
-    class ironstar-cvo4 open
-    ironstar-cvo4 -.-> ironstar-cvo
-    ironstar-cvo4 ==> ironstar-cvo2
-    ironstar-z015["ironstar-z01.5<br/>Add structured logging with tracing"]
-    class ironstar-z015 open
-    ironstar-z015 -.-> ironstar-z01
-    ironstar-z015 ==> ironstar-7h912
-    ironstar-z014["ironstar-z01.4<br/>Create .env.development template file"]
-    class ironstar-z014 open
-    ironstar-z014 -.-> ironstar-z01
-    ironstar-z014 ==> ironstar-x0e3
-    ironstar-z012["ironstar-z01.2<br/>Create template parameters and condit..."]
-    class ironstar-z012 open
-    ironstar-z012 -.-> ironstar-z01
-    ironstar-z012 ==> ironstar-g8e1
-    ironstar-z011["ironstar-z01.1<br/>Create BOOTSTRAP.md with complete set..."]
-    class ironstar-z011 open
-    ironstar-z011 -.-> ironstar-z01
-    ironstar-z011 ==> ironstar-7h912
-    ironstar-1k83["ironstar-1k8.3<br/>Create end-to-end handler tests"]
-    class ironstar-1k83 open
-    ironstar-1k83 -.-> ironstar-1k8
-    ironstar-1k83 ==> ironstar-7h912
-    ironstar-1k82["ironstar-1k8.2<br/>Create projection tests"]
-    class ironstar-1k82 open
-    ironstar-1k82 -.-> ironstar-1k8
-    ironstar-1k82 ==> ironstar-x0e7
-    ironstar-1k81["ironstar-1k8.1<br/>Create event store integration tests"]
-    class ironstar-1k81 open
-    ironstar-1k81 -.-> ironstar-1k8
-    ironstar-1k81 ==> ironstar-x0e3
-    ironstar-1k8["ironstar-1k8<br/>Testing and integration"]
-    class ironstar-1k8 open
-    ironstar-1k8 ==> ironstar-jnv
-    ironstar-7ya3["ironstar-7ya.3<br/>Set up Lucide icon build-time inlining"]
-    class ironstar-7ya3 open
-    ironstar-7ya3 -.-> ironstar-7ya
-    ironstar-7ya3 ==> ironstar-3dv2
-    ironstar-7ya2["ironstar-7ya.2<br/>Implement sortable-list web component..."]
-    class ironstar-7ya2 open
-    ironstar-7ya2 -.-> ironstar-7ya
-    ironstar-7ya2 ==> ironstar-3dv12
-    ironstar-7ya1["ironstar-7ya.1<br/>Implement VegaChart web component wra..."]
-    class ironstar-7ya1 open
-    ironstar-7ya1 -.-> ironstar-7ya
-    ironstar-7ya1 ==> ironstar-3dv12
-    ironstar-7ya["ironstar-7ya<br/>Third-party library integration"]
-    class ironstar-7ya open
-    ironstar-7ya ==> ironstar-3dv
-    ironstar-jnv["ironstar-jnv<br/>Example application (Todo)"]
-    class ironstar-jnv open
-    ironstar-jnv ==> ironstar-7h9
-    ironstar-7h914["ironstar-7h9.14<br/>Implement health check endpoint for p..."]
-    class ironstar-7h914 open
-    ironstar-7h914 -.-> ironstar-7h9
-    ironstar-7h914 ==> ironstar-7h911
-    ironstar-7h913["ironstar-7h9.13<br/>Implement dev-only hotreload SSE endp..."]
-    class ironstar-7h913 open
-    ironstar-7h913 -.-> ironstar-7h9
-    ironstar-7h913 ==> ironstar-7h95
-    ironstar-x0e10["ironstar-x0e.10<br/>Implement DuckDB analytics service"]
-    class ironstar-x0e10 open
-    ironstar-x0e10 -.-> ironstar-x0e
-    ironstar-x0e10 ==> ironstar-3jp2
-    ironstar-z013["ironstar-z01.3<br/>Define om CLI instantiation tests and..."]
-    class ironstar-z013 open
-    ironstar-z013 -.-> ironstar-z01
-    ironstar-z013 ==> ironstar-z012
-    ironstar-z01["ironstar-z01<br/>Documentation and template"]
-    class ironstar-z01 open
-    ironstar-z01 ==> ironstar-1k8
+    ironstar-r6212["ironstar-r62.12<br/>Implement graceful shutdown signal ha..."]
+    class ironstar-r6212 open
+    ironstar-r6212 -.-> ironstar-r62
+    ironstar-r6212 ==> ironstar-r6211
+    ironstar-r6211["ironstar-r62.11<br/>Implement router composition with fea..."]
+    class ironstar-r6211 open
+    ironstar-r6211 -.-> ironstar-r62
+    ironstar-r6211 ==> ironstar-r625
+    ironstar-r6211 ==> ironstar-r626
+    ironstar-r6211 ==> ironstar-r627
+    ironstar-r629["ironstar-r62.9<br/>Create base layout template with Data..."]
+    class ironstar-r629 open
+    ironstar-r629 -.-> ironstar-r62
+    ironstar-r629 ==> ironstar-r628
+    ironstar-r629 ==> ironstar-ny313
+    ironstar-r628["ironstar-r62.8<br/>Implement RenderableToDatastar conver..."]
+    class ironstar-r628 open
+    ironstar-r628 -.-> ironstar-r62
+    ironstar-r627["ironstar-r62.7<br/>Implement query GET handlers"]
+    class ironstar-r627 open
+    ironstar-r627 -.-> ironstar-r62
+    ironstar-r627 ==> ironstar-r624
+    ironstar-r627 ==> ironstar-nyp7
+    ironstar-r626["ironstar-r62.6<br/>Implement command POST handlers"]
+    class ironstar-r626 open
+    ironstar-r626 -.-> ironstar-r62
+    ironstar-r626 ==> ironstar-r624
+    ironstar-r626 ==> ironstar-2nt4
+    ironstar-r625["ironstar-r62.5<br/>Implement SSE feed endpoint with even..."]
+    class ironstar-r625 open
+    ironstar-r625 -.-> ironstar-r62
+    ironstar-r625 ==> ironstar-r624
+    ironstar-r625 ==> ironstar-nyp8
+    ironstar-r624["ironstar-r62.4<br/>Define AppState struct with all depen..."]
+    class ironstar-r624 open
+    ironstar-r624 -.-> ironstar-r62
+    ironstar-r624 ==> ironstar-nyp3
+    ironstar-r624 ==> ironstar-nyp10
+    ironstar-r624 ==> ironstar-nyp7
+    ironstar-r624 ==> ironstar-nyp5
+    ironstar-r622["ironstar-r62.2<br/>Create devShell module with tools and..."]
+    class ironstar-r622 open
+    ironstar-r622 -.-> ironstar-r62
+    ironstar-r621["ironstar-r62.1<br/>Add justfile with development and bui..."]
+    class ironstar-r621 open
+    ironstar-r621 -.-> ironstar-r62
+    ironstar-nyp8["ironstar-nyp.8<br/>Implement SSE 15-second keep-alive co..."]
+    class ironstar-nyp8 open
+    ironstar-nyp8 -.-> ironstar-nyp
+    ironstar-nyp8 ==> ironstar-nyp5
+    ironstar-nyp7["ironstar-nyp.7<br/>Implement ProjectionManager with in-m..."]
+    class ironstar-nyp7 open
+    ironstar-nyp7 -.-> ironstar-nyp
+    ironstar-nyp7 ==> ironstar-nyp6
+    ironstar-nyp7 ==> ironstar-nyp5
+    ironstar-nyp7 ==> ironstar-nyp3
+    ironstar-nyp6["ironstar-nyp.6<br/>Create Projection trait for read models"]
+    class ironstar-nyp6 open
+    ironstar-nyp6 -.-> ironstar-nyp
+    ironstar-nyp6 ==> ironstar-2nt2
+    ironstar-nyp5["ironstar-nyp.5<br/>Implement tokio broadcast event bus"]
+    class ironstar-nyp5 open
+    ironstar-nyp5 -.-> ironstar-nyp
+    ironstar-nyp5 ==> ironstar-2nt2
+    ironstar-nyp3["ironstar-nyp.3<br/>Implement SQLite event store with sqlx"]
+    class ironstar-nyp3 open
+    ironstar-nyp3 -.-> ironstar-nyp
+    ironstar-nyp3 ==> ironstar-nyp2
+    ironstar-nyp3 ==> ironstar-nyp1
+    ironstar-nyp2["ironstar-nyp.2<br/>Create EventStore trait abstraction"]
+    class ironstar-nyp2 open
+    ironstar-nyp2 -.-> ironstar-nyp
+    ironstar-nyp2 ==> ironstar-2nt2
+    ironstar-nyp1["ironstar-nyp.1<br/>Create database migrations/ directory..."]
+    class ironstar-nyp1 open
+    ironstar-nyp1 -.-> ironstar-nyp
+    ironstar-nyp["ironstar-nyp<br/>Event sourcing infrastructure"]
+    class ironstar-nyp open
+    ironstar-nyp ==> ironstar-2nt
+    ironstar-ny313["ironstar-ny3.13<br/>Implement rust-embed conditional asse..."]
+    class ironstar-ny313 open
+    ironstar-ny313 -.-> ironstar-ny3
+    ironstar-ny313 ==> ironstar-ny312
+    ironstar-ny312["ironstar-ny3.12<br/>Implement manifest.json parser for ha..."]
+    class ironstar-ny312 open
+    ironstar-ny312 -.-> ironstar-ny3
+    ironstar-ny312 ==> ironstar-ny311
+    ironstar-ny311["ironstar-ny3.11<br/>Create static/dist/ output directory ..."]
+    class ironstar-ny311 open
+    ironstar-ny311 -.-> ironstar-ny3
+    ironstar-ny311 ==> ironstar-ny32
+    ironstar-ny310["ironstar-ny3.10<br/>Configure ts-rs export directory and ..."]
+    class ironstar-ny310 open
+    ironstar-ny310 -.-> ironstar-ny3
+    ironstar-ny310 ==> ironstar-ny39
+    ironstar-ny310 ==> ironstar-2nt5
+    ironstar-ny39["ironstar-ny3.9<br/>Add ts-rs dependency to Cargo.toml"]
+    class ironstar-ny39 open
+    ironstar-ny39 -.-> ironstar-ny3
+    ironstar-ny38["ironstar-ny3.8<br/>Create web-components/index.ts entry ..."]
+    class ironstar-ny38 open
+    ironstar-ny38 -.-> ironstar-ny3
+    ironstar-ny38 ==> ironstar-ny37
+    ironstar-ny37["ironstar-ny3.7<br/>Create TypeScript configuration (tsco..."]
+    class ironstar-ny37 open
+    ironstar-ny37 -.-> ironstar-ny3
+    ironstar-ny37 ==> ironstar-ny31
+    ironstar-ny35["ironstar-ny3.5<br/>Configure CSS cascade layers for pred..."]
+    class ironstar-ny35 open
+    ironstar-ny35 -.-> ironstar-ny3
+    ironstar-ny35 ==> ironstar-ny34
+    ironstar-ny34["ironstar-ny3.4<br/>Setup Open Props design tokens and th..."]
+    class ironstar-ny34 open
+    ironstar-ny34 -.-> ironstar-ny3
+    ironstar-ny34 ==> ironstar-ny33
+    ironstar-ny33["ironstar-ny3.3<br/>Setup PostCSS configuration for moder..."]
+    class ironstar-ny33 open
+    ironstar-ny33 -.-> ironstar-ny3
+    ironstar-ny33 ==> ironstar-ny31
+    ironstar-ny32["ironstar-ny3.2<br/>Configure Rolldown bundler with conte..."]
+    class ironstar-ny32 open
+    ironstar-ny32 -.-> ironstar-ny3
+    ironstar-ny32 ==> ironstar-ny31
+    ironstar-ny31["ironstar-ny3.1<br/>Create web-components/ project struct..."]
+    class ironstar-ny31 open
+    ironstar-ny31 -.-> ironstar-ny3
+    ironstar-2nt7["ironstar-2nt.7<br/>Implement command validation pattern ..."]
+    class ironstar-2nt7 open
+    ironstar-2nt7 -.-> ironstar-2nt
+    ironstar-2nt7 ==> ironstar-2nt4
+    ironstar-2nt6["ironstar-2nt.6<br/>Enforce camelCase convention for Data..."]
+    class ironstar-2nt6 open
+    ironstar-2nt6 -.-> ironstar-2nt
+    ironstar-2nt6 ==> ironstar-2nt5
+    ironstar-2nt5["ironstar-2nt.5<br/>Create Datastar signal types with ts-..."]
+    class ironstar-2nt5 open
+    ironstar-2nt5 -.-> ironstar-2nt
+    ironstar-2nt5 ==> ironstar-2nt2
+    ironstar-2nt4["ironstar-2nt.4<br/>Design aggregate root state machines"]
+    class ironstar-2nt4 open
+    ironstar-2nt4 -.-> ironstar-2nt
+    ironstar-2nt4 ==> ironstar-2nt3
+    ironstar-2nt3["ironstar-2nt.3<br/>Implement value objects and smart con..."]
+    class ironstar-2nt3 open
+    ironstar-2nt3 -.-> ironstar-2nt
+    ironstar-2nt3 ==> ironstar-2nt2
+    ironstar-2nt2["ironstar-2nt.2<br/>Define algebraic domain types and agg..."]
+    class ironstar-2nt2 open
+    ironstar-2nt2 -.-> ironstar-2nt
+    ironstar-2nt2 ==> ironstar-2nt1
+    ironstar-2nt1["ironstar-2nt.1<br/>Initialize src/ directory structure w..."]
+    class ironstar-2nt1 open
+    ironstar-2nt1 -.-> ironstar-2nt
+    ironstar-2nt["ironstar-2nt<br/>Domain layer"]
+    class ironstar-2nt open
+    ironstar-2nt ==> ironstar-6lq5
+    ironstar-f8b5["ironstar-f8b.5<br/>Verify process-compose up works with ..."]
+    class ironstar-f8b5 open
+    ironstar-f8b5 -.-> ironstar-f8b
+    ironstar-f8b5 ==> ironstar-f8b4
+    ironstar-f8b4["ironstar-f8b.4<br/>Configure cargo-watch to curl hotrelo..."]
+    class ironstar-f8b4 open
+    ironstar-f8b4 -.-> ironstar-f8b
+    ironstar-f8b4 ==> ironstar-f8b3
+    ironstar-f8b3["ironstar-f8b.3<br/>Set up service orchestration (fronten..."]
+    class ironstar-f8b3 open
+    ironstar-f8b3 -.-> ironstar-f8b
+    ironstar-f8b3 ==> ironstar-f8b2
+    ironstar-f8b2["ironstar-f8b.2<br/>Configure process-compose.yaml for de..."]
+    class ironstar-f8b2 open
+    ironstar-f8b2 -.-> ironstar-f8b
+    ironstar-f8b2 ==> ironstar-f8b1
+    ironstar-f8b1["ironstar-f8b.1<br/>Integrate process-compose-flake patte..."]
+    class ironstar-f8b1 open
+    ironstar-f8b1 -.-> ironstar-f8b
+    ironstar-f8b["ironstar-f8b<br/>Process compose integration"]
+    class ironstar-f8b open
+    ironstar-f8b ==> ironstar-6lq
+    ironstar-6lq7["ironstar-6lq.7<br/>Add Rust to CI matrix and extend inhe..."]
+    class ironstar-6lq7 open
+    ironstar-6lq7 -.-> ironstar-6lq
+    ironstar-6lq7 ==> ironstar-6lq6
+    ironstar-6lq6["ironstar-6lq.6<br/>Add Rust checks to flake.checks for C..."]
+    class ironstar-6lq6 open
+    ironstar-6lq6 -.-> ironstar-6lq
+    ironstar-6lq6 ==> ironstar-6lq4
+    ironstar-6lq5["ironstar-6lq.5<br/>Verify cargo check passes with worksp..."]
+    class ironstar-6lq5 open
+    ironstar-6lq5 -.-> ironstar-6lq
+    ironstar-6lq5 ==> ironstar-6lq4
+    ironstar-6lq4["ironstar-6lq.4<br/>Set up per-crate crate.nix pattern fo..."]
+    class ironstar-6lq4 open
+    ironstar-6lq4 -.-> ironstar-6lq
+    ironstar-6lq4 ==> ironstar-6lq3
+    ironstar-6lq3["ironstar-6lq.3<br/>Configure Cargo.toml with workspace s..."]
+    class ironstar-6lq3 open
+    ironstar-6lq3 -.-> ironstar-6lq
+    ironstar-6lq3 ==> ironstar-6lq2
+    ironstar-6lq2["ironstar-6lq.2<br/>Add rust-toolchain.toml with required..."]
+    class ironstar-6lq2 open
+    ironstar-6lq2 -.-> ironstar-6lq
+    ironstar-6lq2 ==> ironstar-6lq1
+    ironstar-6lq1["ironstar-6lq.1<br/>Integrate rust-flake patterns (crane,..."]
+    class ironstar-6lq1 open
+    ironstar-6lq1 -.-> ironstar-6lq
+    ironstar-6lq["ironstar-6lq<br/>Rust workspace integration"]
+    class ironstar-6lq open
+    ironstar-6lq ==> ironstar-cxe
+    ironstar-cxe5["ironstar-cxe.5<br/>Create .gitignore with comprehensive ..."]
+    class ironstar-cxe5 open
+    ironstar-cxe5 -.-> ironstar-cxe
+    ironstar-cxe4["ironstar-cxe.4<br/>Create initial git commit with genera..."]
+    class ironstar-cxe4 open
+    ironstar-cxe4 -.-> ironstar-cxe
+    ironstar-cxe4 ==> ironstar-cxe3
+    ironstar-cxe4 ==> ironstar-cxe2
+    ironstar-cxe3["ironstar-cxe.3<br/>Verify nix develop enters working dev..."]
+    class ironstar-cxe3 open
+    ironstar-cxe3 -.-> ironstar-cxe
+    ironstar-cxe3 ==> ironstar-cxe1
+    ironstar-cxe2["ironstar-cxe.2<br/>Configure secrets management and stri..."]
+    class ironstar-cxe2 open
+    ironstar-cxe2 -.-> ironstar-cxe
+    ironstar-cxe2 ==> ironstar-cxe1
+    ironstar-cxe1["ironstar-cxe.1<br/>Run om init with typescript-nix-templ..."]
+    class ironstar-cxe1 open
+    ironstar-cxe1 -.-> ironstar-cxe
+    ironstar-cxe["ironstar-cxe<br/>Template instantiation"]
+    class ironstar-cxe open
+    ironstar-e6k8["ironstar-e6k.8<br/>Implement todo example route mounting"]
+    class ironstar-e6k8 open
+    ironstar-e6k8 -.-> ironstar-e6k
+    ironstar-e6k8 ==> ironstar-e6k6
+    ironstar-e6k8 ==> ironstar-e6k3
+    ironstar-e6k8 ==> ironstar-e6k4
+    ironstar-e6k8 ==> ironstar-e6k5
+    ironstar-e6k8 ==> ironstar-e6k7
+    ironstar-e6k7["ironstar-e6k.7<br/>Implement todo_list_template renderin..."]
+    class ironstar-e6k7 open
+    ironstar-e6k7 -.-> ironstar-e6k
+    ironstar-e6k7 ==> ironstar-r6210
+    ironstar-e6k6["ironstar-e6k.6<br/>Implement GET /todos SSE feed endpoint"]
+    class ironstar-e6k6 open
+    ironstar-e6k6 -.-> ironstar-e6k
+    ironstar-e6k6 ==> ironstar-e6k2
+    ironstar-e6k6 ==> ironstar-r625
+    ironstar-e6k5["ironstar-e6k.5<br/>Implement delete_todo handler (POST /..."]
+    class ironstar-e6k5 open
+    ironstar-e6k5 -.-> ironstar-e6k
+    ironstar-e6k5 ==> ironstar-e6k3
+    ironstar-e6k4["ironstar-e6k.4<br/>Implement mark_todo handler (POST /ma..."]
+    class ironstar-e6k4 open
+    ironstar-e6k4 -.-> ironstar-e6k
+    ironstar-e6k4 ==> ironstar-e6k3
+    ironstar-e6k3["ironstar-e6k.3<br/>Implement add_todo handler (POST /add..."]
+    class ironstar-e6k3 open
+    ironstar-e6k3 -.-> ironstar-e6k
+    ironstar-e6k3 ==> ironstar-e6k2
+    ironstar-e6k3 ==> ironstar-r626
+    ironstar-e6k2["ironstar-e6k.2<br/>Implement TodoListProjection with in-..."]
+    class ironstar-e6k2 open
+    ironstar-e6k2 -.-> ironstar-e6k
+    ironstar-e6k2 ==> ironstar-e6k1
+    ironstar-e6k2 ==> ironstar-nyp7
+    ironstar-e6k1["ironstar-e6k.1<br/>Define Todo domain model (aggregate, ..."]
+    class ironstar-e6k1 open
+    ironstar-e6k1 -.-> ironstar-e6k
+    ironstar-e6k1 ==> ironstar-2nt2
+    ironstar-e6k1 ==> ironstar-2nt4
+    ironstar-r6213["ironstar-r62.13<br/>Wire all components together in main.rs"]
+    class ironstar-r6213 open
+    ironstar-r6213 -.-> ironstar-r62
+    ironstar-r6213 ==> ironstar-r6212
+    ironstar-r6210["ironstar-r62.10<br/>Implement component-level hypertext t..."]
+    class ironstar-r6210 open
+    ironstar-r6210 -.-> ironstar-r62
+    ironstar-r6210 ==> ironstar-r629
+    ironstar-r623["ironstar-r62.3<br/>Configure pre-commit hooks for code q..."]
+    class ironstar-r623 open
+    ironstar-r623 -.-> ironstar-r62
+    ironstar-r623 ==> ironstar-r622
+    ironstar-r62["ironstar-r62<br/>Presentation layer"]
+    class ironstar-r62 open
+    ironstar-r62 ==> ironstar-nyp
+    ironstar-r62 ==> ironstar-ny3
+    ironstar-nyp11["ironstar-nyp.11<br/>Create Session axum extractor"]
+    class ironstar-nyp11 open
+    ironstar-nyp11 -.-> ironstar-nyp
+    ironstar-nyp11 ==> ironstar-nyp10
+    ironstar-nyp10["ironstar-nyp.10<br/>Add session TTL cleanup background task"]
+    class ironstar-nyp10 open
+    ironstar-nyp10 -.-> ironstar-nyp
+    ironstar-nyp10 ==> ironstar-nyp9
+    ironstar-nyp9["ironstar-nyp.9<br/>Implement redb session store with ACI..."]
+    class ironstar-nyp9 open
+    ironstar-nyp9 -.-> ironstar-nyp
+    ironstar-nyp9 ==> ironstar-2nt2
+    ironstar-nyp4["ironstar-nyp.4<br/>Implement SQLite connection pooling a..."]
+    class ironstar-nyp4 open
+    ironstar-nyp4 -.-> ironstar-nyp
+    ironstar-nyp4 ==> ironstar-nyp3
+    ironstar-ny314["ironstar-ny3.14<br/>Create web-components/components/ dir..."]
+    class ironstar-ny314 open
+    ironstar-ny314 -.-> ironstar-ny3
+    ironstar-ny314 ==> ironstar-ny38
+    ironstar-ny36["ironstar-ny3.6<br/>Copy Open Props UI component CSS files"]
+    class ironstar-ny36 open
+    ironstar-ny36 -.-> ironstar-ny3
+    ironstar-ny36 ==> ironstar-ny35
+    ironstar-ny3["ironstar-ny3<br/>Frontend build pipeline"]
+    class ironstar-ny3 open
+    ironstar-ny3 ==> ironstar-6lq7
+    ironstar-2nt8["ironstar-2nt.8<br/>Define application error types"]
+    class ironstar-2nt8 open
+    ironstar-2nt8 -.-> ironstar-2nt
+    ironstar-2nt8 ==> ironstar-2nt2
+    ironstar-apx5["ironstar-apx.5<br/>Add structured logging with tracing"]
+    class ironstar-apx5 open
+    ironstar-apx5 -.-> ironstar-apx
+    ironstar-apx5 ==> ironstar-r6213
+    ironstar-apx4["ironstar-apx.4<br/>Create .env.development template file"]
+    class ironstar-apx4 open
+    ironstar-apx4 -.-> ironstar-apx
+    ironstar-apx4 ==> ironstar-nyp3
+    ironstar-apx2["ironstar-apx.2<br/>Create template parameters and condit..."]
+    class ironstar-apx2 open
+    ironstar-apx2 -.-> ironstar-apx
+    ironstar-apx2 ==> ironstar-6lq1
+    ironstar-apx1["ironstar-apx.1<br/>Create BOOTSTRAP.md with complete set..."]
+    class ironstar-apx1 open
+    ironstar-apx1 -.-> ironstar-apx
+    ironstar-apx1 ==> ironstar-r6213
+    ironstar-zuv3["ironstar-zuv.3<br/>Create end-to-end handler tests"]
+    class ironstar-zuv3 open
+    ironstar-zuv3 -.-> ironstar-zuv
+    ironstar-zuv3 ==> ironstar-r6213
+    ironstar-zuv2["ironstar-zuv.2<br/>Create projection tests"]
+    class ironstar-zuv2 open
+    ironstar-zuv2 -.-> ironstar-zuv
+    ironstar-zuv2 ==> ironstar-nyp7
+    ironstar-zuv1["ironstar-zuv.1<br/>Create event store integration tests"]
+    class ironstar-zuv1 open
+    ironstar-zuv1 -.-> ironstar-zuv
+    ironstar-zuv1 ==> ironstar-nyp3
+    ironstar-zuv["ironstar-zuv<br/>Testing and integration"]
+    class ironstar-zuv open
+    ironstar-zuv ==> ironstar-e6k
+    ironstar-7533["ironstar-753.3<br/>Set up Lucide icon build-time inlining"]
+    class ironstar-7533 open
+    ironstar-7533 -.-> ironstar-753
+    ironstar-7533 ==> ironstar-ny32
+    ironstar-7532["ironstar-753.2<br/>Implement sortable-list web component..."]
+    class ironstar-7532 open
+    ironstar-7532 -.-> ironstar-753
+    ironstar-7532 ==> ironstar-ny314
+    ironstar-7531["ironstar-753.1<br/>Implement VegaChart web component wra..."]
+    class ironstar-7531 open
+    ironstar-7531 -.-> ironstar-753
+    ironstar-7531 ==> ironstar-ny314
+    ironstar-753["ironstar-753<br/>Third-party library integration"]
+    class ironstar-753 open
+    ironstar-753 ==> ironstar-ny3
+    ironstar-e6k["ironstar-e6k<br/>Example application (Todo)"]
+    class ironstar-e6k open
+    ironstar-e6k ==> ironstar-r62
+    ironstar-r6215["ironstar-r62.15<br/>Implement health check endpoint for p..."]
+    class ironstar-r6215 open
+    ironstar-r6215 -.-> ironstar-r62
+    ironstar-r6215 ==> ironstar-r6211
+    ironstar-r6214["ironstar-r62.14<br/>Implement dev-only hotreload SSE endp..."]
+    class ironstar-r6214 open
+    ironstar-r6214 -.-> ironstar-r62
+    ironstar-r6214 ==> ironstar-r625
+    ironstar-nyp12["ironstar-nyp.12<br/>Implement DuckDB analytics service"]
+    class ironstar-nyp12 open
+    ironstar-nyp12 -.-> ironstar-nyp
+    ironstar-nyp12 ==> ironstar-2nt2
+    ironstar-apx3["ironstar-apx.3<br/>Define om CLI instantiation tests and..."]
+    class ironstar-apx3 open
+    ironstar-apx3 -.-> ironstar-apx
+    ironstar-apx3 ==> ironstar-apx2
+    ironstar-apx["ironstar-apx<br/>Documentation and template"]
+    class ironstar-apx open
+    ironstar-apx ==> ironstar-zuv
 ```
 
 ---
 
-## 📋 ironstar-7h9.11 Implement router composition with feature routes
+## 📋 ironstar-r62.12 Implement graceful shutdown signal handling
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
+
+### Description
+
+Add tokio signal handling for SIGTERM/SIGINT:
+async fn shutdown_signal() {
+    let ctrl_c = tokio::signal::ctrl_c();
+    #[cfg(unix)]
+    let terminate = async {
+        tokio::signal::unix::signal(SignalKind::terminate()).unwrap().recv().await;
+    };
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
+    }
+}
+axum::Server::bind(&addr).serve(app.into_make_service()).with_graceful_shutdown(shutdown_signal()).await
+Ensures clean shutdown of EventStore, SessionStore, and SSE connections.
+
+### Dependencies
+
+- 🔗 **parent-child**: `ironstar-r62`
+- ⛔ **blocks**: `ironstar-r62.11`
+
+<details>
+<summary>📋 Commands</summary>
+
+```bash
+# Start working on this issue
+bd update ironstar-r62.12 -s in_progress
+
+# Add a comment
+bd comment ironstar-r62.12 'Your comment here'
+
+# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
+bd update ironstar-r62.12 -p 1
+
+# View full details
+bd show ironstar-r62.12
+```
+
+</details>
+
+---
+
+## 📋 ironstar-r62.11 Implement router composition with feature routes
+
+| Property | Value |
+|----------|-------|
+| **Type** | 📋 task |
+| **Priority** | 🔥 Critical (P0) |
+| **Status** | 🟢 open |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -511,41 +593,41 @@ Local refs: ~/projects/rust-workspace/axum
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-7h9`
-- ⛔ **blocks**: `ironstar-7h9.5`
-- ⛔ **blocks**: `ironstar-7h9.6`
-- ⛔ **blocks**: `ironstar-7h9.7`
+- 🔗 **parent-child**: `ironstar-r62`
+- ⛔ **blocks**: `ironstar-r62.5`
+- ⛔ **blocks**: `ironstar-r62.6`
+- ⛔ **blocks**: `ironstar-r62.7`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-7h9.11 -s in_progress
+bd update ironstar-r62.11 -s in_progress
 
 # Add a comment
-bd comment ironstar-7h9.11 'Your comment here'
+bd comment ironstar-r62.11 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-7h9.11 -p 1
+bd update ironstar-r62.11 -p 1
 
 # View full details
-bd show ironstar-7h9.11
+bd show ironstar-r62.11
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-7h9.9 Create base layout template with Datastar initialization
+## 📋 ironstar-r62.9 Create base layout template with Datastar initialization
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -554,80 +636,91 @@ Local refs: ~/projects/rust-workspace/hypertext, ~/projects/lakescope-workspace/
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-7h9`
-- ⛔ **blocks**: `ironstar-7h9.8`
-- ⛔ **blocks**: `ironstar-3dv.11`
+- 🔗 **parent-child**: `ironstar-r62`
+- ⛔ **blocks**: `ironstar-r62.8`
+- ⛔ **blocks**: `ironstar-ny3.13`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-7h9.9 -s in_progress
+bd update ironstar-r62.9 -s in_progress
 
 # Add a comment
-bd comment ironstar-7h9.9 'Your comment here'
+bd comment ironstar-r62.9 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-7h9.9 -p 1
+bd update ironstar-r62.9 -p 1
 
 # View full details
-bd show ironstar-7h9.9
+bd show ironstar-r62.9
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-7h9.8 Implement RenderableToDatastar conversion trait
+## 📋 ironstar-r62.8 Implement RenderableToDatastar conversion trait
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
-Create extension trait for hypertext::Renderable with to_patch_elements(), append_to(selector), replace_inner(selector) methods that convert HTML to datastar-rust PatchElements. Bridges hypertext templates to Datastar SSE without manual boilerplate.
+Create extension trait for hypertext::Renderable:
+trait RenderableToDatastar {
+    fn to_patch_elements(self) -> PatchElements;
+    fn append_to(self, selector: &str) -> PatchElements;
+    fn replace_inner(self, selector: &str) -> PatchElements;
+}
+impl<T: Renderable> RenderableToDatastar for T {
+    fn to_patch_elements(self) -> PatchElements { PatchElements::new(self.render().to_string()) }
+    fn append_to(self, selector: &str) -> PatchElements { PatchElements::new(self.render().to_string()).append(selector) }
+    fn replace_inner(self, selector: &str) -> PatchElements { PatchElements::new(self.render().to_string()).replace_inner(selector) }
+}
+Bridges hypertext templates to Datastar SSE without manual boilerplate.
 Local refs: ~/projects/rust-workspace/hypertext, ~/projects/rust-workspace/datastar-rust
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-7h9`
+- 🔗 **parent-child**: `ironstar-r62`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-7h9.8 -s in_progress
+bd update ironstar-r62.8 -s in_progress
 
 # Add a comment
-bd comment ironstar-7h9.8 'Your comment here'
+bd comment ironstar-r62.8 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-7h9.8 -p 1
+bd update ironstar-r62.8 -p 1
 
 # View full details
-bd show ironstar-7h9.8
+bd show ironstar-r62.8
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-7h9.7 Implement query GET handlers
+## 📋 ironstar-r62.7 Implement query GET handlers
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -636,123 +729,139 @@ Local refs: ~/projects/rust-workspace/axum, ~/projects/rust-workspace/hypertext
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-7h9`
-- ⛔ **blocks**: `ironstar-7h9.4`
-- ⛔ **blocks**: `ironstar-x0e.7`
+- 🔗 **parent-child**: `ironstar-r62`
+- ⛔ **blocks**: `ironstar-r62.4`
+- ⛔ **blocks**: `ironstar-nyp.7`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-7h9.7 -s in_progress
+bd update ironstar-r62.7 -s in_progress
 
 # Add a comment
-bd comment ironstar-7h9.7 'Your comment here'
+bd comment ironstar-r62.7 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-7h9.7 -p 1
+bd update ironstar-r62.7 -p 1
 
 # View full details
-bd show ironstar-7h9.7
+bd show ironstar-r62.7
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-7h9.6 Implement command POST handlers
+## 📋 ironstar-r62.6 Implement command POST handlers
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
-Create POST handlers that extract Command from ReadSignals extractor, call command handler (pure logic), append events to event store, broadcast to subscribers, and return 202 Accepted immediately WITHOUT waiting for SSE update. Implements CQRS write path.
+Create POST handlers using ReadSignals extractor:
+async fn add_todo(ReadSignals(cmd): ReadSignals<AddTodoCommand>, State(state): State<AppState>) -> impl IntoResponse {
+    let validated = cmd.validate()?;
+    let event = aggregate.apply_command(validated)?;
+    let seq = state.event_store.append(&event).await?;
+    state.event_bus.send(StoredEvent { sequence: seq, event })?;
+    StatusCode::ACCEPTED
+}
+Extracts Command from ReadSignals<T> extractor (requires #[derive(Deserialize)] on signal types), calls command handler (pure logic), appends events to event store, broadcasts to subscribers, and returns 202 Accepted immediately WITHOUT waiting for SSE update. Implements CQRS write path.
 Local refs: ~/projects/rust-workspace/axum, ~/projects/rust-workspace/datastar-rust
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-7h9`
-- ⛔ **blocks**: `ironstar-7h9.4`
-- ⛔ **blocks**: `ironstar-3jp.4`
+- 🔗 **parent-child**: `ironstar-r62`
+- ⛔ **blocks**: `ironstar-r62.4`
+- ⛔ **blocks**: `ironstar-2nt.4`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-7h9.6 -s in_progress
+bd update ironstar-r62.6 -s in_progress
 
 # Add a comment
-bd comment ironstar-7h9.6 'Your comment here'
+bd comment ironstar-r62.6 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-7h9.6 -p 1
+bd update ironstar-r62.6 -p 1
 
 # View full details
-bd show ironstar-7h9.6
+bd show ironstar-r62.6
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-7h9.5 Implement SSE feed endpoint with event replay
+## 📋 ironstar-r62.5 Implement SSE feed endpoint with event replay
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
-Create async sse_feed(headers, state) -> Sse handler that extracts Last-Event-ID, subscribes to broadcast channel, replays events since that ID from event store, chains with live stream, and emits SSE events with id field set to sequence number. Implements reconnection recovery.
+Create async sse_feed handler:
+async fn sse_feed(headers: HeaderMap, State(state): State<AppState>) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
+    let last_event_id = headers.get("Last-Event-ID").and_then(|h| h.to_str().ok()).and_then(|s| s.parse().ok()).unwrap_or(0);
+    let replay = state.event_store.query_since_sequence(last_event_id).await.unwrap().into_iter().map(|e| Event::default().id(e.sequence).data(e.payload));
+    let live = BroadcastStream::new(state.event_bus.subscribe()).filter_map(|e| e.ok()).map(|e| Event::default().id(e.sequence).data(e.payload));
+    Sse::new(stream::iter(replay).chain(live))
+}
+Extracts Last-Event-ID, subscribes to broadcast channel, replays events since that ID from event store, chains with live stream, and emits SSE events with id field set to sequence number. Implements reconnection recovery.
 Local refs: ~/projects/rust-workspace/axum, ~/projects/rust-workspace/datastar-rust, ~/projects/lakescope-workspace/datastar/sdk/ADR.md
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-7h9`
-- ⛔ **blocks**: `ironstar-7h9.4`
+- 🔗 **parent-child**: `ironstar-r62`
+- ⛔ **blocks**: `ironstar-r62.4`
+- ⛔ **blocks**: `ironstar-nyp.8`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-7h9.5 -s in_progress
+bd update ironstar-r62.5 -s in_progress
 
 # Add a comment
-bd comment ironstar-7h9.5 'Your comment here'
+bd comment ironstar-r62.5 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-7h9.5 -p 1
+bd update ironstar-r62.5 -p 1
 
 # View full details
-bd show ironstar-7h9.5
+bd show ironstar-r62.5
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-7h9.4 Define AppState struct with all dependencies
+## 📋 ironstar-r62.4 Define AppState struct with all dependencies
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -761,42 +870,42 @@ Local refs: ~/projects/rust-workspace/axum, ~/projects/rust-workspace/tokio
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-7h9`
-- ⛔ **blocks**: `ironstar-x0e.3`
-- ⛔ **blocks**: `ironstar-x0e.8`
-- ⛔ **blocks**: `ironstar-x0e.7`
-- ⛔ **blocks**: `ironstar-x0e.5`
+- 🔗 **parent-child**: `ironstar-r62`
+- ⛔ **blocks**: `ironstar-nyp.3`
+- ⛔ **blocks**: `ironstar-nyp.10`
+- ⛔ **blocks**: `ironstar-nyp.7`
+- ⛔ **blocks**: `ironstar-nyp.5`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-7h9.4 -s in_progress
+bd update ironstar-r62.4 -s in_progress
 
 # Add a comment
-bd comment ironstar-7h9.4 'Your comment here'
+bd comment ironstar-r62.4 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-7h9.4 -p 1
+bd update ironstar-r62.4 -p 1
 
 # View full details
-bd show ironstar-7h9.4
+bd show ironstar-r62.4
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-7h9.2 Create devShell module with tools and environment
+## 📋 ironstar-r62.2 Create devShell module with tools and environment
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -805,38 +914,38 @@ Local refs: ~/projects/rust-workspace/rust-nix-template/nix/modules/devshell.nix
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-7h9`
+- 🔗 **parent-child**: `ironstar-r62`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-7h9.2 -s in_progress
+bd update ironstar-r62.2 -s in_progress
 
 # Add a comment
-bd comment ironstar-7h9.2 'Your comment here'
+bd comment ironstar-r62.2 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-7h9.2 -p 1
+bd update ironstar-r62.2 -p 1
 
 # View full details
-bd show ironstar-7h9.2
+bd show ironstar-r62.2
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-7h9.1 Add justfile with development and build tasks
+## 📋 ironstar-r62.1 Add justfile with development and build tasks
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -845,121 +954,183 @@ Local refs: ~/projects/rust-workspace/rust-nix-template/, ~/projects/nix-workspa
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-7h9`
+- 🔗 **parent-child**: `ironstar-r62`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-7h9.1 -s in_progress
+bd update ironstar-r62.1 -s in_progress
 
 # Add a comment
-bd comment ironstar-7h9.1 'Your comment here'
+bd comment ironstar-r62.1 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-7h9.1 -p 1
+bd update ironstar-r62.1 -p 1
 
 # View full details
-bd show ironstar-7h9.1
+bd show ironstar-r62.1
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-x0e.7 Implement ProjectionManager with in-memory state
+## 📋 ironstar-nyp.8 Implement SSE 15-second keep-alive comment stream
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
-Create generic ProjectionManager<P: Projection> wrapping Arc<RwLock<P::State>>. Implement init() to replay all events from event store, spawn background task subscribing to broadcast for incremental updates, and query() to read current state.
+Add tokio::time::interval(Duration::from_secs(15)) to SSE stream merging:
+let keepalive = tokio_stream::wrappers::IntervalStream::new(interval(Duration::from_secs(15)))
+    .map(|_| Event::default().comment("keepalive"));
+let events_stream = BroadcastStream::new(rx).filter_map(|e| e.ok());
+let merged = stream::select(keepalive, events_stream);
+Prevents proxy/firewall timeouts and allows clients to detect broken connections.
+
+### Dependencies
+
+- 🔗 **parent-child**: `ironstar-nyp`
+- ⛔ **blocks**: `ironstar-nyp.5`
+
+<details>
+<summary>📋 Commands</summary>
+
+```bash
+# Start working on this issue
+bd update ironstar-nyp.8 -s in_progress
+
+# Add a comment
+bd comment ironstar-nyp.8 'Your comment here'
+
+# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
+bd update ironstar-nyp.8 -p 1
+
+# View full details
+bd show ironstar-nyp.8
+```
+
+</details>
+
+---
+
+## 📋 ironstar-nyp.7 Implement ProjectionManager with in-memory state
+
+| Property | Value |
+|----------|-------|
+| **Type** | 📋 task |
+| **Priority** | 🔥 Critical (P0) |
+| **Status** | 🟢 open |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
+
+### Description
+
+Create generic ProjectionManager<P: Projection> wrapping Arc<RwLock<P::State>>:
+impl<P: Projection> ProjectionManager<P> {
+    async fn init(event_store: Arc<dyn EventStore>, bus: broadcast::Sender<StoredEvent>) -> Self {
+        let events = event_store.query_all().await.unwrap();
+        let state = projection.rebuild(events).await;
+        spawn background task subscribing to bus for incremental updates
+    }
+    async fn query(&self) -> P::State { self.state.read().await.clone() }
+}
+Replays all events from event store to build initial state, then applies incremental updates from broadcast channel.
 Local refs: ~/projects/rust-workspace/tokio
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-x0e`
-- ⛔ **blocks**: `ironstar-x0e.6`
-- ⛔ **blocks**: `ironstar-x0e.5`
-- ⛔ **blocks**: `ironstar-x0e.3`
+- 🔗 **parent-child**: `ironstar-nyp`
+- ⛔ **blocks**: `ironstar-nyp.6`
+- ⛔ **blocks**: `ironstar-nyp.5`
+- ⛔ **blocks**: `ironstar-nyp.3`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-x0e.7 -s in_progress
+bd update ironstar-nyp.7 -s in_progress
 
 # Add a comment
-bd comment ironstar-x0e.7 'Your comment here'
+bd comment ironstar-nyp.7 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-x0e.7 -p 1
+bd update ironstar-nyp.7 -p 1
 
 # View full details
-bd show ironstar-x0e.7
+bd show ironstar-nyp.7
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-x0e.6 Create Projection trait for read models
+## 📋 ironstar-nyp.6 Create Projection trait for read models
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
-Define async trait with rebuild(events), apply(state, event), to_sse_event(state, sequence) methods. Enables multiple projection types to independently subscribe to events and maintain their own read models.
+Define async trait with associated types:
+#[async_trait]
+trait Projection: Send + Sync + 'static {
+    type State: Clone + Send + Sync;
+    async fn rebuild(&self, events: Vec<StoredEvent>) -> Self::State;
+    async fn apply(&self, state: &mut Self::State, event: StoredEvent);
+    async fn to_sse_event(&self, state: &Self::State, sequence: u64) -> Result<datastar::Event>;
+}
+Enables multiple projection types to independently subscribe to events and maintain their own read models.
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-x0e`
-- ⛔ **blocks**: `ironstar-3jp.2`
+- 🔗 **parent-child**: `ironstar-nyp`
+- ⛔ **blocks**: `ironstar-2nt.2`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-x0e.6 -s in_progress
+bd update ironstar-nyp.6 -s in_progress
 
 # Add a comment
-bd comment ironstar-x0e.6 'Your comment here'
+bd comment ironstar-nyp.6 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-x0e.6 -p 1
+bd update ironstar-nyp.6 -p 1
 
 # View full details
-bd show ironstar-x0e.6
+bd show ironstar-nyp.6
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-x0e.5 Implement tokio broadcast event bus
+## 📋 ironstar-nyp.5 Implement tokio broadcast event bus
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -968,81 +1139,86 @@ Local refs: ~/projects/rust-workspace/tokio
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-x0e`
-- ⛔ **blocks**: `ironstar-3jp.2`
+- 🔗 **parent-child**: `ironstar-nyp`
+- ⛔ **blocks**: `ironstar-2nt.2`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-x0e.5 -s in_progress
+bd update ironstar-nyp.5 -s in_progress
 
 # Add a comment
-bd comment ironstar-x0e.5 'Your comment here'
+bd comment ironstar-nyp.5 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-x0e.5 -p 1
+bd update ironstar-nyp.5 -p 1
 
 # View full details
-bd show ironstar-x0e.5
+bd show ironstar-nyp.5
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-x0e.3 Implement SQLite event store with sqlx
+## 📋 ironstar-nyp.3 Implement SQLite event store with sqlx
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
-Create SqliteEventStore struct implementing EventStore trait with query_all, query_since_sequence, query_aggregate methods. Use sqlx compile-time query validation. Create events table with sequence, aggregate_type, aggregate_id, event_type, payload JSON columns. Append-only log foundation for CQRS.
+Create SqliteEventStore struct implementing EventStore trait:
+async fn append(&self, event: &DomainEvent) -> Result<u64>;
+async fn query_all(&self) -> Result<Vec<StoredEvent>>;
+async fn query_since_sequence(&self, seq: u64) -> Result<Vec<StoredEvent>>;
+async fn query_aggregate(&self, agg_type: &str, agg_id: Uuid) -> Result<Vec<StoredEvent>>;
+Use sqlx compile-time query validation with query!() macro. Create events table with sequence, aggregate_type, aggregate_id, event_type, payload JSON columns. Append-only log foundation for CQRS.
 Local refs: ~/projects/rust-workspace/sqlx
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-x0e`
-- ⛔ **blocks**: `ironstar-x0e.2`
-- ⛔ **blocks**: `ironstar-x0e.1`
+- 🔗 **parent-child**: `ironstar-nyp`
+- ⛔ **blocks**: `ironstar-nyp.2`
+- ⛔ **blocks**: `ironstar-nyp.1`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-x0e.3 -s in_progress
+bd update ironstar-nyp.3 -s in_progress
 
 # Add a comment
-bd comment ironstar-x0e.3 'Your comment here'
+bd comment ironstar-nyp.3 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-x0e.3 -p 1
+bd update ironstar-nyp.3 -p 1
 
 # View full details
-bd show ironstar-x0e.3
+bd show ironstar-nyp.3
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-x0e.2 Create EventStore trait abstraction
+## 📋 ironstar-nyp.2 Create EventStore trait abstraction
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -1050,39 +1226,39 @@ Define async trait with append, query_all, query_since_sequence, query_aggregate
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-x0e`
-- ⛔ **blocks**: `ironstar-3jp.2`
+- 🔗 **parent-child**: `ironstar-nyp`
+- ⛔ **blocks**: `ironstar-2nt.2`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-x0e.2 -s in_progress
+bd update ironstar-nyp.2 -s in_progress
 
 # Add a comment
-bd comment ironstar-x0e.2 'Your comment here'
+bd comment ironstar-nyp.2 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-x0e.2 -p 1
+bd update ironstar-nyp.2 -p 1
 
 # View full details
-bd show ironstar-x0e.2
+bd show ironstar-nyp.2
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-x0e.1 Create database migrations/ directory with schema.sql
+## 📋 ironstar-nyp.1 Create database migrations/ directory with schema.sql
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -1090,38 +1266,38 @@ Initialize migrations/ subdirectory with migrations/schema.sql containing SQLite
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-x0e`
+- 🔗 **parent-child**: `ironstar-nyp`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-x0e.1 -s in_progress
+bd update ironstar-nyp.1 -s in_progress
 
 # Add a comment
-bd comment ironstar-x0e.1 'Your comment here'
+bd comment ironstar-nyp.1 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-x0e.1 -p 1
+bd update ironstar-nyp.1 -p 1
 
 # View full details
-bd show ironstar-x0e.1
+bd show ironstar-nyp.1
 ```
 
 </details>
 
 ---
 
-## 🏔️ ironstar-x0e Event sourcing infrastructure
+## 🏔️ ironstar-nyp Event sourcing infrastructure
 
 | Property | Value |
 |----------|-------|
 | **Type** | 🏔️ epic |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -1129,38 +1305,38 @@ Event sourcing and CQRS infrastructure implementing append-only event log (SQLit
 
 ### Dependencies
 
-- ⛔ **blocks**: `ironstar-3jp`
+- ⛔ **blocks**: `ironstar-2nt`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-x0e -s in_progress
+bd update ironstar-nyp -s in_progress
 
 # Add a comment
-bd comment ironstar-x0e 'Your comment here'
+bd comment ironstar-nyp 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-x0e -p 1
+bd update ironstar-nyp -p 1
 
 # View full details
-bd show ironstar-x0e
+bd show ironstar-nyp
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-3dv.11 Implement rust-embed conditional asset serving
+## 📋 ironstar-ny3.13 Implement rust-embed conditional asset serving
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -1169,39 +1345,87 @@ Local refs: ~/projects/rust-workspace/rust-embed
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-3dv`
-- ⛔ **blocks**: `ironstar-3dv.10`
+- 🔗 **parent-child**: `ironstar-ny3`
+- ⛔ **blocks**: `ironstar-ny3.12`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-3dv.11 -s in_progress
+bd update ironstar-ny3.13 -s in_progress
 
 # Add a comment
-bd comment ironstar-3dv.11 'Your comment here'
+bd comment ironstar-ny3.13 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-3dv.11 -p 1
+bd update ironstar-ny3.13 -p 1
 
 # View full details
-bd show ironstar-3dv.11
+bd show ironstar-ny3.13
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-3dv.10 Create static/dist/ output directory structure
+## 📋 ironstar-ny3.12 Implement manifest.json parser for hashed filename resolution
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
+
+### Description
+
+Create AssetManifest struct parsing static/dist/manifest.json:
+#[derive(Deserialize)]
+struct AssetManifest(HashMap<String, String>);
+impl AssetManifest {
+    fn resolve(&self, entry: &str) -> Option<&str> {
+        self.0.get(entry).map(|s| s.as_str())
+    }
+}
+Resolves logical entry names (bundle.js) to content-hashed filenames (bundle.a1b2c3.js) for cache-busting.
+
+### Dependencies
+
+- 🔗 **parent-child**: `ironstar-ny3`
+- ⛔ **blocks**: `ironstar-ny3.11`
+
+<details>
+<summary>📋 Commands</summary>
+
+```bash
+# Start working on this issue
+bd update ironstar-ny3.12 -s in_progress
+
+# Add a comment
+bd comment ironstar-ny3.12 'Your comment here'
+
+# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
+bd update ironstar-ny3.12 -p 1
+
+# View full details
+bd show ironstar-ny3.12
+```
+
+</details>
+
+---
+
+## 📋 ironstar-ny3.11 Create static/dist/ output directory structure
+
+| Property | Value |
+|----------|-------|
+| **Type** | 📋 task |
+| **Priority** | 🔥 Critical (P0) |
+| **Status** | 🟢 open |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -1209,39 +1433,39 @@ Initialize static/dist/ directory placeholder for Rolldown build outputs (bundle
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-3dv`
-- ⛔ **blocks**: `ironstar-3dv.2`
+- 🔗 **parent-child**: `ironstar-ny3`
+- ⛔ **blocks**: `ironstar-ny3.2`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-3dv.10 -s in_progress
+bd update ironstar-ny3.11 -s in_progress
 
 # Add a comment
-bd comment ironstar-3dv.10 'Your comment here'
+bd comment ironstar-ny3.11 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-3dv.10 -p 1
+bd update ironstar-ny3.11 -p 1
 
 # View full details
-bd show ironstar-3dv.10
+bd show ironstar-ny3.11
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-3dv.9 Configure ts-rs export directory and justfile task
+## 📋 ironstar-ny3.10 Configure ts-rs export directory and justfile task
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -1250,39 +1474,40 @@ Local refs: ~/projects/rust-workspace/ts-rs
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-3dv`
-- ⛔ **blocks**: `ironstar-3dv.8`
+- 🔗 **parent-child**: `ironstar-ny3`
+- ⛔ **blocks**: `ironstar-ny3.9`
+- ⛔ **blocks**: `ironstar-2nt.5`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-3dv.9 -s in_progress
+bd update ironstar-ny3.10 -s in_progress
 
 # Add a comment
-bd comment ironstar-3dv.9 'Your comment here'
+bd comment ironstar-ny3.10 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-3dv.9 -p 1
+bd update ironstar-ny3.10 -p 1
 
 # View full details
-bd show ironstar-3dv.9
+bd show ironstar-ny3.10
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-3dv.8 Add ts-rs dependency to Cargo.toml
+## 📋 ironstar-ny3.9 Add ts-rs dependency to Cargo.toml
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -1291,38 +1516,38 @@ Local refs: ~/projects/rust-workspace/ts-rs
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-3dv`
+- 🔗 **parent-child**: `ironstar-ny3`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-3dv.8 -s in_progress
+bd update ironstar-ny3.9 -s in_progress
 
 # Add a comment
-bd comment ironstar-3dv.8 'Your comment here'
+bd comment ironstar-ny3.9 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-3dv.8 -p 1
+bd update ironstar-ny3.9 -p 1
 
 # View full details
-bd show ironstar-3dv.8
+bd show ironstar-ny3.9
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-3dv.7 Create web-components/index.ts entry point
+## 📋 ironstar-ny3.8 Create web-components/index.ts entry point
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -1331,39 +1556,39 @@ Local refs: ~/projects/lakescope-workspace/datastar-go-nats-template-northstar/w
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-3dv`
-- ⛔ **blocks**: `ironstar-3dv.6`
+- 🔗 **parent-child**: `ironstar-ny3`
+- ⛔ **blocks**: `ironstar-ny3.7`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-3dv.7 -s in_progress
+bd update ironstar-ny3.8 -s in_progress
 
 # Add a comment
-bd comment ironstar-3dv.7 'Your comment here'
+bd comment ironstar-ny3.8 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-3dv.7 -p 1
+bd update ironstar-ny3.8 -p 1
 
 # View full details
-bd show ironstar-3dv.7
+bd show ironstar-ny3.8
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-3dv.6 Create TypeScript configuration (tsconfig.json)
+## 📋 ironstar-ny3.7 Create TypeScript configuration (tsconfig.json)
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -1372,39 +1597,85 @@ Local refs: ~/projects/rust-workspace/ts-rs
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-3dv`
-- ⛔ **blocks**: `ironstar-3dv.1`
+- 🔗 **parent-child**: `ironstar-ny3`
+- ⛔ **blocks**: `ironstar-ny3.1`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-3dv.6 -s in_progress
+bd update ironstar-ny3.7 -s in_progress
 
 # Add a comment
-bd comment ironstar-3dv.6 'Your comment here'
+bd comment ironstar-ny3.7 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-3dv.6 -p 1
+bd update ironstar-ny3.7 -p 1
 
 # View full details
-bd show ironstar-3dv.6
+bd show ironstar-ny3.7
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-3dv.4 Setup Open Props design tokens and theme layer
+## 📋 ironstar-ny3.5 Configure CSS cascade layers for predictable specificity
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
+
+### Description
+
+Add @layer declarations to web-components/styles/main.css:
+@layer openprops, normalize, theme, components, utilities, app;
+@import 'open-props/style' layer(openprops);
+@import 'open-props/normalize' layer(normalize);
+@import './theme.css' layer(theme);
+@import './components/button.css' layer(components);
+Establishes explicit cascade order preventing specificity wars and making component styles easily overridable at app layer.
+
+### Dependencies
+
+- 🔗 **parent-child**: `ironstar-ny3`
+- ⛔ **blocks**: `ironstar-ny3.4`
+
+<details>
+<summary>📋 Commands</summary>
+
+```bash
+# Start working on this issue
+bd update ironstar-ny3.5 -s in_progress
+
+# Add a comment
+bd comment ironstar-ny3.5 'Your comment here'
+
+# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
+bd update ironstar-ny3.5 -p 1
+
+# View full details
+bd show ironstar-ny3.5
+```
+
+</details>
+
+---
+
+## 📋 ironstar-ny3.4 Setup Open Props design tokens and theme layer
+
+| Property | Value |
+|----------|-------|
+| **Type** | 📋 task |
+| **Priority** | 🔥 Critical (P0) |
+| **Status** | 🟢 open |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -1413,39 +1684,39 @@ Local refs: ~/projects/lakescope-workspace/open-props, ~/projects/lakescope-work
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-3dv`
-- ⛔ **blocks**: `ironstar-3dv.3`
+- 🔗 **parent-child**: `ironstar-ny3`
+- ⛔ **blocks**: `ironstar-ny3.3`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-3dv.4 -s in_progress
+bd update ironstar-ny3.4 -s in_progress
 
 # Add a comment
-bd comment ironstar-3dv.4 'Your comment here'
+bd comment ironstar-ny3.4 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-3dv.4 -p 1
+bd update ironstar-ny3.4 -p 1
 
 # View full details
-bd show ironstar-3dv.4
+bd show ironstar-ny3.4
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-3dv.3 Setup PostCSS configuration for modern CSS features
+## 📋 ironstar-ny3.3 Setup PostCSS configuration for modern CSS features
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -1454,80 +1725,88 @@ Local refs: ~/projects/lakescope-workspace/open-props/
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-3dv`
-- ⛔ **blocks**: `ironstar-3dv.1`
+- 🔗 **parent-child**: `ironstar-ny3`
+- ⛔ **blocks**: `ironstar-ny3.1`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-3dv.3 -s in_progress
+bd update ironstar-ny3.3 -s in_progress
 
 # Add a comment
-bd comment ironstar-3dv.3 'Your comment here'
+bd comment ironstar-ny3.3 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-3dv.3 -p 1
+bd update ironstar-ny3.3 -p 1
 
 # View full details
-bd show ironstar-3dv.3
+bd show ironstar-ny3.3
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-3dv.2 Configure Rolldown bundler with content-based hashing
+## 📋 ironstar-ny3.2 Configure Rolldown bundler with content-based hashing
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
-Create web-components/rolldown.config.ts with input entries (bundle: index.ts, components: components/index.ts), output directory (static/dist), ESM format, content-based hashing ([name].[hash].js), and postcss-plugin for CSS extraction. Enables cache-busting and single-binary asset embedding.
+Create web-components/rolldown.config.ts:
+import { defineConfig } from 'rolldown';
+import postcss from 'rolldown-plugin-postcss';
+export default defineConfig({
+  input: { bundle: 'index.ts', components: 'components/index.ts' },
+  output: { dir: '../static/dist', format: 'esm', entryFileNames: '[name].[hash].js' },
+  plugins: [postcss({ extract: true, modules: false })],
+});
+Outputs content-hashed assets (bundle.[hash].js, bundle.[hash].css, manifest.json) for cache-busting and single-binary asset embedding.
 Local refs: ~/projects/rust-workspace/rolldown (clone needed: https://github.com/rolldown/rolldown)
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-3dv`
-- ⛔ **blocks**: `ironstar-3dv.1`
+- 🔗 **parent-child**: `ironstar-ny3`
+- ⛔ **blocks**: `ironstar-ny3.1`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-3dv.2 -s in_progress
+bd update ironstar-ny3.2 -s in_progress
 
 # Add a comment
-bd comment ironstar-3dv.2 'Your comment here'
+bd comment ironstar-ny3.2 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-3dv.2 -p 1
+bd update ironstar-ny3.2 -p 1
 
 # View full details
-bd show ironstar-3dv.2
+bd show ironstar-ny3.2
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-3dv.1 Create web-components/ project structure with package.json
+## 📋 ironstar-ny3.1 Create web-components/ project structure with package.json
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -1536,38 +1815,138 @@ Local refs: ~/projects/lakescope-workspace/open-props, ~/projects/lakescope-work
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-3dv`
+- 🔗 **parent-child**: `ironstar-ny3`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-3dv.1 -s in_progress
+bd update ironstar-ny3.1 -s in_progress
 
 # Add a comment
-bd comment ironstar-3dv.1 'Your comment here'
+bd comment ironstar-ny3.1 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-3dv.1 -p 1
+bd update ironstar-ny3.1 -p 1
 
 # View full details
-bd show ironstar-3dv.1
+bd show ironstar-ny3.1
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-3jp.5 Create Datastar signal types with ts-rs derives
+## 📋 ironstar-2nt.7 Implement command validation pattern with Result types
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
+
+### Description
+
+Create validation functions returning Result<ValidatedCommand, ValidationError>:
+impl Command {
+    fn validate(self) -> Result<ValidatedCommand, ValidationError> {
+        match self {
+            Command::AddTodo { text } => {
+                let text = TodoText::try_from(text)?;
+                Ok(ValidatedCommand::AddTodo { text })
+            }
+            ...
+        }
+    }
+}
+Railway-oriented programming pattern ensures invalid commands never reach aggregate apply_command logic.
+
+### Dependencies
+
+- 🔗 **parent-child**: `ironstar-2nt`
+- ⛔ **blocks**: `ironstar-2nt.4`
+
+<details>
+<summary>📋 Commands</summary>
+
+```bash
+# Start working on this issue
+bd update ironstar-2nt.7 -s in_progress
+
+# Add a comment
+bd comment ironstar-2nt.7 'Your comment here'
+
+# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
+bd update ironstar-2nt.7 -p 1
+
+# View full details
+bd show ironstar-2nt.7
+```
+
+</details>
+
+---
+
+## 📋 ironstar-2nt.6 Enforce camelCase convention for Datastar signal fields
+
+| Property | Value |
+|----------|-------|
+| **Type** | 📋 task |
+| **Priority** | 🔥 Critical (P0) |
+| **Status** | 🟢 open |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
+
+### Description
+
+Apply #[serde(rename_all = "camelCase")] to all signal struct definitions:
+#[derive(Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+struct AddTodoSignal {
+    todo_text: String,  // serializes as todoText
+    is_urgent: bool,    // serializes as isUrgent
+}
+Ensures Rust snake_case fields serialize to JavaScript-idiomatic camelCase for Datastar signals.
+
+### Dependencies
+
+- 🔗 **parent-child**: `ironstar-2nt`
+- ⛔ **blocks**: `ironstar-2nt.5`
+
+<details>
+<summary>📋 Commands</summary>
+
+```bash
+# Start working on this issue
+bd update ironstar-2nt.6 -s in_progress
+
+# Add a comment
+bd comment ironstar-2nt.6 'Your comment here'
+
+# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
+bd update ironstar-2nt.6 -p 1
+
+# View full details
+bd show ironstar-2nt.6
+```
+
+</details>
+
+---
+
+## 📋 ironstar-2nt.5 Create Datastar signal types with ts-rs derives
+
+| Property | Value |
+|----------|-------|
+| **Type** | 📋 task |
+| **Priority** | 🔥 Critical (P0) |
+| **Status** | 🟢 open |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -1576,160 +1955,195 @@ Local refs: ~/projects/rust-workspace/ts-rs
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-3jp`
-- ⛔ **blocks**: `ironstar-3jp.2`
+- 🔗 **parent-child**: `ironstar-2nt`
+- ⛔ **blocks**: `ironstar-2nt.2`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-3jp.5 -s in_progress
+bd update ironstar-2nt.5 -s in_progress
 
 # Add a comment
-bd comment ironstar-3jp.5 'Your comment here'
+bd comment ironstar-2nt.5 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-3jp.5 -p 1
+bd update ironstar-2nt.5 -p 1
 
 # View full details
-bd show ironstar-3jp.5
+bd show ironstar-2nt.5
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-3jp.4 Design aggregate root state machines
+## 📋 ironstar-2nt.4 Design aggregate root state machines
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
-Model aggregate state machines using Rust enums (e.g., TodoAggregate as an enum of Todo variants with different state). Apply commands to aggregates via pure functions that validate state transitions and emit events as output.
+Model aggregate state machines using Rust enums:
+enum TodoAggregate {
+    Active { id: Uuid, text: TodoText, created_at: DateTime<Utc> },
+    Completed { id: Uuid, text: TodoText, created_at: DateTime<Utc>, completed_at: DateTime<Utc> },
+    Deleted,
+}
+impl TodoAggregate {
+    fn apply_command(&self, cmd: Command) -> Result<DomainEvent, DomainError> {
+        match (self, cmd) {
+            (TodoAggregate::Active { .. }, Command::MarkComplete) => Ok(DomainEvent::TodoCompleted { ... }),
+            (TodoAggregate::Completed { .. }, Command::MarkComplete) => Err(DomainError::AlreadyCompleted),
+            ...
+        }
+    }
+}
+Apply commands to aggregates via pure functions that validate state transitions and emit events as output.
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-3jp`
-- ⛔ **blocks**: `ironstar-3jp.3`
+- 🔗 **parent-child**: `ironstar-2nt`
+- ⛔ **blocks**: `ironstar-2nt.3`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-3jp.4 -s in_progress
+bd update ironstar-2nt.4 -s in_progress
 
 # Add a comment
-bd comment ironstar-3jp.4 'Your comment here'
+bd comment ironstar-2nt.4 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-3jp.4 -p 1
+bd update ironstar-2nt.4 -p 1
 
 # View full details
-bd show ironstar-3jp.4
+bd show ironstar-2nt.4
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-3jp.3 Implement value objects and smart constructors
+## 📋 ironstar-2nt.3 Implement value objects and smart constructors
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
-Create validated value objects (e.g., TodoText, SessionId) with smart constructor functions that enforce invariants at construction time. Product types reject invalid values before they enter the system, preventing bug vectors at the type level.
+Create validated value objects with smart constructor pattern:
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(try_from = "String")]
+struct TodoText(String);
+impl TryFrom<String> for TodoText {
+    type Error = ValidationError;
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        if s.is_empty() { return Err(ValidationError::Empty); }
+        if s.len() > 500 { return Err(ValidationError::TooLong); }
+        Ok(TodoText(s))
+    }
+}
+Product types reject invalid values before they enter the system, preventing bug vectors at the type level.
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-3jp`
-- ⛔ **blocks**: `ironstar-3jp.2`
+- 🔗 **parent-child**: `ironstar-2nt`
+- ⛔ **blocks**: `ironstar-2nt.2`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-3jp.3 -s in_progress
+bd update ironstar-2nt.3 -s in_progress
 
 # Add a comment
-bd comment ironstar-3jp.3 'Your comment here'
+bd comment ironstar-2nt.3 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-3jp.3 -p 1
+bd update ironstar-2nt.3 -p 1
 
 # View full details
-bd show ironstar-3jp.3
+bd show ironstar-2nt.3
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-3jp.2 Define algebraic domain types and aggregate structure
+## 📋 ironstar-2nt.2 Define algebraic domain types and aggregate structure
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
-Implement sum types for DomainEvent, Command, and aggregate states as Rust enums with serde serialization. Establishes the core algebraic vocabulary making invalid states unrepresentable and ensures type-level guarantees for all domain logic.
+Implement sum types for DomainEvent, Command, and aggregate states as Rust enums with serde serialization:
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", content = "data")]
+enum DomainEvent {
+    TodoCreated { id: Uuid, text: String, created_at: DateTime<Utc> },
+    TodoCompleted { id: Uuid, completed_at: DateTime<Utc> },
+    TodoDeleted { id: Uuid, deleted_at: DateTime<Utc> },
+}
+Establishes the core algebraic vocabulary making invalid states unrepresentable and ensures type-level guarantees for all domain logic.
 Local refs: ~/projects/rust-workspace/ironstar
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-3jp`
-- ⛔ **blocks**: `ironstar-3jp.1`
+- 🔗 **parent-child**: `ironstar-2nt`
+- ⛔ **blocks**: `ironstar-2nt.1`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-3jp.2 -s in_progress
+bd update ironstar-2nt.2 -s in_progress
 
 # Add a comment
-bd comment ironstar-3jp.2 'Your comment here'
+bd comment ironstar-2nt.2 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-3jp.2 -p 1
+bd update ironstar-2nt.2 -p 1
 
 # View full details
-bd show ironstar-3jp.2
+bd show ironstar-2nt.2
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-3jp.1 Initialize src/ directory structure with modular organization
+## 📋 ironstar-2nt.1 Initialize src/ directory structure with modular organization
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -1738,38 +2152,38 @@ Local refs: CLAUDE.md Project structure section
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-3jp`
+- 🔗 **parent-child**: `ironstar-2nt`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-3jp.1 -s in_progress
+bd update ironstar-2nt.1 -s in_progress
 
 # Add a comment
-bd comment ironstar-3jp.1 'Your comment here'
+bd comment ironstar-2nt.1 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-3jp.1 -p 1
+bd update ironstar-2nt.1 -p 1
 
 # View full details
-bd show ironstar-3jp.1
+bd show ironstar-2nt.1
 ```
 
 </details>
 
 ---
 
-## 🏔️ ironstar-3jp Domain layer
+## 🏔️ ironstar-2nt Domain layer
 
 | Property | Value |
 |----------|-------|
 | **Type** | 🏔️ epic |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -1777,199 +2191,38 @@ Implement the domain layer using algebraic data types to make invalid states unr
 
 ### Dependencies
 
-- ⛔ **blocks**: `ironstar-cvo`
+- ⛔ **blocks**: `ironstar-6lq.5`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-3jp -s in_progress
+bd update ironstar-2nt -s in_progress
 
 # Add a comment
-bd comment ironstar-3jp 'Your comment here'
+bd comment ironstar-2nt 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-3jp -p 1
+bd update ironstar-2nt -p 1
 
 # View full details
-bd show ironstar-3jp
+bd show ironstar-2nt
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-cvo.3 Add flake checks and nix build verification
+## 📋 ironstar-f8b.5 Verify process-compose up works with all services
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
-
-### Description
-
-Create nix/modules/checks.nix defining perSystem.checks with: cargo test, cargo clippy (pedantic), cargo fmt --check, cargo doc --no-deps, frontend typecheck. Expose as flake.checks for nix flake check command.
-Local refs: ~/projects/nix-workspace/typescript-nix-template/modules/checks/
-
-### Dependencies
-
-- 🔗 **parent-child**: `ironstar-cvo`
-- ⛔ **blocks**: `ironstar-cvo.1`
-
-<details>
-<summary>📋 Commands</summary>
-
-```bash
-# Start working on this issue
-bd update ironstar-cvo.3 -s in_progress
-
-# Add a comment
-bd comment ironstar-cvo.3 'Your comment here'
-
-# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-cvo.3 -p 1
-
-# View full details
-bd show ironstar-cvo.3
-```
-
-</details>
-
----
-
-## 📋 ironstar-cvo.2 Integrate with template CI structure
-
-| Property | Value |
-|----------|-------|
-| **Type** | 📋 task |
-| **Priority** | 🔥 Critical (P0) |
-| **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
-
-### Description
-
-Adapt typescript-nix-template CI patterns for Rust: category-based workflows (build, test, lint), content-addressed caching, matrix builds for multiple platforms. Ensure CI integrates seamlessly with Nix flake checks.
-Local refs: ~/projects/nix-workspace/typescript-nix-template/.github/workflows/
-
-### Dependencies
-
-- 🔗 **parent-child**: `ironstar-cvo`
-- ⛔ **blocks**: `ironstar-cvo.1`
-
-<details>
-<summary>📋 Commands</summary>
-
-```bash
-# Start working on this issue
-bd update ironstar-cvo.2 -s in_progress
-
-# Add a comment
-bd comment ironstar-cvo.2 'Your comment here'
-
-# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-cvo.2 -p 1
-
-# View full details
-bd show ironstar-cvo.2
-```
-
-</details>
-
----
-
-## 📋 ironstar-cvo.1 Create reusable GitHub Actions workflow for Rust builds
-
-| Property | Value |
-|----------|-------|
-| **Type** | 📋 task |
-| **Priority** | 🔥 Critical (P0) |
-| **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
-
-### Description
-
-Create .github/workflows/ci.yml with jobs: check (cargo check), test (cargo test), lint (cargo fmt --check, cargo clippy), frontend (pnpm typecheck, pnpm lint). Use actions-rs/toolchain for Rust setup. Follows template CI structure pattern.
-Local refs: ~/projects/rust-workspace/rust-nix-template/.github/, ~/projects/nix-workspace/typescript-nix-template/.github/
-
-### Dependencies
-
-- 🔗 **parent-child**: `ironstar-cvo`
-
-<details>
-<summary>📋 Commands</summary>
-
-```bash
-# Start working on this issue
-bd update ironstar-cvo.1 -s in_progress
-
-# Add a comment
-bd comment ironstar-cvo.1 'Your comment here'
-
-# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-cvo.1 -p 1
-
-# View full details
-bd show ironstar-cvo.1
-```
-
-</details>
-
----
-
-## 🏔️ ironstar-cvo CI/CD pipeline
-
-| Property | Value |
-|----------|-------|
-| **Type** | 🏔️ epic |
-| **Priority** | 🔥 Critical (P0) |
-| **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
-
-### Description
-
-Establish comprehensive CI/CD pipeline using GitHub Actions with category-based workflows (build, test, lint), Nix flake checks, content-addressed caching, and matrix builds. Integrates patterns from typescript-nix-template for deterministic, reproducible builds with Rust-specific cargo tooling (check, test, fmt, clippy, doc).
-
-### Dependencies
-
-- ⛔ **blocks**: `ironstar-8bw`
-
-<details>
-<summary>📋 Commands</summary>
-
-```bash
-# Start working on this issue
-bd update ironstar-cvo -s in_progress
-
-# Add a comment
-bd comment ironstar-cvo 'Your comment here'
-
-# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-cvo -p 1
-
-# View full details
-bd show ironstar-cvo
-```
-
-</details>
-
----
-
-## 📋 ironstar-8bw.4 Verify process-compose up works with all services
-
-| Property | Value |
-|----------|-------|
-| **Type** | 📋 task |
-| **Priority** | 🔥 Critical (P0) |
-| **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -1977,79 +2230,139 @@ Test that process-compose up successfully starts all services in correct order. 
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-8bw`
-- ⛔ **blocks**: `ironstar-8bw.3`
+- 🔗 **parent-child**: `ironstar-f8b`
+- ⛔ **blocks**: `ironstar-f8b.4`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-8bw.4 -s in_progress
+bd update ironstar-f8b.5 -s in_progress
 
 # Add a comment
-bd comment ironstar-8bw.4 'Your comment here'
+bd comment ironstar-f8b.5 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-8bw.4 -p 1
+bd update ironstar-f8b.5 -p 1
 
 # View full details
-bd show ironstar-8bw.4
+bd show ironstar-f8b.5
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-8bw.3 Set up service orchestration (frontend bundler, cargo-watch)
+## 📋 ironstar-f8b.4 Configure cargo-watch to curl hotreload trigger on success
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
-Configure service startup order and dependencies in process-compose.yaml. Ensure db-init completes before backend starts, typegen runs when Rust files change, frontend rebuilds on TypeScript changes, backend restarts on Rust changes, hotreload triggers browser refresh after successful backend build.
+Update backend process command in process-compose.yaml:
+  backend:
+    command: cargo watch -x run -s 'if cargo check; then curl -X POST http://localhost:3000/hotreload/trigger; fi'
+Triggers browser reload via SSE only on successful backend rebuild. Integrates with TASK_HOTRELOAD endpoint (Epic 7) for seamless DX.
+Local refs: ~/projects/rust-workspace/axum
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-8bw`
-- ⛔ **blocks**: `ironstar-8bw.2`
+- 🔗 **parent-child**: `ironstar-f8b`
+- ⛔ **blocks**: `ironstar-f8b.3`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-8bw.3 -s in_progress
+bd update ironstar-f8b.4 -s in_progress
 
 # Add a comment
-bd comment ironstar-8bw.3 'Your comment here'
+bd comment ironstar-f8b.4 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-8bw.3 -p 1
+bd update ironstar-f8b.4 -p 1
 
 # View full details
-bd show ironstar-8bw.3
+bd show ironstar-f8b.4
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-8bw.2 Configure process-compose.yaml for dev services
+## 📋 ironstar-f8b.3 Set up service orchestration (frontend bundler, cargo-watch)
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
+
+### Description
+
+Configure service startup order and dependencies in process-compose.yaml:
+processes:
+  db-init:
+    command: sqlite3 dev.db < migrations/schema.sql
+    availability: { exit_on_end: true }
+  backend:
+    command: cargo watch -x run
+    depends_on:
+      db-init: { condition: process_completed }
+    readiness_probe: { http_get: { host: localhost, port: 3000, path: /health } }
+  frontend:
+    command: cd web-components && pnpm rolldown -w
+    depends_on: { backend: { condition: process_healthy } }
+  hotreload:
+    command: ...
+    depends_on: { backend: { condition: process_healthy } }
+Ensures db-init completes before backend starts, typegen runs when Rust files change, frontend rebuilds on TypeScript changes, backend restarts on Rust changes, hotreload triggers browser refresh after successful backend build.
+
+### Dependencies
+
+- 🔗 **parent-child**: `ironstar-f8b`
+- ⛔ **blocks**: `ironstar-f8b.2`
+
+<details>
+<summary>📋 Commands</summary>
+
+```bash
+# Start working on this issue
+bd update ironstar-f8b.3 -s in_progress
+
+# Add a comment
+bd comment ironstar-f8b.3 'Your comment here'
+
+# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
+bd update ironstar-f8b.3 -p 1
+
+# View full details
+bd show ironstar-f8b.3
+```
+
+</details>
+
+---
+
+## 📋 ironstar-f8b.2 Configure process-compose.yaml for dev services
+
+| Property | Value |
+|----------|-------|
+| **Type** | 📋 task |
+| **Priority** | 🔥 Critical (P0) |
+| **Status** | 🟢 open |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -2058,79 +2371,88 @@ Local refs: ~/projects/nix-workspace/process-compose
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-8bw`
-- ⛔ **blocks**: `ironstar-8bw.1`
+- 🔗 **parent-child**: `ironstar-f8b`
+- ⛔ **blocks**: `ironstar-f8b.1`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-8bw.2 -s in_progress
+bd update ironstar-f8b.2 -s in_progress
 
 # Add a comment
-bd comment ironstar-8bw.2 'Your comment here'
+bd comment ironstar-f8b.2 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-8bw.2 -p 1
+bd update ironstar-f8b.2 -p 1
 
 # View full details
-bd show ironstar-8bw.2
+bd show ironstar-f8b.2
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-8bw.1 Integrate process-compose-flake patterns into devShell
+## 📋 ironstar-f8b.1 Integrate process-compose-flake patterns into devShell
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
-Create nix/modules/process-compose.nix importing process-compose-flake.flakeModule. Define perSystem process-compose configurations. Expose as packages.dev runnable via nix run .#dev. Integrates declarative process orchestration into Nix workflow.
+Create nix/modules/process-compose.nix importing process-compose-flake.flakeModule:
+{
+  imports = [ inputs.process-compose-flake.flakeModule ];
+  perSystem = { config, pkgs, ... }: {
+    process-compose.dev = {
+      settings.processes = { ... };
+    };
+  };
+}
+Define perSystem process-compose configurations. Expose as packages.dev runnable via nix run .#dev. Integrates declarative process orchestration into Nix workflow.
 Local refs: ~/projects/nix-workspace/process-compose-flake
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-8bw`
+- 🔗 **parent-child**: `ironstar-f8b`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-8bw.1 -s in_progress
+bd update ironstar-f8b.1 -s in_progress
 
 # Add a comment
-bd comment ironstar-8bw.1 'Your comment here'
+bd comment ironstar-f8b.1 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-8bw.1 -p 1
+bd update ironstar-f8b.1 -p 1
 
 # View full details
-bd show ironstar-8bw.1
+bd show ironstar-f8b.1
 ```
 
 </details>
 
 ---
 
-## 🏔️ ironstar-8bw Process compose integration
+## 🏔️ ironstar-f8b Process compose integration
 
 | Property | Value |
 |----------|-------|
 | **Type** | 🏔️ epic |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -2138,38 +2460,130 @@ Integrate process-compose for orchestrating development services including datab
 
 ### Dependencies
 
-- ⛔ **blocks**: `ironstar-g8e`
+- ⛔ **blocks**: `ironstar-6lq`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-8bw -s in_progress
+bd update ironstar-f8b -s in_progress
 
 # Add a comment
-bd comment ironstar-8bw 'Your comment here'
+bd comment ironstar-f8b 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-8bw -p 1
+bd update ironstar-f8b -p 1
 
 # View full details
-bd show ironstar-8bw
+bd show ironstar-f8b
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-g8e.5 Verify cargo check passes with workspace configuration
+## 📋 ironstar-6lq.7 Add Rust to CI matrix and extend inherited workflows
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
+
+### Description
+
+Extend template's .github/workflows/ci.yml inherited from typescript-nix-template with Rust jobs:
+- Build matrix for multiple platforms (Linux x86_64, macOS aarch64)
+- Category-based workflows: build (nix build), test (cargo test), lint (cargo fmt/clippy)
+- Content-addressed caching via cachix or GitHub Actions cache
+- Integrate with flake checks: nix flake check
+Follows template CI patterns adapted for Rust toolchain.
+Local refs: ~/projects/nix-workspace/typescript-nix-template/.github/workflows/, ~/projects/rust-workspace/rust-nix-template/.github/
+
+### Dependencies
+
+- 🔗 **parent-child**: `ironstar-6lq`
+- ⛔ **blocks**: `ironstar-6lq.6`
+
+<details>
+<summary>📋 Commands</summary>
+
+```bash
+# Start working on this issue
+bd update ironstar-6lq.7 -s in_progress
+
+# Add a comment
+bd comment ironstar-6lq.7 'Your comment here'
+
+# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
+bd update ironstar-6lq.7 -p 1
+
+# View full details
+bd show ironstar-6lq.7
+```
+
+</details>
+
+---
+
+## 📋 ironstar-6lq.6 Add Rust checks to flake.checks for CI integration
+
+| Property | Value |
+|----------|-------|
+| **Type** | 📋 task |
+| **Priority** | 🔥 Critical (P0) |
+| **Status** | 🟢 open |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
+
+### Description
+
+Create nix/modules/checks.nix defining perSystem.checks with:
+- cargo-test: cargo test --workspace --all-features
+- cargo-clippy: cargo clippy --workspace --all-targets -- -D warnings
+- cargo-fmt: cargo fmt --all -- --check
+- cargo-doc: cargo doc --workspace --no-deps --document-private-items
+Expose as flake.checks.* for nix flake check and CI.
+Local refs: ~/projects/nix-workspace/typescript-nix-template/modules/checks/, ~/projects/rust-workspace/rust-nix-template
+
+### Dependencies
+
+- 🔗 **parent-child**: `ironstar-6lq`
+- ⛔ **blocks**: `ironstar-6lq.4`
+
+<details>
+<summary>📋 Commands</summary>
+
+```bash
+# Start working on this issue
+bd update ironstar-6lq.6 -s in_progress
+
+# Add a comment
+bd comment ironstar-6lq.6 'Your comment here'
+
+# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
+bd update ironstar-6lq.6 -p 1
+
+# View full details
+bd show ironstar-6lq.6
+```
+
+</details>
+
+---
+
+## 📋 ironstar-6lq.5 Verify cargo check passes with workspace configuration
+
+| Property | Value |
+|----------|-------|
+| **Type** | 📋 task |
+| **Priority** | 🔥 Critical (P0) |
+| **Status** | 🟢 open |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -2177,80 +2591,88 @@ Run cargo check to validate workspace configuration, dependency resolution, and 
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-g8e`
-- ⛔ **blocks**: `ironstar-g8e.4`
+- 🔗 **parent-child**: `ironstar-6lq`
+- ⛔ **blocks**: `ironstar-6lq.4`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-g8e.5 -s in_progress
+bd update ironstar-6lq.5 -s in_progress
 
 # Add a comment
-bd comment ironstar-g8e.5 'Your comment here'
+bd comment ironstar-6lq.5 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-g8e.5 -p 1
+bd update ironstar-6lq.5 -p 1
 
 # View full details
-bd show ironstar-g8e.5
+bd show ironstar-6lq.5
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-g8e.4 Set up per-crate crate.nix pattern for crane args
+## 📋 ironstar-6lq.4 Set up per-crate crate.nix pattern for crane args
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
-Create crate.nix files for each workspace crate defining crane-specific build arguments. Implements pattern from rustlings-workspace for granular build customization. Currently only needed for main ironstar crate, but establishes pattern for future workspace expansion.
+Create crate.nix files for each workspace crate defining crane-specific build arguments:
+{ lib, pkgs, rustPlatform, ... }:
+{
+  pname = "ironstar";
+  buildInputs = [ ... ];
+  nativeBuildInputs = [ ... ];
+  preBuild = ''export DATABASE_URL=file:test.db'';
+}
+Implements pattern from rustlings-workspace for granular build customization. Set DATABASE_URL env var for sqlx compile-time query validation.
 Local refs: ~/projects/rust-workspace/rustlings-workspace/
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-g8e`
-- ⛔ **blocks**: `ironstar-g8e.3`
+- 🔗 **parent-child**: `ironstar-6lq`
+- ⛔ **blocks**: `ironstar-6lq.3`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-g8e.4 -s in_progress
+bd update ironstar-6lq.4 -s in_progress
 
 # Add a comment
-bd comment ironstar-g8e.4 'Your comment here'
+bd comment ironstar-6lq.4 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-g8e.4 -p 1
+bd update ironstar-6lq.4 -p 1
 
 # View full details
-bd show ironstar-g8e.4
+bd show ironstar-6lq.4
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-g8e.3 Configure Cargo.toml with workspace structure (resolver = 2)
+## 📋 ironstar-6lq.3 Configure Cargo.toml with workspace structure (resolver = 2)
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -2259,39 +2681,39 @@ Local refs: ~/projects/rust-workspace/rustlings-workspace/Cargo.toml
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-g8e`
-- ⛔ **blocks**: `ironstar-g8e.2`
+- 🔗 **parent-child**: `ironstar-6lq`
+- ⛔ **blocks**: `ironstar-6lq.2`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-g8e.3 -s in_progress
+bd update ironstar-6lq.3 -s in_progress
 
 # Add a comment
-bd comment ironstar-g8e.3 'Your comment here'
+bd comment ironstar-6lq.3 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-g8e.3 -p 1
+bd update ironstar-6lq.3 -p 1
 
 # View full details
-bd show ironstar-g8e.3
+bd show ironstar-6lq.3
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-g8e.2 Add rust-toolchain.toml with required components
+## 📋 ironstar-6lq.2 Add rust-toolchain.toml with required components
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -2300,118 +2722,123 @@ Local refs: ~/projects/rust-workspace/rust-nix-template/rust-toolchain.toml
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-g8e`
-- ⛔ **blocks**: `ironstar-g8e.1`
+- 🔗 **parent-child**: `ironstar-6lq`
+- ⛔ **blocks**: `ironstar-6lq.1`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-g8e.2 -s in_progress
+bd update ironstar-6lq.2 -s in_progress
 
 # Add a comment
-bd comment ironstar-g8e.2 'Your comment here'
+bd comment ironstar-6lq.2 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-g8e.2 -p 1
+bd update ironstar-6lq.2 -p 1
 
 # View full details
-bd show ironstar-g8e.2
+bd show ironstar-6lq.2
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-g8e.1 Integrate rust-flake patterns (crane, rust-overlay)
+## 📋 ironstar-6lq.1 Integrate rust-flake patterns (crane, rust-overlay)
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
-Create nix/modules/rust.nix importing rust-flake module. Configure crane for Rust builds, rust-overlay for toolchain management, and per-crate crane.args pattern. Add platform-specific buildInputs (darwin frameworks, openssl). Establishes deterministic Rust build infrastructure.
+Create nix/modules/rust.nix importing rust-flake module. Configure:
+- crane with per-crate crane.args via callPackage pattern
+- rust-overlay for toolchain management with rust-toolchain.toml
+- Platform-specific buildInputs: darwin.apple_sdk.frameworks (Security, SystemConfiguration), pkgs.openssl
+- Syntax: perSystem = { config, pkgs, lib, ... }: { rust-flake.crateOverrides = ...; }
+Establishes deterministic Rust build infrastructure with native dependency handling.
 Local refs: ~/projects/rust-workspace/rust-nix-template/nix/modules/rust.nix, ~/projects/rust-workspace/rustlings-workspace/nix/modules/rust.nix
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-g8e`
+- 🔗 **parent-child**: `ironstar-6lq`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-g8e.1 -s in_progress
+bd update ironstar-6lq.1 -s in_progress
 
 # Add a comment
-bd comment ironstar-g8e.1 'Your comment here'
+bd comment ironstar-6lq.1 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-g8e.1 -p 1
+bd update ironstar-6lq.1 -p 1
 
 # View full details
-bd show ironstar-g8e.1
+bd show ironstar-6lq.1
 ```
 
 </details>
 
 ---
 
-## 🏔️ ironstar-g8e Rust workspace integration
+## 🏔️ ironstar-6lq Rust workspace integration
 
 | Property | Value |
 |----------|-------|
 | **Type** | 🏔️ epic |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
-Integrate Rust toolchain and workspace patterns into the Nix flake using rust-flake, crane for deterministic builds, and rust-overlay for toolchain management. Establishes Cargo workspace structure with resolver 2, workspace.dependencies for DRY, and per-crate crane.args configuration following rustlings-workspace and rust-nix-template patterns.
+Integrate Rust toolchain and workspace patterns into the Nix flake using rust-flake, crane for deterministic builds, and rust-overlay for toolchain management. Establishes Cargo workspace structure with resolver 2, workspace.dependencies for DRY, per-crate crane.args configuration following rustlings-workspace and rust-nix-template patterns. Includes CI integration with flake checks and GitHub Actions matrix builds inherited from template.
 
 ### Dependencies
 
-- ⛔ **blocks**: `ironstar-vho`
+- ⛔ **blocks**: `ironstar-cxe`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-g8e -s in_progress
+bd update ironstar-6lq -s in_progress
 
 # Add a comment
-bd comment ironstar-g8e 'Your comment here'
+bd comment ironstar-6lq 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-g8e -p 1
+bd update ironstar-6lq -p 1
 
 # View full details
-bd show ironstar-g8e
+bd show ironstar-6lq
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-vho.5 Create .gitignore with comprehensive patterns
+## 📋 ironstar-cxe.5 Create .gitignore with comprehensive patterns
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -2419,39 +2846,38 @@ Create .gitignore at repository root with patterns: /target/, Cargo.lock, /stati
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-vho`
-- ⛔ **blocks**: `ironstar-vho.4`
+- 🔗 **parent-child**: `ironstar-cxe`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-vho.5 -s in_progress
+bd update ironstar-cxe.5 -s in_progress
 
 # Add a comment
-bd comment ironstar-vho.5 'Your comment here'
+bd comment ironstar-cxe.5 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-vho.5 -p 1
+bd update ironstar-cxe.5 -p 1
 
 # View full details
-bd show ironstar-vho.5
+bd show ironstar-cxe.5
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-vho.4 Create initial git commit with generated structure
+## 📋 ironstar-cxe.4 Create initial git commit with generated structure
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -2459,40 +2885,40 @@ Stage all generated files from om init and create initial commit with message: '
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-vho`
-- ⛔ **blocks**: `ironstar-vho.3`
-- ⛔ **blocks**: `ironstar-vho.2`
+- 🔗 **parent-child**: `ironstar-cxe`
+- ⛔ **blocks**: `ironstar-cxe.3`
+- ⛔ **blocks**: `ironstar-cxe.2`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-vho.4 -s in_progress
+bd update ironstar-cxe.4 -s in_progress
 
 # Add a comment
-bd comment ironstar-vho.4 'Your comment here'
+bd comment ironstar-cxe.4 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-vho.4 -p 1
+bd update ironstar-cxe.4 -p 1
 
 # View full details
-bd show ironstar-vho.4
+bd show ironstar-cxe.4
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-vho.3 Verify nix develop enters working development shell
+## 📋 ironstar-cxe.3 Verify nix develop enters working development shell
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -2500,39 +2926,39 @@ Test that nix develop successfully enters the devShell with basic tooling availa
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-vho`
-- ⛔ **blocks**: `ironstar-vho.1`
+- 🔗 **parent-child**: `ironstar-cxe`
+- ⛔ **blocks**: `ironstar-cxe.1`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-vho.3 -s in_progress
+bd update ironstar-cxe.3 -s in_progress
 
 # Add a comment
-bd comment ironstar-vho.3 'Your comment here'
+bd comment ironstar-cxe.3 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-vho.3 -p 1
+bd update ironstar-cxe.3 -p 1
 
 # View full details
-bd show ironstar-vho.3
+bd show ironstar-cxe.3
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-vho.2 Configure secrets management and string replacement
+## 📋 ironstar-cxe.2 Configure secrets management and string replacement
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -2541,39 +2967,39 @@ Local refs: ~/.claude/commands/preferences/secrets.md
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-vho`
-- ⛔ **blocks**: `ironstar-vho.1`
+- 🔗 **parent-child**: `ironstar-cxe`
+- ⛔ **blocks**: `ironstar-cxe.1`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-vho.2 -s in_progress
+bd update ironstar-cxe.2 -s in_progress
 
 # Add a comment
-bd comment ironstar-vho.2 'Your comment here'
+bd comment ironstar-cxe.2 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-vho.2 -p 1
+bd update ironstar-cxe.2 -p 1
 
 # View full details
-bd show ironstar-vho.2
+bd show ironstar-cxe.2
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-vho.1 Run om init with typescript-nix-template parameters
+## 📋 ironstar-cxe.1 Run om init with typescript-nix-template parameters
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -2582,38 +3008,38 @@ Local refs: ~/projects/nix-workspace/typescript-nix-template
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-vho`
+- 🔗 **parent-child**: `ironstar-cxe`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-vho.1 -s in_progress
+bd update ironstar-cxe.1 -s in_progress
 
 # Add a comment
-bd comment ironstar-vho.1 'Your comment here'
+bd comment ironstar-cxe.1 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-vho.1 -p 1
+bd update ironstar-cxe.1 -p 1
 
 # View full details
-bd show ironstar-vho.1
+bd show ironstar-cxe.1
 ```
 
 </details>
 
 ---
 
-## 🏔️ ironstar-vho Template instantiation
+## 🏔️ ironstar-cxe Template instantiation
 
 | Property | Value |
 |----------|-------|
 | **Type** | 🏔️ epic |
 | **Priority** | 🔥 Critical (P0) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -2624,31 +3050,31 @@ Bootstrap the ironstar project from typescript-nix-template using omnix om CLI. 
 
 ```bash
 # Start working on this issue
-bd update ironstar-vho -s in_progress
+bd update ironstar-cxe -s in_progress
 
 # Add a comment
-bd comment ironstar-vho 'Your comment here'
+bd comment ironstar-cxe 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-vho -p 1
+bd update ironstar-cxe -p 1
 
 # View full details
-bd show ironstar-vho
+bd show ironstar-cxe
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-jnv.8 Implement todo example route mounting
+## 📋 ironstar-e6k.8 Implement todo example route mounting
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | ⚡ High (P1) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:20 |
-| **Updated** | 2025-12-18 00:20 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -2657,43 +3083,43 @@ Local refs: ~/projects/rust-workspace/axum
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-jnv`
-- ⛔ **blocks**: `ironstar-jnv.6`
-- ⛔ **blocks**: `ironstar-jnv.3`
-- ⛔ **blocks**: `ironstar-jnv.4`
-- ⛔ **blocks**: `ironstar-jnv.5`
-- ⛔ **blocks**: `ironstar-jnv.7`
+- 🔗 **parent-child**: `ironstar-e6k`
+- ⛔ **blocks**: `ironstar-e6k.6`
+- ⛔ **blocks**: `ironstar-e6k.3`
+- ⛔ **blocks**: `ironstar-e6k.4`
+- ⛔ **blocks**: `ironstar-e6k.5`
+- ⛔ **blocks**: `ironstar-e6k.7`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-jnv.8 -s in_progress
+bd update ironstar-e6k.8 -s in_progress
 
 # Add a comment
-bd comment ironstar-jnv.8 'Your comment here'
+bd comment ironstar-e6k.8 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-jnv.8 -p 1
+bd update ironstar-e6k.8 -p 1
 
 # View full details
-bd show ironstar-jnv.8
+bd show ironstar-e6k.8
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-jnv.7 Implement todo_list_template rendering function
+## 📋 ironstar-e6k.7 Implement todo_list_template rendering function
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | ⚡ High (P1) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:20 |
-| **Updated** | 2025-12-18 00:20 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -2702,39 +3128,39 @@ Local refs: ~/projects/rust-workspace/hypertext, ~/projects/lakescope-workspace/
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-jnv`
-- ⛔ **blocks**: `ironstar-7h9.10`
+- 🔗 **parent-child**: `ironstar-e6k`
+- ⛔ **blocks**: `ironstar-r62.10`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-jnv.7 -s in_progress
+bd update ironstar-e6k.7 -s in_progress
 
 # Add a comment
-bd comment ironstar-jnv.7 'Your comment here'
+bd comment ironstar-e6k.7 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-jnv.7 -p 1
+bd update ironstar-e6k.7 -p 1
 
 # View full details
-bd show ironstar-jnv.7
+bd show ironstar-e6k.7
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-jnv.6 Implement GET /todos SSE feed endpoint
+## 📋 ironstar-e6k.6 Implement GET /todos SSE feed endpoint
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | ⚡ High (P1) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:20 |
-| **Updated** | 2025-12-18 00:20 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -2743,40 +3169,40 @@ Local refs: ~/projects/rust-workspace/axum, ~/projects/rust-workspace/datastar-r
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-jnv`
-- ⛔ **blocks**: `ironstar-jnv.2`
-- ⛔ **blocks**: `ironstar-7h9.5`
+- 🔗 **parent-child**: `ironstar-e6k`
+- ⛔ **blocks**: `ironstar-e6k.2`
+- ⛔ **blocks**: `ironstar-r62.5`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-jnv.6 -s in_progress
+bd update ironstar-e6k.6 -s in_progress
 
 # Add a comment
-bd comment ironstar-jnv.6 'Your comment here'
+bd comment ironstar-e6k.6 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-jnv.6 -p 1
+bd update ironstar-e6k.6 -p 1
 
 # View full details
-bd show ironstar-jnv.6
+bd show ironstar-e6k.6
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-jnv.5 Implement delete_todo handler (POST /delete-todo)
+## 📋 ironstar-e6k.5 Implement delete_todo handler (POST /delete-todo)
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | ⚡ High (P1) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:20 |
-| **Updated** | 2025-12-18 00:20 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -2785,39 +3211,39 @@ Local refs: ~/projects/rust-workspace/axum
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-jnv`
-- ⛔ **blocks**: `ironstar-jnv.3`
+- 🔗 **parent-child**: `ironstar-e6k`
+- ⛔ **blocks**: `ironstar-e6k.3`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-jnv.5 -s in_progress
+bd update ironstar-e6k.5 -s in_progress
 
 # Add a comment
-bd comment ironstar-jnv.5 'Your comment here'
+bd comment ironstar-e6k.5 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-jnv.5 -p 1
+bd update ironstar-e6k.5 -p 1
 
 # View full details
-bd show ironstar-jnv.5
+bd show ironstar-e6k.5
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-jnv.4 Implement mark_todo handler (POST /mark-todo)
+## 📋 ironstar-e6k.4 Implement mark_todo handler (POST /mark-todo)
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | ⚡ High (P1) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:20 |
-| **Updated** | 2025-12-18 00:20 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -2826,39 +3252,39 @@ Local refs: ~/projects/rust-workspace/axum
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-jnv`
-- ⛔ **blocks**: `ironstar-jnv.3`
+- 🔗 **parent-child**: `ironstar-e6k`
+- ⛔ **blocks**: `ironstar-e6k.3`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-jnv.4 -s in_progress
+bd update ironstar-e6k.4 -s in_progress
 
 # Add a comment
-bd comment ironstar-jnv.4 'Your comment here'
+bd comment ironstar-e6k.4 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-jnv.4 -p 1
+bd update ironstar-e6k.4 -p 1
 
 # View full details
-bd show ironstar-jnv.4
+bd show ironstar-e6k.4
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-jnv.3 Implement add_todo handler (POST /add-todo)
+## 📋 ironstar-e6k.3 Implement add_todo handler (POST /add-todo)
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | ⚡ High (P1) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -2867,40 +3293,40 @@ Local refs: ~/projects/rust-workspace/axum, ~/projects/rust-workspace/datastar-r
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-jnv`
-- ⛔ **blocks**: `ironstar-jnv.2`
-- ⛔ **blocks**: `ironstar-7h9.6`
+- 🔗 **parent-child**: `ironstar-e6k`
+- ⛔ **blocks**: `ironstar-e6k.2`
+- ⛔ **blocks**: `ironstar-r62.6`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-jnv.3 -s in_progress
+bd update ironstar-e6k.3 -s in_progress
 
 # Add a comment
-bd comment ironstar-jnv.3 'Your comment here'
+bd comment ironstar-e6k.3 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-jnv.3 -p 1
+bd update ironstar-e6k.3 -p 1
 
 # View full details
-bd show ironstar-jnv.3
+bd show ironstar-e6k.3
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-jnv.2 Implement TodoListProjection with in-memory rebuild
+## 📋 ironstar-e6k.2 Implement TodoListProjection with in-memory rebuild
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | ⚡ High (P1) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -2909,81 +3335,86 @@ Local refs: ~/projects/rust-workspace/datastar-rust-lince
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-jnv`
-- ⛔ **blocks**: `ironstar-jnv.1`
-- ⛔ **blocks**: `ironstar-x0e.7`
+- 🔗 **parent-child**: `ironstar-e6k`
+- ⛔ **blocks**: `ironstar-e6k.1`
+- ⛔ **blocks**: `ironstar-nyp.7`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-jnv.2 -s in_progress
+bd update ironstar-e6k.2 -s in_progress
 
 # Add a comment
-bd comment ironstar-jnv.2 'Your comment here'
+bd comment ironstar-e6k.2 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-jnv.2 -p 1
+bd update ironstar-e6k.2 -p 1
 
 # View full details
-bd show ironstar-jnv.2
+bd show ironstar-e6k.2
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-jnv.1 Define Todo domain model (aggregate, events, commands)
+## 📋 ironstar-e6k.1 Define Todo domain model (aggregate, events, commands)
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | ⚡ High (P1) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
-Create src/domain/ with TodoAggregate struct (id, text, completed, created_at, updated_at), TodoCreated/TodoCompleted/TodoDeleted event types, and AddTodoCommand/MarkTodoCommand/DeleteTodoCommand types. Demonstrates algebraic modeling with sum types (events) and product types (aggregates).
+Create src/domain/todo.rs with:
+struct TodoAggregate { id: Uuid, text: TodoText, completed: bool, created_at: DateTime<Utc>, updated_at: DateTime<Utc> }
+enum TodoEvent { TodoCreated { id: Uuid, text: String, created_at: DateTime<Utc> }, TodoCompleted { id: Uuid, completed_at: DateTime<Utc> }, TodoDeleted { id: Uuid, deleted_at: DateTime<Utc> } }
+enum TodoCommand { AddTodo { text: String }, MarkComplete { id: Uuid }, DeleteTodo { id: Uuid } }
+Demonstrates algebraic modeling with sum types (events) and product types (aggregates).
 Local refs: ~/projects/lakescope-workspace/datastar-go-nats-template-northstar
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-jnv`
-- ⛔ **blocks**: `ironstar-3jp.2`
+- 🔗 **parent-child**: `ironstar-e6k`
+- ⛔ **blocks**: `ironstar-2nt.2`
+- ⛔ **blocks**: `ironstar-2nt.4`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-jnv.1 -s in_progress
+bd update ironstar-e6k.1 -s in_progress
 
 # Add a comment
-bd comment ironstar-jnv.1 'Your comment here'
+bd comment ironstar-e6k.1 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-jnv.1 -p 1
+bd update ironstar-e6k.1 -p 1
 
 # View full details
-bd show ironstar-jnv.1
+bd show ironstar-e6k.1
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-7h9.12 Wire all components together in main.rs
+## 📋 ironstar-r62.13 Wire all components together in main.rs
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | ⚡ High (P1) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -2992,39 +3423,39 @@ Local refs: ~/projects/rust-workspace/axum, ~/projects/rust-workspace/tokio
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-7h9`
-- ⛔ **blocks**: `ironstar-7h9.11`
+- 🔗 **parent-child**: `ironstar-r62`
+- ⛔ **blocks**: `ironstar-r62.12`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-7h9.12 -s in_progress
+bd update ironstar-r62.13 -s in_progress
 
 # Add a comment
-bd comment ironstar-7h9.12 'Your comment here'
+bd comment ironstar-r62.13 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-7h9.12 -p 1
+bd update ironstar-r62.13 -p 1
 
 # View full details
-bd show ironstar-7h9.12
+bd show ironstar-r62.13
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-7h9.10 Implement component-level hypertext templates
+## 📋 ironstar-r62.10 Implement component-level hypertext templates
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | ⚡ High (P1) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -3033,39 +3464,39 @@ Local refs: ~/projects/rust-workspace/hypertext
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-7h9`
-- ⛔ **blocks**: `ironstar-7h9.9`
+- 🔗 **parent-child**: `ironstar-r62`
+- ⛔ **blocks**: `ironstar-r62.9`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-7h9.10 -s in_progress
+bd update ironstar-r62.10 -s in_progress
 
 # Add a comment
-bd comment ironstar-7h9.10 'Your comment here'
+bd comment ironstar-r62.10 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-7h9.10 -p 1
+bd update ironstar-r62.10 -p 1
 
 # View full details
-bd show ironstar-7h9.10
+bd show ironstar-r62.10
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-7h9.3 Configure pre-commit hooks for code quality
+## 📋 ironstar-r62.3 Configure pre-commit hooks for code quality
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | ⚡ High (P1) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -3074,39 +3505,39 @@ Local refs: ~/projects/rust-workspace/rust-nix-template/nix/modules/pre-commit.n
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-7h9`
-- ⛔ **blocks**: `ironstar-7h9.2`
+- 🔗 **parent-child**: `ironstar-r62`
+- ⛔ **blocks**: `ironstar-r62.2`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-7h9.3 -s in_progress
+bd update ironstar-r62.3 -s in_progress
 
 # Add a comment
-bd comment ironstar-7h9.3 'Your comment here'
+bd comment ironstar-r62.3 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-7h9.3 -p 1
+bd update ironstar-r62.3 -p 1
 
 # View full details
-bd show ironstar-7h9.3
+bd show ironstar-r62.3
 ```
 
 </details>
 
 ---
 
-## 🏔️ ironstar-7h9 Presentation layer
+## 🏔️ ironstar-r62 Presentation layer
 
 | Property | Value |
 |----------|-------|
 | **Type** | 🏔️ epic |
 | **Priority** | ⚡ High (P1) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -3114,39 +3545,39 @@ HTTP presentation layer using axum for routing and extractors, SSE for server-se
 
 ### Dependencies
 
-- ⛔ **blocks**: `ironstar-x0e`
-- ⛔ **blocks**: `ironstar-3dv`
+- ⛔ **blocks**: `ironstar-nyp`
+- ⛔ **blocks**: `ironstar-ny3`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-7h9 -s in_progress
+bd update ironstar-r62 -s in_progress
 
 # Add a comment
-bd comment ironstar-7h9 'Your comment here'
+bd comment ironstar-r62 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-7h9 -p 1
+bd update ironstar-r62 -p 1
 
 # View full details
-bd show ironstar-7h9
+bd show ironstar-r62
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-x0e.9 Create Session axum extractor
+## 📋 ironstar-nyp.11 Create Session axum extractor
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | ⚡ High (P1) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -3155,39 +3586,87 @@ Local refs: ~/projects/rust-workspace/axum
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-x0e`
-- ⛔ **blocks**: `ironstar-x0e.8`
+- 🔗 **parent-child**: `ironstar-nyp`
+- ⛔ **blocks**: `ironstar-nyp.10`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-x0e.9 -s in_progress
+bd update ironstar-nyp.11 -s in_progress
 
 # Add a comment
-bd comment ironstar-x0e.9 'Your comment here'
+bd comment ironstar-nyp.11 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-x0e.9 -p 1
+bd update ironstar-nyp.11 -p 1
 
 # View full details
-bd show ironstar-x0e.9
+bd show ironstar-nyp.11
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-x0e.8 Implement redb session store with ACID guarantees
+## 📋 ironstar-nyp.10 Add session TTL cleanup background task
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | ⚡ High (P1) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
+
+### Description
+
+Spawn tokio background task running every hour to delete expired sessions:
+tokio::spawn(async move {
+    let mut interval = tokio::time::interval(Duration::from_secs(3600));
+    loop {
+        interval.tick().await;
+        session_store.delete_expired(SystemTime::now() - Duration::from_secs(86400 * 30)).await;
+    }
+});
+Prevents unbounded session store growth in long-running servers.
+
+### Dependencies
+
+- 🔗 **parent-child**: `ironstar-nyp`
+- ⛔ **blocks**: `ironstar-nyp.9`
+
+<details>
+<summary>📋 Commands</summary>
+
+```bash
+# Start working on this issue
+bd update ironstar-nyp.10 -s in_progress
+
+# Add a comment
+bd comment ironstar-nyp.10 'Your comment here'
+
+# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
+bd update ironstar-nyp.10 -p 1
+
+# View full details
+bd show ironstar-nyp.10
+```
+
+</details>
+
+---
+
+## 📋 ironstar-nyp.9 Implement redb session store with ACID guarantees
+
+| Property | Value |
+|----------|-------|
+| **Type** | 📋 task |
+| **Priority** | ⚡ High (P1) |
+| **Status** | 🟢 open |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -3196,39 +3675,39 @@ Local refs: ~/projects/rust-workspace/redb, ~/projects/rust-workspace/redb/docs/
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-x0e`
-- ⛔ **blocks**: `ironstar-3jp.2`
+- 🔗 **parent-child**: `ironstar-nyp`
+- ⛔ **blocks**: `ironstar-2nt.2`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-x0e.8 -s in_progress
+bd update ironstar-nyp.9 -s in_progress
 
 # Add a comment
-bd comment ironstar-x0e.8 'Your comment here'
+bd comment ironstar-nyp.9 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-x0e.8 -p 1
+bd update ironstar-nyp.9 -p 1
 
 # View full details
-bd show ironstar-x0e.8
+bd show ironstar-nyp.9
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-x0e.4 Implement SQLite connection pooling and configuration
+## 📋 ironstar-nyp.4 Implement SQLite connection pooling and configuration
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | ⚡ High (P1) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -3237,80 +3716,88 @@ Local refs: ~/projects/rust-workspace/sqlx
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-x0e`
-- ⛔ **blocks**: `ironstar-x0e.3`
+- 🔗 **parent-child**: `ironstar-nyp`
+- ⛔ **blocks**: `ironstar-nyp.3`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-x0e.4 -s in_progress
+bd update ironstar-nyp.4 -s in_progress
 
 # Add a comment
-bd comment ironstar-x0e.4 'Your comment here'
+bd comment ironstar-nyp.4 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-x0e.4 -p 1
+bd update ironstar-nyp.4 -p 1
 
 # View full details
-bd show ironstar-x0e.4
+bd show ironstar-nyp.4
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-3dv.12 Create web-components/components/ directory for vanilla web components
+## 📋 ironstar-ny3.14 Create web-components/components/ directory for vanilla web components
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | ⚡ High (P1) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
-Set up web-components/components/ directory structure for vanilla web components. Create index.ts that exports/registers all components. Contains thin wrapper web components for third-party libraries following the data-ignore-morph pattern with Datastar integration.
+Set up web-components/components/ directory structure for vanilla web components. Create index.ts that exports/registers all components:
+class SortableList extends HTMLElement {
+  connectedCallback() {
+    Sortable.create(this, { onEnd: (evt) => this.dispatchEvent(new CustomEvent('reorder', { detail: evt })) });
+  }
+  disconnectedCallback() { /* cleanup */ }
+}
+customElements.define('sortable-list', SortableList);
+Contains thin wrapper web components for third-party libraries following the data-ignore-morph pattern with Datastar integration.
 Local refs: ~/projects/lakescope-workspace/datastar-go-nats-template-northstar/web/components/
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-3dv`
-- ⛔ **blocks**: `ironstar-3dv.7`
+- 🔗 **parent-child**: `ironstar-ny3`
+- ⛔ **blocks**: `ironstar-ny3.8`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-3dv.12 -s in_progress
+bd update ironstar-ny3.14 -s in_progress
 
 # Add a comment
-bd comment ironstar-3dv.12 'Your comment here'
+bd comment ironstar-ny3.14 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-3dv.12 -p 1
+bd update ironstar-ny3.14 -p 1
 
 # View full details
-bd show ironstar-3dv.12
+bd show ironstar-ny3.14
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-3dv.5 Copy Open Props UI component CSS files
+## 📋 ironstar-ny3.6 Copy Open Props UI component CSS files
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | ⚡ High (P1) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -3319,39 +3806,39 @@ Local refs: ~/projects/lakescope-workspace/open-props-ui
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-3dv`
-- ⛔ **blocks**: `ironstar-3dv.4`
+- 🔗 **parent-child**: `ironstar-ny3`
+- ⛔ **blocks**: `ironstar-ny3.5`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-3dv.5 -s in_progress
+bd update ironstar-ny3.6 -s in_progress
 
 # Add a comment
-bd comment ironstar-3dv.5 'Your comment here'
+bd comment ironstar-ny3.6 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-3dv.5 -p 1
+bd update ironstar-ny3.6 -p 1
 
 # View full details
-bd show ironstar-3dv.5
+bd show ironstar-ny3.6
 ```
 
 </details>
 
 ---
 
-## 🏔️ ironstar-3dv Frontend build pipeline
+## 🏔️ ironstar-ny3 Frontend build pipeline
 
 | Property | Value |
 |----------|-------|
 | **Type** | 🏔️ epic |
 | **Priority** | ⚡ High (P1) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -3359,38 +3846,38 @@ Build pipeline for frontend assets using Rolldown (Rust-native bundler), PostCSS
 
 ### Dependencies
 
-- ⛔ **blocks**: `ironstar-cvo`
+- ⛔ **blocks**: `ironstar-6lq.7`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-3dv -s in_progress
+bd update ironstar-ny3 -s in_progress
 
 # Add a comment
-bd comment ironstar-3dv 'Your comment here'
+bd comment ironstar-ny3 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-3dv -p 1
+bd update ironstar-ny3 -p 1
 
 # View full details
-bd show ironstar-3dv
+bd show ironstar-ny3
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-3jp.6 Define application error types
+## 📋 ironstar-2nt.8 Define application error types
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | ⚡ High (P1) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -3398,79 +3885,39 @@ Create AppError enum using thiserror::Error with variants for Validation, NotFou
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-3jp`
-- ⛔ **blocks**: `ironstar-3jp.2`
+- 🔗 **parent-child**: `ironstar-2nt`
+- ⛔ **blocks**: `ironstar-2nt.2`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-3jp.6 -s in_progress
+bd update ironstar-2nt.8 -s in_progress
 
 # Add a comment
-bd comment ironstar-3jp.6 'Your comment here'
+bd comment ironstar-2nt.8 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-3jp.6 -p 1
+bd update ironstar-2nt.8 -p 1
 
 # View full details
-bd show ironstar-3jp.6
+bd show ironstar-2nt.8
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-cvo.4 Configure caching for cargo and nix
-
-| Property | Value |
-|----------|-------|
-| **Type** | 📋 task |
-| **Priority** | ⚡ High (P1) |
-| **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
-
-### Description
-
-Set up GitHub Actions caching for: cargo registry/git/target directories, nix store paths. Use cachix for Nix binary cache if applicable. Reduces CI build times significantly for incremental changes.
-
-### Dependencies
-
-- 🔗 **parent-child**: `ironstar-cvo`
-- ⛔ **blocks**: `ironstar-cvo.2`
-
-<details>
-<summary>📋 Commands</summary>
-
-```bash
-# Start working on this issue
-bd update ironstar-cvo.4 -s in_progress
-
-# Add a comment
-bd comment ironstar-cvo.4 'Your comment here'
-
-# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-cvo.4 -p 1
-
-# View full details
-bd show ironstar-cvo.4
-```
-
-</details>
-
----
-
-## 📋 ironstar-z01.5 Add structured logging with tracing
+## 📋 ironstar-apx.5 Add structured logging with tracing
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔹 Medium (P2) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:20 |
-| **Updated** | 2025-12-18 00:20 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -3478,39 +3925,39 @@ Integrate tracing and tracing-subscriber crates for structured logging of events
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-z01`
-- ⛔ **blocks**: `ironstar-7h9.12`
+- 🔗 **parent-child**: `ironstar-apx`
+- ⛔ **blocks**: `ironstar-r62.13`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-z01.5 -s in_progress
+bd update ironstar-apx.5 -s in_progress
 
 # Add a comment
-bd comment ironstar-z01.5 'Your comment here'
+bd comment ironstar-apx.5 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-z01.5 -p 1
+bd update ironstar-apx.5 -p 1
 
 # View full details
-bd show ironstar-z01.5
+bd show ironstar-apx.5
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-z01.4 Create .env.development template file
+## 📋 ironstar-apx.4 Create .env.development template file
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔹 Medium (P2) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:20 |
-| **Updated** | 2025-12-18 00:20 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -3518,39 +3965,39 @@ Create template .env.development with DATABASE_URL=dev.db, LOG_LEVEL=debug, SERV
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-z01`
-- ⛔ **blocks**: `ironstar-x0e.3`
+- 🔗 **parent-child**: `ironstar-apx`
+- ⛔ **blocks**: `ironstar-nyp.3`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-z01.4 -s in_progress
+bd update ironstar-apx.4 -s in_progress
 
 # Add a comment
-bd comment ironstar-z01.4 'Your comment here'
+bd comment ironstar-apx.4 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-z01.4 -p 1
+bd update ironstar-apx.4 -p 1
 
 # View full details
-bd show ironstar-z01.4
+bd show ironstar-apx.4
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-z01.2 Create template parameters and conditional includes
+## 📋 ironstar-apx.2 Create template parameters and conditional includes
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔹 Medium (P2) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:20 |
-| **Updated** | 2025-12-18 00:20 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -3559,39 +4006,39 @@ Local refs: ~/projects/nix-workspace/typescript-nix-template/modules/template.ni
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-z01`
-- ⛔ **blocks**: `ironstar-g8e.1`
+- 🔗 **parent-child**: `ironstar-apx`
+- ⛔ **blocks**: `ironstar-6lq.1`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-z01.2 -s in_progress
+bd update ironstar-apx.2 -s in_progress
 
 # Add a comment
-bd comment ironstar-z01.2 'Your comment here'
+bd comment ironstar-apx.2 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-z01.2 -p 1
+bd update ironstar-apx.2 -p 1
 
 # View full details
-bd show ironstar-z01.2
+bd show ironstar-apx.2
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-z01.1 Create BOOTSTRAP.md with complete setup instructions
+## 📋 ironstar-apx.1 Create BOOTSTRAP.md with complete setup instructions
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔹 Medium (P2) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:20 |
-| **Updated** | 2025-12-18 00:20 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -3599,39 +4046,39 @@ Write BOOTSTRAP.md documenting: prerequisites (Nix, direnv), flake.nix structure
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-z01`
-- ⛔ **blocks**: `ironstar-7h9.12`
+- 🔗 **parent-child**: `ironstar-apx`
+- ⛔ **blocks**: `ironstar-r62.13`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-z01.1 -s in_progress
+bd update ironstar-apx.1 -s in_progress
 
 # Add a comment
-bd comment ironstar-z01.1 'Your comment here'
+bd comment ironstar-apx.1 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-z01.1 -p 1
+bd update ironstar-apx.1 -p 1
 
 # View full details
-bd show ironstar-z01.1
+bd show ironstar-apx.1
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-1k8.3 Create end-to-end handler tests
+## 📋 ironstar-zuv.3 Create end-to-end handler tests
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔹 Medium (P2) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:20 |
-| **Updated** | 2025-12-18 00:20 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -3640,39 +4087,39 @@ Local refs: ~/projects/rust-workspace/axum, ~/projects/rust-workspace/tokio
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-1k8`
-- ⛔ **blocks**: `ironstar-7h9.12`
+- 🔗 **parent-child**: `ironstar-zuv`
+- ⛔ **blocks**: `ironstar-r62.13`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-1k8.3 -s in_progress
+bd update ironstar-zuv.3 -s in_progress
 
 # Add a comment
-bd comment ironstar-1k8.3 'Your comment here'
+bd comment ironstar-zuv.3 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-1k8.3 -p 1
+bd update ironstar-zuv.3 -p 1
 
 # View full details
-bd show ironstar-1k8.3
+bd show ironstar-zuv.3
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-1k8.2 Create projection tests
+## 📋 ironstar-zuv.2 Create projection tests
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔹 Medium (P2) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:20 |
-| **Updated** | 2025-12-18 00:20 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -3681,39 +4128,39 @@ Local refs: ~/projects/rust-workspace/tokio
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-1k8`
-- ⛔ **blocks**: `ironstar-x0e.7`
+- 🔗 **parent-child**: `ironstar-zuv`
+- ⛔ **blocks**: `ironstar-nyp.7`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-1k8.2 -s in_progress
+bd update ironstar-zuv.2 -s in_progress
 
 # Add a comment
-bd comment ironstar-1k8.2 'Your comment here'
+bd comment ironstar-zuv.2 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-1k8.2 -p 1
+bd update ironstar-zuv.2 -p 1
 
 # View full details
-bd show ironstar-1k8.2
+bd show ironstar-zuv.2
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-1k8.1 Create event store integration tests
+## 📋 ironstar-zuv.1 Create event store integration tests
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔹 Medium (P2) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:20 |
-| **Updated** | 2025-12-18 00:20 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -3722,39 +4169,39 @@ Local refs: ~/projects/rust-workspace/sqlx
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-1k8`
-- ⛔ **blocks**: `ironstar-x0e.3`
+- 🔗 **parent-child**: `ironstar-zuv`
+- ⛔ **blocks**: `ironstar-nyp.3`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-1k8.1 -s in_progress
+bd update ironstar-zuv.1 -s in_progress
 
 # Add a comment
-bd comment ironstar-1k8.1 'Your comment here'
+bd comment ironstar-zuv.1 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-1k8.1 -p 1
+bd update ironstar-zuv.1 -p 1
 
 # View full details
-bd show ironstar-1k8.1
+bd show ironstar-zuv.1
 ```
 
 </details>
 
 ---
 
-## 🏔️ ironstar-1k8 Testing and integration
+## 🏔️ ironstar-zuv Testing and integration
 
 | Property | Value |
 |----------|-------|
 | **Type** | 🏔️ epic |
 | **Priority** | 🔹 Medium (P2) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:20 |
-| **Updated** | 2025-12-18 00:20 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -3762,38 +4209,38 @@ Comprehensive test coverage including event store integration tests (SQLite appe
 
 ### Dependencies
 
-- ⛔ **blocks**: `ironstar-jnv`
+- ⛔ **blocks**: `ironstar-e6k`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-1k8 -s in_progress
+bd update ironstar-zuv -s in_progress
 
 # Add a comment
-bd comment ironstar-1k8 'Your comment here'
+bd comment ironstar-zuv 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-1k8 -p 1
+bd update ironstar-zuv -p 1
 
 # View full details
-bd show ironstar-1k8
+bd show ironstar-zuv
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-7ya.3 Set up Lucide icon build-time inlining
+## 📋 ironstar-753.3 Set up Lucide icon build-time inlining
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔹 Medium (P2) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:20 |
-| **Updated** | 2025-12-18 00:20 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -3802,39 +4249,39 @@ Local refs: ~/projects/lakescope-workspace/open-props-ui, ~/projects/rust-worksp
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-7ya`
-- ⛔ **blocks**: `ironstar-3dv.2`
+- 🔗 **parent-child**: `ironstar-753`
+- ⛔ **blocks**: `ironstar-ny3.2`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-7ya.3 -s in_progress
+bd update ironstar-753.3 -s in_progress
 
 # Add a comment
-bd comment ironstar-7ya.3 'Your comment here'
+bd comment ironstar-753.3 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-7ya.3 -p 1
+bd update ironstar-753.3 -p 1
 
 # View full details
-bd show ironstar-7ya.3
+bd show ironstar-753.3
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-7ya.2 Implement sortable-list web component wrapper
+## 📋 ironstar-753.2 Implement sortable-list web component wrapper
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔹 Medium (P2) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:20 |
-| **Updated** | 2025-12-18 00:20 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -3843,39 +4290,39 @@ Local refs: ~/projects/lakescope-workspace/datastar-go-nats-template-northstar
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-7ya`
-- ⛔ **blocks**: `ironstar-3dv.12`
+- 🔗 **parent-child**: `ironstar-753`
+- ⛔ **blocks**: `ironstar-ny3.14`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-7ya.2 -s in_progress
+bd update ironstar-753.2 -s in_progress
 
 # Add a comment
-bd comment ironstar-7ya.2 'Your comment here'
+bd comment ironstar-753.2 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-7ya.2 -p 1
+bd update ironstar-753.2 -p 1
 
 # View full details
-bd show ironstar-7ya.2
+bd show ironstar-753.2
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-7ya.1 Implement VegaChart web component wrapper
+## 📋 ironstar-753.1 Implement VegaChart web component wrapper
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔹 Medium (P2) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:20 |
-| **Updated** | 2025-12-18 00:20 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -3884,39 +4331,39 @@ Local refs: ~/projects/lakescope-workspace/vega-embed, ~/projects/lakescope-work
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-7ya`
-- ⛔ **blocks**: `ironstar-3dv.12`
+- 🔗 **parent-child**: `ironstar-753`
+- ⛔ **blocks**: `ironstar-ny3.14`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-7ya.1 -s in_progress
+bd update ironstar-753.1 -s in_progress
 
 # Add a comment
-bd comment ironstar-7ya.1 'Your comment here'
+bd comment ironstar-753.1 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-7ya.1 -p 1
+bd update ironstar-753.1 -p 1
 
 # View full details
-bd show ironstar-7ya.1
+bd show ironstar-753.1
 ```
 
 </details>
 
 ---
 
-## 🏔️ ironstar-7ya Third-party library integration
+## 🏔️ ironstar-753 Third-party library integration
 
 | Property | Value |
 |----------|-------|
 | **Type** | 🏔️ epic |
 | **Priority** | 🔹 Medium (P2) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:20 |
-| **Updated** | 2025-12-18 00:20 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -3924,38 +4371,38 @@ Integration patterns for third-party JavaScript libraries with Datastar: Pattern
 
 ### Dependencies
 
-- ⛔ **blocks**: `ironstar-3dv`
+- ⛔ **blocks**: `ironstar-ny3`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-7ya -s in_progress
+bd update ironstar-753 -s in_progress
 
 # Add a comment
-bd comment ironstar-7ya 'Your comment here'
+bd comment ironstar-753 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-7ya -p 1
+bd update ironstar-753 -p 1
 
 # View full details
-bd show ironstar-7ya
+bd show ironstar-753
 ```
 
 </details>
 
 ---
 
-## 🏔️ ironstar-jnv Example application (Todo)
+## 🏔️ ironstar-e6k Example application (Todo)
 
 | Property | Value |
 |----------|-------|
 | **Type** | 🏔️ epic |
 | **Priority** | 🔹 Medium (P2) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -3963,38 +4410,38 @@ Complete TodoMVC demonstration integrating all architectural layers: Todo domain
 
 ### Dependencies
 
-- ⛔ **blocks**: `ironstar-7h9`
+- ⛔ **blocks**: `ironstar-r62`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-jnv -s in_progress
+bd update ironstar-e6k -s in_progress
 
 # Add a comment
-bd comment ironstar-jnv 'Your comment here'
+bd comment ironstar-e6k 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-jnv -p 1
+bd update ironstar-e6k -p 1
 
 # View full details
-bd show ironstar-jnv
+bd show ironstar-e6k
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-7h9.14 Implement health check endpoint for process-compose
+## 📋 ironstar-r62.15 Implement health check endpoint for process-compose
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔹 Medium (P2) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -4003,39 +4450,39 @@ Local refs: ~/projects/rust-workspace/axum
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-7h9`
-- ⛔ **blocks**: `ironstar-7h9.11`
+- 🔗 **parent-child**: `ironstar-r62`
+- ⛔ **blocks**: `ironstar-r62.11`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-7h9.14 -s in_progress
+bd update ironstar-r62.15 -s in_progress
 
 # Add a comment
-bd comment ironstar-7h9.14 'Your comment here'
+bd comment ironstar-r62.15 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-7h9.14 -p 1
+bd update ironstar-r62.15 -p 1
 
 # View full details
-bd show ironstar-7h9.14
+bd show ironstar-r62.15
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-7h9.13 Implement dev-only hotreload SSE endpoint
+## 📋 ironstar-r62.14 Implement dev-only hotreload SSE endpoint
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔹 Medium (P2) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -4044,39 +4491,39 @@ Local refs: ~/projects/rust-workspace/axum, ~/projects/rust-workspace/datastar-r
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-7h9`
-- ⛔ **blocks**: `ironstar-7h9.5`
+- 🔗 **parent-child**: `ironstar-r62`
+- ⛔ **blocks**: `ironstar-r62.5`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-7h9.13 -s in_progress
+bd update ironstar-r62.14 -s in_progress
 
 # Add a comment
-bd comment ironstar-7h9.13 'Your comment here'
+bd comment ironstar-r62.14 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-7h9.13 -p 1
+bd update ironstar-r62.14 -p 1
 
 # View full details
-bd show ironstar-7h9.13
+bd show ironstar-r62.14
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-x0e.10 Implement DuckDB analytics service
+## 📋 ironstar-nyp.12 Implement DuckDB analytics service
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | 🔹 Medium (P2) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:19 |
-| **Updated** | 2025-12-18 00:19 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -4085,39 +4532,39 @@ Local refs: ~/projects/omicslake-workspace/duckdb-rs
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-x0e`
-- ⛔ **blocks**: `ironstar-3jp.2`
+- 🔗 **parent-child**: `ironstar-nyp`
+- ⛔ **blocks**: `ironstar-2nt.2`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-x0e.10 -s in_progress
+bd update ironstar-nyp.12 -s in_progress
 
 # Add a comment
-bd comment ironstar-x0e.10 'Your comment here'
+bd comment ironstar-nyp.12 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-x0e.10 -p 1
+bd update ironstar-nyp.12 -p 1
 
 # View full details
-bd show ironstar-x0e.10
+bd show ironstar-nyp.12
 ```
 
 </details>
 
 ---
 
-## 📋 ironstar-z01.3 Define om CLI instantiation tests and metadata
+## 📋 ironstar-apx.3 Define om CLI instantiation tests and metadata
 
 | Property | Value |
 |----------|-------|
 | **Type** | 📋 task |
 | **Priority** | ☕ Low (P3) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:20 |
-| **Updated** | 2025-12-18 00:20 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -4126,39 +4573,39 @@ Local refs: ~/projects/rust-workspace/rust-nix-template/nix/modules/template.nix
 
 ### Dependencies
 
-- 🔗 **parent-child**: `ironstar-z01`
-- ⛔ **blocks**: `ironstar-z01.2`
+- 🔗 **parent-child**: `ironstar-apx`
+- ⛔ **blocks**: `ironstar-apx.2`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-z01.3 -s in_progress
+bd update ironstar-apx.3 -s in_progress
 
 # Add a comment
-bd comment ironstar-z01.3 'Your comment here'
+bd comment ironstar-apx.3 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-z01.3 -p 1
+bd update ironstar-apx.3 -p 1
 
 # View full details
-bd show ironstar-z01.3
+bd show ironstar-apx.3
 ```
 
 </details>
 
 ---
 
-## 🏔️ ironstar-z01 Documentation and template
+## 🏔️ ironstar-apx Documentation and template
 
 | Property | Value |
 |----------|-------|
 | **Type** | 🏔️ epic |
 | **Priority** | ☕ Low (P3) |
 | **Status** | 🟢 open |
-| **Created** | 2025-12-18 00:20 |
-| **Updated** | 2025-12-18 00:20 |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2025-12-18 09:36 |
 
 ### Description
 
@@ -4166,23 +4613,23 @@ Template finalization with omnix integration (om CLI parameters, conditional fil
 
 ### Dependencies
 
-- ⛔ **blocks**: `ironstar-1k8`
+- ⛔ **blocks**: `ironstar-zuv`
 
 <details>
 <summary>📋 Commands</summary>
 
 ```bash
 # Start working on this issue
-bd update ironstar-z01 -s in_progress
+bd update ironstar-apx -s in_progress
 
 # Add a comment
-bd comment ironstar-z01 'Your comment here'
+bd comment ironstar-apx 'Your comment here'
 
 # Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-z01 -p 1
+bd update ironstar-apx -p 1
 
 # View full details
-bd show ironstar-z01
+bd show ironstar-apx
 ```
 
 </details>
