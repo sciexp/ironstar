@@ -575,7 +575,10 @@ ironstar/
 │   └── presentation/                   # HTTP + HTML
 │       ├── mod.rs
 │       ├── routes.rs
-│       ├── handlers.rs
+│       ├── handlers/
+│       │   ├── mod.rs
+│       │   ├── sse.rs
+│       │   └── commands.rs
 │       └── templates/                  # hypertext components
 ├── web-components/                     # Frontend assets (separate build)
 │   ├── package.json

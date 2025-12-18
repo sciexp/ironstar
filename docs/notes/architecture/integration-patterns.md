@@ -228,7 +228,7 @@ protected createRenderRoot() {
 }
 ```
 
-This ensures Open Props CSS custom properties are accessible (shadow DOM blocks token inheritance) and allows TailwindCSS utility classes to work correctly if used.
+This ensures Open Props CSS custom properties are accessible (shadow DOM blocks token inheritance).
 
 ### Build integration
 
