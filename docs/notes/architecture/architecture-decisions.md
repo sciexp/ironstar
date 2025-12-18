@@ -386,10 +386,15 @@ txn.commit()?;  // Release (effect realized)
 **Durability as explicit choice:**
 
 ```rust
-// 1PC+C: single fsync, checksums detect partial writes
-// 2PC: two fsyncs, stronger guarantee
-// The choice is explicit in the API, not hidden
-db.set_two_phase_commit(true);
+use redb::Durability;
+
+// 1PC+C: single fsync, checksums detect partial writes (Durability::None)
+// 2PC: two fsyncs, stronger guarantee (Durability::Immediate)
+// The choice is explicit in the transaction API, not hidden
+let tx = db.begin_write()?;
+tx.set_durability(Durability::Immediate)?;
+// ... operations ...
+tx.commit()?;
 ```
 
 **Why redb for session state:**
@@ -927,7 +932,7 @@ The composition happens in your own CSS rules, not in generated utilities.
 
 Open Props provides "sub-atomic styles" organized into semantic categories:
 
-- **Colors**: 19 color palettes (gray, red, pink, purple, violet, indigo, blue, cyan, teal, green, lime, yellow, orange, choco, brown, sand, camo, jungle) with OKLCH variants for modern color spaces
+- **Colors**: 19 color palettes (gray, red, pink, purple, violet, indigo, blue, cyan, teal, green, lime, yellow, orange, choco, brown, sand, camo, jungle, stone) with OKLCH variants for modern color spaces
 - **Sizing**: `--size-*` (rem-based), `--size-fluid-*` (clamp-based responsive), `--size-content-*`, `--size-header-*`, `--size-*-px` (pixel-based)
 - **Typography**: `--font-sans`, `--font-serif`, `--font-mono`, `--font-weight-*`, `--font-size-*`, `--font-lineheight-*`
 - **Spacing**: `--space-*` for margins/padding
