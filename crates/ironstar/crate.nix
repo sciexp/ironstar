@@ -5,15 +5,12 @@
   crane = {
     args = {
       buildInputs =
-        lib.optionals pkgs.stdenv.isDarwin (
-          with pkgs.apple-sdk.frameworks;
-          [
-            IOKit
-            Security
-            SystemConfiguration
-            CoreFoundation
-          ]
-        )
+        lib.optionals pkgs.stdenv.isDarwin [
+          pkgs.darwin.IOKit
+          pkgs.darwin.Security
+          pkgs.darwin.SystemConfiguration
+          pkgs.darwin.CF
+        ]
         ++ lib.optionals pkgs.stdenv.isLinux [
           pkgs.openssl
         ];
@@ -22,7 +19,7 @@
         pkgs.pkg-config
       ]
       ++ lib.optionals pkgs.stdenv.isDarwin [
-        pkgs.apple-sdk.frameworks.Cocoa
+        pkgs.darwin.Cocoa
       ];
     };
   };
