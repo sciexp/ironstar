@@ -717,6 +717,43 @@ let result = tokio::task::spawn_blocking(move || {
 }).await??;
 ```
 
+**Remote data sources via httpfs:**
+
+Beyond local analytics over event history, DuckDB can query remote datasets directly via its httpfs extension.
+This enables the axum backend to fetch external data for ECharts/Vega visualizations without requiring local data ingestion.
+
+Supported protocols:
+- `hf://` — HuggingFace-hosted datasets (parquet files on HuggingFace Hub)
+- `s3://` — S3-compatible object storage (AWS S3, Cloudflare R2, MinIO)
+- DuckLake catalogs — versioned data lake abstraction over object storage
+
+```rust
+use duckdb::Connection;
+
+// Query HuggingFace-hosted parquet data directly
+let conn = Connection::open_in_memory()?;
+conn.execute("INSTALL httpfs; LOAD httpfs;", [])?;
+
+let results = conn.execute(
+    "SELECT * FROM 'hf://datasets/org/dataset/data.parquet' LIMIT 100",
+    []
+)?;
+
+// S3-compatible storage (e.g., Cloudflare R2)
+conn.execute("SET s3_endpoint='account.r2.cloudflarestorage.com';", [])?;
+let results = conn.execute(
+    "SELECT * FROM read_parquet('s3://bucket/analytics/*.parquet')",
+    []
+)?;
+```
+
+This pattern separates concerns: visualization components (ECharts, Vega-Lite) handle rendering, while DuckDB handles data access regardless of whether the source is local event projections or remote datasets.
+
+**Local references:**
+- `~/projects/rust-workspace/rust-duckdb-huggingface-ducklake-query` — reference implementation demonstrating hf:// queries
+- `~/projects/omicslake-workspace/marhar-frozen` — DuckLake fixture data creation
+- `~/projects/omicslake-workspace/marhar-duckdb-tools` — DuckDB tooling for data lake operations
+
 ---
 
 ### 7. Zenoh — future distribution via unified abstraction
