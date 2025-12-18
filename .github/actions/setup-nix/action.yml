@@ -1,0 +1,128 @@
+name: setup-nix
+description: setup nix using nothing-but-nix pattern with space reclamation and magic-nix-cache
+
+inputs:
+  installer:
+    description: |
+      nix installation strategy:
+      - 'full' (default): space reclamation + magic-nix-cache + cachix for builds
+      - 'quick': minimal install for simple tasks (no space reclamation, no caching overhead)
+    type: string
+    required: false
+    default: full
+  system:
+    description: nix system to configure (e.g., x86_64-linux, aarch64-darwin)
+    type: string
+    required: true
+  sandbox:
+    description: enable nix sandbox builds
+    type: string
+    default: "true"
+  enable-cachix:
+    description: enable cachix binary cache
+    type: boolean
+    default: false
+  cachix-name:
+    description: cachix cache name
+    type: string
+    required: false
+  cachix-auth-token:
+    description: cachix auth token
+    type: string
+    required: false
+  cachix-skip-push:
+    description: skip pushing to cachix (read-only)
+    type: boolean
+    default: false
+  nix-version:
+    description: nix version to install (e.g., 2.32.4, 2.31.2)
+    type: string
+    required: false
+    default: "2.32.4"
+
+runs:
+  using: composite
+  steps:
+    - name: reclaim space (linux)
+      if: runner.os == 'Linux' && inputs.installer == 'full'
+      uses: wimpysworld/nothing-but-nix@10c936d9e46521bf923f75458e0cbd4fa309300d # main
+      with:
+        hatchet-protocol: cleave
+        nix-permission-edict: true
+        # Reserve 4GB on /mnt for non-Nix TMPDIR usage
+        # Nix build temps now go to /nix/build (see build-dir in extra_nix_config)
+        mnt-safe-haven: '4096'
+
+    - name: reclaim space (darwin)
+      if: runner.os == 'macOS' && inputs.installer == 'full'
+      shell: bash
+      run: |
+        echo "::group::disk space (before)"
+        sudo df -h
+        echo "::endgroup::"
+
+        echo "::group::disable mds"
+        sudo mdutil -i off -a || echo "mdutil failed"
+        sudo launchctl unload -w /System/Library/LaunchDaemons/com.apple.metadata.mds.plist \
+         || echo "launchctl unload failed"
+        echo "::endgroup::"
+
+        echo "Background space expansion started. /nix will grow as space becomes available."
+        sudo rm -rf \
+          /Applications/Xcode_* \
+          /Library/Developer/CoreSimulator \
+          /Library/Frameworks \
+          /Users/runner/.dotnet \
+          /Users/runner/.rustup \
+          /Users/runner/Library/Android \
+          /Users/runner/Library/Caches \
+          /Users/runner/Library/Developer/CoreSimulator \
+          /Users/runner/hostedtoolcache &
+
+    - name: install nix
+      uses: cachix/install-nix-action@4e002c8ec80594ecd40e759629461e26c8abed15 # v31
+      with:
+        # Use install_url to pin specific Nix version
+        # Switched from nix-quick-install-action (single-user) to install-nix-action (multi-user with daemon)
+        # to get access to Nix 2.32.4 which fixes callback race condition (NixOS/nix#13484)
+        install_url: https://releases.nixos.org/nix/nix-${{ inputs.nix-version }}/install
+        # build-dir on /nix is workaround for https://github.com/wimpysworld/nothing-but-nix/issues/18
+        extra_nix_config: |
+          build-dir = /nix/build
+          sandbox = ${{ inputs.sandbox }}
+          system = ${{ inputs.system }}
+          keep-env-derivations = true
+          keep-outputs = true
+
+    - name: create build-dir
+      if: runner.os == 'Linux'
+      shell: bash
+      run: sudo mkdir -p /nix/build
+
+    - name: setup magic-nix-cache
+      if: inputs.installer == 'full'
+      uses: DeterminateSystems/magic-nix-cache-action@b8276522d77f21bf19d3574e5bc99186a6c7aa6c # main
+      with:
+        # Disable FlakeHub cache (we use Cachix instead)
+        use-flakehub: false
+        # Disable telemetry
+        diagnostic-endpoint: ""
+
+    - name: setup cachix
+      if: inputs.enable-cachix == 'true'
+      uses: cachix/cachix-action@0fc020193b5a1fa3ac4575aa3a7d3aa6a35435ad # v16
+      continue-on-error: true
+      with:
+        name: ${{ inputs.cachix-name }}
+        authToken: ${{ inputs.cachix-auth-token }}
+        skipPush: ${{ inputs.cachix-skip-push }}
+
+    - name: post setup-nix
+      if: runner.os == 'macOS' && inputs.installer == 'full'
+      uses: srz-zumix/post-run-action@2bf288bc024acd0341914f792a811080ebd0f252 # v2
+      with:
+        shell: bash -e {0}
+        post-run: |
+          echo "::group::disk space (after)"
+          sudo df -h
+          echo "::endgroup::"
