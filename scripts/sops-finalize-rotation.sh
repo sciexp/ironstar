@@ -40,7 +40,7 @@ echo
 sed -i.tmp "/^  - &${ROLE} ${OLD_KEY}/d" .sops.yaml
 
 # Rename -next to regular
-sed -i.tmp "s/&${ROLE}-next/${ROLE}/g" .sops.yaml
+sed -i.tmp "s/&${ROLE}-next/\&${ROLE}/g" .sops.yaml
 sed -i.tmp "s/\*${ROLE}-next/*${ROLE}/g" .sops.yaml
 
 rm .sops.yaml.tmp
