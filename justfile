@@ -824,7 +824,7 @@ updatekeys:
 
 # Bootstrap or rotate SOPS age keys (unified recipe for first-time and rotation)
 [group('secrets')]
-sops-bootstrap role='dev' method='age':
+sops-bootstrap role='dev' method='ssh':
   @scripts/sops-bootstrap.sh "{{ role }}" "{{ method }}"
 
 # Upload SOPS_AGE_KEY to GitHub (separate from other secrets to avoid chicken-and-egg)
@@ -849,8 +849,8 @@ sops-finalize-rotation role='dev':
 
 # Quick rotation workflow (combines bootstrap + finalize after verification)
 [group('secrets')]
-sops-rotate role='dev':
-  @scripts/sops-rotate.sh "{{ role }}"
+sops-rotate role='dev' method='ssh':
+  @scripts/sops-rotate.sh "{{ role }}" "{{ method }}"
 
 
 ## Testing
