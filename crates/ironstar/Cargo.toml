@@ -1,0 +1,35 @@
+[package]
+name = "ironstar"
+version = "0.1.0"
+edition = "2021"
+description = "Reactive, event-sourced web application with hypermedia-driven architecture"
+license = "MIT"
+
+[[bin]]
+name = "ironstar"
+path = "src/main.rs"
+
+[lib]
+name = "ironstar"
+path = "src/lib.rs"
+
+[dependencies]
+axum = { workspace = true }
+tokio = { workspace = true }
+hypertext = { workspace = true }
+datastar = { workspace = true }
+sqlx = { workspace = true }
+redb = { workspace = true }
+duckdb = { workspace = true }
+ts-rs = { workspace = true }
+rust-embed = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }
