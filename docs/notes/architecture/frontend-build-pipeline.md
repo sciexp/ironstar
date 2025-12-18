@@ -185,14 +185,14 @@ export default {
   plugins: {
     'postcss-import': {},           // Handle @import statements
     'postcss-preset-env': {         // Modern CSS features (required for Open Props)
-      stage: 2,
+      stage: 0,                     // Stage 0 required for Open Props (combineSelectors plugin)
       features: {
         'oklab-function': true,     // OKLab/OKLch color spaces
         'light-dark-function': true, // light-dark() for theme switching
         'custom-media-queries': true // Open Props media queries
       }
     },
-    'autoprefixer': {},             // Vendor prefixes (minimal with modern CSS)
+    'autoprefixer': {},             // Vendor prefixes (optional - Open Props doesn't require it)
     'cssnano': {                    // Minification (production only)
       preset: 'default'
     }
@@ -298,7 +298,7 @@ With layers, the layer order determines precedence.
 
 ### Open Props UI layer structure
 
-Open Props UI uses a specific layer structure for organizing styles.
+Open Props UI uses a specific layer structure for organizing styles with sublayers for component organization.
 Reference implementation at `~/projects/lakescope-workspace/open-props-ui` uses:
 
 ```css
@@ -309,9 +309,12 @@ Reference implementation at `~/projects/lakescope-workspace/open-props-ui` uses:
 - `openprops`: Base design tokens and custom properties
 - `normalize`: CSS reset and normalization
 - `theme`: Theme-specific token overrides
-- `components.root`: Core component styles
-- `components.extended`: Extended component variants
+- `components.root`: Core component styles (base variants)
+- `components.extended`: Extended component variants (enhanced versions with additional features)
 - `utils`: Utility classes (highest precedence)
+
+The `components.root` and `components.extended` are **sublayers** within a logical components layer.
+This separation allows Open Props UI to provide base component styles in `components.root` while keeping enhanced variants (like buttons with icons, cards with actions) in `components.extended` for clearer organization and easier overrides.
 
 This means `utils` overrides `components.extended`, which overrides `components.root`, and so on.
 
@@ -575,9 +578,23 @@ Browser support requirements are more stringent than traditional CSS frameworks.
 
 ### Required browser versions
 
+Open Props and Open Props UI use multiple modern CSS features with different browser support requirements.
+The minimum browser versions are determined by the most recent feature (light-dark() function).
+
+**OKLch color space** (perceptual uniformity):
 - **Chrome/Edge**: 111+ (March 2023)
-- **Firefox**: 119+ (October 2023)
-- **Safari**: 17+ (September 2023)
+- **Firefox**: 113+ (May 2023)
+- **Safari**: 15.4+ (March 2022)
+
+**light-dark() function** (automatic dark mode):
+- **Chrome/Edge**: 123+ (March 2024)
+- **Firefox**: 120+ (November 2023)
+- **Safari**: 17.5+ (May 2024)
+
+**Minimum browser requirements for ironstar** (light-dark() support):
+- **Chrome/Edge**: 123+
+- **Firefox**: 120+
+- **Safari**: 17.5+
 
 ### Modern CSS features used
 
