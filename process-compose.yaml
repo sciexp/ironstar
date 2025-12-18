@@ -49,7 +49,7 @@ processes:
   # TypeScript type generation from Rust signal types (ts-rs)
   typegen:
     command: |
-      cargo watch -w src/domain/signals.rs -s 'cargo test --lib export_bindings'
+      cargo watch -w src/domain/signals.rs -s 'cargo test --lib'
     availability:
       restart: on_failure
       backoff_seconds: 5
