@@ -73,6 +73,7 @@ log_info "Creating Epic 1: Template Instantiation..."
 
 EPIC_TEMPLATE=$(create_issue "Template instantiation" -t epic -p 0)
 log_success "Created epic: $EPIC_TEMPLATE"
+bd update "$EPIC_TEMPLATE" --description "Bootstrap the ironstar project from typescript-nix-template using omnix om CLI. This epic establishes the foundational Nix flake structure with deterministic development environments, secrets management patterns, and git repository initialization. Validates that the template instantiation succeeds before proceeding to Rust-specific integration."
 
 TASK_OM_INIT=$(bd create "Run om init with typescript-nix-template parameters" \
     -p 0 --parent "$EPIC_TEMPLATE" 2>&1 | extract_id)
@@ -108,6 +109,7 @@ log_info "Creating Epic 2: Rust Workspace Integration..."
 
 EPIC_RUST=$(create_issue "Rust workspace integration" -t epic -p 0)
 log_success "Created epic: $EPIC_RUST"
+bd update "$EPIC_RUST" --description "Integrate Rust toolchain and workspace patterns into the Nix flake using rust-flake, crane for deterministic builds, and rust-overlay for toolchain management. Establishes Cargo workspace structure with resolver 2, workspace.dependencies for DRY, and per-crate crane.args configuration following rustlings-workspace and rust-nix-template patterns."
 bd dep add "$EPIC_RUST" "$EPIC_TEMPLATE"
 
 TASK_RUST_FLAKE=$(bd create "Integrate rust-flake patterns (crane, rust-overlay)" \
@@ -145,6 +147,7 @@ log_info "Creating Epic 3: Process Compose Integration..."
 
 EPIC_PROCESS=$(create_issue "Process compose integration" -t epic -p 0)
 log_success "Created epic: $EPIC_PROCESS"
+bd update "$EPIC_PROCESS" --description "Integrate process-compose for orchestrating development services including database initialization, frontend bundler watch mode, TypeScript type generation, backend cargo-watch, and browser hotreload. Uses process-compose-flake for Nix integration and declarative service configuration with dependency ordering and readiness probes."
 bd dep add "$EPIC_PROCESS" "$EPIC_RUST"
 
 TASK_PC_FLAKE=$(bd create "Integrate process-compose-flake patterns into devShell" \
@@ -175,6 +178,7 @@ log_info "Creating Epic 4: CI/CD Pipeline..."
 
 EPIC_CI=$(create_issue "CI/CD pipeline" -t epic -p 0)
 log_success "Created epic: $EPIC_CI"
+bd update "$EPIC_CI" --description "Establish comprehensive CI/CD pipeline using GitHub Actions with category-based workflows (build, test, lint), Nix flake checks, content-addressed caching, and matrix builds. Integrates patterns from typescript-nix-template for deterministic, reproducible builds with Rust-specific cargo tooling (check, test, fmt, clippy, doc)."
 bd dep add "$EPIC_CI" "$EPIC_PROCESS"
 
 TASK_GHA_WORKFLOW=$(bd create "Create reusable GitHub Actions workflow for Rust builds" \
@@ -206,6 +210,7 @@ log_info "Creating Epic 5: Domain Layer..."
 
 EPIC_DOMAIN=$(create_issue "Domain layer" -t epic -p 0)
 log_success "Created epic: $EPIC_DOMAIN"
+bd update "$EPIC_DOMAIN" --description "Implement the domain layer using algebraic data types to make invalid states unrepresentable. Defines sum types for domain events and commands, product types for aggregates and value objects, smart constructors for validation, and ts-rs derives for TypeScript signal contract generation. Establishes the core vocabulary of the application with type-level guarantees."
 bd dep add "$EPIC_DOMAIN" "$EPIC_CI"
 
 TASK_SRC_STRUCTURE=$(bd create "Initialize src/ directory structure with modular organization" \
@@ -247,6 +252,7 @@ log_info "Creating Epic 6: Frontend Build Pipeline..."
 
 EPIC_FRONTEND=$(create_issue "Frontend build pipeline" -t epic -p 1)
 log_success "Created epic: $EPIC_FRONTEND"
+bd update "$EPIC_FRONTEND" --description "Build pipeline for frontend assets using Rolldown (Rust-native bundler), PostCSS for modern CSS (OKLch, light-dark, container queries), Open Props design tokens, Open Props UI component CSS, TypeScript for type safety, and ts-rs for Rust-to-TypeScript type generation. Outputs content-hashed bundles for single-binary embedding via rust-embed."
 bd dep add "$EPIC_FRONTEND" "$EPIC_CI"
 
 TASK_WC_DIR=$(bd create "Create web-components/ project structure with package.json" \
@@ -325,6 +331,7 @@ log_info "Creating Epic 7: Event Sourcing Infrastructure..."
 
 EPIC_EVENTSRC=$(create_issue "Event sourcing infrastructure" -t epic -p 0)
 log_success "Created epic: $EPIC_EVENTSRC"
+bd update "$EPIC_EVENTSRC" --description "Event sourcing and CQRS infrastructure implementing append-only event log (SQLite + sqlx), in-memory projection manager with RwLock, tokio broadcast for event distribution, redb for ACID session storage, and optional DuckDB for OLAP analytics. Separates write path (commands emit events) from read path (projections subscribe to events and maintain denormalized views)."
 bd dep add "$EPIC_EVENTSRC" "$EPIC_DOMAIN"
 
 TASK_MIGRATIONS=$(bd create "Create database migrations/ directory with schema.sql" \
@@ -393,6 +400,7 @@ log_info "Creating Epic 8: Presentation Layer..."
 
 EPIC_PRESENTATION=$(create_issue "Presentation layer" -t epic -p 1)
 log_success "Created epic: $EPIC_PRESENTATION"
+bd update "$EPIC_PRESENTATION" --description "HTTP presentation layer using axum for routing and extractors, SSE for server-sent events with Last-Event-ID reconnection, hypertext for lazy HTML template rendering, datastar-rust for SSE generation conforming to Datastar SDK specification, and devShell configuration. Implements Tao of Datastar principles: backend as source of truth, fat morph for resilience, CQRS separation of read/write endpoints."
 bd dep add "$EPIC_PRESENTATION" "$EPIC_EVENTSRC"
 bd dep add "$EPIC_PRESENTATION" "$EPIC_FRONTEND"
 
@@ -492,6 +500,7 @@ log_info "Creating Epic 9: Example Application (Todo)..."
 
 EPIC_EXAMPLE=$(create_issue "Example application (Todo)" -t epic -p 2)
 log_success "Created epic: $EPIC_EXAMPLE"
+bd update "$EPIC_EXAMPLE" --description "Complete TodoMVC demonstration integrating all architectural layers: Todo domain model with algebraic types, event-sourced state management, SSE-driven UI updates via Datastar, hypertext template rendering, and CQRS command/query separation. Demonstrates the full stack in action with a familiar reference application following northstar patterns adapted for Rust."
 bd dep add "$EPIC_EXAMPLE" "$EPIC_PRESENTATION"
 
 TASK_TODO_DOMAIN=$(bd create "Define Todo domain model (aggregate, events, commands)" \
@@ -556,6 +565,7 @@ log_info "Creating Epic 10: Third-Party Library Integration..."
 
 EPIC_INTEGRATION=$(create_issue "Third-party library integration" -t epic -p 2)
 log_success "Created epic: $EPIC_INTEGRATION"
+bd update "$EPIC_INTEGRATION" --description "Integration patterns for third-party JavaScript libraries with Datastar: Pattern 1 vanilla web components as thin wrappers (sortable-list), Pattern 2 Vega-Lite with data-ignore-morph and View API updates, and build-time Lucide icon inlining. Demonstrates how to bridge imperative JS libraries with declarative hypermedia-driven architecture while preserving Datastar's backend-as-source-of-truth principle."
 bd dep add "$EPIC_INTEGRATION" "$EPIC_FRONTEND"
 
 TASK_VEGA_WC=$(bd create "Implement VegaChart web component wrapper" \
@@ -583,6 +593,7 @@ log_info "Creating Epic 11: Testing and Integration..."
 
 EPIC_TESTING=$(create_issue "Testing and integration" -t epic -p 2)
 log_success "Created epic: $EPIC_TESTING"
+bd update "$EPIC_TESTING" --description "Comprehensive test coverage including event store integration tests (SQLite append/query semantics), projection tests (rebuild correctness, RwLock concurrency safety), and end-to-end handler tests (command -> event -> broadcast -> projection -> SSE). Uses temporary databases for isolation and mock implementations for unit testing trait boundaries."
 bd dep add "$EPIC_TESTING" "$EPIC_EXAMPLE"
 
 TASK_ES_TESTS=$(bd create "Create event store integration tests" \
@@ -610,6 +621,7 @@ log_info "Creating Epic 12: Documentation and Template..."
 
 EPIC_DOCS=$(create_issue "Documentation and template" -t epic -p 3)
 log_success "Created epic: $EPIC_DOCS"
+bd update "$EPIC_DOCS" --description "Template finalization with omnix integration (om CLI parameters, conditional file inclusion), comprehensive BOOTSTRAP.md documentation, environment configuration templates, and structured logging via tracing. Enables users to instantiate ironstar as a template project with parameterized customization following typescript-nix-template and rust-nix-template patterns."
 bd dep add "$EPIC_DOCS" "$EPIC_TESTING"
 
 TASK_BOOTSTRAP_DOC=$(bd create "Create BOOTSTRAP.md with complete setup instructions" \
