@@ -278,7 +278,12 @@ See their TodoMVC implementations for SSE formatting and signal parsing patterns
 
 | Pattern | Local Path | Description |
 |---------|------------|-------------|
-| rust-duckdb-huggingface-ducklake-query | `~/projects/rust-workspace/rust-duckdb-huggingface-ducklake-query` | DuckDB + DuckLake + HuggingFace query pattern |
+| rust-duckdb-huggingface-ducklake-query | `~/projects/rust-workspace/rust-duckdb-huggingface-ducklake-query` | DuckDB + DuckLake + HuggingFace query pattern (hf:// protocol) |
+| marhar-frozen | `~/projects/omicslake-workspace/marhar-frozen` | DuckLake fixture data creation tools |
+| marhar-duckdb-tools | `~/projects/omicslake-workspace/marhar-duckdb-tools` | DuckDB tooling for data lake operations |
+
+These patterns enable the axum backend to query remote datasets (HuggingFace Hub, S3-compatible storage) via DuckDB's httpfs extension, serving data for ECharts/Vega visualizations without local data ingestion.
+See "Remote data sources via httpfs" in `docs/notes/architecture/architecture-decisions.md` section 6 for implementation details.
 
 ### Visualization libraries
 
