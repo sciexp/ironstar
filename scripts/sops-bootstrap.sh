@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROLE="${1:-dev}"  # 'dev' or 'ci'
-METHOD="${2:-age}"  # 'age' or 'ssh'
+METHOD="${2:-ssh}"  # 'ssh' or 'age'
 
 echo "🔐 SOPS Key Bootstrap/Rotation"
 echo "   Role: $ROLE"
