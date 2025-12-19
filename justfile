@@ -112,7 +112,11 @@ validate-flake:
     fi
   done
   echo "Running nix flake check..."
-  nix flake check --impure
+  if command -v nom &> /dev/null; then
+    nix flake check --impure --log-format internal-json -v |& nom --json
+  else
+    nix flake check --impure
+  fi
 
 # Run pre-commit hooks
 [group('CI/CD')]
@@ -606,7 +610,11 @@ check:
   echo "  - 'input has an override for non-existent input self' (nix-unit internal mechanism)"
   echo "  - 'not writing modified lock file' (expected for read-only check)"
   echo ""
-  nix flake check --impure
+  if command -v nom &> /dev/null; then
+    nix flake check --impure --log-format internal-json -v |& nom --json
+  else
+    nix flake check --impure
+  fi
 
 # Format all files with treefmt (via nix fmt)
 [group('nix')]
