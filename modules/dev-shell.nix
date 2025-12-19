@@ -67,6 +67,17 @@
           update_or_append "GIT_SHA_SHORT" "$GIT_SHA_SHORT"
         '';
       };
+
+      # Typst with pre-fetched packages for reproducible builds
+      # Transitive deps must be listed explicitly (typst.withPackages doesn't auto-resolve)
+      typstWithPackages = pkgs.typst.withPackages (
+        ps: with ps; [
+          oxifmt_0_2_1 # required by cetz 0.3.4
+          fletcher # diagrams with nodes and arrows (pulls cetz)
+          chronos # sequence diagrams
+          polylux # presentations
+        ]
+      );
     in
     {
       devShells = {
@@ -99,6 +110,16 @@
 
             # Git environment setup
             set-git-env
+
+            # Document typesetting
+            typstWithPackages
+          ];
+
+          # Make fonts available to typst for consistent rendering across environments
+          TYPST_FONT_PATHS = pkgs.lib.concatStringsSep ":" [
+            "${pkgs.inter}/share/fonts/truetype"
+            "${pkgs.lmodern}/share/fonts"
+            "${pkgs.newcomputermodern}/share/fonts"
           ];
 
           shellHook = ''
