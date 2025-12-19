@@ -13,6 +13,15 @@
       lib,
       ...
     }:
+    let
+      inherit (config.rust-project) crane-lib src;
+
+      # Workspace-level cargoArtifacts for tests
+      cargoArtifacts = crane-lib.buildDepsOnly {
+        inherit src;
+        pname = "ironstar-deps";
+      };
+    in
     {
       # Configure per-crate crane args via crate.nix files
       rust-project = {
@@ -28,5 +37,20 @@
           ironstar = crates."ironstar".crane.outputs.drv.crate;
           # Don't set default here - let packages.nix handle it
         };
+
+      # Workspace-level checks
+      checks = lib.mkMerge [
+        {
+          rust-fmt = crane-lib.cargoFmt {
+            inherit src;
+            pname = "ironstar-fmt";
+          };
+
+          rust-test = crane-lib.cargoTest {
+            inherit src cargoArtifacts;
+            pname = "ironstar-test";
+          };
+        }
+      ];
     };
 }
