@@ -8,6 +8,7 @@ default:
 ## Cloudflare
 ## Docs
 ## Nix
+## Rust
 ## Release
 ## Secrets
 ## Testing
@@ -631,6 +632,61 @@ dev:
 [group('nix')]
 nix-build:
   nix build .#docs
+
+## Rust
+
+# Check Rust formatting (without modifying)
+[group('rust')]
+rust-fmt-check:
+  cargo fmt --all -- --check
+
+# Format Rust code
+[group('rust')]
+rust-fmt:
+  cargo fmt --all
+
+# Run Rust clippy lints
+[group('rust')]
+rust-clippy:
+  cargo clippy --workspace --all-targets -- -D warnings
+
+# Run Rust tests
+[group('rust')]
+rust-test:
+  cargo test --workspace
+
+# Build Rust documentation
+[group('rust')]
+rust-doc:
+  cargo doc --workspace --no-deps --document-private-items
+
+# Build Rust workspace (release)
+[group('rust')]
+rust-build:
+  cargo build --workspace --release
+
+# Run all Rust checks (fmt, clippy, test)
+[group('rust')]
+rust-check: rust-fmt-check rust-clippy rust-test
+
+# Build Rust package with Nix
+[group('rust')]
+rust-nix-build:
+  nix build .#ironstar
+
+# List crates in JSON format for CI matrix
+[group('CI/CD')]
+list-crates-json:
+  #!/usr/bin/env bash
+  cd crates
+  crates=()
+  for dir in */; do
+    crate_name="${dir%/}"
+    if [ -f "$dir/Cargo.toml" ]; then
+      crates+=("{\"name\":\"$crate_name\",\"path\":\"crates/$crate_name\"}")
+    fi
+  done
+  echo "[$(IFS=,; echo "${crates[*]}")]"
 
 ## Release
 
