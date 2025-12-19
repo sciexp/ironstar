@@ -175,7 +175,7 @@ axum = { version = "0.8", features = ["default"] }
 datastar = { version = "0.3", features = ["axum"] }
 
 # sqlx with SQLite and runtime-tokio
-sqlx = { version = "0.9", features = ["runtime-tokio", "sqlite", "json"] }
+sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite", "json"] }
 
 # DuckDB with bundled build (compiles DuckDB from source)
 duckdb = { version = "1.4", features = ["bundled"] }
