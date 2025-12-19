@@ -76,6 +76,7 @@
           packages = with pkgs; [
             # Rust toolchain (version defined in rust.nix)
             config.rust-project.toolchain
+            cargo-edit
 
             # Core development tools
             bun
