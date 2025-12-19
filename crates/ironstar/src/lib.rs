@@ -7,7 +7,7 @@
 //! - `infrastructure`: Effect implementations (SQLite, redb, DuckDB, broadcast)
 //! - `presentation`: HTTP handlers and hypertext templates
 
-pub mod domain;
 pub mod application;
+pub mod domain;
 pub mod infrastructure;
 pub mod presentation;
