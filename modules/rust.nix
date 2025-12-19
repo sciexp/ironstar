@@ -14,6 +14,7 @@
       ...
     }:
     let
+      rustToolchainVersion = "1.88.0";
       inherit (config.rust-project) crane-lib src;
 
       # Workspace-level cargoArtifacts for tests
@@ -27,6 +28,13 @@
       # Packages (ironstar, ironstar-doc) are autowired by rust-flake via autoWire in crate.nix
       rust-project = {
         crateNixFile = "crate.nix";
+        toolchain = pkgs.rust-bin.stable.${rustToolchainVersion}.default.override {
+          extensions = [
+            "rust-src"
+            "rust-analyzer"
+            "clippy"
+          ];
+        };
       };
 
       # Workspace-level checks (per-crate clippy is autowired separately)
