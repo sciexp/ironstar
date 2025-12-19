@@ -179,6 +179,7 @@
         "nixpkgs": "nixpkgs",
         "playwright-web-flake": "playwright-web-flake",
         "rust-flake": "rust-flake",
+        "rust-overlay": "rust-overlay",
         "systems": "systems_2",
         "treefmt-nix": "treefmt-nix"
       }
@@ -189,7 +190,9 @@
         "nixpkgs": [
           "nixpkgs"
         ],
-        "rust-overlay": "rust-overlay"
+        "rust-overlay": [
+          "rust-overlay"
+        ]
       },
       "locked": {
         "lastModified": 1765673574,
@@ -208,16 +211,15 @@
     "rust-overlay": {
       "inputs": {
         "nixpkgs": [
-          "rust-flake",
           "nixpkgs"
         ]
       },
       "locked": {
-        "lastModified": 1765593578,
-        "narHash": "sha256-qbl874bCIy9+OLImdfBfZ9ITUDDjjTAB04Dk4PlZFV0=",
+        "lastModified": 1766025663,
+        "narHash": "sha256-VSrZmhM22nZckbbE8Cmmc5I2RUGtwo1aii77T/i8YPU=",
         "owner": "oxalica",
         "repo": "rust-overlay",
-        "rev": "348b94ed9ddffccdf1a65582a2dcff0a4a3eeeb4",
+        "rev": "96617c96d4c455770e6664b5e3aad999b677fae6",
         "type": "github"
       },
       "original": {
