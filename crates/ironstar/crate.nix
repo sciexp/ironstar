@@ -1,7 +1,11 @@
 { pkgs, lib, ... }:
 
 {
-  autoWire = [ ];
+  autoWire = [
+    "crate"
+    "clippy"
+    "doc"
+  ];
   crane = {
     args = {
       buildInputs = lib.optionals pkgs.stdenv.isLinux [
