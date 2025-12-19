@@ -641,6 +641,58 @@ dev:
 nix-build:
   nix build .#docs
 
+# Build package with nom and push to Cachix (with all dependencies)
+[group('nix')]
+cache package=".#ironstar":
+  #!/usr/bin/env bash
+  set -euo pipefail
+  echo "Building {{package}}..."
+  STORE_PATH=$(nom build "{{package}}" --no-link --print-out-paths 2>&1 | tail -1)
+  if [ -z "$STORE_PATH" ] || [ ! -e "$STORE_PATH" ]; then
+    echo "Failed to build or get store path"
+    exit 1
+  fi
+  echo "Built: $STORE_PATH"
+  echo ""
+  echo "Pushing to cachix with all dependencies..."
+  nix-store --query --requisites --include-outputs "$STORE_PATH" | \
+      sops exec-env vars/shared.yaml "cachix push \$CACHIX_CACHE_NAME"
+  echo ""
+  echo "Cached: $STORE_PATH"
+
+# Build with automatic cachix push (watches store during build)
+[group('nix')]
+cache-watch package=".#ironstar":
+  sops exec-env vars/shared.yaml "cachix watch-exec \$CACHIX_CACHE_NAME -- nom build {{package}}"
+
+# Build and cache all flake packages for current system
+[group('nix')]
+cache-all:
+  #!/usr/bin/env bash
+  set -euo pipefail
+  SYSTEM=$(nix eval --impure --raw --expr 'builtins.currentSystem')
+  echo "Caching all packages for $SYSTEM..."
+  for pkg in $(nix eval ".#packages.$SYSTEM" --apply 'builtins.attrNames' --json | jq -r '.[]'); do
+    echo ""
+    echo "━━━ Caching $pkg ━━━"
+    just cache ".#packages.$SYSTEM.$pkg"
+  done
+  echo ""
+  echo "All packages cached."
+
+# Test cachix push/pull with a simple derivation
+[group('nix')]
+test-cachix:
+  #!/usr/bin/env bash
+  set -euo pipefail
+  echo "Testing cachix push/pull..."
+  STORE_PATH=$(nix build nixpkgs#hello --no-link --print-out-paths)
+  echo "Built: $STORE_PATH"
+  echo "Pushing to cachix..."
+  sops exec-env vars/shared.yaml "cachix push \$CACHIX_CACHE_NAME $STORE_PATH"
+  CACHE_NAME=$(sops exec-env vars/shared.yaml 'echo $CACHIX_CACHE_NAME')
+  echo "Pushed. Verify at: https://app.cachix.org/cache/$CACHE_NAME"
+
 ## Rust
 
 # Check Rust formatting (without modifying)
