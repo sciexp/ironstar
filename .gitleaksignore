@@ -2,7 +2,11 @@
 # Format: <commit>:<file>:<rule>:<line>
 # These are age public keys used as placeholders in scripts (safe to commit)
 
-# Age public key placeholders in sops-bootstrap.sh (commit cad205a5)
+# Age public key placeholders in sops-bootstrap.sh
 # These are template placeholder keys, not real secrets
+# Post-filter-repo history (851738be)
+851738be4305158354fce65989b861dd54ebd3a4:scripts/sops-bootstrap.sh:generic-api-key:23
+851738be4305158354fce65989b861dd54ebd3a4:scripts/sops-bootstrap.sh:generic-api-key:24
+# Pre-filter-repo history (cad205a5) - stale update-* branches
 cad205a5ea2504541bd1e973a2a947fc989aedb8:scripts/sops-bootstrap.sh:generic-api-key:23
 cad205a5ea2504541bd1e973a2a947fc989aedb8:scripts/sops-bootstrap.sh:generic-api-key:24
