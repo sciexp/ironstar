@@ -14,7 +14,7 @@
       ...
     }:
     let
-      rustToolchainVersion = "1.88.0";
+      rustToolchainVersion = "1.92.0";
       inherit (config.rust-project) crane-lib src;
 
       # Workspace-level cargoArtifacts for tests
