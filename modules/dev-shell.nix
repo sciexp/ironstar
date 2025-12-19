@@ -74,6 +74,9 @@
           name = "ironstar-dev";
           inputsFrom = [ config.pre-commit.devShell ];
           packages = with pkgs; [
+            # Rust toolchain (version defined in rust.nix)
+            config.rust-project.toolchain
+
             # Core development tools
             bun
             nodejs
