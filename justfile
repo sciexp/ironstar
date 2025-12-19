@@ -11,6 +11,7 @@ default:
 ## Rust
 ## Release
 ## Secrets
+## Slides
 ## Testing
 ## Template
 
@@ -967,6 +968,79 @@ sops-finalize-rotation role='dev':
 [group('secrets')]
 sops-rotate role='dev' method='ssh':
   @scripts/sops-rotate.sh "{{ role }}" "{{ method }}"
+
+
+## Slides
+
+# List available slide decks
+[group('slides')]
+slides-list:
+  #!/usr/bin/env bash
+  echo "Available slide decks:"
+  for dir in docs/slides/*/; do
+    [ -d "$dir" ] || continue
+    name=$(basename "$dir")
+    echo "  - $name"
+  done
+
+# Build all slide decks to PDF
+[group('slides')]
+slides-build:
+  #!/usr/bin/env bash
+  set -euo pipefail
+  echo "Building all slide decks..."
+  for dir in docs/slides/*/; do
+    [ -d "$dir" ] || continue
+    name=$(basename "$dir")
+    if [ -f "$dir/main.typ" ]; then
+      echo "  $name -> $dir$name.pdf"
+      typst compile "$dir/main.typ" "$dir/$name.pdf"
+    fi
+  done
+  echo "Done."
+
+# Build specific slide deck
+[group('slides')]
+slides-compile name:
+  #!/usr/bin/env bash
+  set -euo pipefail
+  dir="docs/slides/{{ name }}"
+  if [ ! -f "$dir/main.typ" ]; then
+    echo "Error: $dir/main.typ not found"
+    exit 1
+  fi
+  echo "Compiling {{ name }}..."
+  typst compile "$dir/main.typ" "$dir/{{ name }}.pdf"
+  echo "Output: $dir/{{ name }}.pdf"
+
+# Watch slide deck for changes (auto-recompile)
+[group('slides')]
+slides-watch name:
+  typst watch "docs/slides/{{ name }}/main.typ" "docs/slides/{{ name }}/{{ name }}.pdf"
+
+# Export slide deck to PNG images (one per slide)
+[group('slides')]
+slides-export-png name:
+  #!/usr/bin/env bash
+  set -euo pipefail
+  dir="docs/slides/{{ name }}"
+  out="$dir/png"
+  mkdir -p "$out"
+  echo "Exporting {{ name }} to PNG..."
+  typst compile "$dir/main.typ" "$out/slide-{n}.png"
+  echo "Output: $out/slide-*.png"
+
+# Export slide deck to SVG (for web embedding)
+[group('slides')]
+slides-export-svg name:
+  #!/usr/bin/env bash
+  set -euo pipefail
+  dir="docs/slides/{{ name }}"
+  out="$dir/svg"
+  mkdir -p "$out"
+  echo "Exporting {{ name }} to SVG..."
+  typst compile --format svg "$dir/main.typ" "$out/slide-{n}.svg"
+  echo "Output: $out/svg/slide-*.svg"
 
 
 ## Testing
