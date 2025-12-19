@@ -24,21 +24,12 @@
     in
     {
       # Configure per-crate crane args via crate.nix files
+      # Packages (ironstar, ironstar-doc) are autowired by rust-flake via autoWire in crate.nix
       rust-project = {
         crateNixFile = "crate.nix";
       };
 
-      # Expose the main package
-      packages =
-        let
-          inherit (config.rust-project) crates;
-        in
-        {
-          ironstar = crates."ironstar".crane.outputs.drv.crate;
-          # Don't set default here - let packages.nix handle it
-        };
-
-      # Workspace-level checks
+      # Workspace-level checks (per-crate clippy is autowired separately)
       checks = lib.mkMerge [
         {
           rust-fmt = crane-lib.cargoFmt {
