@@ -31,5 +31,12 @@ tracing-subscriber = { workspace = true }
 uuid = { workspace = true }
 chrono = { workspace = true }
 
+# Analytics caching
+moka = { workspace = true }
+rkyv = { workspace = true }
+
 [dev-dependencies]
 tokio = { workspace = true }
+
+[lints]
+workspace = true
