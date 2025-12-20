@@ -208,6 +208,23 @@ All dependencies with local source code available for reference.
 | redb | `~/projects/rust-workspace/redb` | Embedded ACID KV store |
 | duckdb-rs | `~/projects/omicslake-workspace/duckdb-rs` | DuckDB Rust bindings |
 | ts-rs | `~/projects/rust-workspace/ts-rs` | TypeScript type generation from Rust structs |
+| cqrs-es | `~/projects/rust-workspace/cqrs-es` | CQRS/ES framework (reference patterns, not dependency) |
+| sqlite-es | `~/projects/rust-workspace/sqlite-es` | SQLite backend for cqrs-es (reference for event store schema) |
+
+### CQRS/Event sourcing references
+
+| Reference | Local Path | Patterns to Study |
+|-----------|------------|-------------------|
+| cqrs-es | `~/projects/rust-workspace/cqrs-es` | Aggregate trait, EventStore abstraction, GenericQuery projections, TestFramework DSL, event upcasting |
+| sqlite-es | `~/projects/rust-workspace/sqlite-es` | SQLite event table schema, optimistic locking, stream-based replay |
+| esrs (event_sourcing.rs) | `~/projects/rust-workspace/event_sourcing.rs` | Pure sync aggregates, Schema/Upcaster pattern, TransactionalEventHandler vs EventHandler |
+
+These crates are *reference implementations only* — ironstar implements its own CQRS layer following their patterns but adapted for hypertext + datastar integration.
+The key adopted patterns are:
+- Pure synchronous aggregates (from esrs): `handle_command(state, cmd) -> Result<Vec<Event>, Error>` with no async/side effects
+- Event schema evolution via Upcaster pattern (from esrs)
+- TestFramework DSL for aggregate testing (from cqrs-es)
+- SQLite event store schema with global sequence for SSE Last-Event-ID (adapted from sqlite-es)
 
 ### Datastar ecosystem
 
@@ -512,6 +529,21 @@ For Ironstar, the embedded approach (SQLite + tokio broadcast + redb) was chosen
 The [Jepsen analysis of NATS 2.12.1](https://jepsen.io/analyses/nats-2.12.1) also reinforced confidence in SQLite's durability model, though NATS can be configured appropriately for many use cases.
 
 When distribution is needed, Zenoh provides Rust-native pub/sub with storage backends.
+
+**CQRS/ES framework decision:**
+
+After evaluating cqrs-es, sqlite-es, and esrs (Prima.it's event_sourcing.rs), the decision is to implement a custom CQRS layer rather than adopt these frameworks as dependencies.
+The rationale:
+- cqrs-es adds abstraction overhead that may conflict with hypertext lazy rendering and datastar SSE integration
+- esrs is PostgreSQL-only with no SQLite backend
+- sqlite-es is a thin adapter; the patterns are more valuable than the library itself
+- Rust's type system enforces CQRS discipline without framework magic
+
+Key patterns adopted from these references:
+- Pure synchronous aggregates (esrs): keeps side effects at boundaries, improves testability
+- Schema/Upcaster for event evolution (esrs): enables backward-compatible schema changes
+- TestFramework DSL (cqrs-es): elegant given/when/then testing for aggregates
+- Event store schema (sqlite-es): compound primary key, JSON payload, optimistic locking
 
 ## Build commands
 
