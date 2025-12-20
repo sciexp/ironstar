@@ -101,7 +101,7 @@ ironstar/
 ├── Cargo.toml                    # [workspace] with members
 ├── crates/
 │   ├── ironstar-domain/          # Algebraic types, pure logic
-│   ├── ironstar-infra/           # SQLite, redb, DuckDB
+│   ├── ironstar-infra/           # SQLite, DuckDB, moka
 │   └── ironstar-web/             # axum, hypertext, datastar
 └── ironstar/                     # Main binary, wires crates together
 ```
@@ -155,8 +155,9 @@ Ironstar embodies the principles from the Tao of Datastar (`~/projects/lakescope
 | Icons | Lucide (build-time) | Zero-runtime SVG inlining |
 | Web Components | Vanilla (when needed) | Thin wrappers for third-party libs |
 | Event Store | SQLite + sqlx | Append-only event log |
-| Session KV | redb | ACID embedded KV |
+| Sessions | SQLite + sqlx | Sessions table |
 | Analytics | DuckDB | OLAP projections |
+| Analytics Cache | moka | In-memory async cache with TTL |
 | Event Bus | tokio::sync::broadcast | In-process pub/sub |
 | Distribution (future) | Zenoh | Distributed pub/sub + storage |
 | Orchestration | process-compose | Declarative process management |
@@ -185,6 +186,12 @@ rust-embed = { version = "8", features = ["include-exclude"] }
 
 # ts-rs for TypeScript type generation
 ts-rs = { version = "11.1", features = ["serde-compat", "uuid-impl"] }
+
+# moka for async in-memory caching
+moka = { version = "0.12", features = ["future"] }
+
+# rkyv for zero-copy deserialization
+rkyv = { version = "0.8", features = ["validation"] }
 ```
 
 **Feature notes:**
@@ -205,7 +212,8 @@ All dependencies with local source code available for reference.
 | tokio | `~/projects/rust-workspace/tokio` | Async runtime |
 | hypertext | `~/projects/rust-workspace/hypertext` | Lazy HTML templating (maud-compatible syntax) |
 | sqlx | `~/projects/rust-workspace/sqlx` | Async SQL with compile-time validation |
-| redb | `~/projects/rust-workspace/redb` | Embedded ACID KV store |
+| moka | `~/projects/rust-workspace/moka-caching` | Async in-memory cache with TTL for analytics |
+| rkyv | `~/projects/rust-workspace/rkyv-deserialization` | Zero-copy deserialization for cache serialization |
 | duckdb-rs | `~/projects/omicslake-workspace/duckdb-rs` | DuckDB Rust bindings |
 | ts-rs | `~/projects/rust-workspace/ts-rs` | TypeScript type generation from Rust structs |
 | cqrs-es | `~/projects/rust-workspace/cqrs-es` | CQRS/ES framework (reference patterns, not dependency) |
@@ -332,7 +340,7 @@ See "Remote data sources via httpfs" in `docs/notes/architecture/architecture-de
 │    Aggregates (sum), Events (sum), Commands (sum), Values (product) │
 ├─────────────────────────────────────────────────────────────────────┤
 │  Infrastructure Layer (Effect Implementations)                      │
-│    SQLite/sqlx (events), redb (sessions), DuckDB (analytics)        │
+│    SQLite/sqlx (events + sessions), DuckDB (analytics), moka (cache)│
 ├─────────────────────────────────────────────────────────────────────┤
 │  Presentation Layer (Lazy Rendering)                                │
 │    hypertext (HTML thunks), datastar-rust (SSE generation)          │
@@ -525,8 +533,13 @@ CREATE TABLE events (
 This stack prioritizes embedded Rust-native solutions over external server dependencies.
 NATS is an excellent choice for teams willing to run an external server — it provides streaming, key-value storage, and pub/sub in a unified abstraction.
 
-For Ironstar, the embedded approach (SQLite + tokio broadcast + redb) was chosen because the template targets single-node deployments where a separate server is unnecessary.
+For Ironstar, the embedded approach (SQLite + tokio broadcast + moka) was chosen because the template targets single-node deployments where a separate server is unnecessary.
 The [Jepsen analysis of NATS 2.12.1](https://jepsen.io/analyses/nats-2.12.1) also reinforced confidence in SQLite's durability model, though NATS can be configured appropriately for many use cases.
+
+Sessions are stored in SQLite alongside the event store (in a separate table), simplifying the stack by using a single embedded database for all persistent state.
+Analytics query results are cached in moka, an async-native in-memory cache with TTL-based eviction.
+Cache entries are invalidated via subscription to the tokio broadcast channel when relevant events arrive.
+See `docs/notes/architecture/analytics-cache-architecture.md` for detailed cache design.
 
 When distribution is needed, Zenoh provides Rust-native pub/sub with storage backends.
 
@@ -596,8 +609,9 @@ ironstar/
 │   ├── infrastructure/                 # Effect implementations
 │   │   ├── mod.rs
 │   │   ├── event_store.rs              # SQLite events
-│   │   ├── session_store.rs            # redb sessions
+│   │   ├── session_store.rs            # SQLite sessions
 │   │   ├── analytics.rs                # DuckDB queries
+│   │   ├── analytics_cache.rs          # moka cache with rkyv serialization
 │   │   └── event_bus.rs                # tokio broadcast
 │   └── presentation/                   # HTTP + HTML
 │       ├── mod.rs
@@ -669,6 +683,5 @@ ironstar/
 - Northstar (Go template): `~/projects/lakescope-workspace/datastar-go-nats-template-northstar/`
 - Open Props design tokens: `~/projects/lakescope-workspace/open-props/`
 - Open Props UI components: `~/projects/lakescope-workspace/open-props-ui/`
-- redb design: `~/projects/rust-workspace/redb/docs/design.md`
 - vega-embed API: `~/projects/lakescope-workspace/vega-embed/src/embed.ts`
 - Mosaic documentation: `~/projects/lakescope-workspace/mosaic/docs/`
