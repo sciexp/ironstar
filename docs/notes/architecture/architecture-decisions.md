@@ -1876,25 +1876,40 @@ This pattern mirrors northstar's `features/*/routes.go` organization.
 
 ### Workspace scaling path
 
-When the codebase grows, extract layers into separate crates:
+When the codebase grows, extract layers into separate crates following the multi-crate architecture documented in `crate-architecture.md`.
+The structure draws from patterns in Golem (~25 crates) and Hyperswitch (~40 crates).
+
+**Key patterns adopted:**
+
+| Pattern | Source | Purpose |
+|---------|--------|---------|
+| HasXxx capability traits | Golem | Fine-grained dependency injection |
+| All composition root | Golem | Central service wiring |
+| Three commons (enums/types/utils) | Hyperswitch | Foundation layer separation |
+| Interfaces crate | Hyperswitch | Port trait definitions |
+| Configuration-driven adapters | Golem | Runtime backend selection |
+| Workspace lints | Hyperswitch | Consistent code quality |
+
+**Layered crate structure:**
 
 ```
-ironstar/
-├── Cargo.toml                    # [workspace] with members
-├── crates/
-│   ├── ironstar-domain/          # Pure types, no dependencies
-│   │   └── Cargo.toml
-│   ├── ironstar-app/             # Business logic
-│   │   └── Cargo.toml            # depends on: ironstar-domain
-│   ├── ironstar-infra/           # Persistence, external services
-│   │   └── Cargo.toml            # depends on: ironstar-domain, ironstar-app
-│   └── ironstar-web/             # HTTP layer
-│       └── Cargo.toml            # depends on: all above
-└── ironstar/                     # Binary crate, wires everything
-    └── Cargo.toml                # depends on: ironstar-web
+Layer 0 (Foundation): common_enums, common_types, common_utils
+Layer 1 (Domain): ironstar_domain, ironstar_commands, ironstar_events
+Layer 2 (Application): ironstar_app
+Layer 3 (Interfaces): ironstar_interfaces
+Layer 4 (Infrastructure): ironstar_adapters, ironstar_analytics, ironstar_projections, ironstar_config
+Layer 5 (Services): ironstar_services
+Layer 6 (Presentation): ironstar_web
+Layer 7 (Binary): ironstar
 ```
 
-Each crate has a dedicated `crate.nix` file for Nix integration (per `rustlings-workspace` pattern).
+Each layer can only depend on layers below it.
+See `crate-architecture.md` for detailed directory structure, trait definitions, and migration strategy.
+
+**Per-crate Nix configuration:**
+
+Each crate can have a `crate.nix` file for customized build requirements (e.g., additional build inputs for DuckDB or OpenSSL).
+This pattern is used by rust-flake for automatic workspace discovery and per-crate crane configuration.
 
 ### AppState composition
 
@@ -1969,6 +1984,7 @@ async fn add_todo(
 ## Related documentation
 
 - Design principles: `design-principles.md`
+- Crate architecture: `crate-architecture.md`
 - Development workflow: `development-workflow.md`
 - Event sourcing patterns: `event-sourcing-sse-pipeline.md`
 - Analytics cache design: `analytics-cache-architecture.md`
