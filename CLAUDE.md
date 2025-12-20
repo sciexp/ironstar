@@ -83,30 +83,49 @@ Prod mode embeds `static/dist/` and serves with `Cache-Control: max-age=31536000
 
 ### Workspace scaling path
 
-Ironstar starts as a single crate but the workspace structure supports future decomposition:
+Ironstar starts as a single crate but the workspace structure supports future decomposition into a multi-crate architecture.
+The structure draws from patterns in Golem (~25 crates) and Hyperswitch (~40 crates).
+See `docs/notes/architecture/crate-architecture.md` for detailed decomposition plan.
+
+**Key patterns adopted:**
+
+| Pattern | Source | Purpose |
+|---------|--------|---------|
+| HasXxx capability traits | Golem | Fine-grained dependency injection via trait bounds |
+| All composition root | Golem | Central struct holding all Arc<dyn Service> |
+| Three commons | Hyperswitch | Foundation crates: common_enums, common_types, common_utils |
+| Interfaces crate | Hyperswitch | Port trait definitions separate from implementations |
+| Configuration-driven adapters | Golem | Runtime backend selection via `#[serde(tag = "type")]` enums |
+| Workspace lints | Hyperswitch | Consistent code quality via `[workspace.lints]` |
+
+**Layered crate structure:**
 
 ```
-# Initial (single crate)
+Layer 0 (Foundation): common_enums, common_types, common_utils
+Layer 1 (Domain): ironstar_domain, ironstar_commands, ironstar_events
+Layer 2 (Application): ironstar_app
+Layer 3 (Interfaces): ironstar_interfaces  # Port traits
+Layer 4 (Infrastructure): ironstar_adapters, ironstar_analytics, ironstar_projections, ironstar_config
+Layer 5 (Services): ironstar_services  # HasXxx traits, All composition root
+Layer 6 (Presentation): ironstar_web
+Layer 7 (Binary): ironstar
+```
+
+**Current state (single crate):**
+
+```
 ironstar/
 ├── Cargo.toml
-└── src/
+└── crates/ironstar/src/
     ├── main.rs
-    ├── domain/
-    ├── application/
-    ├── infrastructure/
-    └── presentation/
-
-# Future (multi-crate workspace)
-ironstar/
-├── Cargo.toml                    # [workspace] with members
-├── crates/
-│   ├── ironstar-domain/          # Algebraic types, pure logic
-│   ├── ironstar-infra/           # SQLite, DuckDB, moka
-│   └── ironstar-web/             # axum, hypertext, datastar
-└── ironstar/                     # Main binary, wires crates together
+    ├── domain/           # Future: ironstar_domain
+    ├── application/      # Future: ironstar_app
+    ├── infrastructure/   # Future: ironstar_adapters + ironstar_interfaces
+    └── presentation/     # Future: ironstar_web
 ```
 
-The `rustlings-workspace` patterns (workspace.dependencies, per-crate crate.nix) enable this migration without restructuring the Nix configuration.
+Each crate can have a `crate.nix` file for customized Nix build requirements (e.g., DuckDB needs cmake).
+The rust-flake integration handles automatic workspace discovery and per-crate crane configuration.
 
 ### Intentional divergences from Northstar
 
@@ -655,6 +674,11 @@ ironstar/
 ### Ironstar architecture docs
 
 - Design principles: `docs/notes/architecture/design-principles.md`
+- Crate architecture: `docs/notes/architecture/crate-architecture.md`
+  - Multi-crate workspace decomposition plan
+  - HasXxx capability trait pattern (from Golem)
+  - Three commons pattern (from Hyperswitch)
+  - Configuration-driven adapter selection
 - Architecture decisions: `docs/notes/architecture/architecture-decisions.md`
   - Open Props design tokens rationale
   - Open Props UI component library rationale
