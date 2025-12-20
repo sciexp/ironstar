@@ -282,7 +282,7 @@ Use DuckDB materialized views for:
 
 **Not** for:
 - UI state (use in-memory projection).
-- Session-specific data (use redb).
+- Session-specific data (use SQLite sessions table).
 - Transactional commands (use event store).
 
 ### DuckDB and async runtime integration
@@ -1496,6 +1496,6 @@ pub enum Command {
 - sqlite-es event repository: `/Users/crs58/projects/rust-workspace/sqlite-es/src/event_repository.rs`
 - CQRS pattern: https://martinfowler.com/bliki/CQRS.html
 
-### Storage
+### Analytics caching
 
-- redb design: `/Users/crs58/projects/rust-workspace/redb/docs/design.md`
+- Analytics cache architecture: `analytics-cache-architecture.md`
