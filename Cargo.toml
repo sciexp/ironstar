@@ -42,6 +42,41 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 uuid = { version = "1.19", features = ["serde", "v4"] }
 chrono = { version = "0.4", features = ["serde"] }
 
+# Analytics caching (from architecture-decisions.md)
+moka = { version = "0.12", features = ["future"] }
+rkyv = { version = "0.8", features = ["validation"] }
+
+# Workspace-wide lints (adapted from Hyperswitch)
+# Per-crate Cargo.toml should include: [lints] workspace = true
+[workspace.lints.rust]
+unsafe_code = "forbid"
+rust_2018_idioms = { level = "warn", priority = -1 }
+unused_qualifications = "warn"
+
+[workspace.lints.clippy]
+# Panic prevention - enforce explicit error handling
+panic = "warn"
+panic_in_result_fn = "warn"
+unwrap_used = "warn"
+expect_used = "warn"
+unwrap_in_result = "warn"
+todo = "warn"
+unimplemented = "warn"
+
+# Code quality
+as_conversions = "warn"
+cloned_instead_of_copied = "warn"
+dbg_macro = "warn"
+use_self = "warn"
+
+# Safety
+indexing_slicing = "warn"
+large_futures = "warn"
+
+# Debugging artifacts
+print_stdout = "warn"
+print_stderr = "warn"
+
 [profile.release]
 strip = true
 opt-level = "z"
