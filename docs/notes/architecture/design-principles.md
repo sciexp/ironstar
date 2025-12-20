@@ -22,6 +22,135 @@ This translates to concrete selection criteria:
 
 ---
 
+## Domain layer principles
+
+The domain layer contains pure business logic with no infrastructure dependencies.
+This purity enables local reasoning, trivial testing, and clean separation of concerns.
+
+### Pure aggregates
+
+Aggregates are pure synchronous functions with no side effects.
+The `handle_command` function receives immutable state and a command, returning either events or an error.
+No I/O, no async, no hidden dependencies.
+
+```rust
+impl Order {
+    pub fn handle_command(
+        state: &OrderState,
+        cmd: OrderCommand,
+    ) -> Result<Vec<OrderEvent>, OrderError> {
+        match cmd {
+            OrderCommand::Pay { amount } => {
+                if state.status != OrderStatus::Pending {
+                    return Err(OrderError::InvalidTransition);
+                }
+                if amount != state.total {
+                    return Err(OrderError::AmountMismatch);
+                }
+                Ok(vec![OrderEvent::Paid { amount }])
+            }
+            OrderCommand::Ship => {
+                if state.status != OrderStatus::Paid {
+                    return Err(OrderError::NotPaid);
+                }
+                Ok(vec![OrderEvent::Shipped])
+            }
+        }
+    }
+
+    pub fn apply_event(state: OrderState, event: &OrderEvent) -> OrderState {
+        match event {
+            OrderEvent::Paid { .. } => OrderState {
+                status: OrderStatus::Paid,
+                ..state
+            },
+            OrderEvent::Shipped => OrderState {
+                status: OrderStatus::Shipped,
+                ..state
+            },
+        }
+    }
+}
+```
+
+This purity has algebraic significance: aggregates form a *coalgebra* over the state type, with events as the coproduct.
+The `apply_event` function is the unfold operation, reconstructing state from the event stream.
+
+External service calls (API lookups, validation against external data) happen in the command handler *before* calling the aggregate.
+The aggregate receives pre-validated, pre-enriched data.
+
+### Effect boundaries
+
+The design separates pure computation from effectful operations across three layers:
+
+| Layer | Responsibility | Effects |
+|-------|----------------|---------|
+| Domain | Algebraic types, pure validation, state machines | None |
+| Application | Command/query handlers at the async boundary | I/O coordination |
+| Infrastructure | Effect implementations (database, network, pub/sub) | All I/O |
+
+The async/sync boundary is the effect boundary: if a function is `async`, it performs I/O; if sync, it is pure.
+
+```
+Domain Layer (Pure)
+    Aggregate::handle_command — sync, pure, no I/O
+    Aggregate::apply_event — sync, pure, deterministic
+
+Application Layer (Effect Boundary)
+    handle_command handler — async, I/O for loading/saving
+    Projection updaters — async, I/O for read models
+
+Infrastructure Layer (Effect Implementation)
+    EventStore::append — async, database I/O
+    EventBus::publish — async, channel send
+```
+
+This separation enables:
+
+- Testing domain logic without mocks or fixtures
+- Swapping infrastructure implementations without touching domain code
+- Reasoning about business rules independent of I/O concerns
+
+### Testing pure aggregates
+
+Because aggregates are pure functions, testing requires no infrastructure.
+
+```rust
+#[test]
+fn aggregate_rejects_shipping_unpaid_order() {
+    let state = OrderState {
+        status: OrderStatus::Pending,
+        total: 100,
+    };
+    let cmd = OrderCommand::Ship;
+
+    let result = Order::handle_command(&state, cmd);
+
+    assert!(matches!(result, Err(OrderError::NotPaid)));
+}
+
+#[test]
+fn aggregate_accepts_valid_payment() {
+    let state = OrderState {
+        status: OrderStatus::Pending,
+        total: 100,
+    };
+    let cmd = OrderCommand::Pay { amount: 100 };
+
+    let result = Order::handle_command(&state, cmd);
+
+    assert!(matches!(
+        result.as_deref(),
+        Ok(&[OrderEvent::Paid { amount: 100 }])
+    ));
+}
+```
+
+No database setup, no async runtime, no mocking.
+This is the payoff of pure aggregates: business logic becomes as testable as a calculator.
+
+---
+
 ## Frontend architecture philosophy
 
 Datastar's core principle is *server-driven UI*: the server sends HTML fragments and signal updates via SSE, and the browser renders them.
