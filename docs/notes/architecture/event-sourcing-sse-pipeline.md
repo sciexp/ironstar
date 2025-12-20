@@ -671,6 +671,264 @@ This way, timing doesn't matter: SSE is the single source of truth for when the 
 
 ## Code patterns
 
+### Aggregate trait
+
+Aggregates are pure functions with no async or side effects.
+External service calls happen in the command handler before invoking the aggregate.
+This design, adapted from esrs, ensures aggregates are trivially testable and deterministic.
+
+```rust
+use std::error::Error;
+
+/// Pure synchronous aggregate with no side effects.
+///
+/// Aggregates derive their state solely from their event stream.
+/// Applying the same events in the same order always yields identical state.
+pub trait Aggregate: Default + Send + Sync {
+    /// Unique name for this aggregate type.
+    /// Changing this breaks the link between existing aggregates and their events.
+    const NAME: &'static str;
+
+    /// Internal aggregate state, derived from events.
+    type State: Default + Clone + Send + Sync;
+
+    /// Commands represent requests to change state.
+    type Command;
+
+    /// Events represent facts that occurred in the domain.
+    type Event: Clone;
+
+    /// Domain errors from command validation.
+    type Error: Error;
+
+    /// Pure function: validates command against current state and emits events.
+    /// No async, no I/O, no side effects.
+    fn handle_command(state: &Self::State, cmd: Self::Command) -> Result<Vec<Self::Event>, Self::Error>;
+
+    /// Pure state transition: applies an event to produce new state.
+    /// If the event cannot be applied (programmer error), this may panic.
+    fn apply_event(state: Self::State, event: Self::Event) -> Self::State;
+}
+```
+
+The async command handler (in the application layer) orchestrates I/O around the pure aggregate:
+
+```rust
+use tokio::sync::broadcast;
+
+/// Command error wrapping domain and infrastructure errors
+#[derive(Debug)]
+pub enum CommandError<E> {
+    Domain(E),
+    Persistence(sqlx::Error),
+}
+
+/// Async command handler orchestrating I/O around pure aggregate logic
+pub async fn handle_command<A: Aggregate>(
+    store: &SqliteEventStore,
+    bus: &broadcast::Sender<StoredEvent>,
+    aggregate_id: &str,
+    command: A::Command,
+) -> Result<Vec<StoredEvent>, CommandError<A::Error>> {
+    // 1. Load events from store (async I/O)
+    let events = store.query_aggregate(A::NAME, aggregate_id)
+        .await
+        .map_err(CommandError::Persistence)?;
+
+    // 2. Reconstruct state by folding events
+    let state = events.into_iter()
+        .filter_map(|e| deserialize_event::<A>(&e))
+        .fold(A::State::default(), A::apply_event);
+
+    // 3. Handle command (pure, synchronous)
+    let new_events = A::handle_command(&state, command)
+        .map_err(CommandError::Domain)?;
+
+    // 4. Persist new events (async I/O)
+    let mut stored = Vec::with_capacity(new_events.len());
+    for event in new_events {
+        let sequence = store.append(serialize_event::<A>(aggregate_id, &event))
+            .await
+            .map_err(CommandError::Persistence)?;
+        stored.push(StoredEvent { sequence, /* ... */ });
+    }
+
+    // 5. Publish to subscribers (fire and forget)
+    for event in &stored {
+        let _ = bus.send(event.clone());
+    }
+
+    Ok(stored)
+}
+
+// Helper functions (implementation details)
+fn deserialize_event<A: Aggregate>(stored: &StoredEvent) -> Option<A::Event> {
+    serde_json::from_value(stored.payload.clone()).ok()
+}
+
+fn serialize_event<A: Aggregate>(aggregate_id: &str, event: &A::Event) -> DomainEvent {
+    // Convert to DomainEvent for storage
+    todo!()
+}
+```
+
+### Aggregate testing patterns
+
+The given/when/then pattern provides declarative aggregate testing without persistence or I/O.
+This pattern is adapted from cqrs-es TestFramework.
+
+```rust
+use std::fmt::Debug;
+use std::marker::PhantomData;
+
+/// Test framework for aggregate behavior verification
+pub struct AggregateTestFramework<A: Aggregate> {
+    _phantom: PhantomData<A>,
+}
+
+impl<A: Aggregate> AggregateTestFramework<A> {
+    /// Start a test with existing events (aggregate has prior state)
+    pub fn given(events: Vec<A::Event>) -> AggregateTestExecutor<A> {
+        let state = events.into_iter().fold(A::State::default(), A::apply_event);
+        AggregateTestExecutor { state, _phantom: PhantomData }
+    }
+
+    /// Start a test with no prior events (fresh aggregate)
+    pub fn given_no_previous_events() -> AggregateTestExecutor<A> {
+        AggregateTestExecutor {
+            state: A::State::default(),
+            _phantom: PhantomData,
+        }
+    }
+}
+
+/// Executes a command against the test state
+pub struct AggregateTestExecutor<A: Aggregate> {
+    state: A::State,
+    _phantom: PhantomData<A>,
+}
+
+impl<A: Aggregate> AggregateTestExecutor<A> {
+    /// Execute a command and capture the result for validation
+    pub fn when(self, command: A::Command) -> AggregateTestResult<A> {
+        let result = A::handle_command(&self.state, command);
+        AggregateTestResult { result }
+    }
+
+    /// Add more events to the test state before executing command
+    pub fn and(mut self, events: Vec<A::Event>) -> Self {
+        for event in events {
+            self.state = A::apply_event(self.state, event);
+        }
+        self
+    }
+}
+
+/// Validates command results
+pub struct AggregateTestResult<A: Aggregate> {
+    result: Result<Vec<A::Event>, A::Error>,
+}
+
+impl<A: Aggregate> AggregateTestResult<A>
+where
+    A::Event: PartialEq + Debug,
+{
+    /// Assert the command produced the expected events
+    pub fn then_expect_events(self, expected: Vec<A::Event>) {
+        let events = self.result.unwrap_or_else(|err| {
+            panic!("expected success, received error: '{err}'");
+        });
+        assert_eq!(events, expected);
+    }
+}
+
+impl<A: Aggregate> AggregateTestResult<A>
+where
+    A::Error: PartialEq + Debug,
+{
+    /// Assert the command produced the expected error
+    pub fn then_expect_error(self, expected: A::Error) {
+        match self.result {
+            Ok(events) => panic!("expected error, received events: '{events:?}'"),
+            Err(err) => assert_eq!(err, expected),
+        }
+    }
+}
+
+impl<A: Aggregate> AggregateTestResult<A> {
+    /// Assert the command produced an error with the expected message
+    pub fn then_expect_error_message(self, expected_message: &str) {
+        match self.result {
+            Ok(events) => panic!("expected error, received events: '{events:?}'"),
+            Err(err) => assert_eq!(err.to_string(), expected_message),
+        }
+    }
+
+    /// Get the raw result for custom assertions
+    pub fn inspect_result(self) -> Result<Vec<A::Event>, A::Error> {
+        self.result
+    }
+}
+```
+
+Example usage with a concrete aggregate:
+
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Assume Order aggregate with OrderCommand, OrderEvent, OrderError, OrderState
+
+    #[test]
+    fn test_order_placement() {
+        AggregateTestFramework::<Order>::given_no_previous_events()
+            .when(OrderCommand::Place {
+                customer_id: "cust-123".into(),
+                items: vec![LineItem { sku: "SKU-1".into(), qty: 2 }],
+            })
+            .then_expect_events(vec![
+                OrderEvent::Placed {
+                    customer_id: "cust-123".into(),
+                    items: vec![LineItem { sku: "SKU-1".into(), qty: 2 }],
+                }
+            ]);
+    }
+
+    #[test]
+    fn test_cannot_ship_unpaid_order() {
+        AggregateTestFramework::<Order>::given(vec![
+            OrderEvent::Placed {
+                customer_id: "cust-123".into(),
+                items: vec![LineItem { sku: "SKU-1".into(), qty: 2 }],
+            },
+        ])
+        .when(OrderCommand::Ship)
+        .then_expect_error(OrderError::NotPaid);
+    }
+
+    #[test]
+    fn test_complete_order_flow() {
+        AggregateTestFramework::<Order>::given_no_previous_events()
+            .when(OrderCommand::Place { /* ... */ })
+            .then_expect_events(vec![OrderEvent::Placed { /* ... */ }]);
+
+        // Test with accumulated state
+        AggregateTestFramework::<Order>::given(vec![
+            OrderEvent::Placed { /* ... */ },
+        ])
+        .and(vec![
+            OrderEvent::Paid { amount: 100 },
+        ])
+        .when(OrderCommand::Ship)
+        .then_expect_events(vec![OrderEvent::Shipped]);
+    }
+}
+```
+
+This pattern tests aggregate logic in isolation without persistence or I/O.
+The pure synchronous design makes tests fast, deterministic, and easy to reason about.
+
 ### Event store trait
 
 ```rust
@@ -968,6 +1226,97 @@ Zenoh provides:
 - Query/reply pattern (fetch historical events from any node)
 - Zero-copy shared memory when local
 
+### Event schema evolution with upcasters
+
+As the domain evolves, event schemas change.
+Upcasters transform old event formats to current schemas during event loading, avoiding costly data migrations.
+
+```rust
+use serde_json::Value;
+
+/// Transforms events from old schema versions to current schema
+pub trait EventUpcaster: Send + Sync {
+    /// Check if this upcaster handles the given event type and version
+    fn can_upcast(&self, event_type: &str, event_version: &str) -> bool;
+
+    /// Transform the event payload to the current schema
+    fn upcast(&self, payload: Value) -> Value;
+}
+
+/// Registry of upcasters applied during event loading
+pub struct UpcasterChain {
+    upcasters: Vec<Box<dyn EventUpcaster>>,
+}
+
+impl UpcasterChain {
+    pub fn new() -> Self {
+        Self { upcasters: Vec::new() }
+    }
+
+    pub fn register(mut self, upcaster: Box<dyn EventUpcaster>) -> Self {
+        self.upcasters.push(upcaster);
+        self
+    }
+
+    /// Apply all matching upcasters to transform event to current schema
+    pub fn upcast(&self, event_type: &str, event_version: &str, mut payload: Value) -> Value {
+        for upcaster in &self.upcasters {
+            if upcaster.can_upcast(event_type, event_version) {
+                payload = upcaster.upcast(payload);
+            }
+        }
+        payload
+    }
+}
+
+/// Load events with automatic schema upcasting
+pub fn load_events_with_upcasting<A: Aggregate>(
+    raw_events: Vec<StoredEvent>,
+    upcaster_chain: &UpcasterChain,
+) -> Vec<A::Event> {
+    raw_events
+        .into_iter()
+        .filter_map(|stored| {
+            let event_version = stored.metadata
+                .as_ref()
+                .and_then(|m| m.get("version"))
+                .and_then(|v| v.as_str())
+                .unwrap_or("1");
+
+            let payload = upcaster_chain.upcast(
+                &stored.event_type,
+                event_version,
+                stored.payload,
+            );
+
+            serde_json::from_value(payload).ok()
+        })
+        .collect()
+}
+
+// Example upcaster: TodoCreated v1 -> v2 (added priority field)
+struct TodoCreatedV1ToV2;
+
+impl EventUpcaster for TodoCreatedV1ToV2 {
+    fn can_upcast(&self, event_type: &str, event_version: &str) -> bool {
+        event_type == "TodoCreated" && event_version == "1"
+    }
+
+    fn upcast(&self, mut payload: Value) -> Value {
+        // Add default priority if missing
+        if let Value::Object(ref mut map) = payload {
+            if !map.contains_key("priority") {
+                map.insert("priority".to_string(), Value::String("normal".to_string()));
+            }
+        }
+        payload
+    }
+}
+```
+
+Upcasters are applied lazily during event loading, not as batch migrations.
+This keeps the event store immutable (events are facts that cannot change) while allowing the domain model to evolve.
+
 ### Snapshot optimization
 
 Add periodic snapshots when event count grows:
@@ -1130,10 +1479,23 @@ pub enum Command {
 
 ## References
 
+### Datastar and SSE
+
 - Datastar SDK ADR: `/Users/crs58/projects/lakescope-workspace/datastar/sdk/ADR.md`
 - Tao of Datastar: `/Users/crs58/projects/lakescope-workspace/datastar-doc/guide_the_tao_of_datastar.md`
 - Northstar Go template: `/Users/crs58/projects/lakescope-workspace/datastar-go-nats-template-northstar/`
 - Lince Rust example: `/Users/crs58/projects/rust-workspace/datastar-rust-lince/`
-- redb design: `/Users/crs58/projects/rust-workspace/redb/docs/design.md`
-- CQRS pattern: https://martinfowler.com/bliki/CQRS.html
 - SSE spec: https://html.spec.whatwg.org/multipage/server-sent-events.html
+
+### CQRS and event sourcing frameworks
+
+- cqrs-es TestFramework: `/Users/crs58/projects/rust-workspace/cqrs-es/src/test/framework.rs`
+- cqrs-es TestExecutor: `/Users/crs58/projects/rust-workspace/cqrs-es/src/test/executor.rs`
+- cqrs-es TestValidator: `/Users/crs58/projects/rust-workspace/cqrs-es/src/test/validator.rs`
+- esrs pure Aggregate trait: `/Users/crs58/projects/rust-workspace/event_sourcing.rs/src/aggregate.rs`
+- sqlite-es event repository: `/Users/crs58/projects/rust-workspace/sqlite-es/src/event_repository.rs`
+- CQRS pattern: https://martinfowler.com/bliki/CQRS.html
+
+### Storage
+
+- redb design: `/Users/crs58/projects/rust-workspace/redb/docs/design.md`

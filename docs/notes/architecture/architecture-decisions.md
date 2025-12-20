@@ -302,6 +302,12 @@ tokio broadcast provides an embedded alternative:
 - No network effects in the notification path
 - No additional server to deploy
 
+**Why tokio::sync::broadcast over NATS:**
+
+Northstar (the Datastar Go template) uses embedded NATS, but analysis revealed it doesn't do true event sourcing — it uses NATS KV as a document store with last-write-wins semantics.
+For ironstar's single-node deployment target, tokio::sync::broadcast provides sufficient pub/sub without external server dependency.
+The Zenoh migration path remains for future distributed deployments.
+
 ---
 
 ### 4. SQLite + sqlx — event store with type-safe queries
@@ -361,6 +367,11 @@ pub async fn append(&self, events: Vec<NewEvent>) -> Result<Vec<StoredEvent>> {
 - Embedded: no external server dependency
 - Durability model is *synchronous* by default (WAL + fsync)
 - Single-writer semantics prevent split-brain by construction
+
+**Event store schema informed by sqlite-es:**
+
+The sqlite-es crate uses a compound primary key `(aggregate_type, aggregate_id, sequence)` with JSON payload.
+Ironstar adapts this with a global sequence number (INTEGER PRIMARY KEY AUTOINCREMENT) for SSE Last-Event-ID support, enabling browser reconnection to resume from the correct position.
 
 ---
 
@@ -1520,6 +1531,112 @@ In development, IO occurs but is transparent to application code.
 
 ---
 
+### 15. Pure aggregate pattern — domain logic as state machines
+
+Ironstar adopts the pure synchronous aggregate pattern from esrs (Prima.it's event_sourcing.rs).
+Aggregates are side-effect-free state machines:
+
+```rust
+pub trait Aggregate: Default + Send + Sync {
+    const TYPE: &'static str;
+    type State: Clone + Send + Sync;
+    type Command;
+    type Event: DomainEvent;
+    type Error: std::error::Error;
+
+    // Pure function: State × Command → Result<Vec<Event>, Error>
+    fn handle_command(state: &Self::State, cmd: Self::Command) -> Result<Vec<Self::Event>, Self::Error>;
+
+    // Pure function: State × Event → State
+    fn apply_event(state: Self::State, event: Self::Event) -> Self::State;
+}
+```
+
+**Why synchronous aggregates:**
+
+- All I/O isolated at application layer boundaries (command handlers, event store)
+- Aggregates become pure functions, trivially testable
+- No hidden async dependencies inside domain logic
+- Aligns with the "effects explicit in types" design principle
+
+External service calls (validation against external APIs, lookups) happen in the command handler *before* calling `handle_command`, not inside the aggregate.
+
+**Test framework DSL (inspired by cqrs-es):**
+
+The pure aggregate pattern enables elegant given/when/then testing:
+
+```rust
+TestFramework::with(service)
+    .given(vec![PreviousEvent::Created { ... }])
+    .when(Command::Update { ... })
+    .then_expect_events(vec![Event::Updated { ... }]);
+```
+
+This DSL is possible because `handle_command` is a pure function — no mocking of async dependencies required.
+
+**Framework vs. custom implementation decision:**
+
+Ironstar evaluated three Rust CQRS/ES crates:
+
+| Crate | Strengths | Limitations |
+|-------|-----------|-------------|
+| **cqrs-es** | Mature, elegant test DSL | Abstractions may conflict with hypertext + datastar integration |
+| **esrs** | Pure aggregates, upcaster pattern | PostgreSQL-only |
+| **sqlite-es** | SQLite adapter for cqrs-es | Thin wrapper, patterns valuable but library unnecessary |
+
+Decision: implement custom CQRS layer adopting patterns from these libraries, not the frameworks themselves.
+This preserves flexibility for tight integration with hypertext templates and datastar SSE generation.
+
+---
+
+### 16. Event schema evolution — upcaster pattern
+
+For long-lived systems, event schemas evolve.
+Ironstar adopts the Upcaster pattern from esrs:
+
+```rust
+pub trait EventUpcaster: Send + Sync {
+    fn can_upcast(&self, event_type: &str, event_version: &str) -> bool;
+    fn upcast(&self, payload: serde_json::Value) -> serde_json::Value;
+}
+```
+
+Each event stores an `event_version` field.
+On deserialization, if the stored version differs from current, upcasters transform the JSON payload.
+
+**Example migration (adding a field):**
+
+```rust
+impl EventUpcaster for OrderEventV2Upcaster {
+    fn can_upcast(&self, event_type: &str, event_version: &str) -> bool {
+        event_type == "OrderPlaced" && event_version == "1.0.0"
+    }
+
+    fn upcast(&self, mut payload: Value) -> Value {
+        // V1 → V2: Add default customer_id field
+        if let Value::Object(ref mut obj) = payload {
+            obj.entry("customer_id").or_insert(Value::Null);
+        }
+        payload
+    }
+}
+```
+
+Upcasters are applied in sequence during event loading, enabling incremental schema evolution without data migrations.
+
+**Algebraic interpretation:**
+
+Upcasters form a *category* where:
+
+- Objects are event schema versions
+- Morphisms are upcaster functions between versions
+- Composition is sequential upcaster application
+- Identity is the no-op upcaster for current version
+
+This structure guarantees that any historical event can be loaded into the current domain model, preserving the append-only property of the event store.
+
+---
+
 ## Architecture summary
 
 ```
@@ -1579,6 +1696,8 @@ In development, IO occurs but is transparent to application code.
 | **Rolldown** | JS/CSS bundler | Pure morphism (deterministic) | `rolldown build` |
 | **Lucide** | Icons | Constants (Yoneda embedding) | Build time |
 | **rust-embed** | Asset embedding | Compile-time constants | `cargo build --release` |
+| **Pure Aggregate** | Domain logic | State machine (pure function) | None (pure) |
+| **Upcaster** | Schema evolution | Category of versions | Event load |
 
 This stack achieves the goal: **effects explicit in types, isolated at boundaries, with a pure functional core**.
 
