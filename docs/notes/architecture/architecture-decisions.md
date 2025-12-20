@@ -375,134 +375,150 @@ Ironstar adapts this with a global sequence number (INTEGER PRIMARY KEY AUTOINCR
 
 ---
 
-### 5. redb — session state with ACID guarantees
+### 5. SQLite sessions — colocated with event store
 
-**Algebraic justification:**
+**Architectural simplification:**
 
-redb's transaction model is a *bracket* pattern:
+Sessions are stored in a SQLite table alongside the event store, eliminating the need for a separate embedded database (redb).
+This simplifies the stack: one database handles both events (append-only log) and sessions (ephemeral state).
 
-```rust
-use redb::{Database, WriteTransaction, TableDefinition};
+**Why SQLite for sessions (instead of redb):**
 
-// WriteTransaction is a linear type (must be committed or dropped)
-// This enforces the bracket law: acquire -> use -> release
-let txn = db.begin_write()?;  // Acquire
-{
-    let mut table = txn.open_table(SESSIONS)?;
-    table.insert(key, value)?;  // Use (pure within transaction)
-}
-txn.commit()?;  // Release (effect realized)
+| Consideration | SQLite | redb |
+|---------------|--------|------|
+| Async API | Yes (sqlx) | No (sync only) |
+| Single database | Shares connection pool with events | Separate .redb file |
+| Dependency count | Already in stack | Additional dependency |
+| Operational model | One file to backup/manage | Two files |
+| Performance | Sufficient for session workload | Faster raw KV, but overhead of sync wrappers |
+
+The session workload (hundreds of reads/writes per second at most) is well within SQLite's capabilities.
+The async API from sqlx integrates cleanly with axum handlers without spawn_blocking wrappers.
+
+**Session table schema:**
+
+```sql
+CREATE TABLE sessions (
+    session_id TEXT PRIMARY KEY,
+    user_id TEXT,
+    data JSON NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_accessed TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NOT NULL
+);
+
+CREATE INDEX idx_sessions_expires ON sessions(expires_at);
 ```
-
-**Durability as explicit choice:**
-
-```rust
-use redb::Durability;
-
-// 1PC+C: single fsync, checksums detect partial writes (Durability::None)
-// 2PC: two fsyncs, stronger guarantee (Durability::Immediate)
-// The choice is explicit in the transaction API, not hidden
-let tx = db.begin_write()?;
-tx.set_durability(Durability::Immediate)?;
-// ... operations ...
-tx.commit()?;
-```
-
-**Why redb for session state:**
-
-- Embedded: no external server dependency
-- Session state is ephemeral but should survive restarts
-- TTL logic is application-level (functional, testable)
 
 **Session management pattern:**
 
-Session management implements the cookie-session pattern: HTTP-only cookies contain session IDs, while redb stores session data server-side.
-This separation follows the algebraic principle of referential transparency—the cookie is a *reference* (opaque identifier), and redb provides the *dereferencing function* (ID → SessionData).
+The cookie-session pattern remains the same: HTTP-only cookies contain session IDs, SQLite stores session data server-side.
+The cookie is a *reference* (opaque identifier), and SQLite provides the *dereferencing function* (ID -> SessionData).
 
 ```rust
-use redb::{Database, TableDefinition, ReadableTable};
 use axum::{
     extract::{FromRequestParts, State},
     http::{request::Parts, StatusCode},
-    response::{IntoResponse, Response},
+    response::IntoResponse,
 };
 use axum_extra::extract::cookie::{Cookie, CookieJar};
 use serde::{Deserialize, Serialize};
+use sqlx::SqlitePool;
 use std::sync::Arc;
 
-// Table definition as a type-level constant
-const SESSIONS: TableDefinition<&str, &[u8]> = TableDefinition::new("sessions");
-
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct SessionData {
+    pub session_id: String,
     pub user_id: Option<String>,
-    pub created_at: u64,
-    pub last_accessed: u64,
-    // Application-specific fields
+    pub data: serde_json::Value,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub last_accessed: chrono::DateTime<chrono::Utc>,
+    pub expires_at: chrono::DateTime<chrono::Utc>,
 }
 
-// Session store wraps redb database
 pub struct SessionStore {
-    db: Arc<Database>,
+    pool: SqlitePool,
+    ttl_days: i64,
 }
 
 impl SessionStore {
-    pub fn new(path: &str) -> Result<Self, redb::Error> {
-        let db = Database::create(path)?;
-
-        // Initialize table if needed
-        let txn = db.begin_write()?;
-        {
-            let _ = txn.open_table(SESSIONS)?;
-        }
-        txn.commit()?;
-
-        Ok(Self { db: Arc::new(db) })
+    pub fn new(pool: SqlitePool, ttl_days: i64) -> Self {
+        Self { pool, ttl_days }
     }
 
-    // Pure read: ID -> Option<SessionData>
-    pub fn get(&self, session_id: &str) -> Result<Option<SessionData>, redb::Error> {
-        let txn = self.db.begin_read()?;
-        let table = txn.open_table(SESSIONS)?;
-
-        match table.get(session_id)? {
-            Some(bytes) => {
-                let data: SessionData = bincode::deserialize(bytes.value())
-                    .map_err(|_| redb::Error::Corrupted)?;
-                Ok(Some(data))
-            }
-            None => Ok(None),
-        }
+    pub async fn get(&self, session_id: &str) -> Result<Option<SessionData>, sqlx::Error> {
+        sqlx::query_as::<_, SessionData>(
+            "SELECT * FROM sessions WHERE session_id = ? AND expires_at > datetime('now')"
+        )
+        .bind(session_id)
+        .fetch_optional(&self.pool)
+        .await
     }
 
-    // Effect: create or update session
-    pub fn put(&self, session_id: &str, data: &SessionData) -> Result<(), redb::Error> {
-        let txn = self.db.begin_write()?;
-        {
-            let mut table = txn.open_table(SESSIONS)?;
-            let bytes = bincode::serialize(data)
-                .map_err(|_| redb::Error::Corrupted)?;
-            table.insert(session_id, bytes.as_slice())?;
-        }
-        txn.commit()?;
+    pub async fn create(&self, session_id: &str) -> Result<SessionData, sqlx::Error> {
+        let now = chrono::Utc::now();
+        let expires = now + chrono::Duration::days(self.ttl_days);
+
+        sqlx::query(
+            r#"
+            INSERT INTO sessions (session_id, data, created_at, last_accessed, expires_at)
+            VALUES (?, '{}', ?, ?, ?)
+            "#
+        )
+        .bind(session_id)
+        .bind(now)
+        .bind(now)
+        .bind(expires)
+        .execute(&self.pool)
+        .await?;
+
+        Ok(SessionData {
+            session_id: session_id.to_string(),
+            user_id: None,
+            data: serde_json::json!({}),
+            created_at: now,
+            last_accessed: now,
+            expires_at: expires,
+        })
+    }
+
+    pub async fn update(&self, session: &SessionData) -> Result<(), sqlx::Error> {
+        sqlx::query(
+            r#"
+            UPDATE sessions
+            SET user_id = ?, data = ?, last_accessed = datetime('now'),
+                expires_at = datetime('now', '+' || ? || ' days')
+            WHERE session_id = ?
+            "#
+        )
+        .bind(&session.user_id)
+        .bind(&session.data)
+        .bind(self.ttl_days)
+        .bind(&session.session_id)
+        .execute(&self.pool)
+        .await?;
         Ok(())
     }
 
-    // Effect: delete session
-    pub fn delete(&self, session_id: &str) -> Result<(), redb::Error> {
-        let txn = self.db.begin_write()?;
-        {
-            let mut table = txn.open_table(SESSIONS)?;
-            table.remove(session_id)?;
-        }
-        txn.commit()?;
+    pub async fn delete(&self, session_id: &str) -> Result<(), sqlx::Error> {
+        sqlx::query("DELETE FROM sessions WHERE session_id = ?")
+            .bind(session_id)
+            .execute(&self.pool)
+            .await?;
         Ok(())
+    }
+
+    /// Cleanup expired sessions (run periodically)
+    pub async fn cleanup_expired(&self) -> Result<u64, sqlx::Error> {
+        let result = sqlx::query("DELETE FROM sessions WHERE expires_at <= datetime('now')")
+            .execute(&self.pool)
+            .await?;
+        Ok(result.rows_affected())
     }
 }
 
 // Axum extractor for sessions
 pub struct Session {
-    pub id: String,
     pub data: SessionData,
 }
 
@@ -517,81 +533,25 @@ impl FromRequestParts<AppState> for Session {
         let jar = CookieJar::from_request_parts(parts, state).await
             .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Cookie extraction failed"))?;
 
-        // Get or create session ID
-        let session_id = match jar.get("session_id") {
-            Some(cookie) => cookie.value().to_string(),
-            None => {
-                // Generate new session ID
-                let id = generate_session_id();
-                id
-            }
+        let session_id = jar.get("session_id")
+            .map(|c| c.value().to_string())
+            .unwrap_or_else(generate_session_id);
+
+        let data = match state.session_store.get(&session_id).await {
+            Ok(Some(session)) => session,
+            Ok(None) => state.session_store.create(&session_id).await
+                .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Session create failed"))?,
+            Err(_) => return Err((StatusCode::INTERNAL_SERVER_ERROR, "Session read failed")),
         };
 
-        // Load or initialize session data
-        let data = state.session_store
-            .get(&session_id)
-            .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Session read failed"))?
-            .unwrap_or_else(|| SessionData {
-                user_id: None,
-                created_at: unix_timestamp(),
-                last_accessed: unix_timestamp(),
-            });
-
-        Ok(Session {
-            id: session_id,
-            data,
-        })
+        Ok(Session { data })
     }
-}
-
-// Helper to update session and set cookie
-pub async fn save_session(
-    jar: CookieJar,
-    store: &SessionStore,
-    session: &Session,
-) -> Result<CookieJar, redb::Error> {
-    store.put(&session.id, &session.data)?;
-
-    // Create HTTP-only, secure, SameSite cookie
-    let cookie = Cookie::build(("session_id", session.id.clone()))
-        .http_only(true)
-        .secure(true)  // HTTPS only in production
-        .same_site(axum_extra::extract::cookie::SameSite::Lax)
-        .path("/")
-        .max_age(time::Duration::days(30))
-        .build();
-
-    Ok(jar.add(cookie))
-}
-
-// Usage in handlers
-async fn login_handler(
-    State(state): State<AppState>,
-    jar: CookieJar,
-    mut session: Session,
-) -> Result<impl IntoResponse, StatusCode> {
-    // Update session after authentication
-    session.data.user_id = Some("user123".to_string());
-    session.data.last_accessed = unix_timestamp();
-
-    // Save and return with cookie
-    let jar = save_session(jar, &state.session_store, &session).await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    Ok((jar, StatusCode::OK))
 }
 
 fn generate_session_id() -> String {
     use rand::Rng;
     let bytes: [u8; 32] = rand::thread_rng().gen();
-    base64::encode_config(&bytes, base64::URL_SAFE_NO_PAD)
-}
-
-fn unix_timestamp() -> u64 {
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_secs()
+    base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(&bytes)
 }
 ```
 
@@ -605,56 +565,15 @@ fn unix_timestamp() -> u64 {
 | `Path` | `/` | Scope to entire application |
 | `Max-Age` | `30 days` | Session lifetime (application-specific) |
 
-**TTL and cleanup:**
-
-Session expiration is application-level logic, not database-enforced:
+**Background cleanup task:**
 
 ```rust
-impl SessionStore {
-    // Functional TTL check: pure predicate
-    fn is_expired(data: &SessionData, ttl_seconds: u64) -> bool {
-        let now = unix_timestamp();
-        now - data.last_accessed > ttl_seconds
-    }
-
-    // Effect: periodic cleanup task
-    pub fn cleanup_expired(&self, ttl_seconds: u64) -> Result<usize, redb::Error> {
-        let txn = self.db.begin_write()?;
-        let mut removed = 0;
-
-        {
-            let mut table = txn.open_table(SESSIONS)?;
-            let to_remove: Vec<String> = table.iter()?
-                .filter_map(|entry| {
-                    let (key, value) = entry.ok()?;
-                    let data: SessionData = bincode::deserialize(value.value()).ok()?;
-                    if Self::is_expired(&data, ttl_seconds) {
-                        Some(key.value().to_string())
-                    } else {
-                        None
-                    }
-                })
-                .collect();
-
-            for key in to_remove {
-                table.remove(key.as_str())?;
-                removed += 1;
-            }
-        }
-
-        txn.commit()?;
-        Ok(removed)
-    }
-}
-
-// Spawn background cleanup task
 pub async fn spawn_session_cleanup(store: Arc<SessionStore>) {
     tokio::spawn(async move {
-        let mut interval = tokio::time::interval(Duration::from_secs(3600)); // 1 hour
+        let mut interval = tokio::time::interval(std::time::Duration::from_secs(3600));
         loop {
             interval.tick().await;
-            let ttl = 30 * 24 * 60 * 60; // 30 days in seconds
-            match store.cleanup_expired(ttl) {
+            match store.cleanup_expired().await {
                 Ok(count) => tracing::info!("Cleaned up {} expired sessions", count),
                 Err(e) => tracing::error!("Session cleanup failed: {}", e),
             }
@@ -665,22 +584,160 @@ pub async fn spawn_session_cleanup(store: Arc<SessionStore>) {
 
 **Comparison to Northstar's pattern:**
 
-Northstar uses gorilla/sessions with cookie-based storage (encrypted session data in cookie) and NATS KV for persistence.
-Ironstar separates concerns: cookies contain only the session ID (opaque reference), and redb stores the session payload server-side.
+Northstar uses gorilla/sessions with cookie-based storage and NATS KV for persistence.
+Ironstar separates concerns: cookies contain only the session ID (opaque reference), and SQLite stores the session payload server-side.
 
 | Northstar (Go) | Ironstar (Rust) |
 |----------------|-----------------|
-| gorilla/sessions cookie store | axum-extra CookieJar + redb |
-| Encrypted session data in cookie | Session ID in cookie, data in redb |
-| NATS KV for server-side state | redb for server-side state |
+| gorilla/sessions cookie store | axum-extra CookieJar + SQLite |
+| Encrypted session data in cookie | Session ID in cookie, data in SQLite |
+| NATS KV for server-side state | SQLite sessions table |
 | `sess.Values["id"]` map access | Typed `SessionData` struct |
 
 The Rust pattern provides stronger type safety (no `interface{}` or type assertions) and explicit separation between client-side identifier and server-side state.
 
-**Relevant source paths:**
+---
 
-- redb implementation: `~/projects/rust-workspace/redb/`
-- Northstar session pattern: `~/projects/lakescope-workspace/datastar-go-nats-template-northstar/features/index/services/todo_service.go` (lines 53-76, 165-182)
+### 5a. moka — analytics cache with TTL
+
+**Problem statement:**
+
+DuckDB analytics queries are expensive (seconds, not milliseconds) but dashboards are accessed frequently.
+Caching avoids redundant queries while maintaining consistency with the event-sourced architecture.
+
+**Why moka:**
+
+| Consideration | moka | redb (alternative) |
+|---------------|------|---------------------|
+| Async API | Native (`moka::future::Cache`) | Sync only (needs spawn_blocking) |
+| TTL support | Built-in | Manual implementation |
+| Persistence | No (cache is rebuildable from DuckDB) | Yes (unnecessary for cache) |
+| Eviction | LFU-based, near-optimal hit ratio | Manual |
+| Concurrency | Lock-free | Single-writer MVCC |
+
+moka is optimized for the analytics cache use case: read-heavy, TTL-based expiration, no persistence needed.
+
+**Serialization with rkyv:**
+
+Analytics results are serialized with rkyv for zero-copy deserialization:
+
+| Format | Deserialize latency | Rationale |
+|--------|---------------------|-----------|
+| bincode | ~300ns | Good general-purpose |
+| rkyv | ~21ns | 10-15x faster, optimal for read-heavy cache |
+
+Zero-copy deserialization aligns with the cache's read-heavy access pattern.
+Each query result is written once and read many times.
+
+**Cache implementation:**
+
+```rust
+use moka::future::Cache;
+use rkyv::{Archive, Deserialize, Serialize};
+use std::sync::Arc;
+use std::time::Duration;
+
+/// Cached analytics result
+#[derive(Archive, Deserialize, Serialize, Clone)]
+#[archive(check_bytes)]
+pub struct CachedAnalytics {
+    pub query_id: String,
+    pub computed_at: i64,
+    pub data: Vec<u8>,
+}
+
+pub struct AnalyticsCache {
+    cache: Cache<String, Vec<u8>>,
+    analytics: Arc<DuckDBService>,
+}
+
+impl AnalyticsCache {
+    pub fn new(analytics: Arc<DuckDBService>) -> Self {
+        let cache = Cache::builder()
+            .max_capacity(1_000)
+            .time_to_live(Duration::from_secs(300)) // 5 min default TTL
+            .time_to_idle(Duration::from_secs(60))  // Evict if unused for 1 min
+            .build();
+
+        Self { cache, analytics }
+    }
+
+    /// Get cached result or compute and cache
+    pub async fn get_or_compute<T>(
+        &self,
+        key: &str,
+        compute: impl FnOnce() -> Result<T, Error>,
+    ) -> Result<T, Error>
+    where
+        T: Archive + rkyv::Serialize<rkyv::ser::serializers::AllocSerializer<256>>,
+        T::Archived: rkyv::Deserialize<T, rkyv::Infallible>,
+    {
+        // Check cache first
+        if let Some(bytes) = self.cache.get(key).await {
+            let archived = rkyv::check_archived_root::<T>(&bytes)
+                .map_err(|_| Error::DeserializeFailed)?;
+            return Ok(archived.deserialize(&mut rkyv::Infallible).unwrap());
+        }
+
+        // Compute on blocking thread pool (DuckDB is sync)
+        let result = tokio::task::spawn_blocking(compute).await??;
+
+        // Serialize and cache
+        let bytes = rkyv::to_bytes::<_, 256>(&result)
+            .map_err(|_| Error::SerializeFailed)?
+            .to_vec();
+        self.cache.insert(key.to_string(), bytes).await;
+
+        Ok(result)
+    }
+
+    /// Invalidate cache entries matching predicate
+    pub async fn invalidate_where<F>(&self, predicate: F)
+    where
+        F: Fn(&str) -> bool,
+    {
+        self.cache.invalidate_entries_if(move |key, _| predicate(key)).await;
+    }
+}
+```
+
+**Cache invalidation via event subscription:**
+
+Cache entries are invalidated when relevant events arrive via the broadcast channel:
+
+```rust
+use tokio::sync::broadcast;
+
+pub async fn run_cache_invalidator(
+    cache: AnalyticsCache,
+    mut event_rx: broadcast::Receiver<StoredEvent>,
+) {
+    while let Ok(event) = event_rx.recv().await {
+        // Invalidate queries that depend on this aggregate type
+        let aggregate_type = event.aggregate_type.clone();
+        cache.invalidate_where(|key| {
+            // Query keys encode their dependencies, e.g., "daily_counts:Todo"
+            key.contains(&aggregate_type)
+        }).await;
+    }
+}
+```
+
+**Integration with AppState:**
+
+```rust
+#[derive(Clone)]
+pub struct AppState {
+    pub event_store: Arc<SqliteEventStore>,
+    pub session_store: Arc<SessionStore>,  // SQLite-based
+    pub analytics: Arc<DuckDBService>,
+    pub analytics_cache: AnalyticsCache,   // moka-based
+    pub event_bus: broadcast::Sender<StoredEvent>,
+    pub projections: Arc<Projections>,
+}
+```
+
+**Detailed design:** See `analytics-cache-architecture.md` for full evaluation of alternatives and cache invalidation patterns.
 
 ---
 
@@ -1664,8 +1721,8 @@ This structure guarantees that any historical event can be loaded into the curre
 ├─────────────────────────────────────────────────────────────────────┤
 │  Infrastructure Layer (Effect Implementations)                      │
 │  ┌─────────────┬─────────────┬─────────────┬─────────────────────┐ │
-│  │ SQLite/sqlx │ redb        │ DuckDB      │ Zenoh (future)      │ │
-│  │ EventStore  │ SessionKV   │ Analytics   │ Distributed         │ │
+│  │ SQLite/sqlx │ DuckDB      │ moka        │ Zenoh (future)      │ │
+│  │ Events+Sess │ Analytics   │ Cache       │ Distributed         │ │
 │  └─────────────┴─────────────┴─────────────┴─────────────────────┘ │
 ├─────────────────────────────────────────────────────────────────────┤
 │  Presentation Layer (Lazy Rendering)                                │
@@ -1685,8 +1742,9 @@ This structure guarantees that any historical event can be loaded into the curre
 | **hypertext** | HTML | Monoid (lazy) | `.render()` |
 | **axum** | HTTP | Reader + Error | Handler return |
 | **tokio::broadcast** | Event bus | Observable | `.send()` |
-| **SQLite/sqlx** | Event store | Append monoid | `.commit()` |
-| **redb** | Session KV | Bracket (linear) | `.commit()` |
+| **SQLite/sqlx** | Event store + sessions | Append monoid | `.commit()` |
+| **moka** | Analytics cache | TTL-based eviction | Cache hit/miss |
+| **rkyv** | Cache serialization | Zero-copy deserialize | Serialize/deserialize boundary |
 | **DuckDB** | Analytics | Pure query | `.execute()` |
 | **Zenoh** | Distribution | Free monoid | `.put()` / `.subscribe()` |
 | **datastar-rust** | Frontend | FRP signals | SSE emit |
@@ -1753,8 +1811,9 @@ src/
 ├── infrastructure/              # Effect implementations
 │   ├── mod.rs
 │   ├── event_store.rs           # SQLite event persistence
-│   ├── session_store.rs         # redb session KV
+│   ├── session_store.rs         # SQLite session storage
 │   ├── analytics.rs             # DuckDB queries
+│   ├── analytics_cache.rs       # moka cache with rkyv serialization
 │   └── event_bus.rs             # tokio::broadcast coordination
 ├── presentation/                # HTTP + HTML (effects at boundary)
 │   ├── mod.rs
@@ -1848,8 +1907,9 @@ use tokio::sync::broadcast;
 #[derive(Clone)]
 pub struct AppState {
     pub event_store: Arc<SqliteEventStore>,
-    pub session_store: Arc<RedbSessionStore>,
+    pub session_store: Arc<SessionStore>,       // SQLite-based
     pub analytics: Arc<DuckDbAnalytics>,
+    pub analytics_cache: AnalyticsCache,        // moka-based
     pub event_bus: broadcast::Sender<StoredEvent>,
     pub projections: Arc<Projections>,
     #[cfg(debug_assertions)]
@@ -1858,18 +1918,27 @@ pub struct AppState {
 
 impl AppState {
     pub async fn new(config: &Config) -> Result<Self, Error> {
-        let event_store = SqliteEventStore::new(&config.database_url).await?;
-        let session_store = RedbSessionStore::new(&config.session_path)?;
-        let analytics = DuckDbAnalytics::new(&config.analytics_path)?;
+        let pool = SqlitePool::connect(&config.database_url).await?;
+        let event_store = SqliteEventStore::new(pool.clone()).await?;
+        let session_store = SessionStore::new(pool, 30); // 30-day TTL
+        let analytics = Arc::new(DuckDbAnalytics::new(&config.analytics_path)?);
+        let analytics_cache = AnalyticsCache::new(analytics.clone());
         let (event_bus, _) = broadcast::channel(256);
 
         // Initialize projections by replaying events
         let projections = Projections::init(&event_store, event_bus.clone()).await?;
 
+        // Spawn cache invalidation task
+        tokio::spawn(run_cache_invalidator(
+            analytics_cache.clone(),
+            event_bus.subscribe(),
+        ));
+
         Ok(Self {
             event_store: Arc::new(event_store),
             session_store: Arc::new(session_store),
-            analytics: Arc::new(analytics),
+            analytics,
+            analytics_cache,
             event_bus,
             projections: Arc::new(projections),
             #[cfg(debug_assertions)]
@@ -1902,6 +1971,7 @@ async fn add_todo(
 - Design principles: `design-principles.md`
 - Development workflow: `development-workflow.md`
 - Event sourcing patterns: `event-sourcing-sse-pipeline.md`
+- Analytics cache design: `analytics-cache-architecture.md`
 - Third-party integration: `integration-patterns.md`
 - Signal contracts: `signal-contracts.md`
 - Build pipeline: `frontend-build-pipeline.md`
