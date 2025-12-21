@@ -168,6 +168,12 @@ rkyv = { version = "0.8", features = ["validation"] }
 
 # zenoh for pub/sub with key expression filtering
 zenoh = { version = "1.0" }
+
+# oauth2 for GitHub OAuth (primary auth provider)
+oauth2 = { version = "4.4" }
+
+# openidconnect for Google OIDC (future extension)
+# openidconnect = { version = "3.3" }
 ```
 
 **Feature notes:**
@@ -176,6 +182,7 @@ zenoh = { version = "1.0" }
 - `sqlx` features must match your async runtime (tokio) and database (sqlite)
 - `duckdb` feature `bundled` is strongly recommended to avoid system DuckDB version mismatches
 - `zenoh` runs embedded by default; configure with empty endpoints to disable networking
+- `oauth2` is used for GitHub OAuth; add `openidconnect` when implementing Google OIDC
 
 ## Local dependency paths
 
@@ -477,7 +484,7 @@ Consult these when questioning "why this technology?" for specific subsystems:
 - **Infrastructure**: `docs/notes/architecture/infrastructure-decisions.md` — SQLite vs PostgreSQL, Zenoh vs NATS, embedded vs external services
 - **CQRS implementation**: `docs/notes/architecture/cqrs-implementation-decisions.md` — Custom CQRS vs cqrs-es/esrs frameworks, pure sync aggregates
 - **Build tooling**: `docs/notes/architecture/build-tooling-decisions.md` — Rolldown configuration, asset embedding, dev/prod modes
-- **Authentication**: `docs/notes/architecture/authentication-decisions.md` — Session auth, argon2 password hashing, RBAC patterns
+- **Authentication**: `docs/notes/architecture/oauth-authentication.md` — OAuth-only auth (GitHub first, Google planned), provider strategy, RBAC patterns
 - **Error handling**: `docs/notes/architecture/error-handling-decisions.md` — Error types, Result propagation, user-facing messages
 - **Observability**: `docs/notes/architecture/observability-decisions.md` — Structured logging, Prometheus metrics, health checks
 
