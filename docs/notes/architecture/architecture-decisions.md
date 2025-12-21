@@ -43,10 +43,10 @@ Covers backend core technology choices including:
 **Document**: `infrastructure-decisions.md`
 
 Covers infrastructure technology choices including:
-- tokio::sync::broadcast for in-process event bus
+- tokio::sync::broadcast for in-process event bus (single-node deployments)
 - SQLite sessions colocated with event store
 - moka for analytics cache with rkyv serialization
-- Zenoh for future distributed deployment
+- Zenoh for distributed deployment scaling
 - rust-embed for static asset embedding
 - process-compose for development orchestration
 
@@ -54,7 +54,8 @@ Covers infrastructure technology choices including:
 - Embedded components over external services (single-node deployment target)
 - SQLite sessions instead of separate redb database
 - moka cache with TTL-based eviction for analytics results
-- Zenoh as migration path for distributed deployment
+- tokio::broadcast sufficient for ~256 subscribers or ~1000 events/sec
+- Zenoh migration path for distributed deployment (see zenoh-event-bus.md)
 
 ### CQRS implementation decisions
 
@@ -118,8 +119,8 @@ For the complete 7-layer crate decomposition plan, see `crate-architecture.md`.
 ├─────────────────────────────────────────────────────────────────────┤
 │  Infrastructure Layer (Effect Implementations)                      │
 │  ┌─────────────┬─────────────┬─────────────┬─────────────────────┐ │
-│  │ SQLite/sqlx │ DuckDB      │ moka        │ Zenoh (future)      │ │
-│  │ Events+Sess │ Analytics   │ Cache       │ Distributed         │ │
+│  │ SQLite/sqlx │ DuckDB      │ moka        │ tokio::broadcast    │ │
+│  │ Events+Sess │ Analytics   │ Cache       │ Event Bus           │ │
 │  └─────────────┴─────────────┴─────────────┴─────────────────────┘ │
 ├─────────────────────────────────────────────────────────────────────┤
 │  Presentation Layer (Lazy Rendering)                                │
@@ -138,12 +139,12 @@ For the complete 7-layer crate decomposition plan, see `crate-architecture.md`.
 |-----------|------|-------------------|-----------------|
 | **hypertext** | HTML | Monoid (lazy) | `.render()` |
 | **axum** | HTTP | Reader + Error | Handler return |
-| **tokio::broadcast** | Event bus | Observable | `.send()` |
+| **tokio::broadcast** | Event bus (single-node) | Observable | `.send()` |
 | **SQLite/sqlx** | Event store + sessions | Append monoid | `.commit()` |
 | **moka** | Analytics cache | TTL-based eviction | Cache hit/miss |
 | **rkyv** | Cache serialization | Zero-copy deserialize | Serialize/deserialize boundary |
 | **DuckDB** | Analytics | Pure query | `.execute()` |
-| **Zenoh** | Distribution | Free monoid | `.put()` / `.subscribe()` |
+| **Zenoh** | Event bus (distributed) | Free monoid | `.put()` / `.subscribe()` |
 | **datastar-rust** | Frontend | FRP signals | SSE emit |
 | **open-props** | CSS Tokens | Constants (map/dictionary) | CSS `var()` resolution |
 | **open-props-ui** | CSS Components | Three-layer composition | Style application |
@@ -154,8 +155,9 @@ For the complete 7-layer crate decomposition plan, see `crate-architecture.md`.
 | **Pure Aggregate** | Domain logic | State machine (pure function) | None (pure) |
 | **Upcaster** | Schema evolution | Category of versions | Event load |
 
-**Event bus transition**: The current implementation uses `tokio::broadcast` for in-process event notification, which is sufficient for single-node deployments handling up to ~256 concurrent SSE subscribers or ~1000 events/second.
-For distributed deployment requiring multiple nodes, key expression filtering, or higher throughput, see `zenoh-event-bus.md` for the Zenoh migration path.
+**Event bus implementation**: The current implementation uses `tokio::broadcast` for in-process event notification, which is sufficient for single-node deployments up to ~256 concurrent SSE subscribers or ~1000 events/second.
+When scaling beyond these limits or deploying across multiple nodes, migrate to Zenoh for distributed pub/sub with key expression filtering.
+See `zenoh-event-bus.md` for the migration path.
 
 This stack achieves the goal: **effects explicit in types, isolated at boundaries, with a pure functional core**.
 
