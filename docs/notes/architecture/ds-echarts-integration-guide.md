@@ -1,6 +1,8 @@
 # ds-echarts Integration Guide for Ironstar
 
-This guide covers the complete integration of the ds-echarts Lit component from the northstar Go template into ironstar's Rust + hypertext + Datastar architecture.
+**Pattern reference**: This guide implements Pattern 1.5 from `integration-patterns.md` — Lit components for TypeScript library integration.
+
+This guide covers the integration of the ds-echarts Lit component from the northstar Go template into ironstar's Rust + hypertext + Datastar architecture.
 
 ## Overview
 
@@ -26,6 +28,8 @@ The component embodies CQRS principles: reads (chart rendering) project server s
 3. Generate `manifest.json` for hashed asset URLs
 4. Integrate rust-embed for production asset serving
 
+See `ds-echarts-build-test.md` and `frontend-build-pipeline.md` for complete build configuration details.
+
 ### Phase 3: Rust integration
 
 1. Define signal types with ts-rs for TypeScript generation
@@ -33,11 +37,15 @@ The component embodies CQRS principles: reads (chart rendering) project server s
 3. Implement axum SSE handlers for chart data
 4. Set up Zenoh subscription for real-time updates
 
+See `ds-echarts-backend.md` for complete backend integration patterns.
+
 ### Phase 4: Testing
 
 1. Configure Vitest with Happy-DOM
 2. Set up ECharts mocking strategy
 3. Port test patterns from northstar
+
+See `ds-echarts-build-test.md` for testing configuration and data flow diagrams.
 
 ## Directory Structure
 
