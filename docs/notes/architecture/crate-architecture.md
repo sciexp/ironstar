@@ -734,4 +734,5 @@ Binary crate becomes thin wiring.
 
 - Design principles: `design-principles.md`
 - Architecture decisions: `architecture-decisions.md`
-- Event sourcing pipeline: `event-sourcing-sse-pipeline.md`
+- Event sourcing core concepts: `event-sourcing-core.md`
+- Command write patterns: `command-write-patterns.md`
