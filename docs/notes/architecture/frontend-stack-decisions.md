@@ -11,8 +11,8 @@ For backend, infrastructure, and CQRS implementation decisions, see the related 
 |------|------|-----|
 | Open Props + Open Props UI | CSS tokens & components | Pure CSS, zero runtime, modern CSS features |
 | Rolldown | JS/CSS bundler | Rust-native (over Go-based esbuild), Vite 8 default |
-| Vanilla Web Components | Simple third-party lib wrappers | Thin encapsulation, no reactivity system |
-| Lit | Complex third-party lib wrappers | Standard for TypeScript libraries with lifecycle requirements (ECharts, Vega-Lite). Light DOM for CSS token inheritance. |
+| Vanilla Web Components | Simple third-party lib wrappers | Thin encapsulation for libraries without complex state (Sortable.js, simple DOM adapters) |
+| Lit | Complex third-party lib wrappers | Essential for libraries with lifecycle requirements (ECharts, Vega-Lite). Light DOM for CSS token inheritance. See `ds-echarts-integration-guide.md` for canonical pattern. |
 | Lucide | Icons | Build-time SVG inlining, zero runtime |
 | TypeScript | Type safety | For minimal JS (web components only) |
 
@@ -20,16 +20,19 @@ For backend, infrastructure, and CQRS implementation decisions, see the related 
 
 | Tool | Why Not |
 |------|---------|
-| Lit (for general UI) | Redundant reactivity: Lit's reactive properties duplicate Datastar signals. However, Lit IS recommended for wrapping third-party TypeScript libraries (ECharts, Vega-Lite) with complex lifecycle requirements. See Pattern 1.5 in `integration-patterns.md` and `ds-echarts-integration-guide.md` for the canonical example. |
 | React / Vue / Svelte | SPA philosophy contradicts hypermedia-driven architecture |
 | Leptos / Dioxus | Rust WASM frameworks would duplicate Datastar's role entirely |
 | esbuild | Go-based; prefer Rust-native Rolldown for toolchain consistency |
 | Shadcn/ui | Requires React runtime; Open Props UI achieves similar aesthetics with pure CSS |
 | Tailwind CSS | JIT compiler requires build-time template scanning; Open Props uses runtime CSS variables |
 
-**Web component pattern for Datastar integration:**
+**Web component patterns for Datastar integration:**
 
-When third-party JavaScript libraries require client-side DOM manipulation (charts, drag-and-drop, rich editors), wrap them in vanilla web components that emit custom events:
+Ironstar uses two web component patterns depending on the library's complexity:
+
+**Pattern 1: Vanilla web components for simple wrappers**
+
+Use vanilla web components when the library has simple lifecycle needs and minimal internal state:
 
 ```typescript
 // Thin wrapper: no reactivity system, just encapsulation
@@ -56,8 +59,64 @@ customElements.define('sortable-list', SortableList);
 </sortable-list>
 ```
 
-The web component is a thin adapter.
-All state management flows through Datastar signals and server SSE responses.
+**Pattern 2: Lit web components for complex lifecycle management**
+
+Use Lit when the library requires complex lifecycle hooks, property reactivity, or internal state management (ECharts, Vega-Lite):
+
+```typescript
+import { LitElement, html } from 'lit';
+import { customElement, property } from 'lit/decorators.js';
+import * as echarts from 'echarts';
+
+@customElement('ds-echarts')
+export class DsEcharts extends LitElement {
+  @property({ type: Object }) options = {};
+  private chart?: echarts.ECharts;
+
+  protected createRenderRoot() {
+    return this; // Light DOM for Open Props inheritance
+  }
+
+  protected firstUpdated() {
+    this.chart = echarts.init(this.querySelector('.chart-container'));
+  }
+
+  protected updated(changedProperties: Map<string, unknown>) {
+    if (changedProperties.has('options') && this.chart) {
+      this.chart.setOption(this.options);
+    }
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this.chart?.dispose();
+  }
+
+  render() {
+    return html`<div class="chart-container" style="width: 100%; height: 400px;"></div>`;
+  }
+}
+```
+
+See `ds-echarts-integration-guide.md` for the complete ECharts integration pattern, including Datastar signal binding and SSE-driven chart updates.
+
+**Key distinction:**
+
+- **Vanilla**: Simple DOM adapters without complex state (Sortable.js, date pickers)
+- **Lit**: Libraries requiring lifecycle hooks, property reactivity, or cleanup (ECharts, Vega-Lite, Monaco editor)
+
+**Relationship with Datastar:**
+
+In both patterns, **Datastar owns application state**.
+Web components are thin adapters that:
+- Initialize third-party libraries in their lifecycle hooks
+- Expose properties/attributes for Datastar to bind
+- Emit custom events that Datastar handlers consume
+- Respond to server SSE updates via property changes
+
+The web component handles *component-internal lifecycle* (initialization, updates, cleanup).
+Datastar handles *application state* (user interactions, server synchronization, signal updates).
+These responsibilities are orthogonal and complementary.
 
 ---
 
