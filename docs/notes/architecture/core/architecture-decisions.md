@@ -104,6 +104,9 @@ Ironstar uses three layer models serving different purposes: conceptual thinking
 | — | Boundary | Layer 6 (Presentation) | HTTP extractors, SSE streams |
 | — | Presentation | Layer 6 (Presentation), Layer 7 (Binary) | HTML templates, router wiring |
 
+**Note on Layer 6 mapping:** Both Boundary and Presentation operational layers are implemented in crate Layer 6 (`ironstar-web`), which contains all presentation concerns: HTTP handlers, SSE streams, and HTML templates.
+Layer 7 (`ironstar` binary) is purely the composition root and main entry point.
+
 **Conceptual model** (3 layers) - used when discussing high-level architecture principles and CQRS/ES patterns.
 **Operational model** (5 layers) - used when implementing features and understanding data flow.
 **Crate model** (8 layers) - used when organizing workspace structure and managing dependencies.
