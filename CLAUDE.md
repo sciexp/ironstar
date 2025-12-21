@@ -145,6 +145,7 @@ The Northstar Go template and datastar-go SDK remain valuable reference implemen
 | Templ (Go templates) | hypertext (Rust macros) | Compile-time type-checked HTML with lazy evaluation |
 | Air hot reload | cargo-watch + process-compose | Rust ecosystem tooling |
 | Task runner (Taskfile) | justfile | Rust ecosystem convention |
+| ds-echarts Lit component | Adopt as-is | Complex chart state requires Lit lifecycle hooks |
 
 ## Design philosophy
 
@@ -385,6 +386,7 @@ This means most reactivity lives in datastar signals, not client-side frameworks
 | Open Props UI | Pure CSS components, copy-paste ownership model |
 | Rolldown | Rust-native bundler (over esbuild which is Go-based) |
 | Vanilla Web Components | Thin wrappers when encapsulating third-party libs |
+| Lit (conditional) | Complex lifecycle management for ECharts |
 | Lucide | Build-time SVG icons, zero runtime |
 | TypeScript | Type safety for the minimal JS we write |
 
@@ -402,10 +404,12 @@ Open Props + Open Props UI leverage modern CSS capabilities that require recent 
 
 | Tool | Why Not |
 |------|---------|
-| Lit | Redundant reactivity (datastar already provides this) |
+| Lit (for simple components) | Redundant reactivity (datastar already provides this) |
 | React/Vue/Svelte | SPA frameworks contradict hypermedia philosophy |
 | Leptos/Dioxus | Would duplicate datastar's role |
 | esbuild | Go-based; prefer Rust-native Rolldown |
+
+**Lit exception:** Use Lit only for complex third-party library integration (e.g., ECharts via ds-echarts) where the library manages significant internal state. See Pattern 1.5 in `docs/notes/architecture/integration-patterns.md`.
 
 **Web component pattern for datastar:**
 
@@ -660,9 +664,12 @@ ironstar/
 │   ├── icons.ts                        # Lucide icons (build-time)
 │   ├── types/                          # Generated TypeScript types (from ts-rs)
 │   │   └── *.ts                        # Auto-generated, do not edit
-│   ├── components/                     # Vanilla web components
-│   │   ├── sortable-list.ts
-│   │   └── vega-chart.ts               # Vega-Lite chart wrapper
+│   ├── components/
+│   │   ├── vanilla/                    # Simple state management
+│   │   │   ├── sortable-list.ts
+│   │   │   └── vega-chart.ts
+│   │   └── lit/                        # Complex lifecycle (ECharts)
+│   │       └── ds-echarts.ts
 │   └── styles/
 │       ├── main.css                    # Open Props imports + theme + components
 │       ├── theme.css                   # Custom theme tokens
@@ -715,6 +722,11 @@ ironstar/
   - Pattern 1.5: When Lit is appropriate (complex lifecycle)
   - Pattern 2: Vega-Lite chart integration
   - Pattern 3: Apache ECharts integration via Lit (ds-echarts component)
+- ECharts integration: `docs/notes/architecture/ds-echarts-integration-guide.md`
+  - Lit component lifecycle management
+  - Rolldown/esbuild bundling configuration
+  - Hypertext template patterns
+  - Axum SSE handlers with DuckDB
 - TypeScript signal contracts: `docs/notes/architecture/signal-contracts.md`
 - Frontend build pipeline: `docs/notes/architecture/frontend-build-pipeline.md`
   - Includes Lit component bundling options (Rolldown vs esbuild)
