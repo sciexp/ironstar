@@ -97,7 +97,8 @@ See `projection-patterns.md` for caching strategies that preserve this invariant
 | `sse-connection-lifecycle.md` | SSE connection state machine, subscription phases, debugging |
 | `event-replay-consistency.md` | Event replay strategy, reconnection patterns, consistency guarantees |
 | `projection-patterns.md` | Projection caching, DuckDB integration, projection trait |
-| `performance-tuning.md` | Debouncing, batching, rate limiting, backpressure, metrics |
+| `performance-tuning.md` | Channel sizing, multiple projections, observability metrics |
+| `performance-advanced-patterns.md` | Debouncing, batching, rate limiting, backpressure |
 | `command-write-patterns.md` | Command handlers, aggregate patterns, testing DSL, event store |
 
 For Zenoh event bus integration, see `../infrastructure/zenoh-event-bus.md`.
