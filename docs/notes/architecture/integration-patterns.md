@@ -397,182 +397,73 @@ When you call `echarts.init(container, theme)`, ECharts:
 If Datastar morphs this container, the ECharts instance becomes disconnected from the DOM.
 The chart stops responding to interactions, resize events fail, and the instance leaks memory.
 
-### ECharts instance API
-
-ECharts uses an imperative instance-based API.
-From `~/projects/lakescope-workspace/echarts/src/core/echarts.ts`, the core interface provides:
-
-```typescript
-interface ECharts {
-  setOption(option: EChartsOption, opts?: SetOptionOpts): void;  // Update or replace chart configuration
-  resize(opts?: ResizeOpts): void;                                // Manually trigger resize
-  dispose(): void;                                                 // Critical: cleanup and remove all listeners
-  getWidth(): number;
-  getHeight(): number;
-  on(eventName: string, handler: Function): void;                  // Event subscriptions
-  off(eventName: string, handler?: Function): void;
-}
-```
-
 Key differences from Vega-Lite View API:
 
 - **Initialization**: `echarts.init(container, theme)` is a static factory method that returns an instance
 - **Updates**: `setOption()` merges by default (incremental updates), while Vega's `view.data()` replaces data sources entirely
-- **Resize**: ECharts requires explicit `resize()` calls
+- **Resize**: ECharts requires explicit `resize()` calls, typically via ResizeObserver with debouncing
 - **Themes**: ECharts theme is set at initialization time only; changing themes requires dispose → reinit → setOption cycle
 
-### Update strategies with performance characteristics
+### When to use Lit wrapper
 
-1. **Option updates** (`setOption()`): Fast, incremental updates. ECharts merges new option properties with existing configuration by default.
-   ```typescript
-   chart.setOption({ series: [{ data: newData }] })  // Merges into existing series
-   ```
-   This is the primary update mechanism for real-time dashboards.
+ECharts requires Pattern 1.5 (Lit wrapper) because:
 
-2. **Theme changes**: Requires full disposal and reinitialization. Slow because ECharts theme is baked into the rendering pipeline at creation time.
-   ```typescript
-   chart.dispose()
-   chart = echarts.init(container, 'dark')
-   chart.setOption(previousOption)
-   ```
-   Reserve this for explicit user theme switches.
+1. **Multiple lifecycle observers**: ResizeObserver (container dimension changes) + MediaQueryList (dark mode toggle)
+2. **Complex state coordination**: Theme changes require dispose → reinit → setOption cycle; Lit's lifecycle hooks manage this cleanly
+3. **Light DOM requirement**: `createRenderRoot() { return this }` for Open Props CSS token access
+4. **Error boundary**: Invalid JSON chart options should log errors without breaking the page
 
-3. **Resize**: Very fast because it only recalculates layout without reprocessing data.
-   ```typescript
-   chart.resize()  // Call after container dimension changes
-   ```
-   Use ResizeObserver with debouncing to batch resize calls.
+See Pattern 1.5 for detailed rationale on when Lit adds value over vanilla web components.
 
-### The ds-echarts Lit component
+### Key properties and events
 
-The `ds-echarts` component wraps the ECharts lifecycle in a Lit web component, following the thin wrapper pattern with Lit's lifecycle management benefits.
+The `ds-echarts` component exposes:
 
-**Full source**: `~/projects/lakescope-workspace/datastar-go-nats-template-northstar/web/libs/lit/src/components/ds-echarts/ds-echarts.ts`
+**Properties**:
+- `option` (string): JSON-stringified ECharts configuration object
+- `theme` (string): Theme name ('default', 'dark', or registered theme)
+- `resize-delay` (number): ResizeObserver debounce delay in milliseconds (default: 100)
 
-**Design document**: `~/projects/lakescope-workspace/datastar-go-nats-template-northstar/docs/notes/echarts/lit-echarts-component-plan.md`
+**Events**:
+- `chart-click`: User clicked chart element (detail: ECharts event data)
+- `chart-ready`: Chart initialized and ready for interaction
+- Custom events for ECharts interactions (hover, zoom, selection, etc.)
 
-**Property interface**:
+**Critical attributes for Datastar**:
+- `data-ignore-morph` — Prevents morphing of ECharts-managed DOM
+- `data-attr:option="JSON.stringify($chartOption)"` — Binds signal to chart configuration
+- `style="height: 400px; width: 100%;"` — Explicit dimensions required (ECharts cannot infer height)
 
-```typescript
-@customElement('ds-echarts')
-export class DsEcharts extends LitElement {
-  @property({ type: String }) option = '{}'           // JSON string (Datastar stringifies objects)
-  @property({ type: String }) theme = 'default'       // 'default' or registered theme name
-  @property({ type: Number, attribute: 'resize-delay' }) resizeDelay = 100  // Debounce ms
-
-  private chart: ECharts | null = null
-  private chartContainer: HTMLDivElement | null = null
-  private resizeObserver: ResizeObserver | null = null
-  private currentTheme: string = 'default'
-  private mediaQueryHandler: ((e: MediaQueryListEvent) => void) | null = null
-}
-```
-
-**Key implementation details**:
-
-- `option` is received as a JSON string because Datastar's `data-attr:*` binding sets HTML attributes. The component parses it in `updateOption()`.
-- `createRenderRoot() { return this }` enables Open Props token access via light DOM rendering.
-- Theme changes trigger dispose → init → setOption cycle.
-- ResizeObserver with configurable debounce handles container resize.
-- MediaQueryList listener reinitializes chart on dark mode toggle (when `theme="default"`).
-
-**Lifecycle flow**:
-
-```
-firstUpdated() → initChart() → setupResizeObserver() → setupMediaQueryListener()
-       ↓
-updated(changedProperties) → updateOption() or reinit for theme change
-       ↓
-disconnectedCallback() → dispose chart, disconnect observer, remove listeners
-```
-
-**Error handling**: Invalid JSON logs `[ds-echarts]` prefix error to console but does not throw, preserving the rest of the page if chart configuration is temporarily malformed.
-
-### Datastar integration example
+### Datastar usage example
 
 ```html
-<div
-  data-signals='{
-    chartOption: {
-      "title": {"text": "Sales by Region"},
-      "tooltip": {"trigger": "axis"},
-      "xAxis": {"type": "category", "data": ["Q1", "Q2", "Q3", "Q4"]},
-      "yAxis": {"type": "value"},
-      "series": [{"name": "Revenue", "type": "bar", "data": [150, 230, 224, 218]}]
-    },
-    selectedTheme: "default"
-  }'
->
-  <ds-echarts
-    data-ignore-morph
-    data-attr:option="JSON.stringify($chartOption)"
-    data-attr:theme="$selectedTheme"
-    style="height: 400px; width: 100%;"
-  ></ds-echarts>
-</div>
+<ds-echarts
+  data-ignore-morph
+  data-attr:option="JSON.stringify($chartOption)"
+  data-attr:theme="$selectedTheme"
+  data-on:chart-click="$selectedPoint = evt.detail"
+  style="height: 400px; width: 100%;"
+></ds-echarts>
 ```
 
-**Critical attributes**:
+All state flows through Datastar signals.
+The component translates signal updates into `setOption()` calls and ECharts events into custom events that update signals via `data-on:*`.
 
-- `data-ignore-morph` — Prevents Datastar from morphing the component's children
-- `data-attr:option="JSON.stringify($chartOption)"` — Converts signal object to JSON string
-- `style="height: 400px; width: 100%;"` — Explicit dimensions required; ECharts cannot infer height from content
+### Complete implementation reference
 
-### SSE server-side pattern with hypertext templates
+For detailed implementation including:
+- Component lifecycle management and property handling
+- ResizeObserver and MediaQueryList setup
+- Hypertext template patterns for server-side rendering
+- Axum SSE handler integration with DuckDB
+- Rolldown/esbuild bundling configuration
 
-In Ironstar, hypertext templates render the component from Rust handlers:
+See: `docs/notes/architecture/ds-echarts-integration-guide.md`
 
-```rust
-use hypertext::{html_elements, maud_move, Renderable};
-use serde_json::json;
-
-fn echarts_dashboard(chart_data: &ChartData) -> impl Renderable {
-    let chart_option = json!({
-        "title": {"text": &chart_data.title},
-        "xAxis": {"type": "category", "data": &chart_data.x_labels},
-        "yAxis": {"type": "value"},
-        "series": [{"data": &chart_data.values, "type": "bar"}]
-    });
-
-    maud_move! {
-        div "data-signals"=(format!(r#"{{"chartOption": {}}}"#, chart_option)) {
-            ds-echarts
-                "data-ignore-morph"=""
-                "data-attr:option"="JSON.stringify($chartOption)"
-                style="height: 400px; width: 100%;"
-            {}
-        }
-    }
-}
-```
-
-**SSE streaming for real-time updates**:
-
-```rust
-async fn stream_chart_updates(
-    State(analytics): State<AnalyticsService>,
-) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
-    let stream = interval(Duration::from_secs(2))
-        .then(move |_| async {
-            let new_data = analytics.fetch_latest().await;
-            let patch = json!({"chartOption": {"series": [{"data": new_data.values}]}});
-            Ok::<_, Infallible>(PatchSignals::new(patch.to_string()).into())
-        });
-
-    Sse::new(stream)
-}
-```
-
-The server patches only the changed signal properties.
-ECharts' `setOption()` merges incremental updates efficiently.
-
-### Source code references
-
-- **ECharts source**: `~/projects/lakescope-workspace/echarts/`
+**Source code references**:
 - **ds-echarts component**: `~/projects/lakescope-workspace/datastar-go-nats-template-northstar/web/libs/lit/src/components/ds-echarts/ds-echarts.ts`
-- **Component design doc**: `~/projects/lakescope-workspace/datastar-go-nats-template-northstar/docs/notes/echarts/lit-echarts-component-plan.md`
-- **Northstar Lit build**: `~/projects/lakescope-workspace/datastar-go-nats-template-northstar/web/libs/lit/`
-- **Datastar-rust SDK**: `~/projects/rust-workspace/datastar-rust/`
+- **ECharts library**: `~/projects/lakescope-workspace/echarts/`
+- **Lit framework**: `~/projects/lakescope-workspace/lit-web-components/`
 
 ---
 
