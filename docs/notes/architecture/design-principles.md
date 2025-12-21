@@ -91,7 +91,7 @@ The design separates pure computation from effectful operations across three con
 
 The async/sync boundary is the effect boundary: if a function is `async`, it performs I/O; if sync, it is pure.
 
-**Note**: This 3-layer conceptual model maps to the 7-layer crate architecture: Domain corresponds to Layers 0-1 (Foundation + Domain), Application to Layers 2-3 (Application + Interfaces), and Infrastructure to Layers 4-5 (Infrastructure + Services).
+**Note**: This 3-layer conceptual model maps to the 8-layer crate architecture (layers 0-7): Domain corresponds to Layers 0-1 (Foundation + Domain), Application to Layers 2-3 (Application + Interfaces), and Infrastructure to Layers 4-5 (Infrastructure + Services).
 See `crate-architecture.md` for the complete layering and multi-crate decomposition plan.
 
 ```

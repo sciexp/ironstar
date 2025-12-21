@@ -147,7 +147,7 @@ The ds-echarts component from northstar demonstrates this pattern perfectly:
 
 **Source**: `~/projects/lakescope-workspace/datastar-go-nats-template-northstar/web/libs/lit/src/components/ds-echarts/ds-echarts.ts`
 
-**Design document**: `~/projects/lakescope-workspace/datastar-go-nats-template-northstar/docs/notes/echarts/ds-echarts-integration-guide.md`
+**Ironstar implementation**: See `ds-echarts-integration-guide.md` for the complete ironstar adaptation.
 
 ```typescript
 @customElement('ds-echarts')
