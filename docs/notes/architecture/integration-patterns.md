@@ -129,6 +129,9 @@ All state flows through signals, and the component merely translates between the
 
 ## Pattern 1.5: When Lit is appropriate
 
+**Note:** This is the standard pattern for ANY TypeScript library integration (not just ECharts).
+Use Lit instead of vanilla web components when you need lifecycle management, reactive properties, or observer coordination for libraries like ECharts, D3, Plotly, Three.js, Mapbox GL, etc.
+
 Use Lit instead of vanilla web components when ALL of these conditions apply:
 
 1. **Complex internal state**: Library manages significant internal state (ECharts scales, animations, selections)
@@ -419,15 +422,35 @@ See Pattern 1.5 for detailed rationale on when Lit adds value over vanilla web c
 
 The `ds-echarts` component exposes:
 
-**Properties**:
+**Properties** (6 total):
 - `option` (string): JSON-stringified ECharts configuration object
 - `theme` (string): Theme name ('default', 'dark', or registered theme)
 - `resize-delay` (number): ResizeObserver debounce delay in milliseconds (default: 100)
+- `renderer` ('svg' | 'canvas'): Rendering engine (default: 'svg')
+- `events` (string): Event categories to enable: 'lifecycle,mouse' (default)
+- `hover-throttle` (number): Throttle ms for hover events (default: 100)
 
-**Events**:
-- `chart-click`: User clicked chart element (detail: ECharts event data)
-- `chart-ready`: Chart initialized and ready for interaction
-- Custom events for ECharts interactions (hover, zoom, selection, etc.)
+**Events** (12 total):
+
+*Lifecycle events:*
+- `chart-ready`: Chart initialized and ready for interaction (detail: `{ width, height, theme }`)
+- `chart-updated`: Chart option was updated (detail: `{ timestamp }`)
+- `chart-resized`: Container was resized (detail: `{ width, height }`)
+- `chart-disposed`: Chart was cleaned up (detail: `{}`)
+- `chart-error`: Chart error occurred (detail: `{ message, error }`)
+
+*Mouse events (default enabled):*
+- `chart-click`: User clicked chart element (detail: sanitized ECharts event params)
+- `chart-dblclick`: User double-clicked element
+- `chart-contextmenu`: User right-clicked element
+
+*Hover events (opt-in via events prop):*
+- `chart-hover-start`: Mouse entered chart element (throttled)
+- `chart-hover-end`: Mouse left chart element (throttled)
+
+*Component events (opt-in):*
+- `chart-legend-change`: Legend selection changed (detail: legend state)
+- `chart-datazoom`: User zoomed or panned (detail: zoom range)
 
 **Critical attributes for Datastar**:
 - `data-ignore-morph` — Prevents morphing of ECharts-managed DOM
@@ -464,6 +487,16 @@ See: `docs/notes/architecture/ds-echarts-integration-guide.md`
 - **ds-echarts component**: `~/projects/lakescope-workspace/datastar-go-nats-template-northstar/web/libs/lit/src/components/ds-echarts/ds-echarts.ts`
 - **ECharts library**: `~/projects/lakescope-workspace/echarts/`
 - **Lit framework**: `~/projects/lakescope-workspace/lit-web-components/`
+
+### ds-echarts documentation reference table
+
+| Topic | Document |
+|-------|----------|
+| Component API (properties, events, lifecycle) | `docs/notes/architecture/ds-echarts-integration-guide.md` |
+| Backend integration patterns (SSE handlers, DuckDB) | `docs/notes/architecture/ds-echarts-backend.md` |
+| Build/test setup (Rolldown, Vitest, mocking) | `docs/notes/architecture/ds-echarts-build-test.md` |
+| TypeScript signal contracts (ts-rs generation) | `docs/notes/architecture/signal-contracts.md` |
+| Frontend build pipeline (Rolldown vs esbuild) | `docs/notes/architecture/frontend-build-pipeline.md` |
 
 ---
 
