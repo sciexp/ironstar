@@ -7,28 +7,17 @@ See `session-implementation.md` for Rust implementation patterns.
 
 ## Zenoh key expression patterns for sessions
 
-For complete Zenoh key expression patterns including wildcards (`*`, `**`, `$*`), multi-pattern subscriptions, and publishing patterns, see `zenoh-event-bus.md`.
-This section documents session-specific key expression conventions that extend the base patterns.
+Session-scoped Zenoh key expressions use the pattern `events/session/{session_id}/**` documented in `zenoh-event-bus.md` (Session-scoped routing section).
+Command handlers decide whether events are broadcast globally (`events/{aggregate_type}/{aggregate_id}`) or session-scoped (`events/session/{session_id}/{aggregate_type}/{aggregate_id}`).
 
-### Session-scoped key structure
+**Security rationale for session scoping:**
 
-Session IDs appear in Zenoh key expressions to scope events to specific users:
+Session-scoped key expressions provide defense-in-depth isolation.
+Even if a client misconfigures a subscription pattern, the Zenoh key expression structure ensures they can only receive events published to their session ID.
+This architectural constraint prevents accidental cross-session data leakage at the pub/sub layer, independent of application-level access control.
 
-```
-events/session/{session_id}/{aggregate_type}/{aggregate_id}
-events/session/{session_id}/notification
-```
-
-### Global vs. session-scoped routing
-
-Command handlers decide whether events are broadcast globally or session-scoped:
-
-```
-events/global/announcement        → All sessions
-events/session/{id}/Todo/42       → Single session only
-```
-
-For the complete command handling pattern including validation, event emission, and persistence, see `../cqrs/event-sourcing-core.md`.
+For complete Zenoh key expression patterns including wildcards, multi-pattern subscriptions, and publishing examples, see `zenoh-event-bus.md`.
+For command handling patterns including validation, event emission, and persistence, see `../cqrs/event-sourcing-core.md`.
 
 ## Security considerations
 
