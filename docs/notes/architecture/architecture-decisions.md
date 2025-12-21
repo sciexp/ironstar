@@ -355,7 +355,7 @@ impl AppState {
             reload_tx: broadcast::channel(16).0,
         })
     }
-    // Note: Error type is application-specific, see event-sourcing-sse-pipeline.md appendix
+    // Note: Error type is application-specific, see event-sourcing-core.md appendix
 }
 ```
 
@@ -390,7 +390,9 @@ async fn add_todo(
 
 - **Design principles**: `design-principles.md`
 - **Crate architecture**: `crate-architecture.md`
-- **Event sourcing patterns**: `event-sourcing-sse-pipeline.md`
+- **Event sourcing core concepts**: `event-sourcing-core.md`
+- **SSE connection lifecycle**: `sse-connection-lifecycle.md`
+- **Command write patterns**: `command-write-patterns.md`
 - **Analytics cache design**: `analytics-cache-architecture.md`
 - **Third-party integration**: `integration-patterns.md`
 
