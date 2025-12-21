@@ -1255,6 +1255,14 @@ maud! {
 }
 ```
 
+**Light DOM requirement for web components:**
+
+All web components using Open Props tokens must use Light DOM rendering.
+This applies to visualization components like ds-echarts (Lit component for ECharts) and vega-chart (vanilla component for Vega-Lite).
+
+Shadow DOM blocks CSS custom property inheritance, preventing theme token access.
+By keeping web components in Light DOM, they inherit the parent document's CSS variables and can reference design tokens directly.
+
 **Effect boundary:**
 
 Open Props UI CSS is loaded as standard stylesheets.
