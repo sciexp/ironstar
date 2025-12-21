@@ -115,17 +115,10 @@ The only CSS-related change is cosmetic since the component uses Light DOM and d
 | `chart-legend-change` | component | Legend selection state (opt-in) |
 | `chart-datazoom` | component | Zoom range (opt-in) |
 
-### Light DOM Requirement
+### Light DOM requirement
 
-The component must use Light DOM for Open Props CSS variable inheritance:
-
-```typescript
-protected createRenderRoot() {
-  return this  // Light DOM, not Shadow DOM
-}
-```
-
-Shadow DOM would block CSS custom property inheritance from the page, breaking theme support.
+The component must use Light DOM for Open Props CSS variable inheritance via `createRenderRoot() { return this }`.
+See `css-architecture.md` for detailed rationale on why Shadow DOM blocks CSS custom property inheritance.
 
 ## Tailwind to Open Props Mapping
 
