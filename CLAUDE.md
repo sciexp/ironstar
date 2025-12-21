@@ -97,7 +97,7 @@ The Northstar Go template and datastar-go SDK remain valuable reference implemen
 |-------------------|---------------------|-----------|
 | Tailwind + DaisyUI | Open Props + Open Props UI | Design tokens over utility classes; better alignment with server-rendered HTML |
 | esbuild (Go) | Rolldown (Rust) | Rust-native toolchain consistency |
-| Embedded NATS | Zenoh (embedded) | Rust-native pub/sub with key expression filtering; no external server dependency |
+| Embedded NATS | tokio::broadcast → Zenoh | tokio::broadcast for single-node; Zenoh when scaling to distributed deployments |
 | hashfs runtime hashing | Rolldown content hashing | Hash computed at build time via bundler, not at runtime |
 | Templ (Go templates) | hypertext (Rust macros) | Compile-time type-checked HTML with lazy evaluation |
 | Air hot reload | cargo-watch + process-compose | Rust ecosystem tooling |
@@ -132,7 +132,7 @@ See `docs/notes/architecture/design-principles.md` for the complete principles a
 | Sessions | SQLite + sqlx | Sessions table |
 | Analytics | DuckDB | OLAP projections |
 | Analytics Cache | moka | In-memory async cache with TTL |
-| Event Bus | Zenoh (embedded) | Key expression filtering, distribution-ready |
+| Event Bus | tokio::broadcast → Zenoh | Single-node broadcast sufficient to ~256 subscribers; Zenoh for distribution |
 | Orchestration | process-compose | Declarative process management |
 | Environment | Nix flake | Reproducible builds |
 
@@ -404,21 +404,21 @@ CREATE TABLE events (
 ## Architectural context: embedded vs. external services
 
 This stack prioritizes embedded Rust-native solutions over external server dependencies.
-Zenoh is the Rust-native equivalent of NATS: it provides pub/sub with key expression filtering, but runs embedded without requiring an external server.
+The event bus starts with tokio::broadcast for single-node deployments, with a documented migration path to Zenoh for distributed scenarios.
 
-The embedded approach (SQLite + Zenoh + moka) targets single-node deployments while remaining distribution-ready:
+The embedded approach (SQLite + tokio::broadcast + moka) targets single-node deployments while remaining distribution-ready:
 
 - **SQLite**: Event store and sessions (durability)
-- **Zenoh**: Event notification with key expression filtering (pub/sub)
+- **tokio::broadcast**: Event notification for single-node (pub/sub)
 - **moka**: Analytics cache with TTL and eviction (caching)
 
-Zenoh provides the "listen to hundreds of keys with server-side filtering" capability essential for CQRS + Datastar applications.
-SSE handlers subscribe to specific key expressions (e.g., `events/Todo/123`) rather than receiving all events and filtering locally.
-See `docs/notes/architecture/zenoh-event-bus.md` for the detailed evaluation and migration path from tokio broadcast to Zenoh.
+tokio::broadcast is sufficient for single-node deployments up to ~1000 events/sec or ~256 concurrent SSE clients.
+When scaling beyond these limits or deploying across multiple nodes, migrate to Zenoh for key expression filtering and distributed pub/sub.
+See `docs/notes/architecture/zenoh-event-bus.md` for the detailed evaluation and migration path from tokio::broadcast to Zenoh.
 
 Sessions are stored in SQLite alongside the event store (in a separate table), simplifying the stack by using a single embedded database for all persistent state.
 Analytics query results are cached in moka, an async-native in-memory cache with TTL-based eviction.
-Cache entries are invalidated via Zenoh subscription to relevant key expression patterns.
+Cache entries are invalidated via tokio::broadcast subscription (or Zenoh key expression patterns after migration).
 See `docs/notes/architecture/analytics-cache-architecture.md` for detailed cache design including Zenoh-based cache invalidation (Pattern 4).
 
 **CQRS/ES framework decision:**
