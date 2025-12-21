@@ -438,7 +438,7 @@ pub enum Command {
 
 ### Analytics caching
 
-- Analytics cache architecture: `analytics-cache-architecture.md`
+- Analytics cache architecture: `analytics-cache-architecture.md` — moka cache with TTL, Zenoh-based invalidation, rkyv serialization
 
 ## Related documentation
 

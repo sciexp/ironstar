@@ -700,6 +700,7 @@ Common frontend build and development issues with diagnostic steps.
 ## Related documentation
 
 - CSS architecture: `css-architecture.md` (Open Props design tokens, cascade layers, browser compatibility, Light DOM requirement)
+- Signal type contracts: `signal-contracts.md` (TypeScript type generation with ts-rs, datastar signal patterns)
 - Open Props tokens: see the Open Props section in `architecture-decisions.md`
 - Open Props UI components: see the Open Props UI section in `architecture-decisions.md`
 - Rolldown bundler: see the Rolldown section in `architecture-decisions.md`

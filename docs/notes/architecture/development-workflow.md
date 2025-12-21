@@ -21,6 +21,7 @@ For ongoing development, only step 5 is needed.
 
 Ironstar uses process-compose to coordinate multiple development processes.
 The configuration lives in `process-compose.yaml` at the repository root.
+For Zenoh embedded configuration in development and production modes, see `zenoh-event-bus.md`.
 
 ### Process dependency graph
 

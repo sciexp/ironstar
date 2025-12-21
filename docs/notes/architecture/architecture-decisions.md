@@ -412,3 +412,4 @@ async fn add_todo(
 - **Signal contracts**: `signal-contracts.md`
 - **Build pipeline**: `frontend-build-pipeline.md`
 - **Session management**: `session-management.md`
+- **Session security**: `session-security.md`

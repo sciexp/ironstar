@@ -107,38 +107,9 @@ Port trait definitions for infrastructure abstractions.
 |-------|---------|----------|
 | `ironstar-interfaces` | Port traits | EventStore, SessionStore, AnalyticsCache, Projection traits |
 
-### Layer 4: Infrastructure (depends on Layers 0-3)
+### Layers 4-7: Infrastructure, Services, Presentation, and Binary
 
-Effect implementations and adapters.
-
-| Crate | Purpose | Contains |
-|-------|---------|----------|
-| `ironstar-adapters` | Storage adapters | SQLite, moka, DuckDB implementations |
-| `ironstar-analytics` | Analytics layer | DuckDB queries, cache invalidation |
-| `ironstar-projections` | Read model implementations | In-memory projections, snapshot support |
-| `ironstar-config` | Configuration types | Config structs, adapter selection enums |
-
-### Layer 5: Services (depends on Layers 0-4)
-
-Service composition and dependency injection.
-
-| Crate | Purpose | Contains |
-|-------|---------|----------|
-| `ironstar-services` | HasXxx traits, All composition | Service traits, composition root, adapter factories |
-
-### Layer 6: Presentation (depends on Layers 0-5)
-
-HTTP boundary layer.
-
-| Crate | Purpose | Contains |
-|-------|---------|----------|
-| `ironstar-web` | HTTP + SSE + HTML | axum handlers, hypertext templates, routes |
-
-### Layer 7: Binary (depends on all)
-
-| Crate | Purpose | Contains |
-|-------|---------|----------|
-| `ironstar` | Main binary | main.rs, CLI, process entry point |
+For detailed documentation on layers 4-7, including infrastructure adapters, service composition patterns, presentation layer, and binary crate organization, see `crate-services-composition.md`.
 
 ## Directory structure
 

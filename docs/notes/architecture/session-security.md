@@ -48,7 +48,8 @@ events/global/announcement        → All sessions
 events/session/{id}/Todo/42       → Single session only
 ```
 
-**Command handlers decide routing**:
+**Command handlers decide routing**.
+For the complete command handling pattern including validation, event emission, and persistence, see `event-sourcing-core.md`.
 
 ```rust
 async fn handle_create_todo(

@@ -47,7 +47,16 @@ tokio broadcast provides an embedded alternative:
 
 Northstar (the Datastar Go template) uses embedded NATS, but analysis revealed it doesn't do true event sourcing — it uses NATS KV as a document store with last-write-wins semantics.
 For ironstar's single-node deployment target, tokio::sync::broadcast provides sufficient pub/sub without external server dependency.
-The Zenoh migration path remains for future distributed deployments.
+
+**Single-node scaling limits:**
+
+tokio::broadcast is the current choice and is sufficient for single-node deployments up to:
+- ~256 concurrent SSE clients (subscribers)
+- ~1000 events/second throughput
+
+These limits are imposed by in-memory channel capacity and lock contention.
+For deployments exceeding these limits or requiring multi-node distribution, migrate to Zenoh.
+See `zenoh-event-bus.md` for detailed migration path and Zenoh key expression patterns.
 
 ---
 

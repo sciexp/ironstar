@@ -106,7 +106,8 @@ This pattern ensures:
 
 ## Chart data streaming
 
-Charts receive configuration updates via SSE using the same PatchSignals pattern:
+Charts receive configuration updates via SSE using the same PatchSignals pattern.
+For the complete ECharts Lit component implementation with Light DOM rendering and Open Props token integration, see `ds-echarts-integration-guide.md`.
 
 ```rust
 async fn chart_data_sse(
