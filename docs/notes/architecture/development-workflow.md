@@ -2,6 +2,21 @@
 
 This document covers ironstar's development workflow including process orchestration, hot reload patterns, and build commands.
 
+## Getting started
+
+First-time setup for new developers:
+
+1. Clone repository and enter directory
+2. Enter Nix development shell: `nix develop`
+3. Install frontend dependencies: `cd web-components && pnpm install && cd ..`
+4. Initialize database: `just db-init` or `sqlite3 data/ironstar.db < schema.sql`
+5. Start all development processes: `just dev`
+6. Verify at http://localhost:3000
+
+For ongoing development, only step 5 is needed.
+
+---
+
 ## Process orchestration
 
 Ironstar uses process-compose to coordinate multiple development processes.
@@ -202,55 +217,11 @@ This creates the feedback loop:
 
 ## Asset serving modes
 
-Ironstar serves static assets differently in development and production.
+Ironstar serves static assets differently in development and production:
+- **Development**: Direct filesystem serving via tower-http ServeDir, no caching
+- **Production**: Embedded assets via rust-embed with immutable cache headers
 
-### Development mode
-
-Assets are served directly from the filesystem with no-cache headers:
-
-```rust
-#[cfg(debug_assertions)]
-fn static_routes() -> Router {
-    Router::new()
-        .nest_service("/static", ServeDir::new("static/dist"))
-        .layer(SetResponseHeaderLayer::if_not_present(
-            CACHE_CONTROL,
-            HeaderValue::from_static("no-store"),
-        ))
-}
-```
-
-Benefits:
-- Instant refresh on file changes
-- No compilation overhead for asset updates
-- Rolldown watch mode output is immediately available
-
-### Production mode
-
-Assets are embedded in the binary with immutable cache headers:
-
-```rust
-#[cfg(not(debug_assertions))]
-fn static_routes() -> Router {
-    use rust_embed::RustEmbed;
-
-    #[derive(RustEmbed)]
-    #[folder = "static/dist"]
-    struct Assets;
-
-    // Serve embedded assets with long-lived cache
-    Router::new()
-        .nest_service("/static", /* embedded asset handler */)
-        .layer(SetResponseHeaderLayer::overriding(
-            CACHE_CONTROL,
-            HeaderValue::from_static("public, max-age=31536000, immutable"),
-        ))
-}
-```
-
-Content-hashed filenames from Rolldown enable infinite caching.
-
-See `architecture-decisions.md` for detailed asset embedding rationale.
+For detailed implementation patterns including conditional compilation and cache headers, see `frontend-build-pipeline.md` section "Asset serving patterns".
 
 ---
 
