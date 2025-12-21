@@ -552,7 +552,8 @@ fn icon_button(icon: &str, label: &str) -> impl Renderable {
 - Infrastructure decisions: `infrastructure-decisions.md`
 - CQRS implementation: `cqrs-implementation-decisions.md`
 - Build tooling decisions: `build-tooling-decisions.md`
-- Event sourcing patterns: `event-sourcing-sse-pipeline.md`
+- Event sourcing core concepts: `event-sourcing-core.md`
+- SSE connection lifecycle: `sse-connection-lifecycle.md`
 - Signal contracts: `signal-contracts.md`
 - Build pipeline: `frontend-build-pipeline.md`
 - Third-party integration: `integration-patterns.md`
