@@ -164,8 +164,9 @@ Add to package.json for Lit components:
 | Proven for Lit | Less mature | Battle-tested (Northstar) |
 | Development workflow | Single `rolldown --watch` | Requires process coordination |
 
-**Recommendation**: Start with Option B (esbuild) for rapid development, especially if referencing Northstar patterns.
-Migrate to Option A (Rolldown) later for tool consolidation if needed.
+**Recommendation**: Rolldown (Rust-native) aligns with ironstar's tooling philosophy and should be preferred for greenfield development.
+esbuild is pragmatic only when porting directly from Northstar patterns or when TypeScript decorator compilation speed becomes a critical bottleneck.
+For new ironstar projects, prefer Rolldown to maintain a unified Rust-native toolchain.
 
 ### Source code references
 
