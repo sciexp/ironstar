@@ -566,12 +566,12 @@ The embedded approach (SQLite + Zenoh + moka) targets single-node deployments wh
 
 Zenoh provides the "listen to hundreds of keys with server-side filtering" capability essential for CQRS + Datastar applications.
 SSE handlers subscribe to specific key expressions (e.g., `events/Todo/123`) rather than receiving all events and filtering locally.
-See `docs/notes/architecture/zenoh-early-adoption-research.md` for the detailed evaluation.
+See `docs/notes/architecture/zenoh-early-adoption-research.md` for the detailed evaluation and migration path from tokio broadcast to Zenoh.
 
 Sessions are stored in SQLite alongside the event store (in a separate table), simplifying the stack by using a single embedded database for all persistent state.
 Analytics query results are cached in moka, an async-native in-memory cache with TTL-based eviction.
 Cache entries are invalidated via Zenoh subscription to relevant key expression patterns.
-See `docs/notes/architecture/analytics-cache-architecture.md` for detailed cache design.
+See `docs/notes/architecture/analytics-cache-architecture.md` for detailed cache design including Zenoh-based cache invalidation (Pattern 4).
 
 **CQRS/ES framework decision:**
 
@@ -701,6 +701,15 @@ ironstar/
   - Asset serving modes (dev/prod)
   - TypeScript type generation (ts-rs)
 - Event sourcing + SSE pipeline: `docs/notes/architecture/event-sourcing-sse-pipeline.md`
+  - Client subscription lifecycle
+  - Reconnection resilience patterns
+  - Performance optimization (debouncing, batching, rate limiting)
+  - Complete Zenoh integration patterns
+- Session management: `docs/notes/architecture/session-management.md`
+  - Session ID generation and cookie security
+  - SQLite sessions schema
+  - Axum session extractor pattern
+  - Per-session Zenoh key expressions
 - Third-party library integration: `docs/notes/architecture/integration-patterns.md`
   - Pattern 1: Web component thin wrapper (vanilla)
   - Pattern 1.5: When Lit is appropriate (complex lifecycle)
