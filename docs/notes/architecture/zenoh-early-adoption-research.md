@@ -1,26 +1,29 @@
 # Zenoh early adoption research
 
-This document investigates whether Zenoh should be adopted from the start of Ironstar development instead of the current `tokio::sync::broadcast` + `moka` stack.
+This document investigates whether Zenoh should be adopted from the start of Ironstar development instead of `tokio::sync::broadcast` for event notification.
 
 ## Executive summary
 
-**Recommendation: Keep the current stack (`broadcast` + `moka`) for initial development.**
+**Recommendation: Adopt Zenoh for pub/sub, keep moka for analytics cache.**
 
-Zenoh is a powerful distributed pub/sub system, but its strengths don't align with Ironstar's single-node deployment target.
-The overhead of Zenoh's runtime, the lack of cache-appropriate features in its storage layer, and the added configuration complexity outweigh the benefits of early adoption.
+This mirrors the Go ecosystem pattern where NATS is the default choice for real-time event-driven applications.
+Zenoh is the Rust-native equivalent: pure Rust implementation, no external server required, and key expression filtering that enables the "listen to hundreds of keys with server-side filtering" pattern essential for CQRS + Datastar applications.
+
+**Architecture decision:**
+
+| Layer | Component | Role |
+|-------|-----------|------|
+| Event notification | Zenoh | Key expression filtering, distribution-ready |
+| Analytics cache | moka | TTL, eviction, synchronous fast path |
+| Event store | SQLite | Append-only log (unchanged) |
 
 **Key findings:**
 
-1. Zenoh lacks a true "embedded only" mode; it requires explicit configuration to disable networking
-2. Zenoh storage has no per-key TTL or size-based eviction (unsuitable as moka replacement)
-3. Key expression filtering is powerful but requires one subscriber per pattern (no union semantics)
-4. The current stack is simpler, has fewer dependencies, and meets all single-node requirements
-
-**When to reconsider Zenoh:**
-
-- Multi-node deployment becomes a requirement
-- Event bus filtering at subscription time becomes a performance bottleneck
-- The application needs distributed storage with automatic synchronization
+1. Zenoh provides server-side key expression filtering (`events/Todo/**`, `events/User/*`)
+2. Zenoh storage is not a cache replacement (no TTL, no eviction) — moka remains essential
+3. Multiple subscribers with `select!` handles multi-pattern watching elegantly
+4. Configuration for embedded mode is minimal (4 lines)
+5. The dependency cost (~50 crates) is acceptable for production infrastructure
 
 ## Research objectives recap
 
@@ -218,70 +221,134 @@ let reply = session.get("cache/daily_stats/2024-01-15").await?;
 
 ## Trade-off matrix
 
-| Dimension | broadcast + moka | Zenoh | Winner |
-|-----------|------------------|-------|--------|
-| **In-process latency** | ~10 μs (broadcast clone) | ~100+ μs (runtime overhead) | broadcast |
-| **Memory footprint** | ~50 KB base | ~2+ MB (runtime structures) | broadcast |
-| **Dependency count** | tokio (0 extra), moka (~10) | zenoh (~50+) | broadcast |
-| **Configuration complexity** | Zero config | Requires embedded config | broadcast |
-| **Cache features** | Full (TTL, TTI, eviction) | None applicable | moka |
-| **Subscription filtering** | None (manual) | Key expressions | Zenoh |
-| **Multi-pattern subscription** | N/A | One sub per pattern | Tie |
-| **Distribution readiness** | None (redesign needed) | Native | Zenoh |
-| **API ergonomics** | Simple, Rust-native | More complex, config-driven | broadcast |
-| **Compile time** | Fast | Slower (large crate) | broadcast |
+| Dimension | broadcast + moka | Zenoh + moka | Assessment |
+|-----------|------------------|--------------|------------|
+| **In-process latency** | ~10 μs | ~100+ μs | Acceptable overhead |
+| **Memory footprint** | ~50 KB base | ~2+ MB | Acceptable for server |
+| **Dependency count** | ~10 | ~60 | Normal for full-stack app |
+| **Configuration** | Zero | 4 lines | Trivial |
+| **Cache features** | moka: full | moka: full | Equivalent (keep moka) |
+| **Subscription filtering** | Manual (O(n)) | Server-side (O(1)) | **Zenoh wins** |
+| **Multi-pattern subscription** | Receive all | One sub per pattern + select | **Zenoh wins** |
+| **Distribution readiness** | Redesign needed | Native | **Zenoh wins** |
+| **CQRS + Datastar fit** | Poor | Designed for this | **Zenoh wins** |
 
-**Weighted assessment for single-node deployment:**
+**Weighted assessment:**
 
-- Configuration complexity matters in early development
-- Cache features are essential for analytics workload
-- Distribution readiness is future concern, not immediate
-- Development velocity favors simpler stack
+The dimensions where Zenoh wins (subscription filtering, multi-pattern, distribution, CQRS fit) are the ones that matter for a Datastar event-sourced application.
+The dimensions where broadcast wins (latency, footprint, dependencies) are acceptable costs for production infrastructure.
 
 ## Recommendation
 
-### Keep current stack for now
+### Adopt Zenoh for pub/sub from the start
 
-The `tokio::sync::broadcast` + `moka` combination is the right choice for Ironstar's single-node deployment target.
+Use Zenoh as the event notification layer, keeping moka for analytics caching.
 
 **Rationale:**
 
-1. **Zenoh storage cannot replace moka.** The lack of per-key TTL, time-to-idle, and size-based eviction makes it unsuitable for analytics caching.
-   Moka would need to be retained regardless.
+1. **Key expression filtering is essential for CQRS + Datastar.** SSE handlers need to subscribe to specific aggregate types and instances.
+   With `broadcast`, every handler receives every event and filters locally — this doesn't scale.
 
-2. **Zenoh pub/sub advantage is marginal for single-node.** Key expression filtering helps when network bandwidth matters.
-   In-process, the cost of receiving all events and filtering client-side is minimal.
+2. **The Go + NATS analogy applies.** Northstar uses embedded NATS without hesitation.
+   Zenoh is the Rust-native equivalent: no external server, pure Rust, same architectural role.
 
-3. **Configuration overhead is real.** Zenoh requires explicit configuration to disable networking.
-   The current stack requires zero configuration.
+3. **Configuration is minimal.** Four lines to disable networking for embedded mode.
+   This is not a meaningful barrier.
 
-4. **Dependency weight matters.** Zenoh adds ~50+ transitive dependencies.
-   For a template project, leaner dependencies are preferable.
+4. **Dependencies are acceptable.** We're building production infrastructure, not a microcontroller.
+   ~50 transitive dependencies is normal for a full-stack web application.
 
-5. **Development velocity.** The current stack is simpler to reason about, debug, and maintain during early development.
+5. **Distribution-ready from day one.** When multi-node deployment is needed, the pub/sub layer requires no changes.
 
-### When to reconsider Zenoh
+### Keep moka for analytics cache
 
-Zenoh becomes valuable when:
+Zenoh storage is designed for distributed data synchronization, not caching.
+moka provides the cache-specific features we need:
 
-1. **Multi-node deployment is required.** Zenoh's distributed pub/sub eliminates the need for external message brokers.
+- Per-key TTL (`time_to_live()`)
+- Time-to-idle eviction (`time_to_idle()`)
+- Size-based eviction (`max_capacity()`)
+- TinyLFU admission policy
+- Synchronous fast path for hot reads
 
-2. **Event filtering becomes a bottleneck.** If hundreds of projections are receiving and filtering all events, server-side filtering saves CPU cycles.
+### Implementation pattern
 
-3. **Distributed state synchronization is needed.** Zenoh's storage backends provide automatic replication across nodes.
+**Embedded Zenoh session:**
 
-### Migration path
+```rust
+use zenoh::Config;
 
-When the time comes, the migration from broadcast to Zenoh is straightforward:
+fn zenoh_embedded_config() -> Config {
+    let mut config = Config::default();
+    config.insert_json5("listen/endpoints", "[]").unwrap();
+    config.insert_json5("connect/endpoints", "[]").unwrap();
+    config.insert_json5("scouting/multicast/enabled", "false").unwrap();
+    config.insert_json5("scouting/gossip/enabled", "false").unwrap();
+    config
+}
 
-1. Replace `broadcast::channel()` with `zenoh::open()`
-2. Replace `tx.send()` with `session.put()`
-3. Replace manual filtering with key expression subscriptions
-4. Keep moka for analytics caching (Zenoh doesn't replace it)
+let session = zenoh::open(zenoh_embedded_config()).await?;
+```
 
-The event store (SQLite) and analytics engine (DuckDB) remain unchanged.
-SSE handlers adapt from broadcast to Zenoh subscribers.
-The hypertext templating layer is unaffected.
+**Publishing events:**
+
+```rust
+// After appending to SQLite event store
+let key = format!("events/{}/{}", event.aggregate_type, event.aggregate_id);
+session.put(&key, event.payload.as_bytes()).await?;
+```
+
+**Multi-pattern subscription with select:**
+
+```rust
+let todo_sub = session.declare_subscriber("events/Todo/**").await?;
+let user_sub = session.declare_subscriber("events/User/**").await?;
+
+loop {
+    tokio::select! {
+        sample = todo_sub.recv_async() => {
+            let sample = sample?;
+            handle_todo_event(&sample);
+        }
+        sample = user_sub.recv_async() => {
+            let sample = sample?;
+            handle_user_event(&sample);
+        }
+    }
+}
+```
+
+**SSE handler with specific subscription:**
+
+```rust
+async fn sse_todo_feed(
+    State(app_state): State<AppState>,
+    Path(todo_id): Path<String>,
+) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
+    // Subscribe only to events for this specific Todo
+    let key_expr = format!("events/Todo/{}", todo_id);
+    let subscriber = app_state.zenoh.declare_subscriber(&key_expr).await.unwrap();
+
+    let stream = async_stream::stream! {
+        while let Ok(sample) = subscriber.recv_async().await {
+            yield Ok(sample_to_sse_event(&sample));
+        }
+    };
+
+    Sse::new(stream)
+}
+```
+
+### What changes from original CLAUDE.md
+
+| Component | Before | After |
+|-----------|--------|-------|
+| Event Bus | `tokio::sync::broadcast` | Zenoh session |
+| Analytics Cache | moka | moka (unchanged) |
+| Event Store | SQLite | SQLite (unchanged) |
+| Distribution (future) | Zenoh | Zenoh (already integrated) |
+
+The "future distribution" path becomes the current architecture.
 
 ## Appendix: NATS KV vs Zenoh feature comparison
 
@@ -300,4 +367,5 @@ For reference, comparing the two distributed alternatives:
 NATS KV has better cache-like semantics (TTL per bucket, history policies).
 Zenoh has better Rust ecosystem integration (pure Rust, no external server).
 
-Neither is ideal for the current single-node Ironstar target, where the embedded `broadcast + moka` stack is optimal.
+For Ironstar, Zenoh is the right choice: no external server dependency, native Rust implementation, and key expression filtering that matches the CQRS + Datastar requirements.
+moka handles the caching use case that neither Zenoh nor NATS KV address optimally.
