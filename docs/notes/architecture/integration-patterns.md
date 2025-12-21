@@ -677,7 +677,7 @@ async fn get_todo_list(State(store): State<TodoStore>) -> impl IntoResponse {
 }
 ```
 
-For complete SSE streaming patterns including event replay and projection updates, see `docs/notes/architecture/event-sourcing-sse-pipeline.md`.
+For complete SSE streaming patterns including event replay and projection updates, see `docs/notes/architecture/sse-connection-lifecycle.md` and `docs/notes/architecture/event-replay-consistency.md`.
 
 ---
 

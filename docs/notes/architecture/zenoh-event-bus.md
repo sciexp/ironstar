@@ -401,4 +401,4 @@ For template users experiencing issues during migration:
 
 - Session-scoped event routing patterns: `session-management.md`
 - Analytics cache invalidation via Zenoh: `analytics-cache-architecture.md`
-- Event sourcing integration: `event-sourcing-sse-pipeline.md`
+- Event sourcing integration: `event-sourcing-core.md`
