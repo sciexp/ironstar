@@ -1,4 +1,15 @@
-# Authentication architecture decisions
+# Authentication architecture decisions (archived)
+
+> **Archive notice**: This document describes a password-based authentication approach that has been superseded.
+> Ironstar now uses OAuth-only authentication.
+> See `../oauth-authentication.md` for the current authentication architecture.
+> This document is retained for reference only.
+
+---
+
+*Original content below*
+
+---
 
 This document records authentication and authorization technology selection decisions for the ironstar stack.
 For session management fundamentals and security patterns, see the related documentation section below.
