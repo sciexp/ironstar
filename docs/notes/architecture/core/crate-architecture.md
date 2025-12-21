@@ -79,6 +79,74 @@ These crates have no ironstar dependencies and can be used by any other crate.
 | `common-types` | Primitive wrappers | MinorUnit, Timestamp, Sequence, newtypes |
 | `common-utils` | Cross-cutting utilities | Crypto, validation, serialization helpers, extension traits |
 
+**Smart constructor examples:**
+
+Newtypes in `common-types` use smart constructors to enforce invariants at construction time.
+The inner value is private, and only validated instances can be created.
+
+```rust
+use uuid::Uuid;
+
+/// A validated todo item ID (infallible construction).
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TodoId(Uuid);
+
+impl TodoId {
+    pub fn new() -> Self {
+        Self(Uuid::new_v4())
+    }
+
+    pub fn from_uuid(id: Uuid) -> Self {
+        Self(id)
+    }
+
+    pub fn as_uuid(&self) -> &Uuid {
+        &self.0
+    }
+}
+
+impl Default for TodoId {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+```
+
+For types requiring validation, the constructor returns `Result`:
+
+```rust
+use crate::error::ValidationError;
+
+/// A validated, non-empty todo text (1-500 characters).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TodoText(String);
+
+impl TodoText {
+    pub fn new(s: impl Into<String>) -> Result<Self, ValidationError> {
+        let s = s.into();
+        if s.is_empty() {
+            return Err(ValidationError::EmptyField {
+                field: "text".to_string(),
+            });
+        }
+        if s.len() > 500 {
+            return Err(ValidationError::TooLong {
+                field: "text".to_string(),
+                max_length: 500,
+                actual_length: s.len(),
+            });
+        }
+        Ok(Self(s))
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+```
+
+This pattern ensures invalid states are unrepresentable: code receiving a `TodoText` value knows it satisfies the length constraints without runtime checks.
+
 **Naming convention**: Crate names use kebab-case (`ironstar-domain`) following crates.io convention. Rust normalizes these to snake_case for `use` statements (`use ironstar_domain::...`). This is consistent with ecosystem crates like `tower-http` and `tracing-subscriber`.
 
 ### Layer 1: Domain (depends on Layer 0)
