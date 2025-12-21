@@ -176,7 +176,7 @@ async fn handler(
     Json(cmd): Json<Command>,         // Parser effect: deserialize body
 ) -> Result<impl IntoResponse, AppError> {  // Error effect explicit
     // Pure business logic here
-    // Note: AppError is application-defined, see event-sourcing-sse-pipeline.md appendix
+    // Note: AppError is application-defined, see event-sourcing-core.md appendix
 }
 ```
 
@@ -251,7 +251,7 @@ pub async fn append(&self, events: Vec<NewEvent>) -> Result<Vec<StoredEvent>> {
     }
 
     Ok(stored)
-    // Note: Result type is application-specific, see event-sourcing-sse-pipeline.md appendix
+    // Note: Result type is application-specific, see event-sourcing-core.md appendix
 }
 ```
 
@@ -358,6 +358,7 @@ This pattern separates concerns: visualization components (ECharts, Vega-Lite) h
 - Infrastructure decisions: `infrastructure-decisions.md`
 - CQRS implementation: `cqrs-implementation-decisions.md`
 - Build tooling decisions: `build-tooling-decisions.md`
-- Event sourcing patterns: `event-sourcing-sse-pipeline.md`
+- Event sourcing core concepts: `event-sourcing-core.md`
+- Command write patterns: `command-write-patterns.md`
 - Analytics cache design: `analytics-cache-architecture.md`
 - Module organization: `architecture-decisions.md` (see Module organization section)
