@@ -140,7 +140,7 @@ The Northstar Go template and datastar-go SDK remain valuable reference implemen
 |-------------------|---------------------|-----------|
 | Tailwind + DaisyUI | Open Props + Open Props UI | Design tokens over utility classes; better alignment with server-rendered HTML |
 | esbuild (Go) | Rolldown (Rust) | Rust-native toolchain consistency |
-| Embedded NATS | tokio::sync::broadcast | Single-node deployment target; no external server dependency |
+| Embedded NATS | Zenoh (embedded) | Rust-native pub/sub with key expression filtering; no external server dependency |
 | hashfs runtime hashing | Rolldown content hashing | Hash computed at build time via bundler, not at runtime |
 | Templ (Go templates) | hypertext (Rust macros) | Compile-time type-checked HTML with lazy evaluation |
 | Air hot reload | cargo-watch + process-compose | Rust ecosystem tooling |
@@ -180,8 +180,7 @@ Ironstar embodies the principles from the Tao of Datastar (`~/projects/lakescope
 | Sessions | SQLite + sqlx | Sessions table |
 | Analytics | DuckDB | OLAP projections |
 | Analytics Cache | moka | In-memory async cache with TTL |
-| Event Bus | tokio::sync::broadcast | In-process pub/sub |
-| Distribution (future) | Zenoh | Distributed pub/sub + storage |
+| Event Bus | Zenoh (embedded) | Key expression filtering, distribution-ready |
 | Orchestration | process-compose | Declarative process management |
 | Environment | Nix flake | Reproducible builds |
 
@@ -214,6 +213,9 @@ moka = { version = "0.12", features = ["future"] }
 
 # rkyv for zero-copy deserialization
 rkyv = { version = "0.8", features = ["validation"] }
+
+# zenoh for pub/sub with key expression filtering
+zenoh = { version = "1.0" }
 ```
 
 **Feature notes:**
@@ -221,6 +223,7 @@ rkyv = { version = "0.8", features = ["validation"] }
 - `datastar` feature `axum` is required for the ReadSignals extractor and Event conversion
 - `sqlx` features must match your async runtime (tokio) and database (sqlite)
 - `duckdb` feature `bundled` is strongly recommended to avoid system DuckDB version mismatches
+- `zenoh` runs embedded by default; configure with empty endpoints to disable networking
 
 ## Local dependency paths
 
@@ -553,17 +556,22 @@ CREATE TABLE events (
 ## Architectural context: embedded vs. external services
 
 This stack prioritizes embedded Rust-native solutions over external server dependencies.
-NATS is an excellent choice for teams willing to run an external server — it provides streaming, key-value storage, and pub/sub in a unified abstraction.
+Zenoh is the Rust-native equivalent of NATS: it provides pub/sub with key expression filtering, but runs embedded without requiring an external server.
 
-For Ironstar, the embedded approach (SQLite + tokio broadcast + moka) was chosen because the template targets single-node deployments where a separate server is unnecessary.
-The [Jepsen analysis of NATS 2.12.1](https://jepsen.io/analyses/nats-2.12.1) also reinforced confidence in SQLite's durability model, though NATS can be configured appropriately for many use cases.
+The embedded approach (SQLite + Zenoh + moka) targets single-node deployments while remaining distribution-ready:
+
+- **SQLite**: Event store and sessions (durability)
+- **Zenoh**: Event notification with key expression filtering (pub/sub)
+- **moka**: Analytics cache with TTL and eviction (caching)
+
+Zenoh provides the "listen to hundreds of keys with server-side filtering" capability essential for CQRS + Datastar applications.
+SSE handlers subscribe to specific key expressions (e.g., `events/Todo/123`) rather than receiving all events and filtering locally.
+See `docs/notes/architecture/zenoh-early-adoption-research.md` for the detailed evaluation.
 
 Sessions are stored in SQLite alongside the event store (in a separate table), simplifying the stack by using a single embedded database for all persistent state.
 Analytics query results are cached in moka, an async-native in-memory cache with TTL-based eviction.
-Cache entries are invalidated via subscription to the tokio broadcast channel when relevant events arrive.
+Cache entries are invalidated via Zenoh subscription to relevant key expression patterns.
 See `docs/notes/architecture/analytics-cache-architecture.md` for detailed cache design.
-
-When distribution is needed, Zenoh provides Rust-native pub/sub with storage backends.
 
 **CQRS/ES framework decision:**
 
