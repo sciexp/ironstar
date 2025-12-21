@@ -699,7 +699,8 @@ For frequently-accessed analytics, proactively refresh on events rather than inv
 
 ## Related documentation
 
-- Event sourcing patterns: `event-sourcing-sse-pipeline.md`
-- Zenoh-based cache invalidation patterns: `zenoh-early-adoption-research.md`
+- Event sourcing core concepts: `event-sourcing-core.md`
+- Projection patterns: `projection-patterns.md`
+- Zenoh event bus integration: `zenoh-event-bus.md`
 - Architecture decisions: `architecture-decisions.md` (section 6: DuckDB)
 - Session storage with redb: `architecture-decisions.md` (section 5: redb)
