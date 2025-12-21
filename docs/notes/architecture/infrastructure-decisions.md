@@ -426,51 +426,17 @@ pub struct AppState {
 
 ---
 
-## Zenoh — future distribution via unified abstraction
+## Distributed event bus migration
 
-**Algebraic justification:**
+For Zenoh migration and distributed deployment beyond single-node tokio::broadcast limits, see `distributed-event-bus-migration.md`.
 
-Zenoh's key-expression model is a *free monoid* over path segments:
-
-```rust
-// Key expressions form a monoid under path concatenation
-// Pattern matching is a semilattice (wildcards, unions)
-let key = format!("events/{}/{}/{}", aggregate_type, aggregate_id, sequence);
-
-// Put is an effectful operation (IO monad)
-session.put(&key, payload).await?;
-
-// Subscribe returns a stream (comonadic, produces values)
-let subscriber = session.subscribe("events/**").await?;
-```
-
-**Why Zenoh over Apache Iggy:**
-
-- Zenoh has both streaming and storage in one abstraction
-- Storage backends (RocksDB, S3) provide durability
-- Subscriptions provide the "watch" semantics
-- More production-ready (Eclipse Foundation, April 2025 Gozuryū release)
-
-**Migration path:**
-
-```rust
-use async_trait::async_trait;
-use futures::stream::Stream;
-
-// Trait abstraction allows swapping implementations
-#[async_trait]
-pub trait EventStore: Send + Sync {
-    async fn append(&self, events: Vec<Event>) -> Result<Vec<StoredEvent>>;
-    async fn load(&self, aggregate_id: &str) -> Result<Vec<StoredEvent>>;
-    fn subscribe(&self) -> impl Stream<Item = StoredEvent>;
-}
-
-// Phase 1: SQLite implementation
-pub struct SqliteEventStore { pool: SqlitePool, bus: EventBus }
-
-// Phase 2: Zenoh implementation (same trait)
-pub struct ZenohEventStore { session: zenoh::Session }
-```
+That document covers:
+- When to migrate (scaling triggers)
+- DualEventBus coexistence pattern
+- Zenoh key expression patterns
+- Migration phases (broadcast → dual → Zenoh)
+- Rollback procedure
+- Performance characteristics
 
 ---
 
