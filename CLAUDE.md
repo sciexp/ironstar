@@ -518,11 +518,12 @@ Read these when working on CSS, bundling, or web components:
 - **Frontend build pipeline**: `docs/notes/architecture/frontend-build-pipeline.md` — Rolldown config, PostCSS, Lit bundling options
 - **CSS architecture**: `docs/notes/architecture/css-architecture.md` — Open Props tokens, theme customization, component styles
 
-### Zenoh event bus
+### Event bus and distribution
 
-Read this when working with pub/sub, event distribution, or cache invalidation:
+Read these when working with pub/sub, event distribution, or scaling beyond single-node:
 
-- **Zenoh event bus**: `docs/notes/architecture/zenoh-event-bus.md` — Key expression patterns, embedded config, migration from tokio broadcast
+- **Zenoh event bus**: `docs/notes/architecture/zenoh-event-bus.md` — Key expression patterns, embedded config, Zenoh architecture
+- **Distributed event bus migration**: `docs/notes/architecture/distributed-event-bus-migration.md` — Migration from tokio::broadcast to Zenoh, DualEventBus pattern, scaling triggers, rollback procedure
 
 ### External references
 
