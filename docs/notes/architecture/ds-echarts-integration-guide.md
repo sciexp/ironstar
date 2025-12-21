@@ -247,95 +247,28 @@ function manifestPlugin() {
 
 ### postcss.config.js
 
-```javascript
-export default {
-  plugins: {
-    'postcss-import': {},
-    'postcss-preset-env': {
-      stage: 0,
-      features: {
-        'oklab-function': true,
-        'light-dark-function': true,
-        'custom-media-queries': true,
-        'nesting-rules': true,
-      },
-    },
-    autoprefixer: {},
-    ...(process.env.NODE_ENV === 'production' ? { cssnano: { preset: 'default' } } : {}),
-  },
-};
-```
+See `css-architecture.md` "PostCSS configuration" section for the complete configuration.
+The key requirement for ds-echarts is `postcss-preset-env` with stage 0 for modern CSS features.
 
 ## CSS Entry Point
 
-### styles/main.css
+See `css-architecture.md` "CSS entry point structure" and "Theme layer" sections for the complete CSS organization.
+
+For ds-echarts specifically, add these chart-specific tokens to your theme:
 
 ```css
-/* Layer 1: Open Props design tokens */
-@import 'open-props/postcss/style';
-
-/* Layer 2: Open Props UI normalize */
-@import './normalize.css';
-
-/* Layer 3: Theme overrides */
-@import './theme.css';
-
-/* Layer 4: Copied Open Props UI components (owned) */
-@import './components/button.css';
-@import './components/card.css';
-/* Add more as needed */
-```
-
-### styles/theme.css
-
-```css
-@layer theme {
-  :where(html) {
-    color-scheme: light dark;
-
-    /* Primary color using Open Props hues */
-    --palette-hue: var(--oklch-blue);
-    --palette-chroma: 0.2;
-
-    /* Semantic tokens */
-    --primary: var(--blue-7);
-    --primary-contrast: var(--gray-0);
-    --surface-default: light-dark(var(--gray-1), var(--gray-13));
-    --surface-elevated: light-dark(var(--gray-0), var(--gray-12));
-    --text-color-1: light-dark(var(--gray-15), var(--gray-1));
-    --border-color: light-dark(var(--gray-4), var(--gray-11));
-
-    /* Chart-specific tokens */
-    --chart-height: 400px;
-    --chart-min-height: 200px;
-  }
+/* In web-components/styles/theme.css */
+:root {
+  /* Chart-specific tokens */
+  --chart-height: 400px;
+  --chart-min-height: 200px;
 }
 ```
 
-## Tailwind to Open Props Mapping
-
-The ds-echarts component uses minimal styling (mainly via inline styles for dimensions).
-For any Tailwind classes in surrounding templates:
-
-| Tailwind Class | Open Props Equivalent |
-|----------------|----------------------|
-| `w-full` | `width: 100%` |
-| `h-full` | `height: 100%` |
-| `block` | `display: block` |
-| `p-3` | `padding: var(--size-3)` |
-| `mt-2` | `margin-block-start: var(--size-2)` |
-| `gap-4` | `gap: var(--size-4)` |
-| `rounded-lg` | `border-radius: var(--radius-2)` |
-| `bg-base-200` | `background: var(--surface-tonal)` |
-| `text-sm` | `font-size: var(--font-size-sm)` |
-| `font-mono` | `font-family: var(--font-mono)` |
-| `text-green-500` | `color: var(--green-7)` |
-
-For chart containers specifically:
+And define component styles for ds-echarts containers:
 
 ```css
-/* Tailwind: style="height: 400px; width: 100%;" */
-/* Open Props: same, or use custom property */
+/* Chart container styling using Open Props tokens */
 ds-echarts {
   display: block;
   height: var(--chart-height, 400px);

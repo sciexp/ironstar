@@ -73,35 +73,7 @@ export default defineConfig({
 
 ### CSS entry point
 
-```css
-/* web-components/styles/main.css */
-
-/* Import Open Props design tokens */
-@import "open-props/style";
-
-/* Or selective imports for smaller bundle size */
-/* @import "open-props/colors"; */
-/* @import "open-props/sizes"; */
-/* @import "open-props/animations"; */
-/* @import "open-props/easings"; */
-/* @import "open-props/shadows"; */
-/* @import "open-props/borders"; */
-
-/* Theme layer - application-specific tokens */
-@import "./theme.css";
-
-/* Component styles (copied from Open Props UI, owned by project) */
-@import "./components/button.css";
-@import "./components/card.css";
-@import "./components/dialog.css";
-@import "./components/input.css";
-/* Add other components as needed */
-
-/* View transitions (optional) */
-@view-transition {
-  navigation: auto;
-}
-```
+See `css-architecture.md` "CSS entry point structure" section for the complete `main.css` organization with Open Props imports and cascade layers.
 
 ### TypeScript entry
 
@@ -123,34 +95,7 @@ export type * from './types/TodoSignals';
 
 ## PostCSS configuration
 
-PostCSS configuration is simpler than Tailwind since there is no JIT compilation or class scanning needed.
-However, Open Props and Open Props UI use modern CSS features that require `postcss-preset-env` for proper processing.
-
-```javascript
-// web-components/postcss.config.js
-export default {
-  plugins: {
-    'postcss-import': {},           // Handle @import statements
-    'postcss-preset-env': {         // Modern CSS features (required for Open Props)
-      stage: 0,                     // Stage 0 required for Open Props (combineSelectors plugin)
-      features: {
-        'oklab-function': true,     // OKLab/OKLch color spaces
-        'light-dark-function': true, // light-dark() for theme switching
-        'custom-media-queries': true // Open Props media queries
-      }
-    },
-    'autoprefixer': {},             // Vendor prefixes (optional - Open Props doesn't require it)
-    'cssnano': {                    // Minification (production only)
-      preset: 'default'
-    }
-  }
-};
-```
-
-The `postcss-preset-env` plugin is critical for Open Props integration because it:
-- Processes `oklch()` and `oklab()` color functions used throughout Open Props
-- Handles `light-dark()` function for automatic dark mode support in Open Props UI
-- Supports custom media queries defined by Open Props for responsive design
+See `css-architecture.md` "PostCSS configuration" section for the complete `postcss.config.js` with Open Props processing, including required plugins for modern CSS features (OKLch colors, light-dark() function, custom media queries).
 
 ---
 
