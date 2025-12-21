@@ -486,7 +486,9 @@ Consult these when questioning "why this technology?" for specific subsystems:
 - **Build tooling**: `docs/notes/architecture/decisions/build-tooling-decisions.md` — Rolldown configuration, asset embedding, dev/prod modes
 - **Authentication**: `docs/notes/architecture/decisions/oauth-authentication.md` — OAuth-only auth (GitHub first, Google planned), provider strategy, RBAC patterns
 - **Error handling**: `docs/notes/architecture/decisions/error-handling-decisions.md` — Error types, Result propagation, user-facing messages
+- **Error types**: `docs/notes/architecture/decisions/error-types.md` — Error type hierarchy definitions, domain vs infrastructure errors
 - **Observability**: `docs/notes/architecture/decisions/observability-decisions.md` — Structured logging, Prometheus metrics, health checks
+- **Metrics reference**: `docs/notes/architecture/decisions/metrics-reference.md` — Prometheus metrics reference, naming conventions, cardinality
 
 ### Implementing features
 
