@@ -1843,33 +1843,392 @@ Track:
 
 ## Future enhancements
 
-### Distributed event sourcing with Zenoh
+### 6. Zenoh integration
 
-When moving to distributed deployment, replace `tokio::sync::broadcast` with Zenoh pub/sub:
+**Decision: Use Zenoh for event notification with key expression filtering, replacing `tokio::sync::broadcast`.**
+
+#### Key expression design
+
+Zenoh uses hierarchical key expressions with server-side filtering.
+This enables SSE handlers to subscribe to specific aggregates without receiving all events.
+
+| Pattern | Matches | Use Case |
+|---------|---------|----------|
+| `events/Todo/**` | All Todo events | Todo list projection |
+| `events/Todo/123` | Events for Todo 123 | Single Todo SSE feed |
+| `events/**` | All domain events | Global event log |
+| `events/*/123` | Events for aggregate ID 123 across all types | Cross-aggregate debugging |
+
+**Key expression syntax:**
+
+- `*`: Matches exactly one segment (e.g., `events/*/123`)
+- `**`: Matches zero or more segments (e.g., `events/Todo/**`)
+- `$*`: Matches within a segment (e.g., `todo-$*-active`)
+
+#### Embedded configuration
+
+Zenoh runs in-process without network activity by configuring empty endpoints.
+This achieves single-node operation while remaining distribution-ready.
 
 ```rust
-use zenoh::prelude::*;
+use zenoh::Config;
 
-// Future Zenoh integration
-let session = zenoh::open(config).await?;
-let publisher = session.declare_publisher("events/**").await?;
-
-// Publish event
-publisher.put(serde_json::to_vec(&event)?).await?;
-
-// Subscribe
-let subscriber = session.declare_subscriber("events/**").await?;
-while let Ok(sample) = subscriber.recv_async().await {
-    let event: StoredEvent = serde_json::from_slice(&sample.payload)?;
-    // Update projection
+fn zenoh_embedded_config() -> Config {
+    let mut config = Config::default();
+    config.insert_json5("listen/endpoints", "[]").unwrap();
+    config.insert_json5("connect/endpoints", "[]").unwrap();
+    config.insert_json5("scouting/multicast/enabled", "false").unwrap();
+    config.insert_json5("scouting/gossip/enabled", "false").unwrap();
+    config
 }
 ```
 
-Zenoh provides:
-- Distributed pub/sub across processes and machines
-- Storage backends (persist events in Zenoh storage, not just SQLite)
-- Query/reply pattern (fetch historical events from any node)
-- Zero-copy shared memory when local
+Four lines disable networking completely.
+The session operates purely in-process with no external server dependency.
+
+#### AppState with Zenoh session
+
+```rust
+use std::sync::Arc;
+use zenoh::Session;
+
+#[derive(Clone)]
+pub struct AppState {
+    event_store: Arc<EventStore>,
+    zenoh: Arc<Session>,  // Replaces broadcast::Sender
+    projections: Arc<Projections>,
+}
+
+impl AppState {
+    pub async fn new(event_store: EventStore) -> Result<Self, Error> {
+        let zenoh = Arc::new(zenoh::open(zenoh_embedded_config()).await?);
+
+        Ok(Self {
+            event_store: Arc::new(event_store),
+            zenoh,
+            projections: Arc::new(Projections::default()),
+        })
+    }
+}
+```
+
+#### Publishing events after SQLite append
+
+After appending events to SQLite, publish to Zenoh with hierarchical keys.
+
+```rust
+use zenoh::Session;
+
+async fn publish_event(
+    zenoh: &Session,
+    event: &StoredEvent,
+) -> Result<(), Error> {
+    // Key format: events/{aggregate_type}/{aggregate_id}
+    let key = format!("events/{}/{}", event.aggregate_type, event.aggregate_id);
+
+    // Serialize event (use rkyv for zero-copy or serde_json for readability)
+    let payload = serde_json::to_vec(event)?;
+
+    // Put (fire-and-forget for in-process, reliable for distributed)
+    zenoh.put(&key, payload).await?;
+
+    Ok(())
+}
+
+/// Command handler with Zenoh publishing
+async fn handle_add_todo(
+    State(app_state): State<AppState>,
+    ReadSignals(signals): ReadSignals<AddTodoCommand>,
+) -> impl IntoResponse {
+    let events = validate_and_emit_events(signals)?;
+
+    for event in events {
+        // 1. Append to SQLite
+        let stored = app_state.event_store.append(event.clone()).await?;
+
+        // 2. Publish to Zenoh
+        publish_event(&app_state.zenoh, &stored).await?;
+    }
+
+    StatusCode::ACCEPTED.into_response()
+}
+```
+
+#### SSE handler with Zenoh subscription
+
+Replace broadcast receiver with Zenoh subscriber filtered by key expression.
+
+```rust
+use axum::response::sse::{Event, Sse};
+use futures::stream::{self, Stream, StreamExt};
+use std::convert::Infallible;
+use zenoh::Session;
+
+async fn sse_feed(
+    State(app_state): State<AppState>,
+    headers: HeaderMap,
+) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
+    // Extract Last-Event-ID
+    let last_event_id = headers
+        .get("Last-Event-ID")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|s| s.parse::<i64>().ok());
+
+    // Subscribe to all events (server-side filtering)
+    let subscriber = app_state.zenoh
+        .declare_subscriber("events/**")
+        .await
+        .unwrap();
+
+    // Replay missed events from SQLite
+    let replayed_events = if let Some(since_seq) = last_event_id {
+        app_state.event_store.query_since_sequence(since_seq + 1).await.unwrap_or_default()
+    } else {
+        vec![app_state.projection.current_state_as_event().await]
+    };
+
+    let replay_stream = stream::iter(replayed_events.into_iter().map(|evt| {
+        Ok::<_, Infallible>(
+            PatchElements::new(render_html(&evt))
+                .id(evt.sequence.to_string())
+                .into()
+        )
+    }));
+
+    // Live stream from Zenoh subscription
+    let live_stream = stream::unfold(subscriber, |sub| async move {
+        match sub.recv_async().await {
+            Ok(sample) => {
+                let event = sample_to_sse_event(&sample);
+                Some((Ok(event), sub))
+            }
+            Err(_) => None,
+        }
+    });
+
+    let combined = replay_stream.chain(live_stream);
+
+    Sse::new(combined).keep_alive(
+        axum::response::sse::KeepAlive::new()
+            .interval(Duration::from_secs(15))
+            .text("keep-alive-text"),
+    )
+}
+```
+
+#### Converting Zenoh samples to SSE events
+
+```rust
+use axum::response::sse::Event;
+use datastar::prelude::*;
+use zenoh::sample::Sample;
+
+fn sample_to_sse_event(sample: &Sample) -> Event {
+    // Deserialize StoredEvent from Zenoh payload
+    let event: StoredEvent = serde_json::from_slice(sample.payload().to_bytes()).unwrap();
+
+    // Render HTML for this event
+    let html = render_html(&event);
+
+    // Convert to SSE event using datastar-rust builder
+    PatchElements::new(html)
+        .id(event.sequence.to_string())
+        .into()
+}
+
+/// Render HTML fragment for an event (example)
+fn render_html(event: &StoredEvent) -> String {
+    match event.event_type.as_str() {
+        "TodoCreated" => {
+            let payload: TodoCreatedPayload = serde_json::from_value(event.payload.clone()).unwrap();
+            hypertext::html! {
+                <li id={"todo-" (&payload.id)} data-morph-mode="inner">
+                    {&payload.text}
+                </li>
+            }
+        }
+        "TodoCompleted" => {
+            hypertext::html! {
+                <script data-effect="el.remove()">
+                    {format!("document.getElementById('todo-{}').classList.add('completed');", event.aggregate_id)}
+                </script>
+            }
+        }
+        _ => String::new(),
+    }
+}
+```
+
+#### Subscription cleanup via RAII
+
+Zenoh subscribers automatically unsubscribe when dropped.
+This ensures resources are cleaned up when SSE connections close.
+
+```rust
+// Subscriber is owned by the stream closure
+// When SSE connection closes, the stream is dropped, and the subscriber is cleaned up
+async fn sse_feed(...) -> Sse<impl Stream<...>> {
+    let subscriber = app_state.zenoh.declare_subscriber("events/**").await.unwrap();
+
+    // Stream owns subscriber, cleanup happens automatically on drop
+    let live_stream = stream::unfold(subscriber, |sub| async move {
+        match sub.recv_async().await {
+            Ok(sample) => Some((Ok(sample_to_sse_event(&sample)), sub)),
+            Err(_) => None,  // Subscriber closed, stream ends
+        }
+    });
+
+    // When SSE connection closes, live_stream is dropped, subscriber is cleaned up
+    Sse::new(live_stream)
+}
+```
+
+#### Multi-pattern subscriptions with tokio::select!
+
+SSE handlers that need to watch multiple aggregate types use separate subscribers combined with `tokio::select!`.
+
+```rust
+use futures::stream::{Stream, StreamExt};
+use tokio::select;
+
+/// SSE feed watching both Todo and User events
+async fn sse_combined_feed(
+    State(app_state): State<AppState>,
+) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
+    let todo_sub = app_state.zenoh.declare_subscriber("events/Todo/**").await.unwrap();
+    let user_sub = app_state.zenoh.declare_subscriber("events/User/**").await.unwrap();
+
+    let live_stream = stream::unfold((todo_sub, user_sub), |(todo_sub, user_sub)| async move {
+        select! {
+            sample = todo_sub.recv_async() => {
+                match sample {
+                    Ok(s) => Some((Ok(sample_to_sse_event(&s)), (todo_sub, user_sub))),
+                    Err(_) => None,
+                }
+            }
+            sample = user_sub.recv_async() => {
+                match sample {
+                    Ok(s) => Some((Ok(sample_to_sse_event(&s)), (todo_sub, user_sub))),
+                    Err(_) => None,
+                }
+            }
+        }
+    });
+
+    Sse::new(live_stream)
+}
+```
+
+This pattern scales to N aggregate types without N×M local filtering overhead.
+
+#### Event bus abstraction trait
+
+For maximum flexibility, define a trait abstracting broadcast vs Zenoh.
+This enables swapping implementations without changing handler code.
+
+```rust
+use async_trait::async_trait;
+
+#[async_trait]
+pub trait EventBus: Send + Sync {
+    /// Publish event to all subscribers
+    async fn publish(&self, event: &StoredEvent) -> Result<(), Error>;
+
+    /// Subscribe to events matching key expression pattern
+    async fn subscribe(&self, pattern: &str) -> Box<dyn EventStream>;
+}
+
+/// Stream of events from subscription
+#[async_trait]
+pub trait EventStream: Send {
+    async fn recv(&mut self) -> Option<StoredEvent>;
+}
+
+/// Zenoh implementation
+pub struct ZenohEventBus {
+    session: Arc<Session>,
+}
+
+#[async_trait]
+impl EventBus for ZenohEventBus {
+    async fn publish(&self, event: &StoredEvent) -> Result<(), Error> {
+        let key = format!("events/{}/{}", event.aggregate_type, event.aggregate_id);
+        self.session.put(&key, serde_json::to_vec(event)?).await?;
+        Ok(())
+    }
+
+    async fn subscribe(&self, pattern: &str) -> Box<dyn EventStream> {
+        let sub = self.session.declare_subscriber(pattern).await.unwrap();
+        Box::new(ZenohEventStream { subscriber: sub })
+    }
+}
+
+struct ZenohEventStream {
+    subscriber: zenoh::pubsub::Subscriber<'static, ()>,
+}
+
+#[async_trait]
+impl EventStream for ZenohEventStream {
+    async fn recv(&mut self) -> Option<StoredEvent> {
+        match self.subscriber.recv_async().await {
+            Ok(sample) => {
+                serde_json::from_slice(sample.payload().to_bytes()).ok()
+            }
+            Err(_) => None,
+        }
+    }
+}
+
+/// Broadcast implementation (for comparison/migration)
+pub struct BroadcastEventBus {
+    sender: broadcast::Sender<StoredEvent>,
+}
+
+#[async_trait]
+impl EventBus for BroadcastEventBus {
+    async fn publish(&self, event: &StoredEvent) -> Result<(), Error> {
+        self.sender.send(event.clone()).map_err(|_| Error::PublishFailed)?;
+        Ok(())
+    }
+
+    async fn subscribe(&self, _pattern: &str) -> Box<dyn EventStream> {
+        // Note: broadcast doesn't support patterns, receives all events
+        let rx = self.sender.subscribe();
+        Box::new(BroadcastEventStream { receiver: rx })
+    }
+}
+
+struct BroadcastEventStream {
+    receiver: broadcast::Receiver<StoredEvent>,
+}
+
+#[async_trait]
+impl EventStream for BroadcastEventStream {
+    async fn recv(&mut self) -> Option<StoredEvent> {
+        self.receiver.recv().await.ok()
+    }
+}
+```
+
+AppState becomes implementation-agnostic:
+
+```rust
+#[derive(Clone)]
+pub struct AppState {
+    event_store: Arc<EventStore>,
+    event_bus: Arc<dyn EventBus>,  // Abstracted
+    projections: Arc<Projections>,
+}
+
+// Command handler uses trait
+async fn handle_command(app_state: &AppState, event: StoredEvent) -> Result<(), Error> {
+    app_state.event_store.append(&event).await?;
+    app_state.event_bus.publish(&event).await?;  // Polymorphic
+    Ok(())
+}
+```
+
+This abstraction supports testing with mock event buses and gradual migration from broadcast to Zenoh.
 
 ### Event schema evolution with upcasters
 
