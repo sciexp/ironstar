@@ -656,7 +656,8 @@ When distributed deployment is needed, Zenoh provides Rust-native pub/sub with s
 - Backend core decisions: `backend-core-decisions.md`
 - CQRS implementation: `cqrs-implementation-decisions.md`
 - Build tooling decisions: `build-tooling-decisions.md`
-- Event sourcing patterns: `event-sourcing-sse-pipeline.md`
+- Event sourcing core concepts: `event-sourcing-core.md`
+- SSE connection lifecycle: `sse-connection-lifecycle.md`
 - Analytics cache design: `analytics-cache-architecture.md`
 - Session management: `session-management.md`
 - Development workflow: `development-workflow.md`
