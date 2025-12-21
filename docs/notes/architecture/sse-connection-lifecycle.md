@@ -92,7 +92,7 @@ async fn sse_feed(
 
 ## Phase 2: Subscription establishment
 
-Critical ordering: subscribe to broadcast channel BEFORE replaying events to prevent dropped events during the gap.
+**Critical invariant**: Subscribe to the broadcast channel BEFORE replaying historical events to prevent race conditions where events arrive during replay.
 
 ```rust
 use tokio::sync::broadcast;
@@ -100,10 +100,10 @@ use tokio_stream::wrappers::BroadcastStream;
 
 // Inside sse_feed handler...
 
-// CRITICAL: Subscribe BEFORE replay to prevent event loss
+// 1. Subscribe FIRST - events published during replay are buffered
 let rx: broadcast::Receiver<StoredEvent> = app_state.event_bus.subscribe();
 
-// Replay events missed since last connection
+// 2. Query historical events - any events published now are in rx buffer
 let replayed_events = if let Some(since_seq) = last_event_id {
     app_state
         .event_store
@@ -115,7 +115,7 @@ let replayed_events = if let Some(since_seq) = last_event_id {
     vec![app_state.projection.current_state_as_event().await]
 };
 
-// Convert to SSE stream
+// 3. Stream replayed events then live events
 let replay_stream = stream::iter(replayed_events.into_iter().map(|evt| {
     Ok::<_, Infallible>(
         PatchElements::new(render_html(&evt))
@@ -125,24 +125,8 @@ let replay_stream = stream::iter(replayed_events.into_iter().map(|evt| {
 }));
 ```
 
-**Why subscribe before replay?**
-
-If you replay first, then subscribe, events emitted during replay are lost:
-
-```
-Timeline (WRONG - events lost):
-t0: Start replay query (query fetches events 1-100)
-t1: Event 101 published → LOST (not subscribed yet)
-t2: Replay completes, subscribe to broadcast
-t3: Event 102 published → received
-
-Timeline (CORRECT - no event loss):
-t0: Subscribe to broadcast channel
-t1: Start replay query (query fetches events 1-100)
-t2: Event 101 published → received via broadcast
-t3: Replay completes
-t4: Event 102 published → received via broadcast
-```
+This subscribe-before-replay pattern ensures gap-free delivery.
+See `event-replay-consistency.md` "Reconnection resilience" section for the complete correctness proof, timing diagrams, and edge case handling (stale Last-Event-ID, sequence gaps, error recovery).
 
 ## Phase 3: Active streaming
 
@@ -314,208 +298,15 @@ async fn metrics_handler(
 
 ## Reconnection best practices
 
-### The race condition
-
-A naive SSE reconnection pattern queries historical events *then* subscribes to the broadcast channel.
-This creates a race condition: events published between the query completion and subscription are lost.
-
-```rust
-// WRONG: Race condition between query and subscribe
-async fn sse_feed_with_race_condition(
-    State(app_state): State<AppState>,
-    headers: HeaderMap,
-) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
-    let last_event_id = extract_last_event_id(&headers);
-
-    // Query completes at time T1
-    let replayed = app_state.event_store
-        .query_since_sequence(last_event_id.unwrap_or(0))
-        .await
-        .unwrap_or_default();
-
-    // Events published between T1 and T2 are lost
-
-    // Subscribe at time T2
-    let rx = app_state.event_bus.subscribe();
-
-    // Missing events are never delivered
-    // ...
-}
-```
-
-**Correct pattern**: Subscribe *before* querying to ensure all events published during replay are buffered in the broadcast channel receiver.
-
-```rust
-// CORRECT: Subscribe before replay
-async fn sse_feed_resilient(
-    State(app_state): State<AppState>,
-    headers: HeaderMap,
-) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
-    let last_event_id = extract_last_event_id(&headers);
-
-    // 1. Subscribe FIRST - events published during replay are buffered
-    let rx = app_state.event_bus.subscribe();
-
-    // 2. Query historical events - any events published now are in rx buffer
-    let replayed = if let Some(since_seq) = last_event_id {
-        app_state.event_store
-            .query_since_sequence(since_seq + 1)
-            .await
-            .unwrap_or_default()
-    } else {
-        Vec::new()
-    };
-
-    // 3. Stream replayed events then live events
-    // No gap: events published during query are in rx
-    // ...
-}
-```
-
-This pattern ensures gap-free delivery: events emitted while fetching historical data are buffered in the receiver and delivered after the replay stream completes.
-
-### Zenoh subscription with replay
-
-When using Zenoh instead of `tokio::sync::broadcast`, the same subscribe-before-replay pattern applies.
-Zenoh provides query/reply for historical data and pub/sub for live updates.
-
-```rust
-use zenoh::prelude::*;
-
-async fn sse_feed_zenoh(
-    State(app_state): State<AppState>,
-    headers: HeaderMap,
-) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
-    let last_event_id = extract_last_event_id(&headers);
-    let session = app_state.zenoh_session.clone();
-
-    // 1. Subscribe to future events FIRST
-    let subscriber = session
-        .declare_subscriber("events/**")
-        .await
-        .expect("failed to create subscriber");
-
-    // 2. Query historical events via Zenoh storage
-    let replayed = if let Some(since_seq) = last_event_id {
-        let replies = session
-            .get("events/**")
-            .query()
-            .await
-            .expect("query failed");
-
-        replies
-            .into_iter()
-            .filter_map(|reply| {
-                let sample = reply.ok()?.into_result().ok()?;
-                let event: StoredEvent = serde_json::from_slice(&sample.payload.to_bytes()).ok()?;
-                if event.sequence > since_seq {
-                    Some(event)
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<_>>()
-    } else {
-        Vec::new()
-    };
-
-    // 3. Convert to SSE stream (replay then live)
-    let replay_stream = stream::iter(replayed.into_iter().map(|evt| {
-        Ok::<_, Infallible>(event_to_sse(evt))
-    }));
-
-    let live_stream = subscriber
-        .into_stream()
-        .filter_map(|sample| async move {
-            let event: StoredEvent = serde_json::from_slice(&sample.payload.to_bytes()).ok()?;
-            Some(Ok::<_, Infallible>(event_to_sse(event)))
-        });
-
-    Sse::new(replay_stream.chain(live_stream))
-}
-```
-
-Zenoh's query/reply provides a distributed alternative to SQLite for historical event retrieval.
-This enables SSE handlers to run on different nodes than the event store, with Zenoh storage acting as a replicated event log.
+The subscribe-before-replay pattern (covered in Phase 2) prevents the most common race condition.
+For the complete analysis including timing diagrams, correctness proof, Zenoh integration, and edge case handling, see `event-replay-consistency.md` "Reconnection resilience" section.
 
 ## Edge cases and debugging
 
-### Edge case: Last-Event-ID too old
+### Replay edge cases
 
-The client reconnected after the oldest available event was purged.
-Fall back to sending complete current state rather than attempting partial replay.
-
-```rust
-async fn handle_stale_last_event_id(
-    store: &impl EventStore,
-    projection: &impl Projection,
-    last_event_id: i64,
-) -> Vec<StoredEvent> {
-    let earliest = store.earliest_sequence().await.unwrap_or(0);
-
-    if last_event_id < earliest {
-        // Client is too far behind - send full state snapshot
-        eprintln!(
-            "Client Last-Event-ID {} is before earliest sequence {}; sending full state",
-            last_event_id, earliest
-        );
-        vec![projection.current_state_as_event().await]
-    } else {
-        // Normal replay path
-        store.query_since_sequence(last_event_id + 1)
-            .await
-            .unwrap_or_default()
-    }
-}
-```
-
-### Edge case: Sequence gaps
-
-The event store has missing sequences due to deletion, compaction, or distributed synchronization lag.
-Detect gaps and fall back to fat morph rather than risking inconsistent state.
-
-```rust
-fn detect_sequence_gaps(events: &[StoredEvent]) -> bool {
-    events.windows(2).any(|w| w[1].sequence != w[0].sequence + 1)
-}
-
-async fn query_with_gap_detection(
-    store: &impl EventStore,
-    projection: &impl Projection,
-    since_seq: i64,
-) -> Vec<StoredEvent> {
-    let events = store.query_since_sequence(since_seq + 1)
-        .await
-        .unwrap_or_default();
-
-    if detect_sequence_gaps(&events) {
-        eprintln!("Detected sequence gap; falling back to full state");
-        vec![projection.current_state_as_event().await]
-    } else {
-        events
-    }
-}
-```
-
-### Edge case: Error recovery
-
-SQLite query failures should degrade gracefully to full state rather than dropping the SSE connection.
-
-```rust
-async fn query_with_fallback(
-    store: &impl EventStore,
-    projection: &impl Projection,
-    since_seq: i64,
-) -> Vec<StoredEvent> {
-    match store.query_since_sequence(since_seq + 1).await {
-        Ok(events) => events,
-        Err(e) => {
-            eprintln!("Event store query failed: {}; sending full state", e);
-            vec![projection.current_state_as_event().await]
-        }
-    }
-}
-```
+For complete coverage of replay edge cases (stale Last-Event-ID, sequence gaps, error recovery), see `event-replay-consistency.md` "Edge case handling" section.
+These patterns ensure graceful degradation by falling back to full state snapshots when partial replay would risk inconsistency.
 
 ### Debugging connection issues
 
