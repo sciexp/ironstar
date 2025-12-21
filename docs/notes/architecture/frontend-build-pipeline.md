@@ -34,6 +34,69 @@ static/dist/              # Build output
 - **Open Props**: `~/projects/lakescope-workspace/open-props` - CSS design tokens and custom properties
 - **Open Props UI**: `~/projects/lakescope-workspace/open-props-ui` - Pure CSS component library (copy-paste ownership model)
 
+## Build architecture diagram
+
+The asset pipeline flows from TypeScript sources through Rolldown bundling to embedded binary distribution:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        Source Files                              │
+├─────────────────────────────────────────────────────────────────┤
+│  web-components/                                                 │
+│    ├── index.ts                   (Entry point)                  │
+│    ├── styles/main.css            (Open Props imports)           │
+│    ├── components/*.ts            (Web components)               │
+│    └── types/*.ts                 (Generated from Rust via ts-rs)│
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      Rolldown Bundler                            │
+├─────────────────────────────────────────────────────────────────┤
+│  - TypeScript compilation                                        │
+│  - PostCSS processing (Open Props imports)                       │
+│  - Content-based hashing ([hash] in filenames)                   │
+│  - Tree shaking and minification                                 │
+│  - Manifest generation (entry → hashed filename mapping)         │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      Build Output                                │
+├─────────────────────────────────────────────────────────────────┤
+│  static/dist/                                                    │
+│    ├── bundle.[hash].js          (Compiled JavaScript)           │
+│    ├── bundle.[hash].css         (Compiled CSS)                  │
+│    ├── components.[hash].js      (Web components bundle)         │
+│    └── manifest.json              (Asset lookup table)           │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    rust-embed Integration                        │
+├─────────────────────────────────────────────────────────────────┤
+│  #[derive(RustEmbed)]                                            │
+│  #[folder = "static/dist/"]                                      │
+│  struct Assets;                                                  │
+│                                                                  │
+│  - Embeds static/dist/ at compile time                           │
+│  - Serves with immutable cache headers in production             │
+│  - Lookup via manifest.json for hashed filenames                 │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                     Binary Distribution                          │
+├─────────────────────────────────────────────────────────────────┤
+│  target/release/ironstar                                         │
+│    - Single binary with embedded assets                          │
+│    - No external file dependencies                               │
+│    - Cache-Control: max-age=31536000, immutable                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Development mode alternative**: In development, `ServeDir` serves files directly from `static/dist/` with `Cache-Control: no-store` headers, bypassing rust-embed for faster iteration.
+
 ---
 
 ## Rolldown configuration
