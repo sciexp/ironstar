@@ -333,6 +333,8 @@ impl ProactiveCache {
 
 When using Zenoh as the event bus, cache invalidation leverages key expression filtering for precise, efficient invalidation with distribution-ready semantics.
 
+See `zenoh-event-bus.md` "Key expression design" for Zenoh wildcard patterns (`*`, `**`, `$*`) and subscription semantics.
+
 #### Cache dependency mapping
 
 Each cache entry declares its dependencies as Zenoh key expression patterns.
