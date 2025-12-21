@@ -412,9 +412,10 @@ async fn sse_feed_rate_limited(
 
 ## Related documentation
 
-- `performance-tuning.md`: Core performance patterns (broadcast channels, metrics, observability)
+- `performance-tuning.md`: Core performance patterns (broadcast channels, channel sizing, metrics)
 - `event-sourcing-core.md`: Master index and architecture overview
 - `sse-connection-lifecycle.md`: SSE connection phases and debugging
 - `event-replay-consistency.md`: Event replay and consistency boundaries
 - `projection-patterns.md`: Projection caching strategies
+- `command-write-patterns.md`: Command handlers and write path
 - `../infrastructure/zenoh-event-bus.md`: Zenoh integration for distributed event bus
