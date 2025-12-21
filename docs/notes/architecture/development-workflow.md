@@ -39,6 +39,23 @@ The configuration lives in `process-compose.yaml` at the repository root.
 | `hotreload` | `cargo watch` + curl | Trigger browser reload when builds complete |
 | `test` | `curl /health` | Integration test for CI (creates flake check) |
 
+### Frontend asset build
+
+The frontend process runs Rolldown in watch mode, rebuilding on TypeScript/CSS changes.
+It depends on typegen completing first to ensure signal types are available.
+
+```yaml
+# process-compose.yaml addition
+processes:
+  frontend:
+    command: pnpm --dir web-components dev
+    availability:
+      restart: on_failure
+    depends_on:
+      typegen:
+        condition: process_completed_successfully
+```
+
 ### Running development mode
 
 With Nix (preferred for reproducibility):
