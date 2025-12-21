@@ -270,6 +270,258 @@ vi.mock('echarts', () => ({
 export { mockChartInstance };
 ```
 
+### ResizeObserver mock
+
+Browser APIs like ResizeObserver need mocking for chart resize behavior tests.
+
+```typescript
+// __tests__/resize-observer-mock.ts
+import { vi } from 'vitest';
+
+export class MockResizeObserver {
+  private callback: ResizeObserverCallback;
+  private observations = new Set<Element>();
+
+  constructor(callback: ResizeObserverCallback) {
+    this.callback = callback;
+  }
+
+  observe(target: Element): void {
+    this.observations.add(target);
+  }
+
+  unobserve(target: Element): void {
+    this.observations.delete(target);
+  }
+
+  disconnect(): void {
+    this.observations.clear();
+  }
+
+  triggerResize(width: number, height: number): void {
+    const entries: ResizeObserverEntry[] = Array.from(this.observations).map(target => ({
+      target,
+      contentRect: { width, height, x: 0, y: 0, top: 0, left: 0, bottom: height, right: width },
+      borderBoxSize: [{ inlineSize: width, blockSize: height }],
+      contentBoxSize: [{ inlineSize: width, blockSize: height }],
+      devicePixelContentBoxSize: [{ inlineSize: width, blockSize: height }],
+    })) as ResizeObserverEntry[];
+
+    this.callback(entries, this);
+  }
+}
+
+export function setupResizeObserverMock(): MockResizeObserver {
+  let instance: MockResizeObserver;
+
+  global.ResizeObserver = vi.fn((callback) => {
+    instance = new MockResizeObserver(callback);
+    return instance;
+  }) as any;
+
+  return instance;
+}
+```
+
+Example test using ResizeObserver mock:
+
+```typescript
+// __tests__/ds-echarts-resize.test.ts
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { setupResizeObserverMock } from './resize-observer-mock';
+import { render, cleanup } from './test-utils';
+import { mockChartInstance } from './setup';
+import '../components/ds-echarts';
+
+describe('ds-echarts resize behavior', () => {
+  let resizeObserver: ReturnType<typeof setupResizeObserverMock>;
+
+  beforeEach(() => {
+    resizeObserver = setupResizeObserverMock();
+    mockChartInstance.reset();
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it('should resize chart when container size changes', async () => {
+    const element = await render<any>('ds-echarts');
+
+    expect(mockChartInstance.resize).not.toHaveBeenCalled();
+
+    // Simulate container resize
+    resizeObserver.triggerResize(800, 600);
+
+    expect(mockChartInstance.resize).toHaveBeenCalledOnce();
+  });
+});
+```
+
+### MediaQueryList mock
+
+Theme changes detected via `window.matchMedia` require mocking for dark/light mode tests.
+
+```typescript
+// __tests__/media-query-mock.ts
+import { vi } from 'vitest';
+
+export class MockMediaQueryList implements MediaQueryList {
+  matches: boolean;
+  media: string;
+  private listeners = new Set<(event: MediaQueryListEvent) => void>();
+
+  constructor(query: string, matches: boolean = false) {
+    this.media = query;
+    this.matches = matches;
+  }
+
+  addEventListener(_type: 'change', listener: (event: MediaQueryListEvent) => void): void {
+    this.listeners.add(listener);
+  }
+
+  removeEventListener(_type: 'change', listener: (event: MediaQueryListEvent) => void): void {
+    this.listeners.delete(listener);
+  }
+
+  addListener(listener: (event: MediaQueryListEvent) => void): void {
+    this.addEventListener('change', listener);
+  }
+
+  removeListener(listener: (event: MediaQueryListEvent) => void): void {
+    this.removeEventListener('change', listener);
+  }
+
+  dispatchEvent(_event: Event): boolean {
+    return true;
+  }
+
+  onchange: ((this: MediaQueryList, ev: MediaQueryListEvent) => any) | null = null;
+
+  setMatches(matches: boolean): void {
+    const changed = this.matches !== matches;
+    this.matches = matches;
+
+    if (changed) {
+      const event = { matches, media: this.media } as MediaQueryListEvent;
+      this.listeners.forEach(listener => listener(event));
+      if (this.onchange) this.onchange.call(this, event);
+    }
+  }
+}
+
+export function setupMediaQueryMock(): { dark: MockMediaQueryList; light: MockMediaQueryList } {
+  const darkQuery = new MockMediaQueryList('(prefers-color-scheme: dark)', false);
+  const lightQuery = new MockMediaQueryList('(prefers-color-scheme: light)', true);
+
+  global.window.matchMedia = vi.fn((query: string) => {
+    if (query.includes('dark')) return darkQuery;
+    if (query.includes('light')) return lightQuery;
+    return new MockMediaQueryList(query);
+  });
+
+  return { dark: darkQuery, light: lightQuery };
+}
+```
+
+Example test using MediaQueryList mock:
+
+```typescript
+// __tests__/ds-echarts-theme.test.ts
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { setupMediaQueryMock } from './media-query-mock';
+import { render, cleanup } from './test-utils';
+import { mockChartInstance } from './setup';
+import '../components/ds-echarts';
+
+describe('ds-echarts theme changes', () => {
+  let mediaQuery: ReturnType<typeof setupMediaQueryMock>;
+
+  beforeEach(() => {
+    mediaQuery = setupMediaQueryMock();
+    mockChartInstance.reset();
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it('should dispose and reinitialize chart when theme changes', async () => {
+    const element = await render<any>('ds-echarts');
+
+    expect(mockChartInstance.dispose).not.toHaveBeenCalled();
+
+    // Toggle from light to dark mode
+    mediaQuery.light.setMatches(false);
+    mediaQuery.dark.setMatches(true);
+
+    // Chart should be disposed and recreated
+    expect(mockChartInstance.dispose).toHaveBeenCalledOnce();
+  });
+});
+```
+
+### Datastar signal binding tests
+
+Test pattern for verifying chart option updates when Datastar signals change.
+
+```typescript
+// __tests__/ds-echarts-signals.test.ts
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { renderWithAttrs, waitForLitUpdate, cleanup } from './test-utils';
+import { mockChartInstance } from './setup';
+import '../components/ds-echarts';
+
+describe('ds-echarts Datastar signal binding', () => {
+  beforeEach(() => {
+    mockChartInstance.reset();
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it('should call setOption when data-attr:option changes', async () => {
+    const initialOptions = JSON.stringify({
+      xAxis: { type: 'category', data: ['A', 'B', 'C'] },
+      yAxis: { type: 'value' },
+      series: [{ type: 'bar', data: [10, 20, 30] }],
+    });
+
+    const element = await renderWithAttrs<any>('ds-echarts', {
+      'data-attr:option': initialOptions,
+    });
+
+    expect(mockChartInstance.setOption).toHaveBeenCalledOnce();
+    const firstCall = mockChartInstance.setOption.mock.calls[0][0];
+    expect(firstCall.series[0].data).toEqual([10, 20, 30]);
+
+    // Simulate Datastar signal update
+    const updatedOptions = JSON.stringify({
+      xAxis: { type: 'category', data: ['A', 'B', 'C'] },
+      yAxis: { type: 'value' },
+      series: [{ type: 'bar', data: [15, 25, 35] }],
+    });
+
+    element.setAttribute('data-attr:option', updatedOptions);
+    await waitForLitUpdate(element);
+
+    expect(mockChartInstance.setOption).toHaveBeenCalledTimes(2);
+    const secondCall = mockChartInstance.setOption.mock.calls[1][0];
+    expect(secondCall.series[0].data).toEqual([15, 25, 35]);
+  });
+
+  it('should handle malformed JSON gracefully', async () => {
+    const element = await renderWithAttrs<any>('ds-echarts', {
+      'data-attr:option': 'not valid json',
+    });
+
+    // Should not throw, chart remains uninitialized
+    expect(mockChartInstance.setOption).not.toHaveBeenCalled();
+  });
+});
+```
+
 ### __tests__/test-utils.ts
 
 ```typescript
