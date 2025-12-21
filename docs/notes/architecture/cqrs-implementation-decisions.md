@@ -33,6 +33,35 @@ pub trait Aggregate: Default + Send + Sync {
 
 External service calls (validation against external APIs, lookups) happen in the command handler *before* calling `handle_command`, not inside the aggregate.
 
+**Smart constructors for domain validation:**
+
+Validation for domain invariants uses smart constructors that make invalid states unrepresentable in the type system:
+
+```rust
+/// Validated Todo text - non-empty, max 200 characters
+pub struct TodoText(String);
+
+impl TodoText {
+    pub fn new(s: &str) -> Result<Self, ValidationError> {
+        if s.is_empty() {
+            return Err(ValidationError::Empty);
+        }
+        if s.len() > 200 {
+            return Err(ValidationError::TooLong { max: 200, actual: s.len() });
+        }
+        Ok(Self(s.to_owned()))
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+```
+
+This pattern shifts validation to construction time.
+Once a `TodoText` value exists, the type system guarantees it satisfies the invariants.
+Command handlers validate input by constructing these types before passing data to aggregates, keeping aggregate logic focused on business rules rather than format validation.
+
 **Test framework DSL (inspired by cqrs-es):**
 
 The pure aggregate pattern enables elegant given/when/then testing:
