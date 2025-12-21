@@ -160,17 +160,26 @@ use ironstar_domain::error::{DomainError, ValidationError};
 use common_enums::ErrorCode;
 use std::fmt;
 
-/// Aggregate-level errors combining validation and domain errors
+/// Aggregate-level errors combining validation and domain errors.
+///
+/// The `Validation` variant holds a `Vec` to support applicative validation:
+/// collect all field errors rather than failing on the first.
+/// The `Domain` variant holds a single error for monadic (fail-fast) semantics.
 #[derive(Debug)]
 pub enum AggregateError {
-    Validation(ValidationError),
+    /// Multiple validation errors (applicative style - collect all errors)
+    Validation(Vec<ValidationError>),
+    /// Single domain logic error (monadic style - fail fast)
     Domain(DomainError),
 }
 
 impl fmt::Display for AggregateError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            AggregateError::Validation(e) => write!(f, "{}", e),
+            AggregateError::Validation(errors) => {
+                let messages: Vec<_> = errors.iter().map(|e| e.to_string()).collect();
+                write!(f, "{}", messages.join("; "))
+            }
             AggregateError::Domain(e) => write!(f, "{}", e),
         }
     }
@@ -179,7 +188,7 @@ impl fmt::Display for AggregateError {
 impl std::error::Error for AggregateError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
-            AggregateError::Validation(e) => Some(e),
+            AggregateError::Validation(errors) => errors.first().map(|e| e as &dyn std::error::Error),
             AggregateError::Domain(e) => Some(e),
         }
     }
@@ -187,7 +196,13 @@ impl std::error::Error for AggregateError {
 
 impl From<ValidationError> for AggregateError {
     fn from(e: ValidationError) -> Self {
-        AggregateError::Validation(e)
+        AggregateError::Validation(vec![e])
+    }
+}
+
+impl From<Vec<ValidationError>> for AggregateError {
+    fn from(errors: Vec<ValidationError>) -> Self {
+        AggregateError::Validation(errors)
     }
 }
 
@@ -389,7 +404,10 @@ impl From<DomainError> for AppError {
 impl From<AggregateError> for AppError {
     fn from(e: AggregateError) -> Self {
         match e {
-            AggregateError::Validation(v) => AppError::Validation(v),
+            // Take first validation error for AppError (or extend AppError to hold Vec)
+            AggregateError::Validation(v) => {
+                AppError::Validation(v.into_iter().next().expect("validation errors non-empty"))
+            }
             AggregateError::Domain(d) => AppError::Domain(d),
         }
     }
