@@ -82,7 +82,7 @@ session.put(&key, event.payload.as_bytes()).await?;
 | `events/{type}/{id}` | Single aggregate instance | Specific entity SSE feed |
 | `events/{type}/**` | All instances of type | Type-wide projection updates |
 | `events/**` | All events | Global audit log, analytics |
-| `sessions/{session_id}/**` | All events for session | Session-scoped SSE feeds |
+| `events/session/{session_id}/**` | All events for session | Session-scoped SSE feeds |
 
 See `session-management.md` for session-scoped routing patterns.
 
@@ -178,7 +178,7 @@ This enables per-session SSE feeds that receive only events relevant to the auth
 **Key expression pattern:**
 
 ```
-sessions/{session_id}/events/{aggregate_type}/{aggregate_id}
+events/session/{session_id}/{aggregate_type}/{aggregate_id}
 ```
 
 **Publishing with session context:**
@@ -186,7 +186,7 @@ sessions/{session_id}/events/{aggregate_type}/{aggregate_id}
 ```rust
 // Publish to both global and session-scoped key expressions
 let global_key = format!("events/{}/{}", event.aggregate_type, event.aggregate_id);
-let session_key = format!("sessions/{}/events/{}/{}",
+let session_key = format!("events/session/{}/{}/{}",
     session_id, event.aggregate_type, event.aggregate_id);
 
 session.put(&global_key, payload.clone()).await?;
@@ -200,7 +200,7 @@ async fn sse_session_feed(
     State(app_state): State<AppState>,
     Extension(session_id): Extension<SessionId>,
 ) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
-    let key_expr = format!("sessions/{}/**", session_id);
+    let key_expr = format!("events/session/{}/**", session_id);
     let subscriber = app_state.zenoh.declare_subscriber(&key_expr).await.unwrap();
 
     let stream = async_stream::stream! {
@@ -247,7 +247,7 @@ async fn test_sse_feed_receives_published_events() {
     let session_id = SessionId::new();
 
     // Start SSE subscription
-    let key_expr = format!("sessions/{}/events/**", session_id);
+    let key_expr = format!("events/session/{}/**", session_id);
     let subscriber = app_state.zenoh.declare_subscriber(&key_expr).await.unwrap();
 
     // Publish event
