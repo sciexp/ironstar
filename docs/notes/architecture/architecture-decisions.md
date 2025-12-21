@@ -1893,15 +1893,18 @@ The structure draws from patterns in Golem (~25 crates) and Hyperswitch (~40 cra
 **Layered crate structure:**
 
 ```
-Layer 0 (Foundation): common_enums, common_types, common_utils
-Layer 1 (Domain): ironstar_domain, ironstar_commands, ironstar_events
-Layer 2 (Application): ironstar_app
-Layer 3 (Interfaces): ironstar_interfaces
-Layer 4 (Infrastructure): ironstar_adapters, ironstar_analytics, ironstar_projections, ironstar_config
-Layer 5 (Services): ironstar_services
-Layer 6 (Presentation): ironstar_web
+Layer 0 (Foundation): common-enums, common-types, common-utils
+Layer 1 (Domain): ironstar-domain, ironstar-commands, ironstar-events
+Layer 2 (Application): ironstar-app
+Layer 3 (Interfaces): ironstar-interfaces
+Layer 4 (Infrastructure): ironstar-adapters, ironstar-analytics, ironstar-projections, ironstar-config
+Layer 5 (Services): ironstar-services
+Layer 6 (Presentation): ironstar-web
 Layer 7 (Binary): ironstar
 ```
+
+Crate names use kebab-case following crates.io convention.
+Rust normalizes these to snake_case for `use` statements.
 
 Each layer can only depend on layers below it.
 See `crate-architecture.md` for detailed directory structure, trait definitions, and migration strategy.

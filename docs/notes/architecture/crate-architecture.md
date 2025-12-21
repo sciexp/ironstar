@@ -75,11 +75,11 @@ These crates have no ironstar dependencies and can be used by any other crate.
 
 | Crate | Purpose | Contains |
 |-------|---------|----------|
-| `common_enums` | Shared enumerations | AggregateType, EventType, ErrorCode, FilterType |
-| `common_types` | Primitive wrappers | MinorUnit, Timestamp, Sequence, newtypes |
-| `common_utils` | Cross-cutting utilities | Crypto, validation, serialization helpers, extension traits |
+| `common-enums` | Shared enumerations | AggregateType, EventType, ErrorCode, FilterType |
+| `common-types` | Primitive wrappers | MinorUnit, Timestamp, Sequence, newtypes |
+| `common-utils` | Cross-cutting utilities | Crypto, validation, serialization helpers, extension traits |
 
-**Naming rationale**: Underscore prefix (not `ironstar_`) signals these are foundational types reusable across future projects.
+**Naming convention**: Crate names use kebab-case (`ironstar-domain`) following crates.io convention. Rust normalizes these to snake_case for `use` statements (`use ironstar_domain::...`). This is consistent with ecosystem crates like `tower-http` and `tracing-subscriber`.
 
 ### Layer 1: Domain (depends on Layer 0)
 
@@ -87,9 +87,9 @@ Pure types with no async, no I/O, no infrastructure dependencies.
 
 | Crate | Purpose | Contains |
 |-------|---------|----------|
-| `ironstar_domain` | Aggregate definitions | Aggregate trait, state machines, apply_event |
-| `ironstar_commands` | Command types | Command enums, validation logic (pure) |
-| `ironstar_events` | Event types | DomainEvent enum, event metadata |
+| `ironstar-domain` | Aggregate definitions | Aggregate trait, state machines, apply_event |
+| `ironstar-commands` | Command types | Command enums, validation logic (pure) |
+| `ironstar-events` | Event types | DomainEvent enum, event metadata |
 
 ### Layer 2: Application (depends on Layers 0-1)
 
@@ -97,7 +97,7 @@ Pure business logic orchestrating domain types.
 
 | Crate | Purpose | Contains |
 |-------|---------|----------|
-| `ironstar_app` | Command/query handlers | handle_command orchestration, projection updates |
+| `ironstar-app` | Command/query handlers | handle_command orchestration, projection updates |
 
 ### Layer 3: Interfaces (depends on Layers 0-2)
 
@@ -105,7 +105,7 @@ Port trait definitions for infrastructure abstractions.
 
 | Crate | Purpose | Contains |
 |-------|---------|----------|
-| `ironstar_interfaces` | Port traits | EventStore, SessionStore, AnalyticsCache, Projection traits |
+| `ironstar-interfaces` | Port traits | EventStore, SessionStore, AnalyticsCache, Projection traits |
 
 ### Layer 4: Infrastructure (depends on Layers 0-3)
 
@@ -113,10 +113,10 @@ Effect implementations and adapters.
 
 | Crate | Purpose | Contains |
 |-------|---------|----------|
-| `ironstar_adapters` | Storage adapters | SQLite, moka, DuckDB implementations |
-| `ironstar_analytics` | Analytics layer | DuckDB queries, cache invalidation |
-| `ironstar_projections` | Read model implementations | In-memory projections, snapshot support |
-| `ironstar_config` | Configuration types | Config structs, adapter selection enums |
+| `ironstar-adapters` | Storage adapters | SQLite, moka, DuckDB implementations |
+| `ironstar-analytics` | Analytics layer | DuckDB queries, cache invalidation |
+| `ironstar-projections` | Read model implementations | In-memory projections, snapshot support |
+| `ironstar-config` | Configuration types | Config structs, adapter selection enums |
 
 ### Layer 5: Services (depends on Layers 0-4)
 
@@ -124,7 +124,7 @@ Service composition and dependency injection.
 
 | Crate | Purpose | Contains |
 |-------|---------|----------|
-| `ironstar_services` | HasXxx traits, All composition | Service traits, composition root, adapter factories |
+| `ironstar-services` | HasXxx traits, All composition | Service traits, composition root, adapter factories |
 
 ### Layer 6: Presentation (depends on Layers 0-5)
 
@@ -132,7 +132,7 @@ HTTP boundary layer.
 
 | Crate | Purpose | Contains |
 |-------|---------|----------|
-| `ironstar_web` | HTTP + SSE + HTML | axum handlers, hypertext templates, routes |
+| `ironstar-web` | HTTP + SSE + HTML | axum handlers, hypertext templates, routes |
 
 ### Layer 7: Binary (depends on all)
 
@@ -146,15 +146,15 @@ HTTP boundary layer.
 ironstar/
 ├── Cargo.toml                              # Workspace root
 ├── crates/
-│   ├── common_enums/                       # Layer 0
+│   ├── common-enums/                       # Layer 0
 │   │   ├── Cargo.toml
 │   │   ├── crate.nix
 │   │   └── src/lib.rs
-│   ├── common_types/                       # Layer 0
+│   ├── common-types/                       # Layer 0
 │   │   ├── Cargo.toml
 │   │   ├── crate.nix
 │   │   └── src/lib.rs
-│   ├── common_utils/                       # Layer 0
+│   ├── common-utils/                       # Layer 0
 │   │   ├── Cargo.toml
 │   │   ├── crate.nix
 │   │   └── src/
@@ -162,7 +162,7 @@ ironstar/
 │   │       ├── crypto.rs
 │   │       ├── validation.rs
 │   │       └── ext_traits.rs
-│   ├── ironstar_domain/                    # Layer 1
+│   ├── ironstar-domain/                    # Layer 1
 │   │   ├── Cargo.toml
 │   │   ├── crate.nix
 │   │   └── src/
@@ -172,15 +172,15 @@ ironstar/
 │   │       │   └── todo.rs
 │   │       ├── values.rs
 │   │       └── signals.rs
-│   ├── ironstar_commands/                  # Layer 1
+│   ├── ironstar-commands/                  # Layer 1
 │   │   ├── Cargo.toml
 │   │   ├── crate.nix
 │   │   └── src/lib.rs
-│   ├── ironstar_events/                    # Layer 1
+│   ├── ironstar-events/                    # Layer 1
 │   │   ├── Cargo.toml
 │   │   ├── crate.nix
 │   │   └── src/lib.rs
-│   ├── ironstar_app/                       # Layer 2
+│   ├── ironstar-app/                       # Layer 2
 │   │   ├── Cargo.toml
 │   │   ├── crate.nix
 │   │   └── src/
@@ -188,7 +188,7 @@ ironstar/
 │   │       ├── command_handlers.rs
 │   │       ├── query_handlers.rs
 │   │       └── projection_handlers.rs
-│   ├── ironstar_interfaces/                # Layer 3
+│   ├── ironstar-interfaces/                # Layer 3
 │   │   ├── Cargo.toml
 │   │   ├── crate.nix
 │   │   └── src/
@@ -198,7 +198,7 @@ ironstar/
 │   │       ├── analytics_cache.rs          # AnalyticsCache trait
 │   │       ├── projection.rs               # Projection trait
 │   │       └── event_bus.rs                # EventBus trait
-│   ├── ironstar_adapters/                  # Layer 4
+│   ├── ironstar-adapters/                  # Layer 4
 │   │   ├── Cargo.toml
 │   │   ├── crate.nix
 │   │   └── src/
@@ -216,28 +216,28 @@ ironstar/
 │   │       └── event_bus/
 │   │           ├── mod.rs
 │   │           └── broadcast.rs
-│   ├── ironstar_analytics/                 # Layer 4
+│   ├── ironstar-analytics/                 # Layer 4
 │   │   ├── Cargo.toml
 │   │   ├── crate.nix
 │   │   └── src/
 │   │       ├── lib.rs
 │   │       ├── queries.rs
 │   │       └── cache_invalidation.rs
-│   ├── ironstar_projections/               # Layer 4
+│   ├── ironstar-projections/               # Layer 4
 │   │   ├── Cargo.toml
 │   │   ├── crate.nix
 │   │   └── src/
 │   │       ├── lib.rs
 │   │       ├── todo_list.rs
 │   │       └── analytics.rs
-│   ├── ironstar_config/                    # Layer 4
+│   ├── ironstar-config/                    # Layer 4
 │   │   ├── Cargo.toml
 │   │   ├── crate.nix
 │   │   └── src/
 │   │       ├── lib.rs
 │   │       ├── adapters.rs                 # Adapter selection enums
 │   │       └── environment.rs              # Environment config
-│   ├── ironstar_services/                  # Layer 5
+│   ├── ironstar-services/                  # Layer 5
 │   │   ├── Cargo.toml
 │   │   ├── crate.nix
 │   │   └── src/
@@ -245,7 +245,7 @@ ironstar/
 │   │       ├── traits.rs                   # HasXxx traits
 │   │       ├── all.rs                      # All<Ctx> composition root
 │   │       └── factories.rs                # Adapter factory functions
-│   ├── ironstar_web/                       # Layer 6
+│   ├── ironstar-web/                       # Layer 6
 │   │   ├── Cargo.toml
 │   │   ├── crate.nix
 │   │   └── src/
@@ -280,7 +280,8 @@ Adapted from Golem's composition pattern for fine-grained dependency injection.
 ### Trait definitions
 
 ```rust
-// In ironstar_services/src/traits.rs
+// In ironstar-services/src/traits.rs
+// Note: kebab-case package names become snake_case in use statements
 
 use std::sync::Arc;
 use ironstar_interfaces::{EventStore, SessionStore, AnalyticsCache, Projection};
@@ -341,7 +342,7 @@ where
 ### Composition root
 
 ```rust
-// In ironstar_services/src/all.rs
+// In ironstar-services/src/all.rs
 
 use std::sync::Arc;
 
@@ -421,7 +422,7 @@ async fn bootstrap<S: HasAll>(services: &S) -> Result<(), AppError> {
 Adapted from Golem's storage pattern with observability labels.
 
 ```rust
-// In ironstar_interfaces/src/event_store.rs
+// In ironstar-interfaces/src/event_store.rs
 
 use async_trait::async_trait;
 
@@ -451,7 +452,7 @@ pub trait EventStore: Send + Sync + std::fmt::Debug {
 Adapted from Golem's tagged enum pattern.
 
 ```rust
-// In ironstar_config/src/adapters.rs
+// In ironstar-config/src/adapters.rs
 
 use serde::{Deserialize, Serialize};
 
@@ -479,7 +480,7 @@ pub enum SessionStoreConfig {
     InMemory(InMemoryConfig),
 }
 
-// In ironstar_services/src/factories.rs
+// In ironstar-services/src/factories.rs
 
 /// Create event store from configuration
 pub async fn create_event_store(
@@ -506,7 +507,7 @@ Adapted from Hyperswitch for foundation types.
 Shared enumerations used across request/response and domain layers.
 
 ```rust
-// In common_enums/src/lib.rs
+// In common-enums/src/lib.rs
 
 use serde::{Deserialize, Serialize};
 
@@ -545,7 +546,7 @@ pub enum FilterType {
 Primitive wrappers with validation.
 
 ```rust
-// In common_types/src/lib.rs
+// In common-types/src/lib.rs
 
 use serde::{Deserialize, Serialize};
 
@@ -589,13 +590,13 @@ impl Timestamp {
 Cross-cutting utilities.
 
 ```rust
-// In common_utils/src/lib.rs
+// In common-utils/src/lib.rs
 
 pub mod crypto;
 pub mod validation;
 pub mod ext_traits;
 
-// In common_utils/src/ext_traits.rs
+// In common-utils/src/ext_traits.rs
 
 /// Extension trait for Option with error context
 pub trait OptionExt<T> {
@@ -658,7 +659,7 @@ print_stderr = "warn"
 Each crate can have a `crate.nix` file for customized build requirements.
 
 ```nix
-# Example: crates/ironstar_adapters/crate.nix
+# Example: crates/ironstar-adapters/crate.nix
 { config, pkgs, lib, ... }:
 {
   # Additional build inputs for this crate
@@ -671,7 +672,7 @@ Each crate can have a `crate.nix` file for customized build requirements.
   autoWire = [ "crate" "doc" "clippy" ];
 }
 
-# Example: crates/ironstar_analytics/crate.nix
+# Example: crates/ironstar-analytics/crate.nix
 { config, pkgs, lib, ... }:
 {
   crane.args = {
@@ -691,27 +692,27 @@ Single `crates/ironstar/` crate with module organization matching layer structur
 
 ### Phase 2: Extract interfaces
 
-Create `ironstar_interfaces` crate with port traits.
+Create `ironstar-interfaces` crate with port traits.
 Existing code depends on concrete implementations until Phase 3.
 
 ### Phase 3: Extract domain
 
-Create `common_*` and `ironstar_domain` crates.
+Create `common-*` and `ironstar-domain` crates.
 Pure types with no infrastructure dependencies.
 
 ### Phase 4: Extract adapters
 
-Create `ironstar_adapters` implementing port traits.
+Create `ironstar-adapters` implementing port traits.
 Configuration-driven adapter selection.
 
 ### Phase 5: Extract services
 
-Create `ironstar_services` with HasXxx pattern.
+Create `ironstar-services` with HasXxx pattern.
 Full dependency injection via composition root.
 
 ### Phase 6: Extract presentation
 
-Create `ironstar_web` for HTTP layer.
+Create `ironstar-web` for HTTP layer.
 Binary crate becomes thin wiring.
 
 ## Dependency rules (enforced by layer)

@@ -101,15 +101,18 @@ See `docs/notes/architecture/crate-architecture.md` for detailed decomposition p
 **Layered crate structure:**
 
 ```
-Layer 0 (Foundation): common_enums, common_types, common_utils
-Layer 1 (Domain): ironstar_domain, ironstar_commands, ironstar_events
-Layer 2 (Application): ironstar_app
-Layer 3 (Interfaces): ironstar_interfaces  # Port traits
-Layer 4 (Infrastructure): ironstar_adapters, ironstar_analytics, ironstar_projections, ironstar_config
-Layer 5 (Services): ironstar_services  # HasXxx traits, All composition root
-Layer 6 (Presentation): ironstar_web
+Layer 0 (Foundation): common-enums, common-types, common-utils
+Layer 1 (Domain): ironstar-domain, ironstar-commands, ironstar-events
+Layer 2 (Application): ironstar-app
+Layer 3 (Interfaces): ironstar-interfaces  # Port traits
+Layer 4 (Infrastructure): ironstar-adapters, ironstar-analytics, ironstar-projections, ironstar-config
+Layer 5 (Services): ironstar-services  # HasXxx traits, All composition root
+Layer 6 (Presentation): ironstar-web
 Layer 7 (Binary): ironstar
 ```
+
+Crate names use kebab-case following crates.io convention.
+Rust normalizes these to snake_case for `use` statements (e.g., `use ironstar_domain::...`).
 
 **Current state (single crate):**
 
@@ -118,10 +121,10 @@ ironstar/
 ├── Cargo.toml
 └── crates/ironstar/src/
     ├── main.rs
-    ├── domain/           # Future: ironstar_domain
-    ├── application/      # Future: ironstar_app
-    ├── infrastructure/   # Future: ironstar_adapters + ironstar_interfaces
-    └── presentation/     # Future: ironstar_web
+    ├── domain/           # Future: ironstar-domain
+    ├── application/      # Future: ironstar-app
+    ├── infrastructure/   # Future: ironstar-adapters + ironstar-interfaces
+    └── presentation/     # Future: ironstar-web
 ```
 
 Each crate can have a `crate.nix` file for customized Nix build requirements (e.g., DuckDB needs cmake).
