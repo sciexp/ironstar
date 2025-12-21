@@ -7,7 +7,26 @@ title: Advanced performance patterns
 This document covers optional performance optimization patterns for high-throughput event sourcing systems: event debouncing, batching, and per-client rate limiting.
 These patterns add complexity and should only be applied when metrics indicate performance bottlenecks.
 
-Start with the simpler patterns in `performance-tuning.md` (broadcast channels, basic metrics) before adopting these advanced techniques.
+Start with the simpler patterns in `performance-tuning.md` (broadcast channels, channel sizing, metrics) before adopting these advanced techniques.
+
+## Prerequisites
+
+These patterns assume a `StoredEvent` type and `tokio::sync::broadcast` infrastructure as defined in `performance-tuning.md`:
+
+```rust
+use std::time::Duration;
+
+/// Stored event with sequence number (from event store)
+#[derive(Clone, Debug)]
+pub struct StoredEvent {
+    pub sequence: i64,
+    pub aggregate_type: String,
+    pub aggregate_id: String,
+    pub event_type: String,
+    pub payload: serde_json::Value,
+    pub metadata: Option<serde_json::Value>,
+}
+```
 
 ## Event debouncing
 

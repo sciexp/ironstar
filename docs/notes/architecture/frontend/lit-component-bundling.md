@@ -202,26 +202,7 @@ Without this, class fields are initialized before decorators run, breaking Lit's
 ## Light DOM requirement
 
 All Lit components using Open Props tokens must render to Light DOM instead of Shadow DOM.
-See `css-architecture.md` for complete explanation of why this is required and the architectural implications.
-
-```typescript
-// In your Lit component
-protected createRenderRoot() {
-  return this  // Light DOM, not Shadow DOM
-}
-```
-
-**Why Light DOM is required**:
-
-Shadow DOM encapsulation prevents CSS custom properties from inheriting from the document's `:root`.
-Open Props design tokens are defined globally as CSS custom properties, and Light DOM is the only rendering mode that allows components to inherit these tokens.
-
-This architectural constraint has implications:
-- **No style encapsulation**: Component styles are scoped via BEM-style class names, not Shadow DOM boundaries
-- **Global token inheritance**: Components automatically inherit `:root` level Open Props tokens
-- **Simpler debugging**: Component DOM is visible in DevTools without shadow root barriers
-
-For components that require style encapsulation (rare in server-first hypermedia architecture), consider using vanilla web components with manual CSS variable forwarding or accepting reduced Open Props integration.
+See `css-architecture.md` for complete explanation of why this is required, the architectural implications, and the `createRenderRoot()` implementation pattern.
 
 ---
 
