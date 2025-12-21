@@ -686,7 +686,8 @@ For complete SSE streaming patterns including event replay and projection update
 ### Ironstar architecture
 
 - Hypertext + Datastar syntax: see the hypertext section in `architecture-decisions.md`
-- Event sourcing and SSE: `docs/notes/architecture/event-sourcing-sse-pipeline.md`
+- Event sourcing core concepts: `docs/notes/architecture/event-sourcing-core.md`
+- SSE connection lifecycle: `docs/notes/architecture/sse-connection-lifecycle.md`
 - Signal type contracts: `docs/notes/architecture/signal-contracts.md`
 - Frontend build pipeline: `docs/notes/architecture/frontend-build-pipeline.md` (includes Lit bundling options)
 
