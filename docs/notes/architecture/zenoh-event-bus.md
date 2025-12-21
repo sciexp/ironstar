@@ -1,43 +1,35 @@
-# Zenoh early adoption research
+# Zenoh event bus architecture
 
-This document investigates whether Zenoh should be adopted from the start of Ironstar development instead of `tokio::sync::broadcast` for event notification.
-
-## Executive summary
-
-**Recommendation: Adopt Zenoh for pub/sub, keep moka for analytics cache.**
-
+Ironstar uses Zenoh as its event notification layer, providing server-side key expression filtering essential for CQRS + Datastar applications.
 This mirrors the Go ecosystem pattern where NATS is the default choice for real-time event-driven applications.
-Zenoh is the Rust-native equivalent: pure Rust implementation, no external server required, and key expression filtering that enables the "listen to hundreds of keys with server-side filtering" pattern essential for CQRS + Datastar applications.
+Zenoh is the Rust-native equivalent: pure Rust implementation, no external server required, and key expression filtering that enables the "listen to hundreds of keys with server-side filtering" pattern.
 
-**Architecture decision:**
+## Architecture overview
 
 | Layer | Component | Role |
 |-------|-----------|------|
 | Event notification | Zenoh | Key expression filtering, distribution-ready |
 | Analytics cache | moka | TTL, eviction, synchronous fast path |
-| Event store | SQLite | Append-only log (unchanged) |
+| Event store | SQLite | Append-only log (source of truth) |
 
-**Key findings:**
+**Key capabilities:**
 
-1. Zenoh provides server-side key expression filtering (`events/Todo/**`, `events/User/*`)
-2. Zenoh storage is not a cache replacement (no TTL, no eviction) — moka remains essential
-3. Multiple subscribers with `select!` handles multi-pattern watching elegantly
-4. Configuration for embedded mode is minimal (4 lines)
-5. The dependency cost (~50 crates) is acceptable for production infrastructure
+1. Server-side key expression filtering (`events/Todo/**`, `events/User/*`)
+2. Embedded mode with minimal configuration (4 lines)
+3. Multiple subscribers with `select!` for multi-pattern watching
+4. Distribution-ready architecture requiring no changes for multi-node deployment
+5. Pure Rust implementation with no external server dependency
 
-## Research objectives recap
+**Separation of concerns:**
 
-The investigation explored whether Zenoh could consolidate two roles:
+Zenoh handles event notification and routing.
+moka handles analytics caching with TTL and eviction policies.
+Zenoh storage is designed for distributed data synchronization, not caching, so moka remains essential for cache-specific features like per-key TTL, time-to-idle eviction, and size-based eviction.
 
-1. **Pub/sub with key-expression filtering** (replacing `tokio::sync::broadcast`)
-2. **Storage backend for analytics cache** (replacing `moka` + `rkyv`)
+## Embedded configuration
 
-## Findings
-
-### Zenoh embedded configuration
-
-Zenoh has no built-in "embedded only" mode.
-To achieve in-process operation without network activity:
+Ironstar configures Zenoh for embedded operation without network activity.
+While Zenoh has no built-in "embedded only" mode, disabling networking requires only four configuration settings:
 
 ```rust
 use zenoh::Config;
@@ -51,14 +43,13 @@ config.insert_json5("scouting/gossip/enabled", "false").unwrap();
 let session = zenoh::open(config).await.unwrap();
 ```
 
-**Overhead concerns:**
+**Implementation notes:**
 
-- `TransportManager` is instantiated even with empty endpoints
-- Runtime starts regardless of network configuration
-- Background task machinery exists even when not used
-- The `RuntimeBuilder::build()` path is identical for networked and embedded use
+Even with empty endpoints, Zenoh instantiates its `TransportManager` and runtime machinery.
+This overhead is acceptable for production infrastructure.
+The configuration is identical whether running embedded or networked — the same `RuntimeBuilder::build()` path handles both cases.
 
-### Zenoh pub/sub and key expressions
+## Key expression design
 
 Zenoh provides server-side filtering via key expressions with wildcards:
 
@@ -68,229 +59,15 @@ Zenoh provides server-side filtering via key expressions with wildcards:
 | `**` | Zero or more segments | `a/**/c` matches `a/c`, `a/b/c`, `a/b/d/c` |
 | `$*` | Within segment | `ab$*cd` matches `abxxcd` |
 
-**Limitation: No union semantics.**
+**Multi-pattern subscriptions:**
 
 A single subscriber watches one key expression pattern.
-To watch `events/Todo/**` AND `events/User/**`, you need either:
+To watch `events/Todo/**` AND `events/User/**`, create two separate subscribers and multiplex them with `tokio::select!`.
+Alternatively, use a broader pattern like `events/**` if both patterns share a common prefix.
 
-1. Two separate subscribers
-2. A broader pattern `events/**` that matches both
+## Publishing patterns
 
-This differs from NATS KV's `watch_many(["foo.>", "bar.>"])` which accepts multiple patterns in one subscription.
-
-**Subscriber API:**
-
-```rust
-let subscriber = session.declare_subscriber("events/**")
-    .with(flume::bounded(32))
-    .await?;
-
-while let Ok(sample) = subscriber.recv_async().await {
-    let key_expr = sample.key_expr();
-    let payload = sample.payload();
-    // Process...
-}
-```
-
-### Zenoh storage backends
-
-Zenoh storage is designed as a distributed data store, not a cache.
-
-**Built-in memory backend:**
-
-- Persistence: volatile (data lost on restart)
-- History: latest value only per key
-- No per-key TTL
-- No size-based eviction
-- No time-to-idle
-
-**Metadata GC:**
-
-Storage has a `GarbageCollectionConfig` with `lifespan` setting, but this only affects metadata (timestamp history), not actual data values.
-This is fundamentally different from moka's cache eviction model.
-
-**Gap summary:**
-
-| Feature | moka | Zenoh Storage |
-|---------|------|---------------|
-| Per-key TTL | Yes (`time_to_live()`) | No |
-| Time-to-idle | Yes (`time_to_idle()`) | No |
-| Size-based eviction | Yes (`max_capacity()`) | No |
-| Eviction policy | TinyLFU / LRU | None |
-| Async-native | Yes | Yes |
-| Synchronous fast path | Yes | No (always async query/reply) |
-
-**Conclusion:** Zenoh storage cannot replace moka for analytics caching.
-
-### NATS KV watch semantics (reference)
-
-For comparison, NATS KV provides the "gold standard" multi-key watch API:
-
-```rust
-// Watch multiple patterns in one subscription
-let mut watch = kv.watch_many(["foo.>", "bar.>"]).await?;
-
-while let Some(entry) = watch.next().await {
-    let entry = entry?;
-    // entry.key, entry.revision, entry.operation
-}
-```
-
-Key features:
-
-- Server-side filtering with subject patterns
-- Single subscription handles multiple patterns
-- Push-based delivery via ordered consumer
-- `seen_current` flag indicates when history is exhausted
-
-Zenoh approaches this differently: one subscriber per pattern, but the pattern matching itself is efficient and server-side.
-
-## Comparative code patterns
-
-### Current pattern (broadcast + moka)
-
-```rust
-// Event notification
-let (tx, _) = broadcast::channel::<StoredEvent>(256);
-
-// Publishing
-tx.send(event)?;
-
-// Subscribing (receives ALL events)
-let rx = tx.subscribe();
-while let Ok(evt) = rx.recv().await {
-    // Manual filtering
-    if evt.aggregate_type == "Todo" {
-        handle_todo_event(&evt);
-    }
-}
-
-// Analytics caching
-let cache: Cache<String, Vec<u8>> = Cache::builder()
-    .max_capacity(1_000)
-    .time_to_live(Duration::from_secs(300))
-    .build();
-
-cache.insert(key, value).await;
-if let Some(v) = cache.get(&key).await {
-    // Use cached value
-}
-
-// Cache invalidation (manual)
-cache.invalidate_entries_if(|k, _| k.starts_with("daily_stats:")).await;
-```
-
-### Proposed pattern (Zenoh unified)
-
-```rust
-// Session creation (requires config for embedded mode)
-let mut config = Config::default();
-config.insert_json5("listen/endpoints", "[]").unwrap();
-config.insert_json5("connect/endpoints", "[]").unwrap();
-config.insert_json5("scouting/multicast/enabled", "false").unwrap();
-config.insert_json5("scouting/gossip/enabled", "false").unwrap();
-let session = zenoh::open(config).await?;
-
-// Publishing
-session.put("events/Todo/123", payload).await?;
-
-// Subscribing with pattern (server-side filtering)
-let subscriber = session.declare_subscriber("events/Todo/**").await?;
-while let Ok(sample) = subscriber.recv_async().await {
-    // Only receives matching events
-    handle_todo_event(&sample);
-}
-
-// Analytics "caching" via storage (NOT equivalent to moka)
-// Requires storage plugin configuration
-session.put("cache/daily_stats/2024-01-15", result).await?;
-let reply = session.get("cache/daily_stats/2024-01-15").await?;
-// No TTL, no eviction, no size limits
-```
-
-### Key differences
-
-| Aspect | broadcast + moka | Zenoh |
-|--------|------------------|-------|
-| Filter location | Client-side | Server-side (key expression) |
-| Multi-pattern watch | N/A (receive all) | One subscriber per pattern |
-| Cache TTL | Built-in | Not available |
-| Cache eviction | TinyLFU / LRU | None |
-| Configuration | Zero | Required for embedded mode |
-| Async overhead | Minimal | Higher (runtime machinery) |
-
-## Trade-off matrix
-
-| Dimension | broadcast + moka | Zenoh + moka | Assessment |
-|-----------|------------------|--------------|------------|
-| **In-process latency** | ~10 μs | ~100+ μs | Acceptable overhead |
-| **Memory footprint** | ~50 KB base | ~2+ MB | Acceptable for server |
-| **Dependency count** | ~10 | ~60 | Normal for full-stack app |
-| **Configuration** | Zero | 4 lines | Trivial |
-| **Cache features** | moka: full | moka: full | Equivalent (keep moka) |
-| **Subscription filtering** | Manual (O(n)) | Server-side (O(1)) | **Zenoh wins** |
-| **Multi-pattern subscription** | Receive all | One sub per pattern + select | **Zenoh wins** |
-| **Distribution readiness** | Redesign needed | Native | **Zenoh wins** |
-| **CQRS + Datastar fit** | Poor | Designed for this | **Zenoh wins** |
-
-**Weighted assessment:**
-
-The dimensions where Zenoh wins (subscription filtering, multi-pattern, distribution, CQRS fit) are the ones that matter for a Datastar event-sourced application.
-The dimensions where broadcast wins (latency, footprint, dependencies) are acceptable costs for production infrastructure.
-
-## Recommendation
-
-### Adopt Zenoh for pub/sub from the start
-
-Use Zenoh as the event notification layer, keeping moka for analytics caching.
-
-**Rationale:**
-
-1. **Key expression filtering is essential for CQRS + Datastar.** SSE handlers need to subscribe to specific aggregate types and instances.
-   With `broadcast`, every handler receives every event and filters locally — this doesn't scale.
-
-2. **The Go + NATS analogy applies.** Northstar uses embedded NATS without hesitation.
-   Zenoh is the Rust-native equivalent: no external server, pure Rust, same architectural role.
-
-3. **Configuration is minimal.** Four lines to disable networking for embedded mode.
-   This is not a meaningful barrier.
-
-4. **Dependencies are acceptable.** We're building production infrastructure, not a microcontroller.
-   ~50 transitive dependencies is normal for a full-stack web application.
-
-5. **Distribution-ready from day one.** When multi-node deployment is needed, the pub/sub layer requires no changes.
-
-### Keep moka for analytics cache
-
-Zenoh storage is designed for distributed data synchronization, not caching.
-moka provides the cache-specific features we need:
-
-- Per-key TTL (`time_to_live()`)
-- Time-to-idle eviction (`time_to_idle()`)
-- Size-based eviction (`max_capacity()`)
-- TinyLFU admission policy
-- Synchronous fast path for hot reads
-
-### Implementation pattern
-
-**Embedded Zenoh session:**
-
-```rust
-use zenoh::Config;
-
-fn zenoh_embedded_config() -> Config {
-    let mut config = Config::default();
-    config.insert_json5("listen/endpoints", "[]").unwrap();
-    config.insert_json5("connect/endpoints", "[]").unwrap();
-    config.insert_json5("scouting/multicast/enabled", "false").unwrap();
-    config.insert_json5("scouting/gossip/enabled", "false").unwrap();
-    config
-}
-
-let session = zenoh::open(zenoh_embedded_config()).await?;
-```
-
-**Publishing events:**
+After appending events to the SQLite event store, Ironstar publishes them to Zenoh for routing to active subscribers.
 
 ```rust
 // After appending to SQLite event store
@@ -298,7 +75,34 @@ let key = format!("events/{}/{}", event.aggregate_type, event.aggregate_id);
 session.put(&key, event.payload.as_bytes()).await?;
 ```
 
-**Multi-pattern subscription with select:**
+**Key expression structure:**
+
+| Pattern | Matches | Use Case |
+|---------|---------|----------|
+| `events/{type}/{id}` | Single aggregate instance | Specific entity SSE feed |
+| `events/{type}/**` | All instances of type | Type-wide projection updates |
+| `events/**` | All events | Global audit log, analytics |
+| `sessions/{session_id}/**` | All events for session | Session-scoped SSE feeds |
+
+See `session-management.md` for session-scoped routing patterns.
+
+## Subscription patterns
+
+### Single pattern subscription
+
+```rust
+let subscriber = session.declare_subscriber("events/Todo/**")
+    .with(flume::bounded(32))
+    .await?;
+
+while let Ok(sample) = subscriber.recv_async().await {
+    let key_expr = sample.key_expr();
+    let payload = sample.payload();
+    // Process Todo events
+}
+```
+
+### Multi-pattern subscription with select
 
 ```rust
 let todo_sub = session.declare_subscriber("events/Todo/**").await?;
@@ -318,7 +122,7 @@ loop {
 }
 ```
 
-**SSE handler with specific subscription:**
+### SSE handler with specific subscription
 
 ```rust
 async fn sse_todo_feed(
@@ -339,45 +143,167 @@ async fn sse_todo_feed(
 }
 ```
 
-### What changes from original CLAUDE.md
+## Zenoh storage considerations
 
-| Component | Before | After |
-|-----------|--------|-------|
-| Event Bus | `tokio::sync::broadcast` | Zenoh session |
-| Analytics Cache | moka | moka (unchanged) |
-| Event Store | SQLite | SQLite (unchanged) |
-| Distribution (future) | Zenoh | Zenoh (already integrated) |
+Zenoh includes a storage subsystem designed for distributed data synchronization, not caching.
+Ironstar does not use Zenoh storage for analytics caching.
 
-The "future distribution" path becomes the current architecture.
+**Why not use Zenoh storage for caching:**
 
-## Appendix: NATS KV vs Zenoh feature comparison
+| Feature | moka (used) | Zenoh Storage (not used) |
+|---------|-------------|--------------------------|
+| Per-key TTL | Yes (`time_to_live()`) | No |
+| Time-to-idle | Yes (`time_to_idle()`) | No |
+| Size-based eviction | Yes (`max_capacity()`) | No |
+| Eviction policy | TinyLFU / LRU | None |
+| Synchronous fast path | Yes | No (always async query/reply) |
 
-For reference, comparing the two distributed alternatives:
+Zenoh storage keeps the latest value per key with no automatic eviction.
+Its `GarbageCollectionConfig` only affects metadata (timestamp history), not actual data values.
+This model is fundamentally different from cache eviction policies.
 
-| Feature | NATS KV | Zenoh |
-|---------|---------|-------|
-| Multi-pattern watch | `watch_many(["a.>", "b.>"])` | One subscriber per pattern |
-| Wildcard syntax | `*` (single), `>` (multi) | `*` (single), `**` (multi), `$*` (intra) |
-| History delivery | `DeliverPolicy::LastPerSubject` | `zenoh-ext::AdvancedSubscriber` |
-| TTL on keys | Yes (per-bucket TTL) | No |
-| Revision tracking | Global sequence per bucket | Per-storage timestamps |
-| External server | Required (NATS server) | Optional (peer mode) |
-| Rust-native | Client only (Go server) | Full (Rust implementation) |
+**Separation of concerns:**
 
-NATS KV has better cache-like semantics (TTL per bucket, history policies).
-Zenoh has better Rust ecosystem integration (pure Rust, no external server).
+- Zenoh: Event notification and routing (pub/sub)
+- moka: Analytics caching (TTL, eviction, fast reads)
+- SQLite: Durable event storage (source of truth)
 
-For Ironstar, Zenoh is the right choice: no external server dependency, native Rust implementation, and key expression filtering that matches the CQRS + Datastar requirements.
-moka handles the caching use case that neither Zenoh nor NATS KV address optimally.
+See `analytics-cache-architecture.md` for cache invalidation patterns using Zenoh subscriptions.
 
-## Migration path
+## Session-scoped routing
 
-This section provides guidance for transitioning from `tokio::sync::broadcast` to Zenoh, whether during initial ironstar development or when adapting existing code.
+Ironstar uses Zenoh key expressions to route events scoped to specific user sessions.
+This enables per-session SSE feeds that receive only events relevant to the authenticated user.
 
-### Coexistence strategy
+**Key expression pattern:**
 
-Broadcast and Zenoh can coexist during development.
-The pattern is to publish to both and gradually migrate subscribers.
+```
+sessions/{session_id}/events/{aggregate_type}/{aggregate_id}
+```
+
+**Publishing with session context:**
+
+```rust
+// Publish to both global and session-scoped key expressions
+let global_key = format!("events/{}/{}", event.aggregate_type, event.aggregate_id);
+let session_key = format!("sessions/{}/events/{}/{}",
+    session_id, event.aggregate_type, event.aggregate_id);
+
+session.put(&global_key, payload.clone()).await?;
+session.put(&session_key, payload).await?;
+```
+
+**Session-scoped SSE subscription:**
+
+```rust
+async fn sse_session_feed(
+    State(app_state): State<AppState>,
+    Extension(session_id): Extension<SessionId>,
+) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
+    let key_expr = format!("sessions/{}/**", session_id);
+    let subscriber = app_state.zenoh.declare_subscriber(&key_expr).await.unwrap();
+
+    let stream = async_stream::stream! {
+        while let Ok(sample) = subscriber.recv_async().await {
+            yield Ok(sample_to_sse_event(&sample));
+        }
+    };
+
+    Sse::new(stream)
+}
+```
+
+See `session-management.md` for complete session lifecycle and security patterns.
+
+## Testing and debugging
+
+### Unit testing key expression matching
+
+```rust
+#[tokio::test]
+async fn test_zenoh_key_expression_matching() {
+    let config = zenoh_embedded_config();
+    let session = zenoh::open(config).await.unwrap();
+
+    let subscriber = session.declare_subscriber("events/Todo/**").await.unwrap();
+
+    session.put("events/Todo/123", b"test").await.unwrap();
+
+    let sample = tokio::time::timeout(
+        Duration::from_millis(100),
+        subscriber.recv_async()
+    ).await.expect("timeout").expect("recv failed");
+
+    assert_eq!(sample.key_expr().as_str(), "events/Todo/123");
+}
+```
+
+### Integration testing SSE feeds
+
+```rust
+#[tokio::test]
+async fn test_sse_feed_receives_published_events() {
+    let app_state = test_app_state().await;
+    let session_id = SessionId::new();
+
+    // Start SSE subscription
+    let key_expr = format!("sessions/{}/events/**", session_id);
+    let subscriber = app_state.zenoh.declare_subscriber(&key_expr).await.unwrap();
+
+    // Publish event
+    let event = StoredEvent { /* ... */ };
+    publish_event(&app_state, &session_id, event).await.unwrap();
+
+    // Verify receipt
+    let sample = tokio::time::timeout(
+        Duration::from_millis(100),
+        subscriber.recv_async()
+    ).await.expect("timeout").expect("recv failed");
+
+    let received: StoredEvent = serde_json::from_slice(sample.payload().to_bytes().as_ref()).unwrap();
+    assert_eq!(received.aggregate_id, "123");
+}
+```
+
+### Monitoring metrics
+
+| Metric | Healthy | Investigate |
+|--------|---------|-------------|
+| SSE connection count | Stable | Sudden drops |
+| Event latency | <200ms | >500ms |
+| Zenoh subscriber count | Matches SSE connections | Mismatch |
+| Error rate | <0.1% | >1% |
+| Memory usage | <50MB per 1000 subscribers | >100MB |
+
+### Debugging connection issues
+
+Enable Zenoh logging to diagnose subscription or publishing problems:
+
+```rust
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+
+tracing_subscriber::registry()
+    .with(tracing_subscriber::EnvFilter::new("zenoh=debug"))
+    .with(tracing_subscriber::fmt::layer())
+    .init();
+```
+
+Common issues:
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| Subscriber never receives samples | Key expression mismatch | Verify pattern matches published key |
+| Events arrive late | Channel buffer overflow | Increase `.with(flume::bounded(N))` size |
+| Memory leak | Subscribers not closed | Ensure subscriber drop on SSE disconnect |
+
+## Migration guidance for template users
+
+Template users adapting ironstar for existing codebases may need to transition from `tokio::sync::broadcast` to Zenoh.
+This section provides coexistence and migration strategies.
+
+### Coexistence pattern
+
+For gradual migration, publish to both broadcast and Zenoh while subscribers transition incrementally.
 
 ```rust
 /// Dual-publish to both broadcast and Zenoh during migration
@@ -399,20 +325,20 @@ impl DualEventBus {
 }
 ```
 
-This dual-publishing approach ensures existing broadcast subscribers continue working while new Zenoh-based subscribers can be tested in parallel.
+Dual-publishing ensures existing broadcast subscribers continue working while Zenoh-based subscribers are tested in parallel.
 
-### Migration phases
+### Migration sequence
 
-#### Phase 1: Add Zenoh alongside broadcast
+**Phase 1: Add Zenoh alongside broadcast**
 
-Keep all broadcast code working while adding Zenoh publishing infrastructure.
+Keep broadcast code working while adding Zenoh publishing.
 
 1. Add Zenoh session to AppState
 2. Dual-publish all events (broadcast + Zenoh)
 3. All existing subscribers continue using broadcast
 4. Add integration tests for Zenoh publishing
 
-#### Phase 2: Migrate subscribers incrementally
+**Phase 2: Migrate subscribers incrementally**
 
 Migrate one SSE handler at a time, starting with least critical components.
 
@@ -444,39 +370,18 @@ Recommended migration order:
 | 2 | Projection updaters | Medium | Can rebuild from event store |
 | 3 | Primary UI SSE feeds | High | User-facing, test thoroughly |
 
-#### Phase 3: Remove broadcast
+**Phase 3: Remove broadcast**
 
-Once all subscribers have migrated and the system is stable:
+Once all subscribers have migrated:
 
 1. Remove broadcast channel from DualEventBus
 2. Remove broadcast Receiver usage
 3. Remove `use_zenoh_for_sse` feature flag
 4. Update documentation
 
-### Testing strategy
-
-```rust
-#[tokio::test]
-async fn test_zenoh_key_expression_matching() {
-    let config = zenoh_embedded_config();
-    let session = zenoh::open(config).await.unwrap();
-
-    let subscriber = session.declare_subscriber("events/Todo/**").await.unwrap();
-
-    session.put("events/Todo/123", b"test").await.unwrap();
-
-    let sample = tokio::time::timeout(
-        Duration::from_millis(100),
-        subscriber.recv_async()
-    ).await.expect("timeout").expect("recv failed");
-
-    assert_eq!(sample.key_expr().as_str(), "events/Todo/123");
-}
-```
-
 ### Rollback procedure
 
-If Zenoh integration causes issues in production:
+For template users experiencing issues during migration:
 
 1. Set `use_zenoh_for_sse = false` in config
 2. Restart the service
@@ -484,22 +389,13 @@ If Zenoh integration causes issues in production:
 4. Investigate Zenoh logs for errors
 5. Fix root cause before re-enabling
 
-### Monitoring during migration
+### When to use migration vs fresh start
 
-| Metric | Healthy | Investigate |
-|--------|---------|-------------|
-| SSE connection count | Stable | Sudden drops |
-| Event latency | <200ms | >500ms |
-| Zenoh subscriber count | Matches SSE connections | Mismatch |
-| Error rate | <0.1% | >1% |
+**Fresh Zenoh integration**: New ironstar template instantiations start with Zenoh by default.
 
-### When to migrate
+**Gradual migration**: Existing projects with broadcast subscribers in production use the coexistence pattern above.
 
-**Migrate immediately**: New ironstar projects with no existing code.
-
-**Migrate incrementally**: Projects with existing broadcast subscribers in production.
-
-**Don't migrate yet**: If Zenoh causes build issues or embedded mode has unacceptable overhead (profile first).
+**Profile first**: If embedded mode overhead is a concern, benchmark before migrating (typical overhead: ~2MB memory, ~100μs latency).
 
 ## Related documentation
 
