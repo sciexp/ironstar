@@ -90,9 +90,23 @@ Covers build tooling technology choices including:
 ## Architecture summary
 
 This diagram shows the 5-layer operational view of ironstar's architecture.
-For the complete 7-layer crate decomposition plan, see `crate-architecture.md`.
+For the complete 8-layer crate decomposition plan, see `crate-architecture.md`.
 
-**Layer mapping**: Boundary Layer → Layer 6 (Presentation), Application Layer → Layers 2-3 (Application + Interfaces), Domain Layer → Layers 0-1 (Foundation + Domain), Infrastructure Layer → Layers 4-5 (Infrastructure + Services), Presentation Layer → Layer 6 (Presentation, frontend components).
+### Layer model mapping
+
+Ironstar uses three layer models serving different purposes: conceptual thinking (3 layers), operational architecture (5 layers), and physical crate organization (8 layers).
+
+| Conceptual (3-layer) | Operational (5-layer) | Crate (8-layer) | Purpose |
+|---------------------|----------------------|-----------------|---------|
+| Domain | Domain | Layer 0 (Foundation), Layer 1 (Domain) | Pure types, business rules |
+| Application | Application | Layer 2 (Application), Layer 3 (Interfaces) | Command/query handlers, port traits |
+| Infrastructure | Infrastructure | Layer 4 (Infrastructure), Layer 5 (Services) | Database adapters, service composition |
+| — | Boundary | Layer 6 (Presentation) | HTTP extractors, SSE streams |
+| — | Presentation | Layer 6 (Presentation), Layer 7 (Binary) | HTML templates, router wiring |
+
+**Conceptual model** (3 layers) - used when discussing high-level architecture principles and CQRS/ES patterns.
+**Operational model** (5 layers) - used when implementing features and understanding data flow.
+**Crate model** (8 layers) - used when organizing workspace structure and managing dependencies.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
