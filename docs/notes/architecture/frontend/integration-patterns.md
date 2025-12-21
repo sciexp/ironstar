@@ -220,7 +220,7 @@ See `frontend-build-pipeline.md` for configuration options including the proven 
 
 ### Complete implementation reference
 
-See `~/projects/lakescope-workspace/datastar-go-nats-template-northstar/docs/notes/echarts/ds-echarts-integration-guide.md` for complete implementation details including:
+See `~/projects/lakescope-workspace/datastar-go-nats-template-northstar/docs/notes/echarts/datastar-lit-echarts-component-guide.md` for complete implementation details including:
 - Component property reference
 - Event system design
 - Hypertext template patterns
