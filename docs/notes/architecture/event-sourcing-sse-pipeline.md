@@ -1234,6 +1234,42 @@ This pattern ensures:
 3. SSE delivers the update and removes the loading indicator.
 4. No optimistic updates (backend is source of truth).
 
+### 4a. Chart data streaming
+
+Charts receive configuration updates via SSE using the same PatchSignals pattern:
+
+```rust
+async fn chart_data_sse(
+    State(state): State<Arc<AppState>>,
+    Path(chart_id): Path<String>,
+) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
+    let stream = async_stream::stream! {
+        // Initial chart data from DuckDB
+        let data = state.analytics.query_chart_data(&chart_id).await?;
+        let option = build_echarts_option(&data);
+
+        yield Ok(PatchSignals::new(
+            serde_json::json!({"chartOption": option, "loading": false}).to_string()
+        ).write_as_axum_sse_event());
+
+        // Subscribe to real-time updates via Zenoh
+        let mut sub = state.event_bus
+            .subscribe(&format!("charts/{}/updates", chart_id))
+            .await;
+
+        while let Some(update) = sub.next().await {
+            yield Ok(PatchSignals::new(
+                serde_json::json!({"chartOption": build_echarts_option(&update)}).to_string()
+            ).write_as_axum_sse_event());
+        }
+    };
+
+    Sse::new(stream)
+}
+```
+
+This pattern streams initial chart configuration followed by incremental updates triggered by Zenoh events.
+
 ### 5. Consistency boundaries
 
 #### Guarantees
