@@ -369,3 +369,140 @@ Zenoh has better Rust ecosystem integration (pure Rust, no external server).
 
 For Ironstar, Zenoh is the right choice: no external server dependency, native Rust implementation, and key expression filtering that matches the CQRS + Datastar requirements.
 moka handles the caching use case that neither Zenoh nor NATS KV address optimally.
+
+## Migration path
+
+This section provides guidance for transitioning from `tokio::sync::broadcast` to Zenoh, whether during initial ironstar development or when adapting existing code.
+
+### Coexistence strategy
+
+Broadcast and Zenoh can coexist during development.
+The pattern is to publish to both and gradually migrate subscribers.
+
+```rust
+/// Dual-publish to both broadcast and Zenoh during migration
+pub struct DualEventBus {
+    broadcast: broadcast::Sender<StoredEvent>,
+    zenoh: Arc<Session>,
+}
+
+impl DualEventBus {
+    pub async fn publish(&self, event: StoredEvent) -> Result<(), Error> {
+        // Publish to both (order doesn't matter since SQLite is source of truth)
+        let _ = self.broadcast.send(event.clone());
+
+        let key = format!("events/{}/{}", event.aggregate_type, event.aggregate_id);
+        self.zenoh.put(&key, serde_json::to_vec(&event)?).await?;
+
+        Ok(())
+    }
+}
+```
+
+This dual-publishing approach ensures existing broadcast subscribers continue working while new Zenoh-based subscribers can be tested in parallel.
+
+### Migration phases
+
+#### Phase 1: Add Zenoh alongside broadcast
+
+Keep all broadcast code working while adding Zenoh publishing infrastructure.
+
+1. Add Zenoh session to AppState
+2. Dual-publish all events (broadcast + Zenoh)
+3. All existing subscribers continue using broadcast
+4. Add integration tests for Zenoh publishing
+
+#### Phase 2: Migrate subscribers incrementally
+
+Migrate one SSE handler at a time, starting with least critical components.
+
+```rust
+// Feature flag for gradual migration
+#[derive(Clone)]
+pub struct AppState {
+    pub event_bus: DualEventBus,
+    pub use_zenoh_for_sse: bool,
+}
+
+async fn sse_feed(
+    State(app): State<AppState>,
+    headers: HeaderMap,
+) -> Sse<impl Stream<...>> {
+    if app.use_zenoh_for_sse {
+        sse_feed_zenoh(app, headers).await
+    } else {
+        sse_feed_broadcast(app, headers).await
+    }
+}
+```
+
+Recommended migration order:
+
+| Order | Component | Risk | Rationale |
+|-------|-----------|------|-----------|
+| 1 | Analytics dashboard SSE | Low | Non-critical, tolerate stale data |
+| 2 | Projection updaters | Medium | Can rebuild from event store |
+| 3 | Primary UI SSE feeds | High | User-facing, test thoroughly |
+
+#### Phase 3: Remove broadcast
+
+Once all subscribers have migrated and the system is stable:
+
+1. Remove broadcast channel from DualEventBus
+2. Remove broadcast Receiver usage
+3. Remove `use_zenoh_for_sse` feature flag
+4. Update documentation
+
+### Testing strategy
+
+```rust
+#[tokio::test]
+async fn test_zenoh_key_expression_matching() {
+    let config = zenoh_embedded_config();
+    let session = zenoh::open(config).await.unwrap();
+
+    let subscriber = session.declare_subscriber("events/Todo/**").await.unwrap();
+
+    session.put("events/Todo/123", b"test").await.unwrap();
+
+    let sample = tokio::time::timeout(
+        Duration::from_millis(100),
+        subscriber.recv_async()
+    ).await.expect("timeout").expect("recv failed");
+
+    assert_eq!(sample.key_expr().as_str(), "events/Todo/123");
+}
+```
+
+### Rollback procedure
+
+If Zenoh integration causes issues in production:
+
+1. Set `use_zenoh_for_sse = false` in config
+2. Restart the service
+3. Verify broadcast-based SSE is working
+4. Investigate Zenoh logs for errors
+5. Fix root cause before re-enabling
+
+### Monitoring during migration
+
+| Metric | Healthy | Investigate |
+|--------|---------|-------------|
+| SSE connection count | Stable | Sudden drops |
+| Event latency | <200ms | >500ms |
+| Zenoh subscriber count | Matches SSE connections | Mismatch |
+| Error rate | <0.1% | >1% |
+
+### When to migrate
+
+**Migrate immediately**: New ironstar projects with no existing code.
+
+**Migrate incrementally**: Projects with existing broadcast subscribers in production.
+
+**Don't migrate yet**: If Zenoh causes build issues or embedded mode has unacceptable overhead (profile first).
+
+## Related documentation
+
+- Session-scoped event routing patterns: `session-management.md`
+- Analytics cache invalidation via Zenoh: `analytics-cache-architecture.md`
+- Event sourcing integration: `event-sourcing-sse-pipeline.md`

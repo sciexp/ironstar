@@ -789,3 +789,8 @@ async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::
 - Northstar SSE subscription: `/Users/crs58/projects/lakescope-workspace/datastar-go-nats-template-northstar/features/index/handlers.go` (lines 32-71)
 - axum cookie handling: `axum-extra` crate documentation
 - Zenoh key expressions: `~/projects/rust-workspace/zenoh` documentation
+
+## Related documentation
+
+- SSE patterns and event replay: `event-sourcing-sse-pipeline.md`
+- Zenoh configuration and key expressions: `zenoh-early-adoption-research.md`
