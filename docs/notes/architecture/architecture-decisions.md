@@ -88,6 +88,11 @@ Covers build tooling technology choices including:
 
 ## Architecture summary
 
+This diagram shows the 5-layer operational view of ironstar's architecture.
+For the complete 7-layer crate decomposition plan, see `crate-architecture.md`.
+
+**Layer mapping**: Boundary Layer → Layer 6 (Presentation), Application Layer → Layers 2-3 (Application + Interfaces), Domain Layer → Layers 0-1 (Foundation + Domain), Infrastructure Layer → Layers 4-5 (Infrastructure + Services), Presentation Layer → Layer 6 (Presentation, frontend components).
+
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                         Ironstar Template                            │

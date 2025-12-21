@@ -465,33 +465,27 @@ async fn sse_handler(
 
 ### Per-session event routing
 
-Session IDs appear in Zenoh key expressions to scope events to specific users.
+See `zenoh-event-bus.md` "Key expression design" for wildcard patterns and structure.
+Session-scoped keys follow the pattern `sessions/{session_id}/**`.
+
+**Example session-scoped key expressions**:
 
 ```
-events/session/{session_id}/notification
-events/session/{session_id}/state_update
-events/session/{session_id}/{aggregate_type}/{aggregate_id}
-```
-
-**Example key expressions**:
-
-```
-events/session/Xy9Kp2Lm3nO4qR5sT6uV7wX/notification
-events/session/Xy9Kp2Lm3nO4qR5sT6uV7wX/Todo/42
-events/session/Xy9Kp2Lm3nO4qR5sT6uV7wX/Todo/*  (all todos for session)
+sessions/Xy9Kp2Lm3nO4qR5sT6uV7wX/events/Todo/42
+sessions/Xy9Kp2Lm3nO4qR5sT6uV7wX/events/notification
 ```
 
 **Subscriber patterns**:
 
 ```rust
 // Single session, all events
-let key = format!("events/session/{}/**", session_id);
+let key = format!("sessions/{}/**", session_id);
 
 // Single session, specific aggregate type
-let key = format!("events/session/{}/Todo/**", session_id);
+let key = format!("sessions/{}/events/Todo/**", session_id);
 
 // Single session, specific aggregate instance
-let key = format!("events/session/{}/Todo/{}", session_id, todo_id);
+let key = format!("sessions/{}/events/Todo/{}", session_id, todo_id);
 ```
 
 ### Global vs. session-scoped events
