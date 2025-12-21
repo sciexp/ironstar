@@ -477,6 +477,9 @@ Consult these when questioning "why this technology?" for specific subsystems:
 - **Infrastructure**: `docs/notes/architecture/infrastructure-decisions.md` — SQLite vs PostgreSQL, Zenoh vs NATS, embedded vs external services
 - **CQRS implementation**: `docs/notes/architecture/cqrs-implementation-decisions.md` — Custom CQRS vs cqrs-es/esrs frameworks, pure sync aggregates
 - **Build tooling**: `docs/notes/architecture/build-tooling-decisions.md` — Rolldown configuration, asset embedding, dev/prod modes
+- **Authentication**: `docs/notes/architecture/authentication-decisions.md` — Session auth, argon2 password hashing, RBAC patterns
+- **Error handling**: `docs/notes/architecture/error-handling-decisions.md` — Error types, Result propagation, user-facing messages
+- **Observability**: `docs/notes/architecture/observability-decisions.md` — Structured logging, Prometheus metrics, health checks
 
 ### Implementing features
 
@@ -501,7 +504,8 @@ Read these when implementing or debugging the event sourcing + SSE integration:
 - **SSE connection lifecycle**: `docs/notes/architecture/sse-connection-lifecycle.md` — Client subscription, reconnection resilience, Last-Event-ID
 - **Event replay consistency**: `docs/notes/architecture/event-replay-consistency.md` — Snapshot + delta patterns, cache-aside with Zenoh invalidation
 - **Projection patterns**: `docs/notes/architecture/projection-patterns.md` — Materialized views, denormalization, DuckDB analytics
-- **Performance tuning**: `docs/notes/architecture/performance-tuning.md` — Debouncing, batching, rate limiting, Zenoh key expression optimization
+- **Performance tuning**: `docs/notes/architecture/performance-tuning.md` — Channel sizing, backpressure, metrics instrumentation
+- **Performance advanced patterns**: `docs/notes/architecture/performance-advanced-patterns.md` — Debouncing, batching, rate limiting
 - **Command write patterns**: `docs/notes/architecture/command-write-patterns.md` — Validation, optimistic locking, idempotency
 
 ### Caching
@@ -515,7 +519,8 @@ Read these when implementing caching strategies for analytics and projections:
 
 Read these when working on CSS, bundling, or web components:
 
-- **Frontend build pipeline**: `docs/notes/architecture/frontend-build-pipeline.md` — Rolldown config, PostCSS, Lit bundling options
+- **Frontend build pipeline**: `docs/notes/architecture/frontend-build-pipeline.md` — Rolldown config, PostCSS, asset serving modes
+- **Lit component bundling**: `docs/notes/architecture/lit-component-bundling.md` — Lit-specific bundling, Rolldown vs esbuild, TypeScript decorators
 - **CSS architecture**: `docs/notes/architecture/css-architecture.md` — Open Props tokens, theme customization, component styles
 
 ### Event bus and distribution
