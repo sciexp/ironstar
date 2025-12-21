@@ -933,6 +933,64 @@ Migrate to Option A (Rolldown) later for tool consolidation if needed.
 - **esbuild source**: `~/projects/lakescope-workspace/esbuild/`
 - **Lit framework**: `~/projects/lakescope-workspace/lit-web-components/`
 
+### Lit component configuration essentials
+
+When implementing Lit components, specific TypeScript and rendering configurations are required for compatibility with decorators and Open Props tokens.
+
+#### TypeScript configuration for Lit
+
+Lit components require decorator support with specific compiler options:
+
+```json
+// tsconfig.json
+{
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false,
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler"
+  }
+}
+```
+
+The `useDefineForClassFields: false` setting is critical for Lit's `@property` decorators to work correctly.
+Without this, class fields are initialized before decorators run, breaking Lit's reactive property system.
+
+#### Light DOM requirement
+
+All Lit components using Open Props tokens must render to Light DOM instead of Shadow DOM:
+
+```typescript
+// In your Lit component
+protected createRenderRoot() {
+  return this  // Light DOM, not Shadow DOM
+}
+```
+
+Shadow DOM creates a CSS encapsulation boundary that blocks CSS custom property inheritance.
+Since Open Props design tokens are defined in the global `:root` scope, Shadow DOM prevents these tokens from reaching the component's internal styles.
+
+This is a fundamental architectural constraint when combining Lit with Open Props.
+Components that require Shadow DOM encapsulation cannot use Open Props tokens and must define their own isolated styles.
+
+#### Tree-shaking ECharts
+
+When bundling ds-echarts or custom ECharts components, tree-shake by importing only needed chart types:
+
+```typescript
+// Instead of: import * as echarts from 'echarts'
+import * as echarts from 'echarts/core';
+import { BarChart, LineChart } from 'echarts/charts';
+import { GridComponent, TooltipComponent } from 'echarts/components';
+import { SVGRenderer } from 'echarts/renderers';
+
+echarts.use([BarChart, LineChart, GridComponent, TooltipComponent, SVGRenderer]);
+```
+
+This reduces bundle size from ~800KB to ~200-300KB depending on chart types used.
+The SVGRenderer is recommended over CanvasRenderer for better accessibility and DOM integration.
+
 ---
 
 ## Lucide icons integration
