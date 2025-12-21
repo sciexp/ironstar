@@ -495,6 +495,87 @@ Binary crate becomes thin wiring.
 
 **Anti-pattern**: Lower layers depending on higher layers (e.g., domain depending on infrastructure).
 
+## When to decompose: decision framework
+
+The incremental decomposition strategy above outlines six phases, but when should you actually trigger each phase?
+Use these concrete thresholds as decision points, not absolute rules.
+
+### Phase 1 → Phase 2: Extract interfaces
+
+**Trigger**: When you need to swap implementations for testing or when a second adapter implementation is planned.
+
+Concrete signals:
+- Writing integration tests that require mock implementations of event store or session store
+- Planning to support multiple storage backends (e.g., SQLite for dev, PostgreSQL for prod)
+- Domain logic tests are polluted with database setup code
+
+**Effort**: Low. Create `ironstar-interfaces` crate, move trait definitions, update `Cargo.toml` dependencies.
+
+**Benefit**: Testability improves immediately; domain tests no longer require database fixtures.
+
+### Phase 2 → Phase 3: Extract domain
+
+**Trigger**: When domain module exceeds ~500 lines or contains 3+ distinct aggregate types.
+
+Concrete signals:
+- `src/domain/` contains multiple aggregate roots with independent lifecycles
+- Domain types are being reused across different features
+- You want to publish domain types as a library for client code generation
+
+**Effort**: Medium. Extract `common-*` crates first (enums, types, utils), then domain logic.
+
+**Benefit**: Domain becomes reusable; enables TypeScript type generation via ts-rs without pulling in infrastructure dependencies.
+
+### Phase 3 → Phase 4: Extract adapters
+
+**Trigger**: When infrastructure module exceeds ~800 lines or you need runtime adapter selection.
+
+Concrete signals:
+- Multiple storage backends in use (SQLite + PostgreSQL, or adding DuckDB analytics)
+- Infrastructure code has distinct build requirements (e.g., DuckDB needs bundled feature, OpenSSL for HTTPS)
+- CI builds are slow because monolithic crate rebuilds on every change
+
+**Effort**: High. Requires careful dependency management and per-crate `crate.nix` configuration.
+
+**Benefit**: Independent compilation of adapters; enables feature flags to exclude heavy dependencies.
+
+### Phase 4 → Phase 5: Extract services
+
+**Trigger**: When application state composition becomes complex or you have 5+ services to wire.
+
+Concrete signals:
+- `AppState` struct has 8+ fields
+- Handler functions are constrained by needing access to full `AppState` rather than specific capabilities
+- Service initialization order matters and causes subtle bugs
+
+**Effort**: Medium. Implement HasXxx traits, create All composition root, update handler signatures.
+
+**Benefit**: Fine-grained dependency injection; handlers declare exactly what they need; easier to test handlers in isolation.
+
+### Phase 5 → Phase 6: Extract presentation
+
+**Trigger**: When HTTP layer exceeds ~1000 lines or you're generating multiple binaries (server + CLI tool).
+
+Concrete signals:
+- Building a CLI tool that reuses domain/application logic but doesn't need HTTP handlers
+- Considering alternative frontends (REST API + GraphQL API + gRPC)
+- HTTP layer changes trigger rebuilds of domain logic even when domain hasn't changed
+
+**Effort**: Medium. Extract routes, handlers, templates into `ironstar-web` crate.
+
+**Benefit**: Binary crate becomes thin wiring; can build multiple binaries sharing core logic (web server, CLI, worker).
+
+### When NOT to decompose
+
+Avoid premature decomposition when:
+- Project is still in exploratory/prototyping phase
+- Total codebase is under 2000 lines
+- You're the only developer and compilation times are acceptable
+- Feature requirements are still volatile and refactoring across crates would slow iteration
+
+The single-crate structure with clear module boundaries provides most benefits of multi-crate without the coordination overhead.
+Decompose reactively when pain points emerge, not proactively to match a reference architecture.
+
 ## Related documentation
 
 - Foundational layers 0-3: `crate-architecture.md`

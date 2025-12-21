@@ -145,6 +145,28 @@ Ironstar uses three layer models serving different purposes: conceptual thinking
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
+### CQRS separation: write side and read side
+
+Ironstar implements Command Query Responsibility Segregation (CQRS) with event sourcing.
+The architecture separates write operations (commands) from read operations (queries), with events as the authoritative source of truth connecting the two sides.
+
+**Write side flow** (commands → events → persistence):
+
+Commands arrive via HTTP POST requests and are validated by pure aggregate functions in the domain layer.
+Valid commands produce domain events that are appended to the SQLite event store with monotonically increasing sequence numbers.
+After persistence, events are published to the `tokio::broadcast` event bus for fan-out to subscribers.
+The write side is optimized for consistency and durability, with SQLite WAL mode ensuring append-only immutability.
+
+**Read side flow** (events → projections → queries):
+
+Projections subscribe to the event bus via `tokio::broadcast::Receiver` channels, updating in-memory read models in response to events.
+On application startup, projections replay the complete event history from SQLite to rebuild state.
+During runtime, they process events in real-time, maintaining eventually consistent read models optimized for specific query patterns.
+SSE handlers serve these read models to browsers, sending incremental updates as projections change.
+The read side is optimized for query performance and denormalization, with DuckDB providing OLAP analytics over projections and moka caching frequently accessed analytics results.
+
+This separation allows independent scaling and optimization of write and read workloads, with events serving as the immutable audit log enabling temporal queries, debugging, and replay.
+
 ---
 
 ## Component selection matrix

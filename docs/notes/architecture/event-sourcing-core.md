@@ -4,6 +4,91 @@ This is the master index document for ironstar's event sourcing, projection, and
 This document provides the conceptual overview, architectural diagram, defaults, trade-offs, and references.
 Detailed implementation patterns are split into focused documents linked below.
 
+## Critical invariants
+
+Ironstar's event sourcing implementation depends on four fundamental invariants that must never be violated.
+Understanding these invariants is essential before implementing any CQRS component.
+
+### Subscribe-before-replay invariant
+
+SSE handlers must subscribe to the event bus *before* loading historical events from the event store.
+This prevents a race condition where events could be missed during the gap between replay completion and subscription.
+
+```rust
+// CORRECT: Subscribe first, then replay
+let mut rx = state.event_bus.subscribe();
+let historical = state.event_store.load_since(last_id).await?;
+
+// INCORRECT: Replay first, then subscribe (creates race window)
+let historical = state.event_store.load_since(last_id).await?;
+let mut rx = state.event_bus.subscribe(); // Events emitted during replay are lost
+```
+
+The correct ordering ensures that even if new events arrive during historical replay, they are buffered in the broadcast channel and will be processed after replay completes.
+See `sse-connection-lifecycle.md` for the complete connection state machine.
+
+### Pure aggregate invariant
+
+Aggregate `handle_command` and `apply_event` functions must be pure: synchronous, deterministic, with no side effects.
+All I/O operations (database queries, API calls, random number generation, system time) must occur in the application layer before calling the aggregate.
+
+```rust
+// CORRECT: Pure aggregate with pre-validated inputs
+impl Order {
+    pub fn handle_command(state: &OrderState, cmd: OrderCommand) -> Result<Vec<OrderEvent>, OrderError> {
+        // No async, no I/O, deterministic
+    }
+}
+
+// INCORRECT: Aggregate performing I/O
+impl Order {
+    pub async fn handle_command(state: &OrderState, cmd: OrderCommand) -> Result<Vec<OrderEvent>, OrderError> {
+        let user = fetch_user_from_db(cmd.user_id).await?; // Violates purity
+        // ...
+    }
+}
+```
+
+This purity enables testing aggregates without infrastructure, replaying events to reconstruct state, and reasoning about domain logic independently of I/O concerns.
+See `design-principles.md` for the complete pure aggregate pattern and `command-write-patterns.md` for testing strategies.
+
+### Monotonic sequence invariant
+
+Event sequence numbers must be strictly monotonically increasing with no gaps.
+SQLite's `AUTOINCREMENT` primary key on the events table enforces this, providing a total order for event replay and SSE Last-Event-ID tracking.
+
+```sql
+CREATE TABLE events (
+    sequence INTEGER PRIMARY KEY AUTOINCREMENT,  -- Enforces monotonic sequence
+    -- ...
+);
+```
+
+Sequence numbers serve as both event ordering and SSE checkpoint markers.
+When a client reconnects with `Last-Event-ID: 42`, the server replays all events with `sequence > 42`, guaranteeing no missed updates.
+See `event-replay-consistency.md` for reconnection patterns and consistency guarantees.
+
+### Events-as-source-of-truth invariant
+
+The event store is the authoritative source of truth; all other state (projections, caches, read models) is derived and ephemeral.
+Projections can be deleted and rebuilt from events at any time without data loss.
+
+```rust
+// On startup: rebuild projections from scratch
+let all_events = event_store.load_all().await?;
+let projection = TodoListProjection::from_events(all_events);
+
+// Projections are never persisted; they're always derived
+```
+
+This enables:
+- Schema evolution by replaying events through new projection logic
+- Debugging by replaying events to specific points in time
+- Audit trails with complete state reconstruction
+
+Never mutate projections directly; always derive them from events.
+See `projection-patterns.md` for caching strategies that preserve this invariant.
+
 ## Document cluster navigation
 
 | Document | Focus |
