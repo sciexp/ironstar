@@ -295,6 +295,7 @@ For guaranteed consistency on read-after-write, handlers can explicitly wait for
 - Backend core decisions: `backend-core-decisions.md`
 - Infrastructure decisions: `infrastructure-decisions.md`
 - Build tooling decisions: `build-tooling-decisions.md`
-- Event sourcing patterns: `event-sourcing-sse-pipeline.md`
+- Event sourcing core concepts: `event-sourcing-core.md`
+- Command write patterns: `command-write-patterns.md`
 - Crate architecture: `crate-architecture.md`
 - Module organization: `architecture-decisions.md` (see Module organization section)
