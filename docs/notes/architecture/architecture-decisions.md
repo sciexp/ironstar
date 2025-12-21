@@ -154,6 +154,9 @@ For the complete 7-layer crate decomposition plan, see `crate-architecture.md`.
 | **Pure Aggregate** | Domain logic | State machine (pure function) | None (pure) |
 | **Upcaster** | Schema evolution | Category of versions | Event load |
 
+**Event bus transition**: The current implementation uses `tokio::broadcast` for in-process event notification, which is sufficient for single-node deployments handling up to ~256 concurrent SSE subscribers or ~1000 events/second.
+For distributed deployment requiring multiple nodes, key expression filtering, or higher throughput, see `zenoh-event-bus.md` for the Zenoh migration path.
+
 This stack achieves the goal: **effects explicit in types, isolated at boundaries, with a pure functional core**.
 
 ---
