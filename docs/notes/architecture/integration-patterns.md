@@ -583,6 +583,44 @@ ECharts' `setOption()` merges incremental updates efficiently.
 
 ---
 
+## Visualization library decision matrix
+
+When choosing between visualization libraries for ironstar:
+
+| Criterion | Vega-Lite | ECharts | Mosaic |
+|-----------|-----------|---------|--------|
+| Wrapper pattern | Pattern 2 (vanilla) | Pattern 1.5 (Lit) | TBD |
+| Build complexity | Low | Medium | Medium |
+| Declarative spec | Yes (JSON) | Yes (JSON) | Yes (grammar) |
+| Complex animations | Limited | Excellent | Good |
+| Coordinated views | Limited | Limited | Excellent |
+| Bundle size | ~200KB | ~800KB (full) | ~400KB |
+| Real-time updates | View API | setOption merge | TBD |
+| Selection handling | Vega signals | ECharts events | Selections |
+
+### Recommendations
+
+- **Vega-Lite**: Best for specification-driven, reproducible visualizations where the chart structure is defined by data
+- **ECharts**: Best for interactive dashboards requiring rich animations, real-time updates, and complex user interactions
+- **Mosaic**: Best for large dataset exploration with coordinated multi-view analysis (integration TBD)
+
+### Data flow comparison
+
+**Vega-Lite (Pattern 2):**
+```
+Server → spec.json → vega-chart → View API → browser render
+         data.json ↗
+```
+
+**ECharts (Pattern 1.5):**
+```
+Server → PatchSignals($chartOption) → ds-echarts → setOption() → browser render
+```
+
+ECharts integrates more tightly with Datastar's signal system, making it preferred for CQRS/SSE architectures.
+
+---
+
 ## Considerations for Mosaic integration (TBD)
 
 Mosaic (`/Users/crs58/projects/lakescope-workspace/mosaic`) provides a higher-level grammar of graphics built on DuckDB and Observable Plot.
