@@ -422,6 +422,16 @@ pub trait EventStore: Send + Sync {
         aggregate_type: &str,
         aggregate_id: &str,
     ) -> Result<Vec<StoredEvent>, Error>;
+
+    /// Returns the earliest sequence number in the store.
+    /// Used for bounded replay when snapshots are unavailable.
+    /// Returns None if the store is empty.
+    async fn earliest_sequence(&self) -> Result<Option<i64>, Error>;
+
+    /// Returns the latest sequence number in the store.
+    /// Used for consistency checks and SSE Last-Event-ID validation.
+    /// Returns None if the store is empty.
+    async fn latest_sequence(&self) -> Result<Option<i64>, Error>;
 }
 // Note: Error, DomainEvent, and StoredEvent types are defined in event-sourcing-core.md
 
@@ -518,6 +528,26 @@ impl EventStore for SqliteEventStore {
         .await?;
 
         Ok(events)
+    }
+
+    async fn earliest_sequence(&self) -> Result<Option<i64>, Error> {
+        let result: Option<(i64,)> = sqlx::query_as(
+            "SELECT MIN(sequence) FROM events",
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(result.map(|(seq,)| seq))
+    }
+
+    async fn latest_sequence(&self) -> Result<Option<i64>, Error> {
+        let result: Option<(i64,)> = sqlx::query_as(
+            "SELECT MAX(sequence) FROM events",
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(result.map(|(seq,)| seq))
     }
 }
 ```
