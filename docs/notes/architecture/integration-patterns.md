@@ -127,38 +127,22 @@ All state flows through signals, and the component merely translates between the
 
 ---
 
-## Pattern 1.5: When Lit is appropriate for wrapper components
+## Pattern 1.5: When Lit is appropriate
 
-Ironstar's general preference is vanilla web components to avoid redundant reactivity layers, but certain integration scenarios benefit architecturally from Lit's lifecycle management and reactive property system.
-The key criterion is whether Lit provides structural value beyond convenience.
+Use Lit instead of vanilla web components when ALL of these conditions apply:
 
-### Rationale for Lit over vanilla custom elements
-
-Lit becomes appropriate when a web component requires:
-
-1. **Complex lifecycle coordination**: Multiple observers (ResizeObserver, MediaQueryList, IntersectionObserver) with coordinated setup and teardown sequences that must be orchestrated carefully
-
-2. **Imperative library integration**: Third-party libraries with init/dispose patterns (ECharts, D3 force simulations, Three.js scenes) where the library expects ownership of a DOM subtree and has its own internal state machine
-
-3. **Declarative property mapping**: When the component primarily serves as a bridge between Datastar's `data-attr:*` binding pattern and an imperative API, Lit's `@property` decorator provides cleaner attribute-to-API translation than manual `observedAttributes` arrays
-
-### Decision criteria
-
-Use Lit when **all** of the following apply:
-
-- Component wraps an imperative library that manages its own internal state
-- Component requires multiple lifecycle observers or listeners that must be cleaned up precisely
-- Component properties map directly to library configuration (no business logic)
-- Lit's reactivity is isolated to component internals; **Datastar still owns application state**
-- Light DOM rendering is acceptable (required for Open Props token access)
-
-If any of these are false, prefer vanilla web components (Pattern 1).
+1. **Complex internal state**: Library manages significant internal state (ECharts scales, animations, selections)
+2. **Multiple lifecycle observers**: Coordination needed for ResizeObserver, MediaQueryList, IntersectionObserver
+3. **Light DOM acceptable**: Required for Open Props CSS token inheritance
+4. **Isolated reactivity**: Lit's reactivity is internal to component, not competing with Datastar signals
 
 ### Canonical example: ds-echarts
 
-The `ds-echarts` component demonstrates when Lit's architectural value justifies the dependency.
+The ds-echarts component from northstar demonstrates this pattern perfectly:
 
 **Source**: `~/projects/lakescope-workspace/datastar-go-nats-template-northstar/web/libs/lit/src/components/ds-echarts/ds-echarts.ts`
+
+**Design document**: `~/projects/lakescope-workspace/datastar-go-nats-template-northstar/docs/notes/echarts/ds-echarts-integration-guide.md`
 
 ```typescript
 @customElement('ds-echarts')
@@ -191,10 +175,11 @@ export class DsEcharts extends LitElement {
 
 **Why Lit here**:
 
-- ECharts requires careful init (`echarts.init`) and dispose (`chart.dispose()`) lifecycle
-- ResizeObserver must be set up after chart initialization and torn down precisely
-- MediaQueryList listener for dark mode requires removal on disconnect to prevent memory leaks
-- Lit's `updated(changedProperties)` provides clean property diffing for selective updates
+- **ResizeObserver** with debouncing (configurable via `resize-delay` prop)
+- **MediaQueryList** listener for automatic dark mode theme switching
+- **ECharts lifecycle** coordination (init → setOption → resize → dispose)
+- **Custom events** bridging ECharts interactions to Datastar signals (chart-click, chart-ready, etc.)
+- **Light DOM** via `createRenderRoot() { return this }` for Open Props token access
 
 A vanilla implementation would require manually tracking previous property values and managing all observer cleanup in `disconnectedCallback`.
 Lit's lifecycle hooks eliminate this boilerplate while preserving the thin wrapper pattern.
@@ -234,6 +219,14 @@ This ensures Open Props CSS custom properties are accessible (shadow DOM blocks 
 
 Lit components can be bundled via either Rolldown or esbuild.
 See `docs/notes/architecture/frontend-build-pipeline.md` for configuration options including the proven esbuild pattern from the Northstar template.
+
+### Complete implementation reference
+
+See `~/projects/lakescope-workspace/datastar-go-nats-template-northstar/docs/notes/echarts/ds-echarts-integration-guide.md` for complete implementation details including:
+- Component property reference
+- Event system design
+- Hypertext template patterns
+- Axum SSE handler integration
 
 ### Source code references
 
