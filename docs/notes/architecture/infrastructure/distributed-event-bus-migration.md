@@ -183,52 +183,16 @@ fn event_key(event: &StoredEvent) -> String {
 
 ## Key expression patterns for distributed deployment
 
-**Hierarchical event keys:**
+For complete Zenoh key expression patterns including wildcards (`*`, `**`, `$*`), subscription semantics, and session-scoped routing, see `zenoh-event-bus.md`.
+
+The DualEventBus uses hierarchical event keys for distributed deployment:
 
 ```
 events/{aggregate_type}/{aggregate_id}/{sequence}
 ```
 
-**Examples:**
-
-```
-events/Todo/uuid-123/1
-events/Todo/uuid-123/2
-events/User/uuid-456/1
-```
-
-**Subscription patterns:**
-
-```rust
-// Subscribe to all events
-session.subscribe("events/**").await?;
-
-// Subscribe to specific aggregate type
-session.subscribe("events/Todo/**").await?;
-
-// Subscribe to specific aggregate instance
-session.subscribe("events/Todo/uuid-123/**").await?;
-```
-
-**Cache invalidation patterns:**
-
-```rust
-// Invalidate all Todo-related caches when any Todo event arrives
-let subscriber = session.subscribe("events/Todo/**").await?;
-
-// Invalidate specific aggregate cache
-let subscriber = session.subscribe("events/Todo/uuid-123/**").await?;
-```
-
-**Session-scoped events:**
-
-```rust
-// Events scoped to specific session (for SSE filtering)
-format!("events/session/{session_id}/**")
-
-// Subscribe to session-specific events
-session.subscribe(&format!("events/session/{session_id}/**")).await?;
-```
+This structure enables aggregate-type filtering (`events/Todo/**`), instance-specific subscriptions (`events/Todo/uuid-123/**`), and cache invalidation patterns.
+See `analytics-cache-patterns.md` Pattern 4 for Zenoh-based cache invalidation.
 
 ## Migration phases
 
