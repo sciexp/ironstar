@@ -210,15 +210,8 @@ Datastar Signals ◀──data-on:*─────── CustomEvent ◀──EC
 
 ### Light DOM requirement
 
-All Lit components in this pattern **must** override `createRenderRoot()` to use light DOM:
-
-```typescript
-protected createRenderRoot() {
-  return this
-}
-```
-
-This ensures Open Props CSS custom properties are accessible (shadow DOM blocks token inheritance).
+All Lit components in this pattern must use Light DOM via `createRenderRoot() { return this }` to inherit Open Props CSS custom properties.
+See `css-architecture.md` for detailed rationale and implementation patterns.
 
 ### Build integration
 
