@@ -11,7 +11,8 @@ For backend, infrastructure, and CQRS implementation decisions, see the related 
 |------|------|-----|
 | Open Props + Open Props UI | CSS tokens & components | Pure CSS, zero runtime, modern CSS features |
 | Rolldown | JS/CSS bundler | Rust-native (over Go-based esbuild), Vite 8 default |
-| Vanilla Web Components | Third-party lib wrappers | Thin encapsulation, no reactivity system |
+| Vanilla Web Components | Simple third-party lib wrappers | Thin encapsulation, no reactivity system |
+| Lit | Complex third-party lib wrappers | Standard for TypeScript libraries with lifecycle requirements (ECharts, Vega-Lite). Light DOM for CSS token inheritance. |
 | Lucide | Icons | Build-time SVG inlining, zero runtime |
 | TypeScript | Type safety | For minimal JS (web components only) |
 
@@ -19,7 +20,7 @@ For backend, infrastructure, and CQRS implementation decisions, see the related 
 
 | Tool | Why Not |
 |------|---------|
-| Lit | Redundant reactivity: Lit's reactive properties duplicate Datastar signals |
+| Lit (for general UI) | Redundant reactivity: Lit's reactive properties duplicate Datastar signals. However, Lit IS recommended for wrapping third-party TypeScript libraries (ECharts, Vega-Lite) with complex lifecycle requirements. See Pattern 1.5 in `integration-patterns.md` and `ds-echarts-integration-guide.md` for the canonical example. |
 | React / Vue / Svelte | SPA philosophy contradicts hypermedia-driven architecture |
 | Leptos / Dioxus | Rust WASM frameworks would duplicate Datastar's role entirely |
 | esbuild | Go-based; prefer Rust-native Rolldown for toolchain consistency |
