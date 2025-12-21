@@ -466,6 +466,7 @@ Start here when new to the project or reviewing architectural principles:
 - **Design principles**: `docs/notes/architecture/design-principles.md` — Tao of Datastar principles, functional programming foundations, algebraic types
 - **Architecture decisions**: `docs/notes/architecture/architecture-decisions.md` — Technology choices (Open Props, hypertext, Zenoh), project structure tree, rationale for all major decisions
 - **Crate architecture**: `docs/notes/architecture/crate-architecture.md` — Multi-crate decomposition plan, HasXxx capability traits, workspace scaling path
+- **Crate services composition**: `docs/notes/architecture/crate-services-composition.md` — Service layer patterns, All composition root, HasXxx trait implementation
 
 ### Architecture decision records
 
@@ -475,6 +476,7 @@ Consult these when questioning "why this technology?" for specific subsystems:
 - **Backend core**: `docs/notes/architecture/backend-core-decisions.md` — axum + hypertext integration, lazy rendering strategy
 - **Infrastructure**: `docs/notes/architecture/infrastructure-decisions.md` — SQLite vs PostgreSQL, Zenoh vs NATS, embedded vs external services
 - **CQRS implementation**: `docs/notes/architecture/cqrs-implementation-decisions.md` — Custom CQRS vs cqrs-es/esrs frameworks, pure sync aggregates
+- **Build tooling**: `docs/notes/architecture/build-tooling-decisions.md` — Rolldown configuration, asset embedding, dev/prod modes
 
 ### Implementing features
 
@@ -482,8 +484,13 @@ Read these when implementing specific subsystems or integrating libraries:
 
 - **Event sourcing core**: `docs/notes/architecture/event-sourcing-core.md` — Aggregate patterns, command handling, event schema, event store
 - **Session management**: `docs/notes/architecture/session-management.md` — Session cookies, SQLite schema, axum extractors, per-session Zenoh keys
+- **Session implementation**: `docs/notes/architecture/session-implementation.md` — Concrete implementation patterns, middleware integration, session lifecycle
+- **Session security**: `docs/notes/architecture/session-security.md` — CSRF protection, secure cookie attributes, session fixation prevention
 - **Integration patterns**: `docs/notes/architecture/integration-patterns.md` — Web components (vanilla/Lit), Vega-Lite, ECharts
+- **Integration patterns visualizations**: `docs/notes/architecture/integration-patterns-visualizations.md` — Visualization-specific patterns, data binding, reactivity
 - **ECharts integration guide**: `docs/notes/architecture/ds-echarts-integration-guide.md` — Complete ds-echarts Lit component implementation
+- **ECharts backend**: `docs/notes/architecture/ds-echarts-backend.md` — Server-side data preparation, SSE streaming, signal contracts
+- **ECharts build test**: `docs/notes/architecture/ds-echarts-build-test.md` — Build pipeline integration, testing strategies, deployment verification
 - **Signal contracts**: `docs/notes/architecture/signal-contracts.md` — TypeScript type generation with ts-rs, datastar signal patterns
 - **Development workflow**: `docs/notes/architecture/development-workflow.md` — process-compose orchestration, hot reload, asset serving modes
 
@@ -496,6 +503,13 @@ Read these when implementing or debugging the event sourcing + SSE integration:
 - **Projection patterns**: `docs/notes/architecture/projection-patterns.md` — Materialized views, denormalization, DuckDB analytics
 - **Performance tuning**: `docs/notes/architecture/performance-tuning.md` — Debouncing, batching, rate limiting, Zenoh key expression optimization
 - **Command write patterns**: `docs/notes/architecture/command-write-patterns.md` — Validation, optimistic locking, idempotency
+
+### Caching
+
+Read these when implementing caching strategies for analytics and projections:
+
+- **Analytics cache architecture**: `docs/notes/architecture/analytics-cache-architecture.md` — Moka cache design, TTL-based eviction, Zenoh invalidation (Pattern 4)
+- **Analytics cache patterns**: `docs/notes/architecture/analytics-cache-patterns.md` — Cache-aside, write-through, invalidation strategies, DuckDB query caching
 
 ### Frontend implementation
 
