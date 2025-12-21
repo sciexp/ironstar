@@ -7,104 +7,28 @@ See `session-implementation.md` for Rust implementation patterns.
 
 ## Zenoh key expression patterns for sessions
 
-### Per-session event routing
+For complete Zenoh key expression patterns including wildcards (`*`, `**`, `$*`), multi-pattern subscriptions, and publishing patterns, see `zenoh-event-bus.md`.
+This section documents session-specific key expression conventions that extend the base patterns.
 
-Session IDs appear in Zenoh key expressions to scope events to specific users.
-For detailed Zenoh configuration and key expression fundamentals, see `zenoh-event-bus.md`.
+### Session-scoped key structure
+
+Session IDs appear in Zenoh key expressions to scope events to specific users:
 
 ```
-events/session/{session_id}/notification
-events/session/{session_id}/state_update
 events/session/{session_id}/{aggregate_type}/{aggregate_id}
+events/session/{session_id}/notification
 ```
 
-**Example key expressions**:
+### Global vs. session-scoped routing
 
-```
-events/session/Xy9Kp2Lm3nO4qR5sT6uV7wX/notification
-events/session/Xy9Kp2Lm3nO4qR5sT6uV7wX/Todo/42
-events/session/Xy9Kp2Lm3nO4qR5sT6uV7wX/Todo/*  (all todos for session)
-```
-
-**Subscriber patterns**:
-
-```rust
-// Single session, all events
-let key = format!("events/session/{}/**", session_id);
-
-// Single session, specific aggregate type
-let key = format!("events/session/{}/Todo/**", session_id);
-
-// Single session, specific aggregate instance
-let key = format!("events/session/{}/Todo/{}", session_id, todo_id);
-```
-
-### Global vs. session-scoped events
-
-Some events are broadcast globally (e.g., system notifications), others are session-scoped (e.g., user-specific state updates).
+Command handlers decide whether events are broadcast globally or session-scoped:
 
 ```
 events/global/announcement        → All sessions
 events/session/{id}/Todo/42       → Single session only
 ```
 
-**Command handlers decide routing**.
 For the complete command handling pattern including validation, event emission, and persistence, see `../cqrs/event-sourcing-core.md`.
-
-```rust
-async fn handle_create_todo(
-    session_id: &str,
-    cmd: CreateTodo,
-    zenoh: &Arc<zenoh::Session>,
-) -> Result<()> {
-    // Create event
-    let event = TodoCreated { id: cmd.id, text: cmd.text };
-    let payload = serde_json::to_vec(&event)?;
-
-    // Publish to session-specific key
-    let key = format!("events/session/{}/Todo/{}", session_id, cmd.id);
-    zenoh.put(key, payload).await?;
-
-    Ok(())
-}
-```
-
-### Publishing session-scoped events
-
-Convenience function for publishing to a session's key space.
-
-```rust
-pub async fn publish_to_session(
-    zenoh: &zenoh::Session,
-    session_id: &str,
-    event_type: &str,
-    aggregate_id: Option<&str>,
-    payload: &[u8],
-) -> Result<()> {
-    let key = match aggregate_id {
-        Some(id) => format!("events/session/{}/{}/{}", session_id, event_type, id),
-        None => format!("events/session/{}/{}", session_id, event_type),
-    };
-
-    zenoh.put(key, payload)
-        .await
-        .map_err(|e| anyhow::anyhow!("Zenoh publish failed: {}", e))?;
-
-    Ok(())
-}
-```
-
-**Usage**:
-
-```rust
-publish_to_session(
-    &zenoh,
-    &session.id,
-    "Todo",
-    Some("42"),
-    &event_payload,
-).await?;
-```
 
 ## Security considerations
 

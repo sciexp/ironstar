@@ -179,7 +179,7 @@ ECharts requires Pattern 1.5 (Lit wrapper) because:
 
 1. **Multiple lifecycle observers**: ResizeObserver (container dimension changes) + MediaQueryList (dark mode toggle)
 2. **Complex state coordination**: Theme changes require dispose → reinit → setOption cycle; Lit's lifecycle hooks manage this cleanly
-3. **Light DOM requirement**: `createRenderRoot() { return this }` for Open Props CSS token access
+3. **Light DOM requirement**: Required for Open Props CSS token inheritance (see `css-architecture.md`)
 4. **Error boundary**: Invalid JSON chart options should log errors without breaking the page
 
 See Pattern 1.5 in `integration-patterns.md` for detailed rationale on when Lit adds value over vanilla web components.
