@@ -1,7 +1,9 @@
 # Performance tuning
 
-This document covers performance optimization patterns for high-throughput event sourcing systems: debouncing, batching, rate limiting, backpressure strategies, and observability.
+This document covers core performance patterns for event sourcing systems: broadcast channel configuration, channel sizing, multiple projections, and observability metrics.
 Layer performance controls at channel boundaries with metrics-driven tuning.
+
+For advanced optimization techniques (debouncing, batching, rate limiting), see `performance-advanced-patterns.md`.
 
 ## Broadcast channel patterns
 
