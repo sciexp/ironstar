@@ -85,7 +85,7 @@ Prod mode embeds `static/dist/` and serves with `Cache-Control: max-age=31536000
 
 Ironstar starts as a single crate but the workspace structure supports future decomposition into a multi-crate architecture drawing from patterns in Golem (~25 crates) and Hyperswitch (~40 crates).
 Key patterns include HasXxx capability traits, All composition root, three commons crates (enums/types/utils), and configuration-driven adapter selection.
-See `docs/notes/architecture/crate-architecture.md` for the complete layered decomposition plan and migration path.
+See `docs/notes/architecture/core/crate-architecture.md` for the complete layered decomposition plan and migration path.
 
 ### Intentional divergences from Northstar
 
@@ -109,12 +109,12 @@ The Northstar Go template and datastar-go SDK remain valuable reference implemen
 Effects explicit in type signatures, isolated at boundaries to preserve compositionality.
 The stack embodies algebraic data types (sum types for states, product types for data), lawful abstractions, and referential transparency where possible.
 
-See `docs/notes/architecture/design-principles.md` and `docs/notes/architecture/architecture-decisions.md` for detailed design rationale and technology choices.
+See `docs/notes/architecture/core/design-principles.md` and `docs/notes/architecture/core/architecture-decisions.md` for detailed design rationale and technology choices.
 
 ### The Tao of Datastar (core principles)
 
 Ironstar embodies the server-first hypermedia principles from the Tao of Datastar.
-See `docs/notes/architecture/design-principles.md` for the complete principles and their application to ironstar's architecture.
+See `docs/notes/architecture/core/design-principles.md` for the complete principles and their application to ironstar's architecture.
 
 ## Stack overview
 
@@ -292,7 +292,7 @@ See their TodoMVC implementations for SSE formatting and signal parsing patterns
 | marhar-duckdb-tools | `~/projects/omicslake-workspace/marhar-duckdb-tools` | DuckDB tooling for data lake operations |
 
 These patterns enable the axum backend to query remote datasets (HuggingFace Hub, S3-compatible storage) via DuckDB's httpfs extension, serving data for ECharts/Vega visualizations without local data ingestion.
-See "Remote data sources via httpfs" in `docs/notes/architecture/architecture-decisions.md` section 6 for implementation details.
+See "Remote data sources via httpfs" in `docs/notes/architecture/core/architecture-decisions.md` section 6 for implementation details.
 
 ### Visualization libraries
 
@@ -368,12 +368,12 @@ Open Props + Open Props UI leverage modern CSS capabilities that require recent 
 
 **Lit web component pattern:** When integrating third-party TypeScript libraries that manage their own DOM (ECharts, Vega-Lite, etc.), use Lit web components with Light DOM.
 Light DOM is required for Open Props CSS token inheritance — Shadow DOM would isolate the component from design tokens.
-See `docs/notes/architecture/integration-patterns.md` for complete web component patterns and `docs/notes/architecture/ds-echarts-integration-guide.md` for the canonical ECharts implementation.
+See `docs/notes/architecture/frontend/integration-patterns.md` for complete web component patterns and `docs/notes/architecture/frontend/ds-echarts-integration-guide.md` for the canonical ECharts implementation.
 
 ## Visualization integration
 
 Vega-Lite and Apache ECharts require special web component integration patterns due to DOM ownership and complex state management.
-See `docs/notes/architecture/integration-patterns.md` for complete implementation patterns including Vega-Lite's `data-ignore-morph` handling and ECharts' Lit lifecycle integration.
+See `docs/notes/architecture/frontend/integration-patterns.md` for complete implementation patterns including Vega-Lite's `data-ignore-morph` handling and ECharts' Lit lifecycle integration.
 Mosaic integration pattern TBD.
 
 ## Event sourcing model
@@ -421,12 +421,12 @@ The embedded approach (SQLite + tokio::broadcast + moka) targets single-node dep
 
 tokio::broadcast is sufficient for single-node deployments up to ~1000 events/sec or ~256 concurrent SSE clients.
 When scaling beyond these limits or deploying across multiple nodes, migrate to Zenoh for key expression filtering and distributed pub/sub.
-See `docs/notes/architecture/zenoh-event-bus.md` for the detailed evaluation and migration path from tokio::broadcast to Zenoh.
+See `docs/notes/architecture/infrastructure/zenoh-event-bus.md` for the detailed evaluation and migration path from tokio::broadcast to Zenoh.
 
 Sessions are stored in SQLite alongside the event store (in a separate table), simplifying the stack by using a single embedded database for all persistent state.
 Analytics query results are cached in moka, an async-native in-memory cache with TTL-based eviction.
 Cache entries are invalidated via tokio::broadcast subscription (or Zenoh key expression patterns after migration).
-See `docs/notes/architecture/analytics-cache-architecture.md` for detailed cache design including Zenoh-based cache invalidation (Pattern 4).
+See `docs/notes/architecture/infrastructure/analytics-cache-architecture.md` for detailed cache design including Zenoh-based cache invalidation (Pattern 4).
 
 **CQRS/ES framework decision:**
 
@@ -462,7 +462,7 @@ just test                      # Run all tests including integration
 
 ## Project structure
 
-See `docs/notes/architecture/architecture-decisions.md` section 4 for the complete project structure tree with module organization and file-level documentation.
+See `docs/notes/architecture/core/architecture-decisions.md` section 4 for the complete project structure tree with module organization and file-level documentation.
 
 ## Documentation map
 
@@ -470,72 +470,72 @@ See `docs/notes/architecture/architecture-decisions.md` section 4 for the comple
 
 Start here when new to the project or reviewing architectural principles:
 
-- **Design principles**: `docs/notes/architecture/design-principles.md` — Tao of Datastar principles, functional programming foundations, algebraic types
-- **Architecture decisions**: `docs/notes/architecture/architecture-decisions.md` — Technology choices (Open Props, hypertext, Zenoh), project structure tree, rationale for all major decisions
-- **Crate architecture**: `docs/notes/architecture/crate-architecture.md` — Multi-crate decomposition plan, HasXxx capability traits, workspace scaling path
-- **Crate services composition**: `docs/notes/architecture/crate-services-composition.md` — Service layer patterns, All composition root, HasXxx trait implementation
+- **Design principles**: `docs/notes/architecture/core/design-principles.md` — Tao of Datastar principles, functional programming foundations, algebraic types
+- **Architecture decisions**: `docs/notes/architecture/core/architecture-decisions.md` — Technology choices (Open Props, hypertext, Zenoh), project structure tree, rationale for all major decisions
+- **Crate architecture**: `docs/notes/architecture/core/crate-architecture.md` — Multi-crate decomposition plan, HasXxx capability traits, workspace scaling path
+- **Crate services composition**: `docs/notes/architecture/core/crate-services-composition.md` — Service layer patterns, All composition root, HasXxx trait implementation
 
 ### Architecture decision records
 
 Consult these when questioning "why this technology?" for specific subsystems:
 
-- **Frontend stack**: `docs/notes/architecture/frontend-stack-decisions.md` — Open Props vs Tailwind, Rolldown vs esbuild, when to use Lit
-- **Backend core**: `docs/notes/architecture/backend-core-decisions.md` — axum + hypertext integration, lazy rendering strategy
-- **Infrastructure**: `docs/notes/architecture/infrastructure-decisions.md` — SQLite vs PostgreSQL, Zenoh vs NATS, embedded vs external services
-- **CQRS implementation**: `docs/notes/architecture/cqrs-implementation-decisions.md` — Custom CQRS vs cqrs-es/esrs frameworks, pure sync aggregates
-- **Build tooling**: `docs/notes/architecture/build-tooling-decisions.md` — Rolldown configuration, asset embedding, dev/prod modes
-- **Authentication**: `docs/notes/architecture/oauth-authentication.md` — OAuth-only auth (GitHub first, Google planned), provider strategy, RBAC patterns
-- **Error handling**: `docs/notes/architecture/error-handling-decisions.md` — Error types, Result propagation, user-facing messages
-- **Observability**: `docs/notes/architecture/observability-decisions.md` — Structured logging, Prometheus metrics, health checks
+- **Frontend stack**: `docs/notes/architecture/decisions/frontend-stack-decisions.md` — Open Props vs Tailwind, Rolldown vs esbuild, when to use Lit
+- **Backend core**: `docs/notes/architecture/decisions/backend-core-decisions.md` — axum + hypertext integration, lazy rendering strategy
+- **Infrastructure**: `docs/notes/architecture/decisions/infrastructure-decisions.md` — SQLite vs PostgreSQL, Zenoh vs NATS, embedded vs external services
+- **CQRS implementation**: `docs/notes/architecture/decisions/cqrs-implementation-decisions.md` — Custom CQRS vs cqrs-es/esrs frameworks, pure sync aggregates
+- **Build tooling**: `docs/notes/architecture/decisions/build-tooling-decisions.md` — Rolldown configuration, asset embedding, dev/prod modes
+- **Authentication**: `docs/notes/architecture/decisions/oauth-authentication.md` — OAuth-only auth (GitHub first, Google planned), provider strategy, RBAC patterns
+- **Error handling**: `docs/notes/architecture/decisions/error-handling-decisions.md` — Error types, Result propagation, user-facing messages
+- **Observability**: `docs/notes/architecture/decisions/observability-decisions.md` — Structured logging, Prometheus metrics, health checks
 
 ### Implementing features
 
 Read these when implementing specific subsystems or integrating libraries:
 
-- **Event sourcing core**: `docs/notes/architecture/event-sourcing-core.md` — Aggregate patterns, command handling, event schema, event store
-- **Session management**: `docs/notes/architecture/session-management.md` — Session cookies, SQLite schema, axum extractors, per-session Zenoh keys
-- **Session implementation**: `docs/notes/architecture/session-implementation.md` — Concrete implementation patterns, middleware integration, session lifecycle
-- **Session security**: `docs/notes/architecture/session-security.md` — CSRF protection, secure cookie attributes, session fixation prevention
-- **Integration patterns**: `docs/notes/architecture/integration-patterns.md` — Web components (vanilla/Lit), Vega-Lite, ECharts
-- **Integration patterns visualizations**: `docs/notes/architecture/integration-patterns-visualizations.md` — Visualization-specific patterns, data binding, reactivity
-- **ECharts integration guide**: `docs/notes/architecture/ds-echarts-integration-guide.md` — Complete ds-echarts Lit component implementation
-- **ECharts backend**: `docs/notes/architecture/ds-echarts-backend.md` — Server-side data preparation, SSE streaming, signal contracts
-- **ECharts build test**: `docs/notes/architecture/ds-echarts-build-test.md` — Build pipeline integration, testing strategies, deployment verification
-- **Signal contracts**: `docs/notes/architecture/signal-contracts.md` — TypeScript type generation with ts-rs, datastar signal patterns
-- **Development workflow**: `docs/notes/architecture/development-workflow.md` — process-compose orchestration, hot reload, asset serving modes
+- **Event sourcing core**: `docs/notes/architecture/cqrs/event-sourcing-core.md` — Aggregate patterns, command handling, event schema, event store
+- **Session management**: `docs/notes/architecture/infrastructure/session-management.md` — Session cookies, SQLite schema, axum extractors, per-session Zenoh keys
+- **Session implementation**: `docs/notes/architecture/infrastructure/session-implementation.md` — Concrete implementation patterns, middleware integration, session lifecycle
+- **Session security**: `docs/notes/architecture/infrastructure/session-security.md` — CSRF protection, secure cookie attributes, session fixation prevention
+- **Integration patterns**: `docs/notes/architecture/frontend/integration-patterns.md` — Web components (vanilla/Lit), Vega-Lite, ECharts
+- **Integration patterns visualizations**: `docs/notes/architecture/frontend/integration-patterns-visualizations.md` — Visualization-specific patterns, data binding, reactivity
+- **ECharts integration guide**: `docs/notes/architecture/frontend/ds-echarts-integration-guide.md` — Complete ds-echarts Lit component implementation
+- **ECharts backend**: `docs/notes/architecture/frontend/ds-echarts-backend.md` — Server-side data preparation, SSE streaming, signal contracts
+- **ECharts build test**: `docs/notes/architecture/frontend/ds-echarts-build-test.md` — Build pipeline integration, testing strategies, deployment verification
+- **Signal contracts**: `docs/notes/architecture/frontend/signal-contracts.md` — TypeScript type generation with ts-rs, datastar signal patterns
+- **Development workflow**: `docs/notes/architecture/infrastructure/development-workflow.md` — process-compose orchestration, hot reload, asset serving modes
 
 ### CQRS pipeline deep dives
 
 Read these when implementing or debugging the event sourcing + SSE integration:
 
-- **SSE connection lifecycle**: `docs/notes/architecture/sse-connection-lifecycle.md` — Client subscription, reconnection resilience, Last-Event-ID
-- **Event replay consistency**: `docs/notes/architecture/event-replay-consistency.md` — Snapshot + delta patterns, cache-aside with Zenoh invalidation
-- **Projection patterns**: `docs/notes/architecture/projection-patterns.md` — Materialized views, denormalization, DuckDB analytics
-- **Performance tuning**: `docs/notes/architecture/performance-tuning.md` — Channel sizing, backpressure, metrics instrumentation
-- **Performance advanced patterns**: `docs/notes/architecture/performance-advanced-patterns.md` — Debouncing, batching, rate limiting
-- **Command write patterns**: `docs/notes/architecture/command-write-patterns.md` — Validation, optimistic locking, idempotency
+- **SSE connection lifecycle**: `docs/notes/architecture/cqrs/sse-connection-lifecycle.md` — Client subscription, reconnection resilience, Last-Event-ID
+- **Event replay consistency**: `docs/notes/architecture/cqrs/event-replay-consistency.md` — Snapshot + delta patterns, cache-aside with Zenoh invalidation
+- **Projection patterns**: `docs/notes/architecture/cqrs/projection-patterns.md` — Materialized views, denormalization, DuckDB analytics
+- **Performance tuning**: `docs/notes/architecture/cqrs/performance-tuning.md` — Channel sizing, backpressure, metrics instrumentation
+- **Performance advanced patterns**: `docs/notes/architecture/cqrs/performance-advanced-patterns.md` — Debouncing, batching, rate limiting
+- **Command write patterns**: `docs/notes/architecture/cqrs/command-write-patterns.md` — Validation, optimistic locking, idempotency
 
 ### Caching
 
 Read these when implementing caching strategies for analytics and projections:
 
-- **Analytics cache architecture**: `docs/notes/architecture/analytics-cache-architecture.md` — Moka cache design, TTL-based eviction, Zenoh invalidation (Pattern 4)
-- **Analytics cache patterns**: `docs/notes/architecture/analytics-cache-patterns.md` — Cache-aside, write-through, invalidation strategies, DuckDB query caching
+- **Analytics cache architecture**: `docs/notes/architecture/infrastructure/analytics-cache-architecture.md` — Moka cache design, TTL-based eviction, Zenoh invalidation (Pattern 4)
+- **Analytics cache patterns**: `docs/notes/architecture/infrastructure/analytics-cache-patterns.md` — Cache-aside, write-through, invalidation strategies, DuckDB query caching
 
 ### Frontend implementation
 
 Read these when working on CSS, bundling, or web components:
 
-- **Frontend build pipeline**: `docs/notes/architecture/frontend-build-pipeline.md` — Rolldown config, PostCSS, asset serving modes
-- **Lit component bundling**: `docs/notes/architecture/lit-component-bundling.md` — Lit-specific bundling, Rolldown vs esbuild, TypeScript decorators
-- **CSS architecture**: `docs/notes/architecture/css-architecture.md` — Open Props tokens, theme customization, component styles
+- **Frontend build pipeline**: `docs/notes/architecture/frontend/frontend-build-pipeline.md` — Rolldown config, PostCSS, asset serving modes
+- **Lit component bundling**: `docs/notes/architecture/frontend/lit-component-bundling.md` — Lit-specific bundling, Rolldown vs esbuild, TypeScript decorators
+- **CSS architecture**: `docs/notes/architecture/frontend/css-architecture.md` — Open Props tokens, theme customization, component styles
 
 ### Event bus and distribution
 
 Read these when working with pub/sub, event distribution, or scaling beyond single-node:
 
-- **Zenoh event bus**: `docs/notes/architecture/zenoh-event-bus.md` — Key expression patterns, embedded config, Zenoh architecture
-- **Distributed event bus migration**: `docs/notes/architecture/distributed-event-bus-migration.md` — Migration from tokio::broadcast to Zenoh, DualEventBus pattern, scaling triggers, rollback procedure
+- **Zenoh event bus**: `docs/notes/architecture/infrastructure/zenoh-event-bus.md` — Key expression patterns, embedded config, Zenoh architecture
+- **Distributed event bus migration**: `docs/notes/architecture/infrastructure/distributed-event-bus-migration.md` — Migration from tokio::broadcast to Zenoh, DualEventBus pattern, scaling triggers, rollback procedure
 
 ### External references
 
