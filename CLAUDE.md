@@ -336,8 +336,8 @@ This means most reactivity lives in datastar signals, not client-side frameworks
 | Open Props | CSS design tokens, zero build complexity |
 | Open Props UI | Pure CSS components, copy-paste ownership model |
 | Rolldown | Rust-native bundler (over esbuild which is Go-based) |
-| Vanilla Web Components | Thin wrappers when encapsulating third-party libs |
-| Lit (conditional) | Complex lifecycle management for ECharts |
+| Lit | Standard for wrapping TypeScript libraries (ECharts, Vega-Lite, etc.) with Light DOM for CSS token inheritance |
+| Vanilla Web Components | Simple custom elements without external library dependencies |
 | Lucide | Build-time SVG icons, zero runtime |
 | TypeScript | Type safety for the minimal JS we write |
 
@@ -355,13 +355,13 @@ Open Props + Open Props UI leverage modern CSS capabilities that require recent 
 
 | Tool | Why Not |
 |------|---------|
-| Lit (for simple components) | Redundant reactivity (datastar already provides this) |
 | React/Vue/Svelte | SPA frameworks contradict hypermedia philosophy |
 | Leptos/Dioxus | Would duplicate datastar's role |
 | esbuild | Go-based; prefer Rust-native Rolldown |
 
-**Lit exception:** Use Lit only for complex third-party library integration (e.g., ECharts via ds-echarts) where the library manages significant internal state.
-See `docs/notes/architecture/integration-patterns.md` for complete web component patterns including vanilla thin wrappers and Lit lifecycle management.
+**Lit web component pattern:** When integrating third-party TypeScript libraries that manage their own DOM (ECharts, Vega-Lite, etc.), use Lit web components with Light DOM.
+Light DOM is required for Open Props CSS token inheritance — Shadow DOM would isolate the component from design tokens.
+See `docs/notes/architecture/integration-patterns.md` for complete web component patterns and `docs/notes/architecture/ds-echarts-integration-guide.md` for the canonical ECharts implementation.
 
 ## Visualization integration
 
