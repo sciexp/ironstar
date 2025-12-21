@@ -397,8 +397,86 @@ For template users experiencing issues during migration:
 
 **Profile first**: If embedded mode overhead is a concern, benchmark before migrating (typical overhead: ~2MB memory, ~100μs latency).
 
+## Monitoring and metrics
+
+When using Zenoh for distributed event bus, additional metrics track pub/sub health.
+
+### Zenoh-specific metrics
+
+```rust
+pub static ZENOH_PUBLICATIONS_TOTAL: Lazy<CounterVec> = Lazy::new(|| {
+    let opts = Opts::new(
+        "zenoh_publications_total",
+        "Total number of Zenoh publications"
+    );
+    let counter = CounterVec::new(opts, &["key_expr_prefix"]).unwrap();
+    METRICS_REGISTRY.register(Box::new(counter.clone())).unwrap();
+    counter
+});
+
+pub static ZENOH_SUBSCRIBER_COUNT: Lazy<GaugeVec> = Lazy::new(|| {
+    let opts = Opts::new(
+        "zenoh_subscriber_count",
+        "Number of active Zenoh subscribers"
+    );
+    let gauge = GaugeVec::new(opts, &["key_expr_pattern"]).unwrap();
+    METRICS_REGISTRY.register(Box::new(gauge.clone())).unwrap();
+    gauge
+});
+
+pub static ZENOH_SAMPLE_LATENCY_SECONDS: Lazy<HistogramVec> = Lazy::new(|| {
+    let opts = HistogramOpts::new(
+        "zenoh_sample_latency_seconds",
+        "Latency between publication and subscriber receipt"
+    )
+    .buckets(vec![0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5]);
+    let histogram = HistogramVec::new(opts, &["key_expr_prefix"]).unwrap();
+    METRICS_REGISTRY.register(Box::new(histogram.clone())).unwrap();
+    histogram
+});
+```
+
+### Instrumented Zenoh publication
+
+```rust
+pub async fn publish_event(
+    session: &Session,
+    event: &StoredEvent,
+) -> Result<(), Error> {
+    let key_expr = format!("events/{}/{}", event.aggregate_type, event.aggregate_id);
+    let prefix = format!("events/{}", event.aggregate_type);
+
+    let timer = ZENOH_SAMPLE_LATENCY_SECONDS
+        .with_label_values(&[&prefix])
+        .start_timer();
+
+    session.put(&key_expr, serde_json::to_vec(event)?).await?;
+
+    timer.observe_duration();
+    ZENOH_PUBLICATIONS_TOTAL
+        .with_label_values(&[&prefix])
+        .inc();
+
+    Ok(())
+}
+```
+
+### Monitoring subscriber health
+
+| Metric | Healthy | Investigate |
+|--------|---------|-------------|
+| SSE connection count | Stable | Sudden drops |
+| Event latency | <200ms | >500ms |
+| Zenoh subscriber count | Matches SSE connections | Mismatch indicates leak |
+| Error rate | <0.1% | >1% |
+| Memory usage | <50MB per 1000 subscribers | >100MB |
+
+For additional Prometheus metric definitions and alerting thresholds, see `../decisions/metrics-reference.md`.
+
 ## Related documentation
 
 - Session-scoped event routing patterns: `session-management.md`
 - Analytics cache invalidation via Zenoh: `analytics-cache-architecture.md`
 - Event sourcing integration: `../cqrs/event-sourcing-core.md`
+- Prometheus metrics and alerting: `../decisions/metrics-reference.md`
+- Core observability architecture: `../decisions/observability-decisions.md`
