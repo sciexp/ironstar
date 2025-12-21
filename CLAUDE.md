@@ -83,52 +83,9 @@ Prod mode embeds `static/dist/` and serves with `Cache-Control: max-age=31536000
 
 ### Workspace scaling path
 
-Ironstar starts as a single crate but the workspace structure supports future decomposition into a multi-crate architecture.
-The structure draws from patterns in Golem (~25 crates) and Hyperswitch (~40 crates).
-See `docs/notes/architecture/crate-architecture.md` for detailed decomposition plan.
-
-**Key patterns adopted:**
-
-| Pattern | Source | Purpose |
-|---------|--------|---------|
-| HasXxx capability traits | Golem | Fine-grained dependency injection via trait bounds |
-| All composition root | Golem | Central struct holding all Arc<dyn Service> |
-| Three commons | Hyperswitch | Foundation crates: common_enums, common_types, common_utils |
-| Interfaces crate | Hyperswitch | Port trait definitions separate from implementations |
-| Configuration-driven adapters | Golem | Runtime backend selection via `#[serde(tag = "type")]` enums |
-| Workspace lints | Hyperswitch | Consistent code quality via `[workspace.lints]` |
-
-**Layered crate structure:**
-
-```
-Layer 0 (Foundation): common-enums, common-types, common-utils
-Layer 1 (Domain): ironstar-domain, ironstar-commands, ironstar-events
-Layer 2 (Application): ironstar-app
-Layer 3 (Interfaces): ironstar-interfaces  # Port traits
-Layer 4 (Infrastructure): ironstar-adapters, ironstar-analytics, ironstar-projections, ironstar-config
-Layer 5 (Services): ironstar-services  # HasXxx traits, All composition root
-Layer 6 (Presentation): ironstar-web
-Layer 7 (Binary): ironstar
-```
-
-Crate names use kebab-case following crates.io convention.
-Rust normalizes these to snake_case for `use` statements (e.g., `use ironstar_domain::...`).
-
-**Current state (single crate):**
-
-```
-ironstar/
-├── Cargo.toml
-└── crates/ironstar/src/
-    ├── main.rs
-    ├── domain/           # Future: ironstar-domain
-    ├── application/      # Future: ironstar-app
-    ├── infrastructure/   # Future: ironstar-adapters + ironstar-interfaces
-    └── presentation/     # Future: ironstar-web
-```
-
-Each crate can have a `crate.nix` file for customized Nix build requirements (e.g., DuckDB needs cmake).
-The rust-flake integration handles automatic workspace discovery and per-crate crane configuration.
+Ironstar starts as a single crate but the workspace structure supports future decomposition into a multi-crate architecture drawing from patterns in Golem (~25 crates) and Hyperswitch (~40 crates).
+Key patterns include HasXxx capability traits, All composition root, three commons crates (enums/types/utils), and configuration-driven adapter selection.
+See `docs/notes/architecture/crate-architecture.md` for the complete layered decomposition plan and migration path.
 
 ### Intentional divergences from Northstar
 
@@ -156,14 +113,8 @@ See `docs/notes/architecture/design-principles.md` and `docs/notes/architecture/
 
 ### The Tao of Datastar (core principles)
 
-Ironstar embodies the principles from the Tao of Datastar (`~/projects/lakescope-workspace/datastar-doc/guide_the_tao_of_datastar.md`):
-
-1. **Backend is source of truth**: No optimistic updates. SSE delivers confirmed state changes.
-2. **Patch elements and signals**: Server drives frontend by patching HTML and signals via SSE.
-3. **Use signals sparingly**: Signals for UI state (form inputs, visibility); domain state lives in events.
-4. **CQRS pattern**: Single long-lived SSE connection for reads, short-lived POST/PUT/DELETE for writes.
-5. **In morph we trust**: Default to replacing entire DOM subtrees (fat morph) for resilience.
-6. **Loading indicators over deception**: Show progress via `data-indicator`, let SSE confirm completion.
+Ironstar embodies the server-first hypermedia principles from the Tao of Datastar.
+See `docs/notes/architecture/design-principles.md` for the complete principles and their application to ironstar's architecture.
 
 ## Stack overview
 
@@ -409,121 +360,14 @@ Open Props + Open Props UI leverage modern CSS capabilities that require recent 
 | Leptos/Dioxus | Would duplicate datastar's role |
 | esbuild | Go-based; prefer Rust-native Rolldown |
 
-**Lit exception:** Use Lit only for complex third-party library integration (e.g., ECharts via ds-echarts) where the library manages significant internal state. See Pattern 1.5 in `docs/notes/architecture/integration-patterns.md`.
+**Lit exception:** Use Lit only for complex third-party library integration (e.g., ECharts via ds-echarts) where the library manages significant internal state.
+See `docs/notes/architecture/integration-patterns.md` for complete web component patterns including vanilla thin wrappers and Lit lifecycle management.
 
-**Web component pattern for datastar:**
+## Visualization integration
 
-```typescript
-// Thin wrapper around third-party library
-class SortableList extends HTMLElement {
-  connectedCallback() {
-    Sortable.create(this, {
-      onEnd: (evt) => {
-        // Dispatch event for datastar to handle
-        this.dispatchEvent(new CustomEvent('reorder', { detail: evt }));
-      }
-    });
-  }
-}
-customElements.define('sortable-list', SortableList);
-```
-
-```html
-<!-- Datastar handles all state and reactivity -->
-<sortable-list
-  data-on:reorder="@post('/api/reorder', {body: evt.detail})"
->
-</sortable-list>
-```
-
-The component is a thin wrapper. All state flows through datastar signals.
-
-## Vega-Lite integration pattern
-
-Vega-Lite charts via vega-embed require special handling because Vega manages its own DOM.
-
-**Key requirements:**
-
-- Use `data-ignore-morph` on the container (prevents datastar from morphing Vega's DOM)
-- Store the Vega `View` instance for reactive updates
-- Updates happen via Vega's View API, not re-embedding
-- Call `finalize()` on disconnect to prevent memory leaks
-
-**Web component pattern:**
-
-```typescript
-// web-components/components/vega-chart.ts
-import embed, { Result } from 'vega-embed';
-import { View } from 'vega';
-
-class VegaChart extends HTMLElement {
-  private result: Result | null = null;
-  private view: View | null = null;
-
-  static observedAttributes = ['spec-url', 'data-url', 'signal-values'];
-
-  async connectedCallback() {
-    await this.render();
-  }
-
-  disconnectedCallback() {
-    this.result?.finalize(); // Critical: prevent memory leaks
-  }
-
-  async attributeChangedCallback(name: string, oldValue: string, newValue: string) {
-    if (!this.view || oldValue === newValue) return;
-
-    switch (name) {
-      case 'data-url':
-        const data = await fetch(newValue).then(r => r.json());
-        this.view.data('source', data).run();
-        break;
-      case 'signal-values':
-        const signals = JSON.parse(newValue);
-        Object.entries(signals).forEach(([k, v]) => this.view!.signal(k, v));
-        this.view.run();
-        break;
-      case 'spec-url':
-        await this.render(); // Full re-render for spec changes
-        break;
-    }
-  }
-
-  private async render() {
-    const specUrl = this.getAttribute('spec-url');
-    if (!specUrl) return;
-
-    this.result?.finalize();
-    const spec = await fetch(specUrl).then(r => r.json());
-    this.result = await embed(this, spec, { renderer: 'svg', actions: false });
-    this.view = this.result.view;
-
-    // Bridge Vega selections to datastar custom events
-    this.view.addSignalListener('select', (name, value) => {
-      this.dispatchEvent(new CustomEvent('vega-select', {
-        detail: { name, value }, bubbles: true
-      }));
-    });
-  }
-}
-customElements.define('vega-chart', VegaChart);
-```
-
-**Datastar usage:**
-
-```html
-<vega-chart
-  data-ignore-morph
-  data-attr:spec-url="$chartSpec"
-  data-attr:data-url="$dataEndpoint"
-  data-on:vega-select="$selection = evt.detail.value"
-></vega-chart>
-```
-
-**Mosaic consideration:**
-
-Mosaic (`~/projects/lakescope-workspace/mosaic`) provides a higher-level grammar of graphics optimized for large datasets with coordinated views.
-Integration pattern TBD — may benefit from similar web component wrapper or direct integration depending on how it manages state.
+Vega-Lite and Apache ECharts require special web component integration patterns due to DOM ownership and complex state management.
+See `docs/notes/architecture/integration-patterns.md` for complete implementation patterns including Vega-Lite's `data-ignore-morph` handling and ECharts' Lit lifecycle integration.
+Mosaic integration pattern TBD.
 
 ## Event sourcing model
 
@@ -570,7 +414,7 @@ The embedded approach (SQLite + Zenoh + moka) targets single-node deployments wh
 
 Zenoh provides the "listen to hundreds of keys with server-side filtering" capability essential for CQRS + Datastar applications.
 SSE handlers subscribe to specific key expressions (e.g., `events/Todo/123`) rather than receiving all events and filtering locally.
-See `docs/notes/architecture/zenoh-early-adoption-research.md` for the detailed evaluation and migration path from tokio broadcast to Zenoh.
+See `docs/notes/architecture/zenoh-event-bus.md` for the detailed evaluation and migration path from tokio broadcast to Zenoh.
 
 Sessions are stored in SQLite alongside the event store (in a separate table), simplifying the stack by using a single embedded database for all persistent state.
 Analytics query results are cached in moka, an async-native in-memory cache with TTL-based eviction.
@@ -609,127 +453,62 @@ cargo test                     # Run tests
 just test                      # Run all tests including integration
 ```
 
-## Project structure (planned)
+## Project structure
 
-```
-ironstar/
-├── CLAUDE.md                           # This file
-├── flake.nix                           # Nix flake definition
-├── flake.lock
-├── Cargo.toml
-├── Cargo.lock
-├── justfile                            # Task runner
-├── process-compose.yaml                # Process orchestration
-├── docs/
-│   └── notes/
-│       └── architecture/
-│           ├── design-principles.md
-│           └── architecture-decisions.md
-├── src/
-│   ├── main.rs
-│   ├── lib.rs
-│   ├── domain/                         # Algebraic types
-│   │   ├── mod.rs
-│   │   ├── aggregates/
-│   │   ├── events/
-│   │   ├── commands/
-│   │   ├── values/
-│   │   └── signals.rs                  # Datastar signal types (derive TS for TypeScript)
-│   ├── application/                    # Pure business logic
-│   │   ├── mod.rs
-│   │   ├── command_handlers.rs
-│   │   ├── query_handlers.rs
-│   │   └── projections.rs
-│   ├── infrastructure/                 # Effect implementations
-│   │   ├── mod.rs
-│   │   ├── event_store.rs              # SQLite events
-│   │   ├── session_store.rs            # SQLite sessions
-│   │   ├── analytics.rs                # DuckDB queries
-│   │   ├── analytics_cache.rs          # moka cache with rkyv serialization
-│   │   └── event_bus.rs                # tokio broadcast
-│   └── presentation/                   # HTTP + HTML
-│       ├── mod.rs
-│       ├── routes.rs
-│       ├── handlers/
-│       │   ├── mod.rs
-│       │   ├── sse.rs
-│       │   └── commands.rs
-│       └── templates/                  # hypertext components
-├── web-components/                     # Frontend assets (separate build)
-│   ├── package.json
-│   ├── pnpm-lock.yaml
-│   ├── rolldown.config.ts              # Bundler config
-│   ├── tsconfig.json
-│   ├── index.ts                        # CSS entry point
-│   ├── icons.ts                        # Lucide icons (build-time)
-│   ├── types/                          # Generated TypeScript types (from ts-rs)
-│   │   └── *.ts                        # Auto-generated, do not edit
-│   ├── components/
-│   │   ├── vanilla/                    # Simple state management
-│   │   │   ├── sortable-list.ts
-│   │   │   └── vega-chart.ts
-│   │   └── lit/                        # Complex lifecycle (ECharts)
-│   │       └── ds-echarts.ts
-│   └── styles/
-│       ├── main.css                    # Open Props imports + theme + components
-│       ├── theme.css                   # Custom theme tokens
-│       └── components/                 # Copied Open Props UI CSS
-│           ├── button.css
-│           ├── card.css
-│           └── *.css                   # Other component styles
-├── static/
-│   ├── dist/                           # Built assets (from web-components)
-│   │   ├── bundle.css
-│   │   └── components.js
-│   └── datastar/
-│       └── datastar.js                 # Datastar runtime
-└── examples/
-    └── todo/                           # Todo app demo (like northstar)
-```
+See `docs/notes/architecture/architecture-decisions.md` section 4 for the complete project structure tree with module organization and file-level documentation.
 
-## Related documentation
+## Documentation map
 
-### Ironstar architecture docs
+### Getting oriented
 
-- Design principles: `docs/notes/architecture/design-principles.md`
-- Crate architecture: `docs/notes/architecture/crate-architecture.md`
-  - Multi-crate workspace decomposition plan
-  - HasXxx capability trait pattern (from Golem)
-  - Three commons pattern (from Hyperswitch)
-  - Configuration-driven adapter selection
-- Architecture decisions: `docs/notes/architecture/architecture-decisions.md`
-  - Open Props design tokens rationale
-  - Open Props UI component library rationale
-  - Asset embedding (rust-embed)
-  - Module organization and scaling path
-- Development workflow: `docs/notes/architecture/development-workflow.md`
-  - Process orchestration (process-compose)
-  - Hot reload pattern
-  - Asset serving modes (dev/prod)
-  - TypeScript type generation (ts-rs)
-- Event sourcing + SSE pipeline: `docs/notes/architecture/event-sourcing-sse-pipeline.md`
-  - Client subscription lifecycle
-  - Reconnection resilience patterns
-  - Performance optimization (debouncing, batching, rate limiting)
-  - Complete Zenoh integration patterns
-- Session management: `docs/notes/architecture/session-management.md`
-  - Session ID generation and cookie security
-  - SQLite sessions schema
-  - Axum session extractor pattern
-  - Per-session Zenoh key expressions
-- Third-party library integration: `docs/notes/architecture/integration-patterns.md`
-  - Pattern 1: Web component thin wrapper (vanilla)
-  - Pattern 1.5: When Lit is appropriate (complex lifecycle)
-  - Pattern 2: Vega-Lite chart integration
-  - Pattern 3: Apache ECharts integration via Lit (ds-echarts component)
-- ECharts integration: `docs/notes/architecture/ds-echarts-integration-guide.md`
-  - Lit component lifecycle management
-  - Rolldown/esbuild bundling configuration
-  - Hypertext template patterns
-  - Axum SSE handlers with DuckDB
-- TypeScript signal contracts: `docs/notes/architecture/signal-contracts.md`
-- Frontend build pipeline: `docs/notes/architecture/frontend-build-pipeline.md`
-  - Includes Lit component bundling options (Rolldown vs esbuild)
+Start here when new to the project or reviewing architectural principles:
+
+- **Design principles**: `docs/notes/architecture/design-principles.md` — Tao of Datastar principles, functional programming foundations, algebraic types
+- **Architecture decisions**: `docs/notes/architecture/architecture-decisions.md` — Technology choices (Open Props, hypertext, Zenoh), project structure tree, rationale for all major decisions
+- **Crate architecture**: `docs/notes/architecture/crate-architecture.md` — Multi-crate decomposition plan, HasXxx capability traits, workspace scaling path
+
+### Architecture decision records
+
+Consult these when questioning "why this technology?" for specific subsystems:
+
+- **Frontend stack**: `docs/notes/architecture/frontend-stack-decisions.md` — Open Props vs Tailwind, Rolldown vs esbuild, when to use Lit
+- **Backend core**: `docs/notes/architecture/backend-core-decisions.md` — axum + hypertext integration, lazy rendering strategy
+- **Infrastructure**: `docs/notes/architecture/infrastructure-decisions.md` — SQLite vs PostgreSQL, Zenoh vs NATS, embedded vs external services
+- **CQRS implementation**: `docs/notes/architecture/cqrs-implementation-decisions.md` — Custom CQRS vs cqrs-es/esrs frameworks, pure sync aggregates
+
+### Implementing features
+
+Read these when implementing specific subsystems or integrating libraries:
+
+- **Event sourcing core**: `docs/notes/architecture/event-sourcing-core.md` — Aggregate patterns, command handling, event schema, event store
+- **Session management**: `docs/notes/architecture/session-management.md` — Session cookies, SQLite schema, axum extractors, per-session Zenoh keys
+- **Integration patterns**: `docs/notes/architecture/integration-patterns.md` — Web components (vanilla/Lit), Vega-Lite, ECharts
+- **ECharts integration guide**: `docs/notes/architecture/ds-echarts-integration-guide.md` — Complete ds-echarts Lit component implementation
+- **Signal contracts**: `docs/notes/architecture/signal-contracts.md` — TypeScript type generation with ts-rs, datastar signal patterns
+- **Development workflow**: `docs/notes/architecture/development-workflow.md` — process-compose orchestration, hot reload, asset serving modes
+
+### CQRS pipeline deep dives
+
+Read these when implementing or debugging the event sourcing + SSE integration:
+
+- **SSE connection lifecycle**: `docs/notes/architecture/sse-connection-lifecycle.md` — Client subscription, reconnection resilience, Last-Event-ID
+- **Event replay consistency**: `docs/notes/architecture/event-replay-consistency.md` — Snapshot + delta patterns, cache-aside with Zenoh invalidation
+- **Projection patterns**: `docs/notes/architecture/projection-patterns.md` — Materialized views, denormalization, DuckDB analytics
+- **Performance tuning**: `docs/notes/architecture/performance-tuning.md` — Debouncing, batching, rate limiting, Zenoh key expression optimization
+- **Command write patterns**: `docs/notes/architecture/command-write-patterns.md` — Validation, optimistic locking, idempotency
+
+### Frontend implementation
+
+Read these when working on CSS, bundling, or web components:
+
+- **Frontend build pipeline**: `docs/notes/architecture/frontend-build-pipeline.md` — Rolldown config, PostCSS, Lit bundling options
+- **CSS architecture**: `docs/notes/architecture/css-architecture.md` — Open Props tokens, theme customization, component styles
+
+### Zenoh event bus
+
+Read this when working with pub/sub, event distribution, or cache invalidation:
+
+- **Zenoh event bus**: `docs/notes/architecture/zenoh-event-bus.md` — Key expression patterns, embedded config, migration from tokio broadcast
 
 ### External references
 
@@ -739,5 +518,3 @@ ironstar/
 - Northstar (Go template): `~/projects/lakescope-workspace/datastar-go-nats-template-northstar/`
 - Open Props design tokens: `~/projects/lakescope-workspace/open-props/`
 - Open Props UI components: `~/projects/lakescope-workspace/open-props-ui/`
-- vega-embed API: `~/projects/lakescope-workspace/vega-embed/src/embed.ts`
-- Mosaic documentation: `~/projects/lakescope-workspace/mosaic/docs/`
