@@ -336,7 +336,7 @@ This means most reactivity lives in datastar signals, not client-side frameworks
 | Open Props | CSS design tokens, zero build complexity |
 | Open Props UI | Pure CSS components, copy-paste ownership model |
 | Rolldown | Rust-native bundler (over esbuild which is Go-based) |
-| Lit | Standard for wrapping TypeScript libraries (ECharts, Vega-Lite, etc.) with Light DOM for CSS token inheritance |
+| Lit | Essential for wrapping third-party TypeScript libraries (ECharts, Vega-Lite) with rich lifecycle hooks; Light DOM required for Open Props token inheritance (see northstar ds-echarts pattern) |
 | Vanilla Web Components | Simple custom elements without external library dependencies |
 | Lucide | Build-time SVG icons, zero runtime |
 | TypeScript | Type safety for the minimal JS we write |
