@@ -137,26 +137,36 @@ pub async fn regenerate_session(
 }
 ```
 
-**Usage in login handler**:
+**Usage in OAuth callback handler**:
+
+Ironstar uses OAuth-only authentication.
+See `oauth-authentication.md` for the complete OAuth flow.
 
 ```rust
-async fn login_handler(
+async fn oauth_callback_handler(
     State(app_state): State<AppState>,
     SessionExtractor(session): SessionExtractor,
-    Form(credentials): Form<LoginForm>,
-) -> Result<Response> {
-    let user_id = authenticate(&credentials)?;
+    Query(params): Query<OAuthCallback>,
+) -> Result<impl IntoResponse, AuthError> {
+    // ... validate state, exchange code, fetch profile ...
+
+    let user = app_state.user_service
+        .upsert_from_oauth("github", &profile)
+        .await?;
 
     // Regenerate session to prevent fixation
     let new_session = regenerate_session(
         &app_state.session_service,
         &session.id,
-        user_id,
+        user.id.clone(),
     ).await?;
 
-    // Return new cookie
+    // Return new cookie and redirect
     let cookie = create_session_cookie(&new_session.id);
-    Ok(([(SET_COOKIE, cookie.to_string())], "Login successful").into_response())
+    Ok((
+        [(SET_COOKIE, cookie.to_string())],
+        Redirect::to("/"),
+    ))
 }
 ```
 
@@ -241,6 +251,7 @@ async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::
 
 - **Design principles**: `session-management.md` — Session ID generation, cookie configuration, SQLite schema
 - **Implementation patterns**: `session-implementation.md` — Session service CRUD, axum extractors, SSE handlers
+- **OAuth authentication**: `oauth-authentication.md` — OAuth flow, user schema, provider configuration
 - **Zenoh configuration**: `zenoh-event-bus.md` — Key expression patterns, embedded setup, subscriber lifecycle
 - **SSE connection lifecycle**: `sse-connection-lifecycle.md` — Client subscription, reconnection resilience
 
