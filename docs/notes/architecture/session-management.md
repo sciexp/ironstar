@@ -792,5 +792,6 @@ async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::
 
 ## Related documentation
 
-- SSE patterns and event replay: `event-sourcing-sse-pipeline.md`
-- Zenoh configuration and key expressions: `zenoh-early-adoption-research.md`
+- SSE connection lifecycle patterns: `sse-connection-lifecycle.md`
+- Event replay and consistency: `event-replay-consistency.md`
+- Zenoh configuration and key expressions: `zenoh-event-bus.md`
