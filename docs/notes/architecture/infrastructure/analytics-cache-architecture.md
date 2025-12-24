@@ -7,7 +7,7 @@ Research and design for caching expensive DuckDB analytics queries in the ironst
 DuckDB queries for dashboards are expensive (seconds, not milliseconds) and dashboards are hit frequently by multiple users.
 The current architecture uses:
 - SQLite + sqlx for the event store (append-only log)
-- DuckDB for OLAP analytics queries over event history
+- DuckDB for querying external scientific datasets (HuggingFace Hub, S3-compatible storage, DuckLake via httpfs)
 - tokio::sync::broadcast for in-process pub/sub for SSE notifications
 
 This document evaluates caching strategies to avoid redundant expensive DuckDB queries while maintaining consistency with the event-sourced architecture.
