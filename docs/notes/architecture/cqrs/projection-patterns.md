@@ -100,10 +100,10 @@ impl<P: Projection> ProjectionManager<P> {
 
 ### When to use DuckDB
 
-Use DuckDB materialized views for:
-- **Analytics dashboards**: Aggregate queries over large event histories (e.g., "total sales per month").
-- **Time-series analysis**: Window functions, moving averages.
-- **Report generation**: Complex joins across multiple projections.
+Use DuckDB for querying external scientific datasets (HuggingFace Hub, S3, DuckLake via httpfs):
+- **Analytics dashboards**: Query remote parquet datasets (e.g., climate data, financial data from HuggingFace Hub).
+- **Time-series analysis**: DuckDB's window functions over columnar external data.
+- **Report generation**: Complex queries across remote datasets without local data ingestion.
 
 **Not** for:
 - UI state (use in-memory projection).
