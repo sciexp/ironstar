@@ -174,12 +174,12 @@ This separation enables:
 |-----------|------|-------------------|-----------------|
 | **hypertext** | HTML | Monoid (lazy) | `.render()` |
 | **axum** | HTTP | Reader + Error | Handler return |
-| **tokio::broadcast** | Event bus (single-node) | Observable | `.send()` |
+| **Zenoh** | Event bus (primary) | Free monoid (key expressions) | `.put()` / `.subscribe()` |
 | **SQLite/sqlx** | Event store + sessions | Append monoid | `.commit()` |
 | **moka** | Analytics cache | TTL-based eviction | Cache hit/miss |
 | **rkyv** | Cache serialization | Zero-copy deserialize | Serialize/deserialize boundary |
 | **DuckDB** | Analytics | Pure query | `.execute()` |
-| **Zenoh** | Event bus (distributed) | Free monoid | `.put()` / `.subscribe()` |
+| **tokio::broadcast** | Event bus (fallback) | Observable | `.send()` |
 | **datastar-rust** | Frontend | FRP signals | SSE emit |
 | **open-props** | CSS Tokens | Constants (map/dictionary) | CSS `var()` resolution |
 | **open-props-ui** | CSS Components | Three-layer composition | Style application |
@@ -190,9 +190,10 @@ This separation enables:
 | **Pure Aggregate** | Domain logic | State machine (pure function) | None (pure) |
 | **Upcaster** | Schema evolution | Category of versions | Event load |
 
-**Event bus implementation**: The current implementation uses `tokio::broadcast` for in-process event notification, which is sufficient for single-node deployments up to ~256 concurrent SSE subscribers or ~1000 events/second.
-When scaling beyond these limits or deploying across multiple nodes, migrate to Zenoh for distributed pub/sub with key expression filtering.
-See `../infrastructure/zenoh-event-bus.md` for the migration path.
+**Event bus implementation**: Ironstar uses Zenoh in embedded mode as the primary event bus from day one.
+Zenoh provides key expression filtering (`events/Todo/**`) essential for CQRS routing patterns and scales to ~10K concurrent SSE subscribers.
+tokio::broadcast remains available as an optional fallback for extreme resource constraints (<10MB memory).
+See `../infrastructure/zenoh-event-bus.md` for complete architecture details.
 
 This stack achieves the goal: **effects explicit in types, isolated at boundaries, with a pure functional core**.
 
@@ -209,17 +210,19 @@ This stack prioritizes embedded Rust-native solutions over external server depen
 - Rust-native dependencies align with the stack's language choice
 - Simpler operational model for single-node deployments
 
-**NATS as a valid alternative:**
+**Why Zenoh over NATS:**
 
-NATS is an excellent choice for teams willing to run an external server.
-It provides streaming, key-value storage, and pub/sub in a unified abstraction, and the Rust client (nats.rs) is production-ready.
+NATS is an excellent choice for teams in the Go ecosystem (see Northstar template).
+For Rust, Zenoh is the native equivalent: pure Rust implementation, embedded mode requires no external server, key expression filtering enables sophisticated routing, and distribution-ready architecture requires only configuration changes.
 
-For Ironstar, the embedded approach was chosen because the template targets single-node deployments where the operational complexity of a separate server is unnecessary.
-The [Jepsen analysis of NATS 2.12.1](https://jepsen.io/analyses/nats-2.12.1) also reinforced confidence in SQLite's well-understood durability model for the event store, though NATS's durability can be configured appropriately for many use cases.
+The [Jepsen analysis of NATS 2.12.1](https://jepsen.io/analyses/nats-2.12.1) reinforced confidence in SQLite's well-understood durability model for the event store.
+Zenoh complements SQLite by providing the pub/sub layer while SQLite provides durable event storage.
 
-**Future distribution:**
+**Distribution path:**
 
-When distributed deployment is needed, Zenoh provides Rust-native pub/sub with storage backends (RocksDB, S3), offering a migration path that maintains the embedded philosophy per node while enabling cross-node communication.
+Zenoh embedded mode (the default) runs entirely in-process.
+When multi-node deployment is needed, change Zenoh from embedded mode to peer mode — no code changes required, only configuration.
+Zenoh storage backends (RocksDB, S3) provide optional distributed event storage for future use.
 
 ---
 
@@ -365,7 +368,7 @@ pub struct AppState {
     pub session_store: Arc<SessionStore>,       // SQLite-based
     pub analytics: Arc<DuckDbAnalytics>,
     pub analytics_cache: AnalyticsCache,        // moka-based
-    pub event_bus: broadcast::Sender<StoredEvent>,
+    pub zenoh: Arc<zenoh::Session>,             // Zenoh embedded mode
     pub projections: Arc<Projections>,
     #[cfg(debug_assertions)]
     pub reload_tx: broadcast::Sender<()>,
@@ -378,15 +381,22 @@ impl AppState {
         let session_store = SessionStore::new(pool, 30); // 30-day TTL
         let analytics = Arc::new(DuckDbAnalytics::new(&config.analytics_path)?);
         let analytics_cache = AnalyticsCache::new(analytics.clone());
-        let (event_bus, _) = broadcast::channel(256);
+
+        // Configure Zenoh in embedded mode
+        let mut zenoh_config = zenoh::config::Config::default();
+        zenoh_config.insert_json5("listen/endpoints", "[]")?;
+        zenoh_config.insert_json5("connect/endpoints", "[]")?;
+        zenoh_config.insert_json5("scouting/multicast/enabled", "false")?;
+        zenoh_config.insert_json5("scouting/gossip/enabled", "false")?;
+        let zenoh = Arc::new(zenoh::open(zenoh_config).res().await?);
 
         // Initialize projections by replaying events
-        let projections = Projections::init(&event_store, event_bus.clone()).await?;
+        let projections = Projections::init(&event_store, zenoh.clone()).await?;
 
         // Spawn cache invalidation task
         tokio::spawn(run_cache_invalidator(
             analytics_cache.clone(),
-            event_bus.subscribe(),
+            zenoh.clone(),
         ));
 
         Ok(Self {
@@ -394,7 +404,7 @@ impl AppState {
             session_store: Arc::new(session_store),
             analytics,
             analytics_cache,
-            event_bus,
+            zenoh,
             projections: Arc::new(projections),
             #[cfg(debug_assertions)]
             reload_tx: broadcast::channel(16).0,
