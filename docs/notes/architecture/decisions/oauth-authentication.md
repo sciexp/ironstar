@@ -228,9 +228,9 @@ CREATE TABLE users (
     email TEXT,                       -- Primary email (may be NULL)
     display_name TEXT,
     avatar_url TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+) STRICT;
 
 -- Provider identities (supports future multi-provider linking)
 CREATE TABLE user_identities (
@@ -239,9 +239,9 @@ CREATE TABLE user_identities (
     provider TEXT NOT NULL,           -- 'github' | 'google'
     provider_user_id TEXT NOT NULL,   -- External ID from provider
     provider_email TEXT,              -- Email from this specific provider
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TEXT DEFAULT (datetime('now')),
     UNIQUE(provider, provider_user_id)
-);
+) STRICT;
 
 CREATE INDEX idx_user_identities_user ON user_identities(user_id);
 CREATE INDEX idx_user_identities_provider ON user_identities(provider, provider_user_id);

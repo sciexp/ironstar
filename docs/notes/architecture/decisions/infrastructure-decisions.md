@@ -101,11 +101,11 @@ The async API from sqlx integrates cleanly with axum handlers without spawn_bloc
 CREATE TABLE sessions (
     session_id TEXT PRIMARY KEY,
     user_id TEXT,
-    data JSON NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_accessed TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    expires_at TIMESTAMP NOT NULL
-);
+    data TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now')),
+    last_accessed TEXT DEFAULT (datetime('now')),
+    expires_at TEXT NOT NULL
+) STRICT;
 
 CREATE INDEX idx_sessions_expires ON sessions(expires_at);
 ```

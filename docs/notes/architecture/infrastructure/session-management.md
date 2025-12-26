@@ -78,11 +78,11 @@ Sessions live in a dedicated table alongside the event store, avoiding external 
 CREATE TABLE sessions (
     id TEXT PRIMARY KEY,
     user_id TEXT,                    -- Optional: link to authenticated user (NULL for anonymous)
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_seen_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    expires_at TIMESTAMP NOT NULL,
-    data JSON DEFAULT '{}'           -- Flexible session-scoped state storage
-);
+    created_at TEXT DEFAULT (datetime('now')),
+    last_seen_at TEXT DEFAULT (datetime('now')),
+    expires_at TEXT NOT NULL,
+    data TEXT DEFAULT '{}'           -- Flexible session-scoped state storage (JSON serialized)
+) STRICT;
 
 CREATE INDEX idx_sessions_expires ON sessions(expires_at);
 CREATE INDEX idx_sessions_user ON sessions(user_id) WHERE user_id IS NOT NULL;
@@ -92,11 +92,14 @@ CREATE INDEX idx_sessions_user ON sessions(user_id) WHERE user_id IS NOT NULL;
 
 - `id`: Session ID (primary key), generated via `generate_session_id()`.
 - `user_id`: Optional foreign key to a users table. NULL for anonymous sessions.
+- `created_at`: TEXT column storing ISO 8601 timestamp via `datetime('now')` (STRICT mode requirement).
 - `last_seen_at`: Updated on every request for activity tracking and idle timeout.
 - `expires_at`: Absolute expiration timestamp (e.g., `created_at + 30 days`).
-- `data`: JSON blob for session-scoped application state (e.g., TodoMVC data, UI preferences).
+- `data`: TEXT column storing JSON-serialized session state (STRICT mode does not support JSON type).
 
-**Why JSON for data?** Allows schema-less extension without migrations. Serialize using `serde_json::Value` or typed structs.
+**Why TEXT for timestamps?** SQLite STRICT mode requires explicit type affinity. TEXT with `datetime('now')` provides ISO 8601 timestamps compatible with chrono::DateTime parsing.
+
+**Why TEXT for JSON?** STRICT mode does not support the JSON type. Store JSON as TEXT and deserialize with `serde_json::from_str()` in Rust.
 
 ## Related documentation
 

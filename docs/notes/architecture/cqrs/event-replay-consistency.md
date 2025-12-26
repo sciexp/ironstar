@@ -16,17 +16,17 @@ The SSE handler replays all events since that ID before streaming new ones.
 
 ### Event store schema
 
-```rust
+```sql
 CREATE TABLE events (
     sequence INTEGER PRIMARY KEY AUTOINCREMENT,
     aggregate_type TEXT NOT NULL,
     aggregate_id TEXT NOT NULL,
     event_type TEXT NOT NULL,
-    payload JSON NOT NULL,
-    metadata JSON,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    payload TEXT NOT NULL,
+    metadata TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
     INDEX idx_aggregate (aggregate_type, aggregate_id, sequence)
-);
+) STRICT;
 ```
 
 The `sequence` column provides:
