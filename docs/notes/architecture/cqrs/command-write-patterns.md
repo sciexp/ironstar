@@ -178,6 +178,10 @@ pub trait Aggregate: Default + Send + Sync {
     /// Pure state transition: applies an event to produce new state.
     /// If the event cannot be applied (programmer error), this may panic.
     fn apply_event(state: Self::State, event: Self::Event) -> Self::State;
+
+    /// Returns the current aggregate version (number of events applied).
+    /// Used for optimistic locking when appending events to the event store.
+    fn version(&self) -> u64;
 }
 ```
 

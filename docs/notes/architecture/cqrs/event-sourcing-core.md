@@ -402,6 +402,119 @@ impl EventUpcaster for TodoCreatedV1ToV2 {
 Upcasters are applied lazily during event loading, not as batch migrations.
 This keeps the event store immutable (events are facts that cannot change) while allowing the domain model to evolve.
 
+## Aggregate trait with optimistic locking
+
+The Aggregate trait requires a `version()` method for optimistic concurrency control.
+This prevents lost updates when two concurrent commands target the same aggregate.
+
+```rust
+use std::error::Error;
+
+/// Pure synchronous aggregate with no side effects.
+///
+/// Aggregates derive their state solely from their event stream.
+/// Applying the same events in the same order always yields identical state.
+pub trait Aggregate: Default + Send + Sync {
+    /// Unique name for this aggregate type.
+    /// Changing this breaks the link between existing aggregates and their events.
+    const NAME: &'static str;
+
+    /// Internal aggregate state, derived from events.
+    type State: Default + Clone + Send + Sync;
+
+    /// Commands represent requests to change state.
+    type Command;
+
+    /// Events represent facts that occurred in the domain.
+    type Event: Clone;
+
+    /// Domain errors from command validation.
+    type Error: Error;
+
+    /// Pure function: validates command against current state and emits events.
+    /// No async, no I/O, no side effects.
+    fn handle_command(state: &Self::State, cmd: Self::Command) -> Result<Vec<Self::Event>, Self::Error>;
+
+    /// Pure state transition: applies an event to produce new state.
+    /// If the event cannot be applied (programmer error), this may panic.
+    fn apply_event(state: Self::State, event: Self::Event) -> Self::State;
+
+    /// Returns the current aggregate version (number of events applied).
+    /// Used for optimistic locking when appending events to the event store.
+    fn version(&self) -> u64;
+}
+```
+
+### Optimistic locking with version()
+
+The `version()` method returns the number of events applied to the aggregate, which serves as an optimistic lock when persisting new events.
+
+**How it works:**
+
+1. Command handler loads events and reconstitutes aggregate state
+2. Command handler calls `aggregate.version()` to get the expected version
+3. New events are generated via `handle_command()`
+4. Event store append operation includes the expected version
+5. If another command modified the aggregate concurrently (actual version ≠ expected version), the append fails with a concurrency error
+6. The failed command can be retried with fresh state
+
+**Example usage in command handler:**
+
+```rust
+use tokio::sync::broadcast;
+
+async fn handle_command<A: Aggregate>(
+    store: &SqliteEventStore,
+    bus: &broadcast::Sender<StoredEvent>,
+    aggregate_id: &str,
+    command: A::Command,
+) -> Result<Vec<StoredEvent>, CommandError<A::Error>> {
+    // 1. Load events from store
+    let events = store.query_aggregate(A::NAME, aggregate_id).await?;
+
+    // 2. Reconstitute aggregate state
+    let aggregate = events
+        .into_iter()
+        .filter_map(|e| deserialize_event::<A>(&e))
+        .fold(A::default(), |agg, event| {
+            A::apply_event(agg, event)
+        });
+
+    // 3. Capture expected version for optimistic locking
+    let expected_version = aggregate.version();
+
+    // 4. Handle command (pure, synchronous)
+    let new_events = A::handle_command(&aggregate.state, command)
+        .map_err(CommandError::Domain)?;
+
+    // 5. Persist with optimistic locking
+    let mut stored = Vec::with_capacity(new_events.len());
+    for event in new_events {
+        let sequence = store.append_with_version(
+            A::NAME,
+            aggregate_id,
+            expected_version,  // Optimistic lock: reject if version differs
+            serialize_event::<A>(aggregate_id, &event),
+        )
+        .await
+        .map_err(CommandError::Persistence)?;
+
+        stored.push(StoredEvent { sequence, /* ... */ });
+    }
+
+    // 6. Publish to subscribers
+    for event in &stored {
+        let _ = bus.send(event.clone());
+    }
+
+    Ok(stored)
+}
+```
+
+The event store's `append_with_version()` method checks the UNIQUE constraint on `(aggregate_type, aggregate_id, aggregate_sequence)` and rejects the append if the expected version doesn't match the actual version in the database.
+
+See `command-write-patterns.md` for complete command handler patterns and the Aggregate trait implementation used there.
+
 ## Reference implementation: QuerySessionAggregate
 
 For a concrete example of the Aggregate pattern applied to analytics workloads, see the northstar tracer bullet specification:
