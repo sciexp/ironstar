@@ -275,15 +275,16 @@ Ironstar adapts this with a global sequence number (INTEGER PRIMARY KEY AUTOINCR
 DuckDB queries are *referentially transparent*—same input, same output:
 
 ```rust
-use duckdb::Connection;
+use async_duckdb::Pool;
 
 // Analytical query is a pure function: Projection -> Result<DataFrame>
-let results = conn.execute(
-    "SELECT aggregate_type, COUNT(*) as event_count
-     FROM events
-     GROUP BY aggregate_type",
-    []
-)?;
+let count: i64 = pool.conn(|conn| {
+    conn.query_row(
+        "SELECT COUNT(*) FROM events WHERE aggregate_type = ?",
+        [&aggregate_type],
+        |row| row.get(0)
+    )
+}).await?;
 ```
 
 **Separation of concerns:**
@@ -292,25 +293,57 @@ let results = conn.execute(
 - DuckDB: OLAP (analytical projections)
 - This is the *CQRS* pattern: commands and queries have different algebra
 
-**Threading constraints:**
+**async-duckdb Pool API:**
 
-DuckDB-rs is a synchronous, blocking library with specific thread safety characteristics:
-- `Connection` is `Send` but NOT `Sync` — can be moved between threads but not shared
-- `Statement` is `!Send` and `!Sync` — must stay on the thread where created
-
-For async axum handlers, wrap DuckDB operations:
+DuckDB-rs is a synchronous library, but async-duckdb provides a clean async interface via connection pooling and background threads.
 
 ```rust
-// Quick queries: use block_in_place
-let result = tokio::task::block_in_place(|| {
-    conn.prepare("SELECT ...")?.query_map([], |row| Ok(row.get(0)?))
-})?;
+use async_duckdb::{Pool, PoolBuilder};
 
-// Long-running queries: use spawn_blocking
-let result = tokio::task::spawn_blocking(move || {
-    // DuckDB operations here
-}).await??;
+// Read-only pool for concurrent analytics (DuckDB single-writer model)
+let pool = PoolBuilder::new()
+    .path("analytics.duckdb")
+    .num_conns(4)  // Number of concurrent read connections
+    .open()
+    .await?;
+
+// Simple query - closure runs on dedicated background thread
+let count: i64 = pool.conn(|conn| {
+    conn.query_row("SELECT COUNT(*) FROM events", [], |row| row.get(0))
+}).await?;
+
+// Complex queries with parameters
+#[derive(Debug)]
+struct EventCount {
+    aggregate_type: String,
+    count: i64,
+}
+
+let results: Vec<EventCount> = pool.conn(|conn| {
+    let mut stmt = conn.prepare(
+        "SELECT aggregate_type, COUNT(*) as count
+         FROM events
+         GROUP BY aggregate_type"
+    )?;
+
+    let rows = stmt.query_map([], |row| {
+        Ok(EventCount {
+            aggregate_type: row.get(0)?,
+            count: row.get(1)?,
+        })
+    })?;
+
+    rows.collect::<Result<Vec<_>, _>>()
+}).await?;
 ```
+
+**Key design points:**
+
+- Pool is read-only by default (per DuckDB single-writer concurrency model)
+- This is ideal for OLAP analytics workloads
+- Each connection runs on a dedicated background thread
+- The `.conn()` closure bridges sync DuckDB API to async world
+- Runtime-agnostic (works with tokio, async-std, etc.)
 
 **Remote data sources via httpfs:**
 
@@ -323,23 +356,49 @@ Supported protocols:
 - DuckLake catalogs — versioned data lake abstraction over object storage
 
 ```rust
-use duckdb::Connection;
+use async_duckdb::{Pool, PoolBuilder};
+
+// Initialize pool with httpfs extension
+let pool = PoolBuilder::new()
+    .path(":memory:")
+    .num_conns(2)
+    .open()
+    .await?;
+
+// Install and load httpfs extension
+pool.conn(|conn| {
+    conn.execute("INSTALL httpfs; LOAD httpfs;", [])
+}).await?;
 
 // Query HuggingFace-hosted parquet data directly
-let conn = Connection::open_in_memory()?;
-conn.execute("INSTALL httpfs; LOAD httpfs;", [])?;
-
-let results = conn.execute(
-    "SELECT * FROM 'hf://datasets/org/dataset/data.parquet' LIMIT 100",
-    []
-)?;
+let results: Vec<Row> = pool.conn(|conn| {
+    let mut stmt = conn.prepare(
+        "SELECT * FROM 'hf://datasets/org/dataset/data.parquet' LIMIT 100"
+    )?;
+    let rows = stmt.query_map([], |row| {
+        Ok(Row {
+            // Map columns to struct
+        })
+    })?;
+    rows.collect()
+}).await?;
 
 // S3-compatible storage (e.g., Cloudflare R2)
-conn.execute("SET s3_endpoint='account.r2.cloudflarestorage.com';", [])?;
-let results = conn.execute(
-    "SELECT * FROM read_parquet('s3://bucket/analytics/*.parquet')",
-    []
-)?;
+pool.conn(|conn| {
+    conn.execute("SET s3_endpoint='account.r2.cloudflarestorage.com';", [])
+}).await?;
+
+let results: Vec<Row> = pool.conn(|conn| {
+    let mut stmt = conn.prepare(
+        "SELECT * FROM read_parquet('s3://bucket/analytics/*.parquet')"
+    )?;
+    let rows = stmt.query_map([], |row| {
+        Ok(Row {
+            // Map columns to struct
+        })
+    })?;
+    rows.collect()
+}).await?;
 ```
 
 This pattern separates concerns: visualization components (ECharts, Vega-Lite) handle rendering, while DuckDB handles data access regardless of whether the source is local event projections or remote datasets.
