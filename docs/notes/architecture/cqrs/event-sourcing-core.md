@@ -55,18 +55,31 @@ See `../core/design-principles.md` for the complete pure aggregate pattern and `
 ### Monotonic sequence invariant
 
 Event sequence numbers must be strictly monotonically increasing with no gaps.
-SQLite's `AUTOINCREMENT` primary key on the events table enforces this, providing a total order for event replay and SSE Last-Event-ID tracking.
+The events table uses dual sequence tracking: `global_sequence` for SSE reconnection and `aggregate_sequence` for optimistic locking.
 
 ```sql
 CREATE TABLE events (
-    sequence INTEGER PRIMARY KEY AUTOINCREMENT,  -- Enforces monotonic sequence
-    -- ...
-);
+    global_sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+    id TEXT NOT NULL UNIQUE,
+    aggregate_type TEXT NOT NULL,
+    aggregate_id TEXT NOT NULL,
+    aggregate_sequence INTEGER NOT NULL,
+    event_type TEXT NOT NULL,
+    event_version TEXT NOT NULL DEFAULT '1.0.0',
+    payload TEXT NOT NULL,
+    metadata TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    UNIQUE(aggregate_type, aggregate_id, aggregate_sequence)
+) STRICT;
 ```
 
-Sequence numbers serve as both event ordering and SSE checkpoint markers.
-When a client reconnects with `Last-Event-ID: 42`, the server replays all events with `sequence > 42`, guaranteeing no missed updates.
-See `event-replay-consistency.md` for reconnection patterns and consistency guarantees.
+The dual sequence approach serves two purposes:
+- `global_sequence`: INTEGER PRIMARY KEY AUTOINCREMENT for SSE Last-Event-ID tracking (enables simple `WHERE global_sequence > ?` queries for reconnection)
+- `aggregate_sequence`: Per-aggregate version for optimistic locking (UNIQUE constraint prevents concurrent modifications to the same aggregate)
+
+When a client reconnects with `Last-Event-ID: 42`, the server replays all events with `global_sequence > 42`, guaranteeing no missed updates.
+The `aggregate_sequence` prevents lost updates when two commands target the same aggregate concurrently.
+See `event-replay-consistency.md` for reconnection patterns and `command-write-patterns.md` for optimistic locking implementation.
 
 ### Events-as-source-of-truth invariant
 

@@ -448,16 +448,20 @@ impl SqliteEventStore {
         sqlx::query(
             r#"
             CREATE TABLE IF NOT EXISTS events (
-                sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+                global_sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+                id TEXT NOT NULL UNIQUE,
                 aggregate_type TEXT NOT NULL,
                 aggregate_id TEXT NOT NULL,
+                aggregate_sequence INTEGER NOT NULL,
                 event_type TEXT NOT NULL,
-                payload JSON NOT NULL,
-                metadata JSON,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
+                event_version TEXT NOT NULL DEFAULT '1.0.0',
+                payload TEXT NOT NULL,
+                metadata TEXT,
+                created_at TEXT DEFAULT (datetime('now')),
+                UNIQUE(aggregate_type, aggregate_id, aggregate_sequence)
+            ) STRICT;
             CREATE INDEX IF NOT EXISTS idx_aggregate
-                ON events(aggregate_type, aggregate_id, sequence);
+                ON events(aggregate_type, aggregate_id, aggregate_sequence);
             "#,
         )
         .execute(&pool)
