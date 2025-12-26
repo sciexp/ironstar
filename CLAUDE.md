@@ -151,8 +151,8 @@ datastar = { version = "0.3", features = ["axum"] }
 # sqlx with SQLite and runtime-tokio
 sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite", "json"] }
 
-# DuckDB with bundled build (compiles DuckDB from source)
-duckdb = { version = "1.4", features = ["bundled"] }
+# async-duckdb for non-blocking analytics queries
+async-duckdb = { version = "0.2", features = ["bundled"] }
 
 # rust-embed for asset embedding (conditional)
 rust-embed = { version = "8", features = ["include-exclude"] }
@@ -180,7 +180,8 @@ oauth2 = { version = "4.4" }
 
 - `datastar` feature `axum` is required for the ReadSignals extractor and Event conversion
 - `sqlx` features must match your async runtime (tokio) and database (sqlite)
-- `duckdb` feature `bundled` is strongly recommended to avoid system DuckDB version mismatches
+- `async-duckdb` feature `bundled` is strongly recommended to avoid system DuckDB version mismatches
+- `async-duckdb` wraps duckdb-rs internally; do not depend on duckdb directly
 - `zenoh` runs embedded by default; configure with empty endpoints to disable networking
 - `oauth2` is used for GitHub OAuth; add `openidconnect` when implementing Google OIDC
 
@@ -198,7 +199,8 @@ All dependencies with local source code available for reference.
 | sqlx | `~/projects/rust-workspace/sqlx` | Async SQL with compile-time validation |
 | moka | `~/projects/rust-workspace/moka-caching` | Async in-memory cache with TTL for analytics |
 | rkyv | `~/projects/rust-workspace/rkyv-deserialization` | Zero-copy deserialization for cache serialization |
-| duckdb-rs | `~/projects/omicslake-workspace/duckdb-rs` | DuckDB Rust bindings |
+| async-duckdb | `~/projects/rust-workspace/async-duckdb` | Async DuckDB wrapper with connection pooling |
+| duckdb-rs | `~/projects/omicslake-workspace/duckdb-rs` | DuckDB Rust bindings (wrapped by async-duckdb) |
 | ts-rs | `~/projects/rust-workspace/ts-rs` | TypeScript type generation from Rust structs |
 | cqrs-es | `~/projects/rust-workspace/cqrs-es` | CQRS/ES framework (reference patterns, not dependency) |
 | sqlite-es | `~/projects/rust-workspace/sqlite-es` | SQLite backend for cqrs-es (reference for event store schema) |
