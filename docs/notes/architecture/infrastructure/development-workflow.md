@@ -357,25 +357,30 @@ Ironstar uses SQLite for the event store with a simplified schema management wor
 
 ### Schema location
 
-Database schema files live in `migrations/schema.sql` at the repository root:
+Database schema files follow the numbered migration convention (see `session-management.md` for details):
 
 ```sql
--- migrations/schema.sql
+-- migrations/001_create_events.sql
 CREATE TABLE IF NOT EXISTS events (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    global_sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+    id TEXT NOT NULL UNIQUE,
     aggregate_type TEXT NOT NULL,
     aggregate_id TEXT NOT NULL,
-    sequence INTEGER NOT NULL,
+    aggregate_sequence INTEGER NOT NULL,
     event_type TEXT NOT NULL,
-    payload JSON NOT NULL,
-    metadata JSON,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(aggregate_type, aggregate_id, sequence)
-);
+    event_version TEXT NOT NULL DEFAULT '1.0.0',
+    payload TEXT NOT NULL,
+    metadata TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    UNIQUE(aggregate_type, aggregate_id, aggregate_sequence)
+) STRICT;
 
 CREATE INDEX IF NOT EXISTS idx_events_aggregate
-    ON events(aggregate_type, aggregate_id, sequence);
+    ON events(aggregate_type, aggregate_id, aggregate_sequence);
 ```
+
+The schema uses dual sequence tracking: `global_sequence` for SSE Last-Event-ID and `aggregate_sequence` for optimistic locking.
+TEXT types are required by STRICT mode; JSON data is stored as TEXT and parsed by application code.
 
 ### Schema initialization
 
