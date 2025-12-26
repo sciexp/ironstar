@@ -1,27 +1,37 @@
-# Distributed event bus migration
+# Event bus fallback options
 
-This document describes the migration path from tokio::broadcast (single-node) to Zenoh (distributed) for the ironstar event bus.
-For the initial single-node event bus design, see `../decisions/infrastructure-decisions.md`.
+**Default architecture**: Ironstar uses Zenoh in embedded mode as the primary event bus.
 
-## When to migrate from tokio::broadcast to Zenoh
+This document describes the optional tokio::broadcast fallback for template users with extreme resource constraints, and the coexistence patterns for adapting ironstar to existing codebases.
+For the canonical Zenoh-first architecture, see `zenoh-event-bus.md`.
+For infrastructure decision rationale, see `../decisions/infrastructure-decisions.md`.
 
-**Single-node scaling limits:**
+## When to consider the tokio::broadcast fallback
 
-tokio::broadcast is sufficient for single-node deployments up to:
+**Default choice**: Zenoh embedded mode is the canonical event bus architecture for ironstar.
+
+**Optional fallback**: Consider tokio::broadcast only if:
+1. Deployment environment has extreme memory constraints (<10MB available for event bus)
+2. Latency requirements are <50μs (Zenoh embedded mode adds ~100μs vs tokio::broadcast's <1μs)
+3. Application will never scale beyond a single node with <256 concurrent SSE clients and <1000 events/sec
+
+**Single-node scaling limits for tokio::broadcast:**
+
+tokio::broadcast becomes a bottleneck at:
 - ~256 concurrent SSE clients (subscribers)
 - ~1000 events/second throughput
 
 These limits are imposed by in-memory channel capacity and lock contention.
 
-**Migration triggers:**
+**When to use Zenoh instead (the default):**
 
-Migrate to Zenoh when:
-1. Concurrent SSE clients exceed 200 (approaching capacity limit)
-2. Event throughput exceeds 800/sec sustained (approaching throughput limit)
-3. Multi-node deployment is required (horizontal scaling)
-4. Cross-service event distribution is needed (microservices pattern)
+Use Zenoh (the canonical architecture) when:
+1. Standard deployment resources available (Zenoh embedded mode uses ~2MB memory)
+2. Future scaling may require multi-node deployment (horizontal scaling)
+3. Cross-service event distribution may be needed (microservices pattern)
+4. Key expression filtering provides architectural value (aggregate-type routing)
 
-## Zenoh — unified abstraction for distribution
+## Zenoh embedded mode — the canonical architecture
 
 **Algebraic justification:**
 
@@ -39,16 +49,22 @@ session.put(&key, payload).await?;
 let subscriber = session.subscribe("events/**").await?;
 ```
 
-**Why Zenoh over Apache Iggy:**
+**Why Zenoh is the default choice:**
 
-- Zenoh has both streaming and storage in one abstraction
-- Storage backends (RocksDB, S3) provide durability
-- Subscriptions provide the "watch" semantics
-- More production-ready (Eclipse Foundation, April 2025 Gozuryū release)
+- Pure Rust implementation (no external server dependency)
+- Embedded mode requires only 4 configuration lines
+- Key expression filtering enables sophisticated routing patterns
+- Distribution-ready without code changes (just configuration)
+- Both streaming and storage in one abstraction
+- Storage backends (RocksDB, S3) provide durability for future use
+- Production-ready (Eclipse Foundation, April 2025 Gozuryū release)
 
-## Migration strategy: DualEventBus coexistence
+## Coexistence strategy: DualEventBus for backward compatibility
 
-The migration uses a dual-mode event bus that supports both tokio::broadcast and Zenoh simultaneously, allowing gradual rollout and easy rollback.
+The DualEventBus pattern supports both Zenoh and tokio::broadcast simultaneously, allowing template users to adapt ironstar to existing broadcast-based codebases gradually.
+
+**Note**: New ironstar instantiations use Zenoh-only by default.
+This pattern is only needed when adapting ironstar to existing systems with tokio::broadcast dependencies.
 
 **Trait abstraction:**
 
@@ -64,22 +80,22 @@ pub trait EventStore: Send + Sync {
     fn subscribe(&self) -> impl Stream<Item = StoredEvent>;
 }
 
-// Phase 1: SQLite + tokio::broadcast implementation
-pub struct SqliteEventStore {
-    pool: SqlitePool,
-    bus: EventBus
-}
-
-// Phase 2: SQLite + Zenoh implementation (same trait)
+// Default: SQLite + Zenoh embedded implementation
 pub struct ZenohEventStore {
     pool: SqlitePool,
     session: zenoh::Session
 }
 
-// Phase 3: Zenoh storage backend (fully distributed)
+// Fallback: SQLite + tokio::broadcast implementation (for extreme resource constraints)
+pub struct BroadcastEventStore {
+    pool: SqlitePool,
+    bus: EventBus
+}
+
+// Future: Zenoh storage backend (fully distributed, no SQLite dependency)
 pub struct ZenohStorageEventStore {
     session: zenoh::Session,
-    // No SQLite dependency
+    // No SQLite dependency - uses Zenoh storage backend
 }
 ```
 
@@ -90,11 +106,11 @@ use tokio::sync::broadcast;
 use zenoh::prelude::r#async::*;
 
 pub enum EventBusMode {
-    Broadcast(broadcast::Sender<StoredEvent>),
-    Zenoh(zenoh::Session),
-    Dual {
-        broadcast: broadcast::Sender<StoredEvent>,
+    Zenoh(zenoh::Session),                    // Default: Zenoh-only
+    Broadcast(broadcast::Sender<StoredEvent>), // Fallback: broadcast-only
+    Dual {                                     // Coexistence: both for backward compatibility
         zenoh: zenoh::Session,
+        broadcast: broadcast::Sender<StoredEvent>,
     },
 }
 
@@ -103,12 +119,6 @@ pub struct DualEventBus {
 }
 
 impl DualEventBus {
-    pub fn new_broadcast(tx: broadcast::Sender<StoredEvent>) -> Self {
-        Self {
-            mode: EventBusMode::Broadcast(tx),
-        }
-    }
-
     pub async fn new_zenoh(config: zenoh::config::Config) -> Result<Self, zenoh::Error> {
         let session = zenoh::open(config).res().await?;
         Ok(Self {
@@ -116,36 +126,42 @@ impl DualEventBus {
         })
     }
 
+    pub fn new_broadcast(tx: broadcast::Sender<StoredEvent>) -> Self {
+        Self {
+            mode: EventBusMode::Broadcast(tx),
+        }
+    }
+
     pub async fn new_dual(
-        tx: broadcast::Sender<StoredEvent>,
         config: zenoh::config::Config,
+        tx: broadcast::Sender<StoredEvent>,
     ) -> Result<Self, zenoh::Error> {
         let session = zenoh::open(config).res().await?;
         Ok(Self {
             mode: EventBusMode::Dual {
-                broadcast: tx,
                 zenoh: session,
+                broadcast: tx,
             },
         })
     }
 
     pub async fn publish(&self, event: &StoredEvent) -> Result<(), Error> {
         match &self.mode {
-            EventBusMode::Broadcast(tx) => {
-                tx.send(event.clone())
-                    .map_err(|_| Error::BroadcastFailed)?;
-            }
             EventBusMode::Zenoh(session) => {
                 let key = event_key(event);
                 let payload = serde_json::to_vec(event)?;
                 session.put(&key, payload).res().await?;
             }
-            EventBusMode::Dual { broadcast, zenoh } => {
-                // Publish to both buses (ignore individual failures in dual mode)
-                let _ = broadcast.send(event.clone());
+            EventBusMode::Broadcast(tx) => {
+                tx.send(event.clone())
+                    .map_err(|_| Error::BroadcastFailed)?;
+            }
+            EventBusMode::Dual { zenoh, broadcast } => {
+                // Publish to both buses (Zenoh primary, broadcast for compatibility)
                 let key = event_key(event);
                 let payload = serde_json::to_vec(event)?;
                 let _ = zenoh.put(&key, payload).res().await;
+                let _ = broadcast.send(event.clone());
             }
         }
         Ok(())
@@ -153,16 +169,17 @@ impl DualEventBus {
 
     pub async fn subscribe(&self) -> Result<EventSubscription, Error> {
         match &self.mode {
-            EventBusMode::Broadcast(tx) => {
-                Ok(EventSubscription::Broadcast(tx.subscribe()))
-            }
             EventBusMode::Zenoh(session) => {
                 let subscriber = session.declare_subscriber("events/**").res().await?;
                 Ok(EventSubscription::Zenoh(subscriber))
             }
-            EventBusMode::Dual { broadcast, .. } => {
-                // In dual mode, prefer Zenoh for new subscribers
-                Ok(EventSubscription::Broadcast(broadcast.subscribe()))
+            EventBusMode::Broadcast(tx) => {
+                Ok(EventSubscription::Broadcast(tx.subscribe()))
+            }
+            EventBusMode::Dual { zenoh, .. } => {
+                // In dual mode, new subscribers use Zenoh (the primary)
+                let subscriber = zenoh.declare_subscriber("events/**").res().await?;
+                Ok(EventSubscription::Zenoh(subscriber))
             }
         }
     }
@@ -181,11 +198,11 @@ fn event_key(event: &StoredEvent) -> String {
 }
 ```
 
-## Key expression patterns for distributed deployment
+## Key expression patterns
 
 For complete Zenoh key expression patterns including wildcards (`*`, `**`, `$*`), subscription semantics, and session-scoped routing, see `zenoh-event-bus.md`.
 
-The DualEventBus uses hierarchical event keys for distributed deployment:
+Zenoh uses hierarchical event keys for sophisticated routing:
 
 ```
 events/{aggregate_type}/{aggregate_id}/{sequence}
@@ -194,28 +211,45 @@ events/{aggregate_type}/{aggregate_id}/{sequence}
 This structure enables aggregate-type filtering (`events/Todo/**`), instance-specific subscriptions (`events/Todo/uuid-123/**`), and cache invalidation patterns.
 See `analytics-cache-patterns.md` Pattern 4 for Zenoh-based cache invalidation.
 
-## Migration phases
+## Deployment modes
 
-**Phase 1: Single-node with tokio::broadcast (current)**
+**Default: Zenoh embedded mode**
+
+```rust
+let mut config = zenoh::config::Config::default();
+config.insert_json5("listen/endpoints", "[]").unwrap();
+config.insert_json5("connect/endpoints", "[]").unwrap();
+config.insert_json5("scouting/multicast/enabled", "false").unwrap();
+config.insert_json5("scouting/gossip/enabled", "false").unwrap();
+
+let bus = DualEventBus::new_zenoh(config).await?;
+```
+
+**Fallback: tokio::broadcast (extreme resource constraints)**
 
 ```rust
 let (tx, _rx) = broadcast::channel(1024);
 let bus = DualEventBus::new_broadcast(tx);
 ```
 
-**Phase 2: Dual-mode coexistence**
+**Coexistence: Dual-mode for backward compatibility**
 
 ```rust
 let (tx, _rx) = broadcast::channel(1024);
-let config = zenoh::config::Config::default();
-let bus = DualEventBus::new_dual(tx, config).await?;
+let mut config = zenoh::config::Config::default();
+config.insert_json5("listen/endpoints", "[]").unwrap();
+config.insert_json5("connect/endpoints", "[]").unwrap();
+config.insert_json5("scouting/multicast/enabled", "false").unwrap();
+config.insert_json5("scouting/gossip/enabled", "false").unwrap();
 
-// Events published to both buses
+let bus = DualEventBus::new_dual(config, tx).await?;
+
+// Events published to both Zenoh (primary) and broadcast (compatibility)
 // New subscribers use Zenoh
-// Old subscribers continue using broadcast
+// Legacy subscribers continue using broadcast until transitioned
 ```
 
-**Phase 3: Zenoh-only (distributed)**
+**Distributed: Zenoh peer mode (multi-node deployment)**
 
 ```rust
 let mut config = zenoh::config::Config::default();
@@ -223,7 +257,7 @@ config.set_mode(Some(zenoh::config::WhatAmI::Peer))?;
 let bus = DualEventBus::new_zenoh(config).await?;
 ```
 
-**Phase 4: Zenoh storage backend (optional)**
+**Future: Zenoh storage backend (fully distributed)**
 
 Replace SQLite event store with Zenoh's RocksDB/S3 storage backend for fully distributed event sourcing.
 
@@ -265,9 +299,9 @@ impl ZenohStorageEventStore {
 }
 ```
 
-## Rollback procedure
+## Rollback procedure for dual-mode deployments
 
-If Zenoh migration encounters issues, rollback to tokio::broadcast:
+If template users running dual-mode encounter issues with Zenoh:
 
 1. **Immediate rollback (dual mode active):**
    ```rust
@@ -275,7 +309,7 @@ If Zenoh migration encounters issues, rollback to tokio::broadcast:
    let bus = DualEventBus::new_broadcast(tx);
    ```
 
-2. **Full rollback (Zenoh-only mode):**
+2. **Full rollback (Zenoh-only to broadcast):**
    ```rust
    // Redeploy with broadcast-only configuration
    let (tx, _rx) = broadcast::channel(1024);
@@ -283,9 +317,11 @@ If Zenoh migration encounters issues, rollback to tokio::broadcast:
    ```
 
 3. **Data consistency:**
-   - SQLite event store remains source of truth during migration
-   - Zenoh is additive (pub/sub only, not storage in phases 1-3)
+   - SQLite event store remains source of truth
+   - Zenoh is additive (pub/sub only, not storage)
    - No data loss risk during rollback
+
+**Note**: Fresh ironstar instantiations use Zenoh-only by default and do not have a broadcast fallback to roll back to.
 
 ## Testing dual mode
 
@@ -293,8 +329,13 @@ If Zenoh migration encounters issues, rollback to tokio::broadcast:
 #[tokio::test]
 async fn test_dual_mode_publish() {
     let (tx, mut rx1) = broadcast::channel(16);
-    let config = zenoh::config::Config::default();
-    let bus = DualEventBus::new_dual(tx, config).await.unwrap();
+    let mut config = zenoh::config::Config::default();
+    config.insert_json5("listen/endpoints", "[]").unwrap();
+    config.insert_json5("connect/endpoints", "[]").unwrap();
+    config.insert_json5("scouting/multicast/enabled", "false").unwrap();
+    config.insert_json5("scouting/gossip/enabled", "false").unwrap();
+
+    let bus = DualEventBus::new_dual(config, tx).await.unwrap();
 
     let event = StoredEvent { /* ... */ };
     bus.publish(&event).await.unwrap();
@@ -310,15 +351,17 @@ async fn test_dual_mode_publish() {
 
 ## Performance characteristics
 
-| Metric | tokio::broadcast | Zenoh (embedded) | Zenoh (distributed) |
+| Metric | Zenoh (embedded) | tokio::broadcast | Zenoh (distributed) |
 |--------|------------------|------------------|---------------------|
-| Latency (local) | <1μs | ~50μs | ~200μs |
-| Throughput (single node) | ~1M/sec | ~100K/sec | ~50K/sec |
-| Memory per subscriber | ~8KB | ~32KB | ~64KB |
-| Max subscribers (practical) | ~256 | ~10K | ~100K |
+| Latency (local) | ~100μs | <1μs | ~200μs |
+| Throughput (single node) | ~100K/sec | ~1M/sec | ~50K/sec |
+| Memory per subscriber | ~32KB | ~8KB | ~64KB |
+| Max subscribers (practical) | ~10K | ~256 | ~100K |
 | Network overhead | None | None | Yes (TCP/UDP) |
+| Key expression filtering | Yes | No | Yes |
+| Distribution-ready | Yes (config change only) | No | Yes |
 
-**Recommendation:** Stay on tokio::broadcast unless you need >256 subscribers or multi-node deployment.
+**Recommendation:** Use Zenoh embedded mode (the default) unless extreme resource constraints require the broadcast fallback.
 
 ## Related documentation
 
