@@ -213,11 +213,13 @@ redb is excellent for session storage (where persistence is valuable) but introd
 If cache persistence becomes valuable (e.g., faster startup with warm cache), consider:
 
 ```rust
+use async_duckdb::Pool;
+
 /// Layered cache: moka (hot) -> redb (warm) -> DuckDB (cold)
 pub struct LayeredAnalyticsCache {
     hot: Cache<String, Vec<u8>>,          // moka (sub-ms access)
     warm: Option<Database>,                // redb (10ms access)
-    cold: Arc<DuckDBService>,              // DuckDB (seconds access)
+    cold: Arc<Pool>,                       // async-duckdb pool (seconds access)
 }
 
 impl LayeredAnalyticsCache {
@@ -235,14 +237,25 @@ impl LayeredAnalyticsCache {
             }
         }
 
-        // L3: DuckDB (compute)
-        let data = self.cold.execute_and_serialize(key).await?;
+        // L3: async-duckdb pool (compute)
+        let data = self.execute_and_serialize(key).await?;
         self.hot.insert(key.to_string(), data.clone()).await;
         if let Some(ref db) = self.warm {
             self.write_to_redb(db, key, &data)?;
         }
 
         Ok(data)
+    }
+
+    async fn execute_and_serialize(&self, query_key: &str) -> Result<Vec<u8>, Error> {
+        // Execute analytics query via pool
+        let results = self.cold.conn(|conn| {
+            // Parse query_key and execute appropriate DuckDB query
+            execute_analytics_query(conn, query_key)
+        }).await?;
+
+        // Serialize results
+        Ok(bincode::serialize(&results)?)
     }
 }
 ```
