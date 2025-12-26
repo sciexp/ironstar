@@ -189,7 +189,7 @@ This schema provides:
 | **Decide (pure)** | `handle_command(state, cmd)` | `aggregate.handle(cmd)` | ✅ Aligned |
 | **Persist** | Append to SQLite, broadcast to tokio channel | Append to SQLite with optimistic locking | ✅ Aligned |
 | **Publish** | tokio::broadcast::send() | ZenohPublisher::publish_batch() | ❌ Divergence |
-| **Async query execution** | spawn_blocking with synchronous duckdb-rs | async-duckdb Client/Pool with async API | ❌ Divergence |
+| **Async query execution** | async-duckdb Client/Pool with async API | async-duckdb Client/Pool with async API | ✅ Aligned |
 
 **Ironstar pattern:**
 ```rust
@@ -278,17 +278,25 @@ Northstar uses Zenoh from the start.
 
 | Aspect | Ironstar | Northstar Tracer Bullet | Alignment |
 |--------|----------|-------------------------|-----------|
-| **Async strategy** | spawn_blocking with synchronous duckdb-rs | async-duckdb with thread-per-connection | ❌ Divergence |
-| **Connection pooling** | Not specified | async-duckdb Pool (read-only) | ❌ Divergence |
-| **API pattern** | Direct duckdb::Connection calls in blocking context | Closure-based `pool.conn(\|conn\| ...)` async API | ❌ Divergence |
+| **Async strategy** | async-duckdb with thread-per-connection | async-duckdb with thread-per-connection | ✅ Aligned |
+| **Connection pooling** | async-duckdb Pool (read-only) | async-duckdb Pool (read-only) | ✅ Aligned |
+| **API pattern** | Closure-based `pool.conn(\|conn\| ...)` async API | Closure-based `pool.conn(\|conn\| ...)` async API | ✅ Aligned |
 
-**Ironstar current pattern (implicit):**
+**Ironstar pattern:**
 ```rust
-// Blocking approach requires spawn_blocking
-let result = tokio::task::spawn_blocking(move || {
-    let conn = duckdb::Connection::open("analytics.duckdb")?;
+use async_duckdb::{Pool, PoolBuilder};
+
+// Read-only pool for concurrent analytics
+let pool = PoolBuilder::new()
+    .path("analytics.duckdb")
+    .num_conns(4)
+    .open()
+    .await?;
+
+// Non-blocking query execution
+let result = pool.conn(|conn| {
     conn.query_row("SELECT COUNT(*) FROM events", [], |row| row.get(0))
-}).await??;
+}).await?;
 ```
 
 **Northstar pattern:**
@@ -310,18 +318,13 @@ let result = pool.conn(|conn| {
 
 **Assessment:**
 
-Northstar explicitly uses async-duckdb for non-blocking DuckDB operations.
+Both implementations use async-duckdb for non-blocking DuckDB operations.
 The crate provides an async wrapper around synchronous duckdb-rs using a background-thread-per-connection pattern.
 The Pool type is specifically designed for read-only connections, ideal for analytics workloads.
 
-**Divergence requiring resolution:**
+**Resolution status: ✅ Aligned**
 
-**Critical**: Ironstar must adopt async-duckdb for DuckDB integration.
-spawn_blocking is not equivalent — it blocks a thread from the tokio thread pool, while async-duckdb uses dedicated background threads with proper async/sync bridging.
-
-**Resolution:**
-
-Adopt async-duckdb with read-only Pool for analytics queries.
+Ironstar has adopted async-duckdb with read-only Pool for analytics queries, matching the northstar pattern.
 
 ## 4. Projection patterns
 
@@ -633,7 +636,7 @@ Compatible approaches.
    - **Resolution**: Ironstar should add `version(&self) -> u64` to Aggregate trait
 
 4. **async-duckdb vs spawn_blocking**: Northstar uses async-duckdb for non-blocking DuckDB operations with connection pooling
-   - **Resolution**: Adopt async-duckdb with read-only Pool for analytics queries
+   - **Resolution status: ✅ Resolved** — Ironstar has adopted async-duckdb with read-only Pool for analytics queries
 
 ## Recommendations for ironstar
 
@@ -642,7 +645,7 @@ Compatible approaches.
 1. **Hybrid event store schema** combining global sequence (SSE) and aggregate sequence (optimistic locking)
 2. **UUID-tracked errors** with backtrace for distributed error correlation
 3. **Explicit version() method** in Aggregate trait for optimistic locking
-4. **async-duckdb for DuckDB analytics integration** with read-only connection pooling
+4. **✅ async-duckdb for DuckDB analytics integration** with read-only connection pooling (adopted)
 
 ### Should consider from northstar
 
@@ -666,8 +669,9 @@ The main divergences are:
 1. **Event store schema** (global vs per-aggregate sequence) — resolved by hybrid approach
 2. **Error tracking** (northstar has UUIDs, ironstar does not) — ironstar must adopt
 3. **Event bus philosophy** (ironstar gradual migration, northstar Zenoh from start) — both valid for different use cases
-4. **DuckDB async execution** (ironstar spawn_blocking, northstar async-duckdb) — ironstar must adopt async-duckdb
+4. **✅ DuckDB async execution** — ironstar has adopted async-duckdb, matching northstar pattern
 
 By adopting the hybrid event store schema, UUID-tracked errors, explicit version tracking, and async-duckdb from northstar, ironstar will gain production-ready CQRS capabilities while preserving its educational clarity and gradual complexity curve.
+async-duckdb adoption is now complete across all ironstar documentation.
 
 The northstar tracer bullet serves as an excellent reference implementation for analytics-specific patterns (QuerySessionAggregate, DuckDB async execution, background task spawning) that ironstar can adopt when implementing analytics features.
