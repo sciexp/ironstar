@@ -1,8 +1,10 @@
 # Zenoh event bus architecture
 
-Ironstar uses Zenoh as its event notification layer, providing server-side key expression filtering essential for CQRS + Datastar applications.
+Ironstar uses Zenoh as its **primary event notification layer** from day one, providing server-side key expression filtering essential for CQRS + Datastar applications.
 This mirrors the Go ecosystem pattern where NATS is the default choice for real-time event-driven applications.
 Zenoh is the Rust-native equivalent: pure Rust implementation, no external server required, and key expression filtering that enables the "listen to hundreds of keys with server-side filtering" pattern.
+
+**Note**: tokio::broadcast is mentioned in older documentation as a fallback option for minimal single-node deployments, but the canonical architecture uses Zenoh embedded mode by default.
 
 ## Architecture overview
 
@@ -296,17 +298,19 @@ Common issues:
 | Events arrive late | Channel buffer overflow | Increase `.with(flume::bounded(N))` size |
 | Memory leak | Subscribers not closed | Ensure subscriber drop on SSE disconnect |
 
-## Migration guidance for template users
+## Fallback option: tokio::broadcast for minimal deployments
 
-Template users adapting ironstar for existing codebases may need to transition from `tokio::sync::broadcast` to Zenoh.
-This section provides coexistence and migration strategies.
+**Default architecture**: Ironstar uses Zenoh embedded mode by default.
+This section documents the optional tokio::broadcast fallback for template users with extreme resource constraints who need a lighter-weight event bus for minimal single-node deployments.
+
+Template users adapting ironstar for existing codebases with tokio::broadcast can use these coexistence patterns to integrate Zenoh gradually.
 
 ### Coexistence pattern
 
-For gradual migration, publish to both broadcast and Zenoh while subscribers transition incrementally.
+For template users who need to support both Zenoh and tokio::broadcast (e.g., when adapting ironstar for existing codebases), publish to both while transitioning subscribers incrementally.
 
 ```rust
-/// Dual-publish to both broadcast and Zenoh during migration
+/// Dual-publish to both Zenoh and broadcast for backward compatibility
 pub struct DualEventBus {
     broadcast: broadcast::Sender<StoredEvent>,
     zenoh: Arc<Session>,
@@ -325,22 +329,25 @@ impl DualEventBus {
 }
 ```
 
-Dual-publishing ensures existing broadcast subscribers continue working while Zenoh-based subscribers are tested in parallel.
+Dual-publishing ensures existing broadcast subscribers continue working while Zenoh-based subscribers are adopted.
 
-### Migration sequence
+**Note**: New ironstar instantiations start with Zenoh-only by default.
+This pattern is only needed for template users adapting ironstar to existing codebases with tokio::broadcast dependencies.
 
-**Phase 1: Add Zenoh alongside broadcast**
+### Transition sequence for existing broadcast codebases
 
-Keep broadcast code working while adding Zenoh publishing.
+**Phase 1: Add Zenoh as primary, keep broadcast for compatibility**
 
-1. Add Zenoh session to AppState
-2. Dual-publish all events (broadcast + Zenoh)
-3. All existing subscribers continue using broadcast
-4. Add integration tests for Zenoh publishing
+Start using Zenoh while maintaining broadcast for existing code.
 
-**Phase 2: Migrate subscribers incrementally**
+1. Add Zenoh session to AppState (configured in embedded mode)
+2. Dual-publish all events (Zenoh + broadcast for compatibility)
+3. Existing subscribers continue using broadcast
+4. New SSE handlers use Zenoh from the start
 
-Migrate one SSE handler at a time, starting with least critical components.
+**Phase 2: Migrate existing subscribers incrementally**
+
+Migrate one SSE handler at a time to Zenoh, starting with least critical components.
 
 ```rust
 // Feature flag for gradual migration
@@ -362,7 +369,7 @@ async fn sse_feed(
 }
 ```
 
-Recommended migration order:
+Recommended transition order:
 
 | Order | Component | Risk | Rationale |
 |-------|-----------|------|-----------|
@@ -370,18 +377,18 @@ Recommended migration order:
 | 2 | Projection updaters | Medium | Can rebuild from event store |
 | 3 | Primary UI SSE feeds | High | User-facing, test thoroughly |
 
-**Phase 3: Remove broadcast**
+**Phase 3: Remove broadcast fallback**
 
-Once all subscribers have migrated:
+Once all legacy subscribers have transitioned to Zenoh:
 
 1. Remove broadcast channel from DualEventBus
 2. Remove broadcast Receiver usage
 3. Remove `use_zenoh_for_sse` feature flag
 4. Update documentation
 
-### Rollback procedure
+### Rollback procedure for dual-mode deployments
 
-For template users experiencing issues during migration:
+For template users running dual-mode (Zenoh + broadcast) who experience issues:
 
 1. Set `use_zenoh_for_sse = false` in config
 2. Restart the service
@@ -389,13 +396,18 @@ For template users experiencing issues during migration:
 4. Investigate Zenoh logs for errors
 5. Fix root cause before re-enabling
 
-### When to use migration vs fresh start
+**Note**: This rollback procedure is only relevant for dual-mode deployments.
+Fresh ironstar instantiations use Zenoh-only and do not have a broadcast fallback to roll back to.
 
-**Fresh Zenoh integration**: New ironstar template instantiations start with Zenoh by default.
+### When to use the fallback option
 
-**Gradual migration**: Existing projects with broadcast subscribers in production use the coexistence pattern above.
+**Default (Zenoh embedded mode)**: All new ironstar template instantiations start with Zenoh in embedded mode by default.
+This is the canonical architecture.
 
-**Profile first**: If embedded mode overhead is a concern, benchmark before migrating (typical overhead: ~2MB memory, ~100μs latency).
+**Optional fallback (tokio::broadcast)**: Only consider this for extreme resource constraints where the ~2MB memory overhead and ~100μs latency of Zenoh embedded mode are prohibitive.
+Most deployments will never need this fallback.
+
+**Gradual transition**: Existing projects with broadcast subscribers in production can use the coexistence pattern above to transition to Zenoh incrementally.
 
 ## Monitoring and metrics
 
