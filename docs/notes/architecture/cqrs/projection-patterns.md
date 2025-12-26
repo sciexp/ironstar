@@ -112,116 +112,90 @@ Use DuckDB for querying external scientific datasets (HuggingFace Hub, S3, DuckL
 
 ## DuckDB async runtime integration
 
-DuckDB-rs is a synchronous, blocking library.
-All query methods block the calling thread until results are available.
-In async axum handlers running on tokio, blocking calls must be carefully wrapped to avoid blocking the async runtime's worker threads, which would degrade performance for all concurrent requests.
+DuckDB-rs is a synchronous, blocking library, but async-duckdb provides a clean async interface via connection pooling and dedicated background threads.
+This eliminates the need for manual `spawn_blocking` or `block_in_place` wrappers in async axum handlers.
 
-### Integration strategies
+### async-duckdb Pool integration
 
-**For quick queries** (expected to complete in milliseconds): Use `tokio::task::block_in_place()`.
-This allows blocking operations within an async context without spawning a new OS thread.
-The tokio runtime temporarily removes the worker thread from its pool while the blocking operation runs.
-
-**For long-running analytics** (seconds or more): Use `tokio::task::spawn_blocking()`.
-This spawns the blocking work on a dedicated thread pool, preventing it from tying up async worker threads.
+async-duckdb provides a Pool type that manages multiple read-only connections, each running on its own dedicated background thread.
+The `.conn()` method bridges the sync DuckDB API to the async world using a closure-based pattern.
 
 ### Code examples
 
 ```rust
 use axum::{extract::State, response::IntoResponse, Json};
+use async_duckdb::Pool;
 use std::sync::Arc;
-use tokio::task;
 
-// Quick query pattern - block_in_place
+// Analytics handler with async-duckdb
 async fn analytics_handler(
-    State(analytics): State<Arc<AnalyticsService>>,
+    State(pool): State<Arc<Pool>>,
 ) -> Result<impl IntoResponse, AppError> {
     // Note: AppError is defined in event-sourcing-core.md
-    let analytics = analytics.clone();
 
-    // block_in_place: allows blocking without spawning new thread
-    // Use for queries expected to complete quickly (< 100ms)
-    let result = task::block_in_place(|| {
-        analytics.query_aggregate_counts()
-    })?;
+    // Non-blocking query execution via pool
+    let result = pool.conn(|conn| {
+        let mut stmt = conn.prepare(
+            "SELECT aggregate_type, COUNT(*) as count
+             FROM events
+             GROUP BY aggregate_type"
+        )?;
+
+        let rows = stmt.query_map([], |row| {
+            Ok(AggregateCount {
+                aggregate_type: row.get(0)?,
+                count: row.get(1)?,
+            })
+        })?;
+
+        rows.collect::<Result<Vec<_>, _>>()
+    }).await?;
 
     Ok(Json(result))
 }
 
-// Long-running query pattern - spawn_blocking
+// Long-running analytics query - same pattern
 async fn heavy_report_handler(
-    State(analytics): State<Arc<AnalyticsService>>,
+    State(pool): State<Arc<Pool>>,
 ) -> Result<impl IntoResponse, AppError> {
-    let analytics = analytics.clone();
-
-    // spawn_blocking: runs on dedicated blocking thread pool
-    // Use for long-running queries (seconds or more)
-    let result = task::spawn_blocking(move || {
-        analytics.generate_monthly_report()
-    })
-    .await??;  // First ? for JoinError, second ? for business logic error
+    // No spawn_blocking needed - pool handles threading automatically
+    let result = pool.conn(|conn| {
+        // Complex multi-step analytics
+        generate_monthly_report(conn)
+    }).await?;
 
     Ok(Json(result))
 }
 ```
 
-### Connection management
-
-DuckDB's `Connection` type is `Send` but not `Sync`.
-`Statement` is neither `Send` nor `Sync`.
-This means:
-
-- A `Connection` can be moved between threads but not shared.
-- `Statement` must stay on the thread where it was created.
-
-**Connection pooling pattern**:
+### Pool initialization
 
 ```rust
-use duckdb::Connection;
-use std::sync::{Arc, Mutex};
+use async_duckdb::{Pool, PoolBuilder};
 
-// Simple approach: Mutex around single connection
-pub struct DuckDBService {
-    conn: Arc<Mutex<Connection>>,
-}
+// Create read-only pool for concurrent analytics
+let pool = PoolBuilder::new()
+    .path("analytics.duckdb")
+    .num_conns(4)  // Number of concurrent read connections
+    .open()
+    .await?;
 
-impl DuckDBService {
-    pub fn query_aggregate_counts(&self) -> Result<Vec<AggregateCount>, Error> {
-        let conn = self.conn.lock().unwrap();
-        let mut stmt = conn.prepare("SELECT aggregate_type, COUNT(*) FROM events GROUP BY aggregate_type")?;
-        let rows = stmt.query_map([], |row| {
-            Ok(AggregateCount {
-                aggregate_type: row.get(0)?,
-                count: row.get(1)?,
-            })
-        })?;
-        rows.collect()
-    }
-}
-
-// Alternative: One connection per blocking task (no contention)
-pub struct DuckDBService {
-    database_path: String,
-}
-
-impl DuckDBService {
-    pub fn query_aggregate_counts(&self) -> Result<Vec<AggregateCount>, Error> {
-        // Each query gets its own connection
-        let conn = Connection::open(&self.database_path)?;
-        let mut stmt = conn.prepare("SELECT aggregate_type, COUNT(*) FROM events GROUP BY aggregate_type")?;
-        let rows = stmt.query_map([], |row| {
-            Ok(AggregateCount {
-                aggregate_type: row.get(0)?,
-                count: row.get(1)?,
-            })
-        })?;
-        rows.collect()
-    }
-}
+// Use in axum application state
+let app_state = AppState {
+    duckdb_pool: Arc::new(pool),
+    // ... other state
+};
 ```
 
-For ironstar analytics projections, the one-connection-per-task pattern is simpler and avoids lock contention.
-DuckDB handles concurrent access at the file level, so multiple connections to the same database file work correctly.
+### Key design points
+
+- Pool is read-only by default (per DuckDB single-writer concurrency model)
+- Each connection runs on a dedicated background thread
+- The `.conn()` closure bridges sync DuckDB API to async world
+- Runtime-agnostic (works with tokio, async-std, etc.)
+- No manual `spawn_blocking` or `block_in_place` required
+
+For ironstar analytics projections, async-duckdb Pool provides clean async integration without manual threading concerns.
 
 ## Projection trait code pattern
 
