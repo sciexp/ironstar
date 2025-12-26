@@ -322,7 +322,7 @@ pub fn chart_page(title: &str, chart_id: &str) -> impl Renderable {
 
 ### Performance Considerations
 
-1. DuckDB queries run on `spawn_blocking` thread pool
+1. DuckDB queries run via async-duckdb Pool with dedicated background threads
 2. Analytics results cached in moka with TTL
 3. Cache invalidation via Zenoh subscription
 4. rkyv zero-copy deserialization for cached data
