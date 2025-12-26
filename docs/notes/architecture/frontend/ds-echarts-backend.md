@@ -165,8 +165,8 @@ fn build_echarts_option(data: &AnalyticsData) -> serde_json::Value {
 
 ```rust
 // src/infrastructure/analytics.rs
-use duckdb::{Connection, Result as DuckResult};
-use std::sync::Mutex;
+use async_duckdb::{Pool, PoolBuilder};
+use std::sync::Arc;
 
 pub struct DuckDBService {
     pool: Arc<async_duckdb::Pool>,
