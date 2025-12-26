@@ -63,19 +63,29 @@ impl ErrorCode {
 ## Domain layer: ValidationError and DomainError
 
 Pure domain errors with no infrastructure dependencies.
+All domain errors include UUID tracking for distributed tracing correlation.
 
 ### ValidationError
 
-Field-level validation failures.
+Field-level validation failures with UUID tracking.
 
 ```rust
 // ironstar-domain/src/error.rs
 use common_enums::ErrorCode;
+use std::backtrace::Backtrace;
 use std::fmt;
+use uuid::Uuid;
 
-/// Domain-level validation errors
+/// Domain-level validation errors with UUID tracking
+#[derive(Debug)]
+pub struct ValidationError {
+    id: Uuid,
+    kind: ValidationErrorKind,
+    backtrace: Backtrace,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ValidationError {
+pub enum ValidationErrorKind {
     EmptyField { field: String },
     InvalidFormat { field: String, expected: String },
     OutOfRange { field: String, min: i64, max: i64, actual: i64 },
@@ -83,18 +93,36 @@ pub enum ValidationError {
     TooShort { field: String, min_length: usize, actual_length: usize },
 }
 
+impl ValidationError {
+    pub fn new(kind: ValidationErrorKind) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            kind,
+            backtrace: Backtrace::capture(),
+        }
+    }
+
+    pub fn error_id(&self) -> Uuid {
+        self.id
+    }
+
+    pub fn kind(&self) -> &ValidationErrorKind {
+        &self.kind
+    }
+}
+
 impl fmt::Display for ValidationError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            ValidationError::EmptyField { field } =>
+        match &self.kind {
+            ValidationErrorKind::EmptyField { field } =>
                 write!(f, "{} cannot be empty", field),
-            ValidationError::InvalidFormat { field, expected } =>
+            ValidationErrorKind::InvalidFormat { field, expected } =>
                 write!(f, "{} has invalid format, expected: {}", field, expected),
-            ValidationError::OutOfRange { field, min, max, actual } =>
+            ValidationErrorKind::OutOfRange { field, min, max, actual } =>
                 write!(f, "{} must be between {} and {}, got {}", field, min, max, actual),
-            ValidationError::TooLong { field, max_length, actual_length } =>
+            ValidationErrorKind::TooLong { field, max_length, actual_length } =>
                 write!(f, "{} exceeds maximum length {} (got {})", field, max_length, actual_length),
-            ValidationError::TooShort { field, min_length, actual_length } =>
+            ValidationErrorKind::TooShort { field, min_length, actual_length } =>
                 write!(f, "{} is shorter than minimum length {} (got {})", field, min_length, actual_length),
         }
     }
@@ -105,12 +133,19 @@ impl std::error::Error for ValidationError {}
 
 ### DomainError
 
-Business rule violations and domain-specific failures.
+Business rule violations and domain-specific failures with UUID tracking.
 
 ```rust
-/// Domain business rule errors
+/// Domain business rule errors with UUID tracking
+#[derive(Debug)]
+pub struct DomainError {
+    id: Uuid,
+    kind: DomainErrorKind,
+    backtrace: Backtrace,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum DomainError {
+pub enum DomainErrorKind {
     InvalidTransition { from: String, to: String },
     InsufficientFunds { available: i64, requested: i64 },
     AlreadyExists { aggregate_type: String, aggregate_id: String },
@@ -118,18 +153,36 @@ pub enum DomainError {
     VersionConflict { expected: i64, actual: i64 },
 }
 
+impl DomainError {
+    pub fn new(kind: DomainErrorKind) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            kind,
+            backtrace: Backtrace::capture(),
+        }
+    }
+
+    pub fn error_id(&self) -> Uuid {
+        self.id
+    }
+
+    pub fn kind(&self) -> &DomainErrorKind {
+        &self.kind
+    }
+}
+
 impl fmt::Display for DomainError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            DomainError::InvalidTransition { from, to } =>
+        match &self.kind {
+            DomainErrorKind::InvalidTransition { from, to } =>
                 write!(f, "cannot transition from {} to {}", from, to),
-            DomainError::InsufficientFunds { available, requested } =>
+            DomainErrorKind::InsufficientFunds { available, requested } =>
                 write!(f, "insufficient funds: {} available, {} requested", available, requested),
-            DomainError::AlreadyExists { aggregate_type, aggregate_id } =>
+            DomainErrorKind::AlreadyExists { aggregate_type, aggregate_id } =>
                 write!(f, "{} {} already exists", aggregate_type, aggregate_id),
-            DomainError::NotFound { aggregate_type, aggregate_id } =>
+            DomainErrorKind::NotFound { aggregate_type, aggregate_id } =>
                 write!(f, "{} {} not found", aggregate_type, aggregate_id),
-            DomainError::VersionConflict { expected, actual } =>
+            DomainErrorKind::VersionConflict { expected, actual } =>
                 write!(f, "version conflict: expected {}, got {}", expected, actual),
         }
     }
@@ -139,12 +192,12 @@ impl std::error::Error for DomainError {}
 
 impl DomainError {
     pub fn error_code(&self) -> ErrorCode {
-        match self {
-            DomainError::InvalidTransition { .. } => ErrorCode::ValidationFailed,
-            DomainError::InsufficientFunds { .. } => ErrorCode::ValidationFailed,
-            DomainError::AlreadyExists { .. } => ErrorCode::Conflict,
-            DomainError::NotFound { .. } => ErrorCode::NotFound,
-            DomainError::VersionConflict { .. } => ErrorCode::Conflict,
+        match &self.kind {
+            DomainErrorKind::InvalidTransition { .. } => ErrorCode::ValidationFailed,
+            DomainErrorKind::InsufficientFunds { .. } => ErrorCode::ValidationFailed,
+            DomainErrorKind::AlreadyExists { .. } => ErrorCode::Conflict,
+            DomainErrorKind::NotFound { .. } => ErrorCode::NotFound,
+            DomainErrorKind::VersionConflict { .. } => ErrorCode::Conflict,
         }
     }
 }
@@ -224,16 +277,25 @@ impl AggregateError {
 
 ## Infrastructure layer: InfrastructureError
 
-Infrastructure errors for database, cache, and event bus failures.
+Infrastructure errors for database, cache, and event bus failures with UUID tracking.
 
 ```rust
 // ironstar-interfaces/src/error.rs
 use common_enums::ErrorCode;
+use std::backtrace::Backtrace;
 use std::fmt;
+use uuid::Uuid;
 
-/// Infrastructure errors from persistence, cache, or event bus
+/// Infrastructure errors from persistence, cache, or event bus with UUID tracking
 #[derive(Debug)]
-pub enum InfrastructureError {
+pub struct InfrastructureError {
+    id: Uuid,
+    kind: InfrastructureErrorKind,
+    backtrace: Backtrace,
+}
+
+#[derive(Debug)]
+pub enum InfrastructureErrorKind {
     Database(sqlx::Error),
     Serialization(serde_json::Error),
     EventBus(String),
@@ -241,14 +303,32 @@ pub enum InfrastructureError {
     NotFound { resource: String, id: String },
 }
 
+impl InfrastructureError {
+    pub fn new(kind: InfrastructureErrorKind) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            kind,
+            backtrace: Backtrace::capture(),
+        }
+    }
+
+    pub fn error_id(&self) -> Uuid {
+        self.id
+    }
+
+    pub fn kind(&self) -> &InfrastructureErrorKind {
+        &self.kind
+    }
+}
+
 impl fmt::Display for InfrastructureError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            InfrastructureError::Database(e) => write!(f, "database error: {}", e),
-            InfrastructureError::Serialization(e) => write!(f, "serialization error: {}", e),
-            InfrastructureError::EventBus(msg) => write!(f, "event bus error: {}", msg),
-            InfrastructureError::Cache(msg) => write!(f, "cache error: {}", msg),
-            InfrastructureError::NotFound { resource, id } =>
+        match &self.kind {
+            InfrastructureErrorKind::Database(e) => write!(f, "database error: {}", e),
+            InfrastructureErrorKind::Serialization(e) => write!(f, "serialization error: {}", e),
+            InfrastructureErrorKind::EventBus(msg) => write!(f, "event bus error: {}", msg),
+            InfrastructureErrorKind::Cache(msg) => write!(f, "cache error: {}", msg),
+            InfrastructureErrorKind::NotFound { resource, id } =>
                 write!(f, "{} {} not found", resource, id),
         }
     }
@@ -256,9 +336,9 @@ impl fmt::Display for InfrastructureError {
 
 impl std::error::Error for InfrastructureError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            InfrastructureError::Database(e) => Some(e),
-            InfrastructureError::Serialization(e) => Some(e),
+        match &self.kind {
+            InfrastructureErrorKind::Database(e) => Some(e),
+            InfrastructureErrorKind::Serialization(e) => Some(e),
             _ => None,
         }
     }
@@ -266,24 +346,24 @@ impl std::error::Error for InfrastructureError {
 
 impl From<sqlx::Error> for InfrastructureError {
     fn from(e: sqlx::Error) -> Self {
-        InfrastructureError::Database(e)
+        InfrastructureError::new(InfrastructureErrorKind::Database(e))
     }
 }
 
 impl From<serde_json::Error> for InfrastructureError {
     fn from(e: serde_json::Error) -> Self {
-        InfrastructureError::Serialization(e)
+        InfrastructureError::new(InfrastructureErrorKind::Serialization(e))
     }
 }
 
 impl InfrastructureError {
     pub fn error_code(&self) -> ErrorCode {
-        match self {
-            InfrastructureError::Database(_) => ErrorCode::DatabaseError,
-            InfrastructureError::Serialization(_) => ErrorCode::InternalError,
-            InfrastructureError::EventBus(_) => ErrorCode::ServiceUnavailable,
-            InfrastructureError::Cache(_) => ErrorCode::InternalError,
-            InfrastructureError::NotFound { .. } => ErrorCode::NotFound,
+        match &self.kind {
+            InfrastructureErrorKind::Database(_) => ErrorCode::DatabaseError,
+            InfrastructureErrorKind::Serialization(_) => ErrorCode::InternalError,
+            InfrastructureErrorKind::EventBus(_) => ErrorCode::ServiceUnavailable,
+            InfrastructureErrorKind::Cache(_) => ErrorCode::InternalError,
+            InfrastructureErrorKind::NotFound { .. } => ErrorCode::NotFound,
         }
     }
 }
@@ -291,7 +371,7 @@ impl InfrastructureError {
 
 ## Presentation layer: AppError
 
-The top-level error type used at HTTP boundaries, unifying all error categories.
+The top-level error type used at HTTP boundaries, unifying all error categories with UUID tracking.
 
 ```rust
 // ironstar-web/src/error.rs
@@ -305,24 +385,51 @@ use axum::{
     Json,
 };
 use serde::{Deserialize, Serialize};
+use std::backtrace::Backtrace;
 use std::fmt;
+use uuid::Uuid;
 
-/// Top-level application error unifying all error categories
+/// Top-level application error unifying all error categories with UUID tracking
 #[derive(Debug)]
-pub enum AppError {
+pub struct AppError {
+    id: Uuid,
+    kind: AppErrorKind,
+    backtrace: Backtrace,
+}
+
+#[derive(Debug)]
+pub enum AppErrorKind {
     Validation(ValidationError),
     Domain(DomainError),
     Infrastructure(InfrastructureError),
     NotFound { resource: String, id: String },
 }
 
+impl AppError {
+    pub fn new(kind: AppErrorKind) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            kind,
+            backtrace: Backtrace::capture(),
+        }
+    }
+
+    pub fn error_id(&self) -> Uuid {
+        self.id
+    }
+
+    pub fn kind(&self) -> &AppErrorKind {
+        &self.kind
+    }
+}
+
 impl fmt::Display for AppError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            AppError::Validation(e) => write!(f, "{}", e),
-            AppError::Domain(e) => write!(f, "{}", e),
-            AppError::Infrastructure(e) => write!(f, "{}", e),
-            AppError::NotFound { resource, id } =>
+        match &self.kind {
+            AppErrorKind::Validation(e) => write!(f, "{}", e),
+            AppErrorKind::Domain(e) => write!(f, "{}", e),
+            AppErrorKind::Infrastructure(e) => write!(f, "{}", e),
+            AppErrorKind::NotFound { resource, id } =>
                 write!(f, "{} {} not found", resource, id),
         }
     }
@@ -330,11 +437,11 @@ impl fmt::Display for AppError {
 
 impl std::error::Error for AppError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            AppError::Validation(e) => Some(e),
-            AppError::Domain(e) => Some(e),
-            AppError::Infrastructure(e) => Some(e),
-            AppError::NotFound { .. } => None,
+        match &self.kind {
+            AppErrorKind::Validation(e) => Some(e),
+            AppErrorKind::Domain(e) => Some(e),
+            AppErrorKind::Infrastructure(e) => Some(e),
+            AppErrorKind::NotFound { .. } => None,
         }
     }
 }
@@ -342,14 +449,15 @@ impl std::error::Error for AppError {
 
 ### ErrorResponse structure
 
-JSON error response for HTTP APIs.
+JSON error response for HTTP APIs with error ID for correlation.
 
 ```rust
-/// JSON error response structure
+/// JSON error response structure with error ID for correlation
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ErrorResponse {
     pub code: ErrorCode,
     pub message: String,
+    pub error_id: Uuid,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub details: Option<serde_json::Value>,
 }
@@ -360,11 +468,11 @@ pub struct ErrorResponse {
 ```rust
 impl AppError {
     pub fn error_code(&self) -> ErrorCode {
-        match self {
-            AppError::Validation(_) => ErrorCode::ValidationFailed,
-            AppError::Domain(e) => e.error_code(),
-            AppError::Infrastructure(e) => e.error_code(),
-            AppError::NotFound { .. } => ErrorCode::NotFound,
+        match &self.kind {
+            AppErrorKind::Validation(_) => ErrorCode::ValidationFailed,
+            AppErrorKind::Domain(e) => e.error_code(),
+            AppErrorKind::Infrastructure(e) => e.error_code(),
+            AppErrorKind::NotFound { .. } => ErrorCode::NotFound,
         }
     }
 
@@ -377,6 +485,7 @@ impl AppError {
         ErrorResponse {
             code: self.error_code(),
             message: self.to_string(),
+            error_id: self.id,
             details: None,
         }
     }
@@ -391,13 +500,13 @@ These implementations enable the `?` operator to propagate errors across layer b
 // Conversions from lower layers
 impl From<ValidationError> for AppError {
     fn from(e: ValidationError) -> Self {
-        AppError::Validation(e)
+        AppError::new(AppErrorKind::Validation(e))
     }
 }
 
 impl From<DomainError> for AppError {
     fn from(e: DomainError) -> Self {
-        AppError::Domain(e)
+        AppError::new(AppErrorKind::Domain(e))
     }
 }
 
@@ -406,16 +515,18 @@ impl From<AggregateError> for AppError {
         match e {
             // Take first validation error for AppError (or extend AppError to hold Vec)
             AggregateError::Validation(v) => {
-                AppError::Validation(v.into_iter().next().expect("validation errors non-empty"))
+                AppError::new(AppErrorKind::Validation(
+                    v.into_iter().next().expect("validation errors non-empty")
+                ))
             }
-            AggregateError::Domain(d) => AppError::Domain(d),
+            AggregateError::Domain(d) => AppError::new(AppErrorKind::Domain(d)),
         }
     }
 }
 
 impl From<InfrastructureError> for AppError {
     fn from(e: InfrastructureError) -> Self {
-        AppError::Infrastructure(e)
+        AppError::new(AppErrorKind::Infrastructure(e))
     }
 }
 ```

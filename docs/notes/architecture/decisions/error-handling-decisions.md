@@ -45,7 +45,7 @@ Technical failures outside domain logic, may be transient.
 - Serialization/deserialization errors
 - File system errors
 
-**Modeling**: Explicit sum types or transparent propagation via `anyhow`
+**Modeling**: Explicit sum types with UUID tracking for distributed tracing
 
 ### 3. Panics
 
@@ -82,6 +82,89 @@ InfrastructureError ────────────────────
 | Presentation | `AppError` | `ironstar-web` |
 
 Each error type implements `From` conversions enabling idiomatic `?` propagation across layer boundaries.
+
+## UUID-tracked errors for distributed tracing
+
+All error types in ironstar include a UUID identifier to enable correlation across async operations and distributed components.
+This is essential for debugging event-sourced systems where errors may originate in background projections or async event handlers.
+
+### DomainError with UUID tracking
+
+```rust
+use std::backtrace::Backtrace;
+use uuid::Uuid;
+
+pub struct DomainError {
+    id: Uuid,
+    kind: ErrorKind,
+    backtrace: Backtrace,
+}
+
+impl DomainError {
+    pub fn new(kind: ErrorKind) -> Self {
+        Self {
+            id: Uuid::new_v4(),  // Auto-generates UUID
+            kind,
+            backtrace: Backtrace::capture(),
+        }
+    }
+
+    pub fn error_id(&self) -> Uuid {
+        self.id
+    }
+
+    pub fn kind(&self) -> &ErrorKind {
+        &self.kind
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ErrorKind {
+    InvalidTransition { from: String, to: String },
+    InsufficientFunds { available: i64, requested: i64 },
+    AlreadyExists { aggregate_type: String, aggregate_id: String },
+    NotFound { aggregate_type: String, aggregate_id: String },
+    VersionConflict { expected: i64, actual: i64 },
+}
+```
+
+### Why UUID tracking is essential
+
+UUID tracking enables critical debugging capabilities in event-sourced systems:
+
+1. **Async operation correlation**: Background tasks (projections, analytics updates) need to correlate errors back to the originating command or event.
+2. **Log aggregation**: Log systems can group all log entries related to a single error across distributed components.
+3. **User-facing error messages**: Error IDs can be included in HTTP responses, allowing users to reference specific errors in support tickets.
+4. **Distributed tracing**: Error IDs integrate with OpenTelemetry span IDs for end-to-end request tracing.
+
+Example structured log with error correlation:
+
+```rust
+use tracing::error;
+
+impl DomainError {
+    pub fn log(&self) {
+        error!(
+            error.id = %self.id,
+            error.kind = ?self.kind,
+            error.backtrace = ?self.backtrace,
+            "domain error occurred"
+        );
+    }
+}
+```
+
+Example user-facing error response:
+
+```json
+{
+  "code": "DOMAIN_ERROR",
+  "message": "cannot transition from shipped to pending",
+  "error_id": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+When the user reports this error, support can search logs for `error.id = 550e8400-e29b-41d4-a716-446655440000` to find the complete context including the backtrace, request trace, and all related events.
 
 ## Error propagation across CQRS layers
 
