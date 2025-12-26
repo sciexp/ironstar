@@ -258,12 +258,177 @@ The choice between patterns affects implementation ergonomics, not the underlyin
 
 ---
 
+## Pattern 2: Progressive enhancement with DatastarRequest guard
+
+Datastar enables progressive enhancement: applications work without JavaScript while providing enhanced interactivity when JavaScript is available.
+The DatastarRequest guard pattern detects whether a request originated from Datastar (via SSE update) or from a regular browser navigation, allowing handlers to return appropriate responses for each case.
+
+### The pattern
+
+axum's `Option<DatastarRequest>` extractor enables handlers to detect Datastar-initiated requests:
+
+```rust
+use axum::{extract::State, response::IntoResponse};
+use datastar::axum::DatastarRequest;
+
+async fn handler(
+    State(state): State<AppState>,
+    datastar_request: Option<DatastarRequest>,
+    // other extractors...
+) -> impl IntoResponse {
+    if datastar_request.is_some() {
+        // Datastar-initiated request: return fragment via SSE
+        // Uses PatchElements to morph partial content
+        serve_fragment(&state).await
+    } else {
+        // Initial page load or non-JS browser: return full HTML
+        // Progressive enhancement: works without JavaScript
+        serve_full_page(&state).await
+    }
+}
+```
+
+**Why this works:**
+
+Datastar includes specific headers when making requests via `data-on:*` event handlers or `data-get` directives.
+The `DatastarRequest` extractor detects these headers and extracts Some(DatastarRequest) when present, None otherwise.
+
+### Canonical implementation
+
+This pattern is demonstrated in the northstar Go template using the `ssr.IsDatastar(r)` helper:
+
+**Source**: `~/projects/lakescope-workspace/datastar-go-nats-template-northstar/internal/ssr/`
+
+The Rust equivalent uses axum's type-safe extractors:
+
+```rust
+use axum::{
+    extract::State,
+    response::{Html, IntoResponse, Response, Sse},
+};
+use datastar::prelude::*;
+use hypertext::{html_elements, maud_move, Renderable};
+
+async fn todo_page(
+    State(state): State<AppState>,
+    datastar_request: Option<DatastarRequest>,
+) -> Response {
+    if datastar_request.is_some() {
+        // Return SSE stream with fragment for Datastar morph
+        let stream = async_stream::stream! {
+            let fragment = render_todo_list(&state).await;
+            yield Ok(sse::Event::default().data(
+                ServerSentEvent::new_patch_elements(fragment.render(), "#todo-list")
+            ));
+        };
+        Sse::new(stream).into_response()
+    } else {
+        // Return full HTML page for initial load
+        let page = html_elements::html((
+            html_elements::head((
+                html_elements::title("Todos"),
+                html_elements::script().src("/static/datastar.js"),
+            )),
+            html_elements::body((
+                html_elements::h1("Todo List"),
+                html_elements::div()
+                    .id("todo-list")
+                    .child(render_todo_list(&state).await),
+            )),
+        ));
+        Html(page.render()).into_response()
+    }
+}
+
+async fn render_todo_list(state: &AppState) -> impl Renderable {
+    let todos = state.projections.get_all_todos().await;
+    maud_move! {
+        ul {
+            @for todo in todos {
+                li { (todo.title) }
+            }
+        }
+    }
+}
+```
+
+### Key architectural benefits
+
+1. **Progressive enhancement**: Application works without JavaScript (full page loads), enhanced with JavaScript (partial updates)
+2. **Type-safe detection**: `Option<DatastarRequest>` eliminates conditional header parsing
+3. **Single handler**: One endpoint serves both full pages and fragments
+4. **SEO-friendly**: Initial page loads return full HTML for crawlers
+5. **Reduced duplication**: Fragment rendering logic shared between both response modes
+
+### When to use this pattern
+
+Use the DatastarRequest guard when:
+
+- Supporting browsers with JavaScript disabled
+- Implementing SEO-critical pages (e.g., public content, marketing pages)
+- Building forms that should work with and without JavaScript
+- Creating dashboard pages where initial load returns full layout, updates return fragments
+
+Avoid this pattern when:
+
+- Building admin interfaces where JavaScript is guaranteed
+- Implementing SPA-like experiences with no server-rendered fallback
+- Creating API-only endpoints (use dedicated API routes instead)
+
+### Integration with hypertext
+
+The pattern works seamlessly with hypertext's lazy rendering:
+
+```rust
+fn full_page_layout(content: impl Renderable) -> impl Renderable {
+    html_elements::html((
+        html_elements::head((
+            html_elements::title("App"),
+            html_elements::script().src("/static/datastar.js"),
+        )),
+        html_elements::body(content),
+    ))
+}
+
+async fn handler(
+    State(state): State<AppState>,
+    datastar_request: Option<DatastarRequest>,
+) -> Response {
+    let content = render_content(&state).await;
+
+    if datastar_request.is_some() {
+        // Return fragment via SSE
+        let stream = async_stream::stream! {
+            yield Ok(sse::Event::default().data(
+                ServerSentEvent::new_patch_elements(content.render(), "#main")
+            ));
+        };
+        Sse::new(stream).into_response()
+    } else {
+        // Wrap content in full page layout
+        Html(full_page_layout(content).render()).into_response()
+    }
+}
+```
+
+**Note**: The content rendering function (`render_content`) is called once, and the result is reused for both response modes.
+hypertext's lazy evaluation ensures no work is wasted.
+
+### Related patterns
+
+- **Northstar reference**: `~/projects/lakescope-workspace/datastar-go-nats-template-northstar/internal/ssr/datastar.go`
+- **datastar-rust SDK**: `~/projects/rust-workspace/datastar-rust/src/axum.rs` (DatastarRequest extractor implementation)
+- **Canonical SDK spec**: `~/projects/lakescope-workspace/datastar/sdk/ADR.md` (Datastar request detection semantics)
+
+---
+
 ## Summary: when to use which pattern
 
 | Scenario | Pattern | Key Attributes |
 |----------|---------|----------------|
 | Simple library wrapper | Pattern 1: Thin web component | `data-ignore-morph`, `data-attr:*`, `data-on:*` |
 | Complex lifecycle (multiple observers) | Pattern 1.5: Lit wrapper | Same, plus Lit `@property` and lifecycle hooks |
+| Progressive enhancement | Pattern 2: DatastarRequest guard | `Option<DatastarRequest>` extractor, dual response modes |
 | Drag-and-drop (SortableJS) | Pattern 1: Thin wrapper | Dispatch custom events on reorder |
 | Rich text editors | Pattern 1 or 1.5 | Two-way sync via `data-bind` and custom events |
 | Visualization libraries | See `integration-patterns-visualizations.md` | Vega-Lite, ECharts, Mosaic patterns |
