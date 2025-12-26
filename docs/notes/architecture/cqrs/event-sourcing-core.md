@@ -402,6 +402,20 @@ impl EventUpcaster for TodoCreatedV1ToV2 {
 Upcasters are applied lazily during event loading, not as batch migrations.
 This keeps the event store immutable (events are facts that cannot change) while allowing the domain model to evolve.
 
+## Reference implementation: QuerySessionAggregate
+
+For a concrete example of the Aggregate pattern applied to analytics workloads, see the northstar tracer bullet specification:
+
+**Source:** `~/projects/lakescope-workspace/datastar-go-nats-template-northstar/docs/notes/architecture/rust-cqrs-es-datastar/domain-layer.md`
+
+The QuerySessionAggregate demonstrates:
+- Session-scoped analytics with query lifecycle states (Pending → Executing → Completed/Failed)
+- DuckDB async query execution spawned from command handler
+- Zenoh publication of result events
+- Value objects with smart constructors (DatasetRef, SqlQuery, QueryId)
+
+This reference implementation shows how the pure sync aggregate pattern applies to long-running analytics operations where the actual query execution happens asynchronously after event persistence.
+
 ## Appendix: Common type definitions
 
 The code examples throughout this document cluster reference types like `AppError`, `StoredEvent`, `DomainEvent`, and `ValidationError`.
