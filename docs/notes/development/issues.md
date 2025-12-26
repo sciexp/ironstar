@@ -4527,8 +4527,8 @@ bd show ironstar-r62.14
 
 ### Description
 
-Create AnalyticsService wrapping duckdb::Connection using one-connection-per-task pattern. Implement query methods returning Vec of analytics results. Wrap blocking operations in tokio::task::block_in_place() for quick queries. Enables OLAP queries over event history.
-Local refs: ~/projects/omicslake-workspace/duckdb-rs
+Create AnalyticsService wrapping async-duckdb Pool with read-only connections. Implement query methods using pool.conn() closure pattern returning Vec of analytics results. Enables non-blocking OLAP queries over event history.
+Local refs: ~/projects/rust-workspace/async-duckdb, ~/projects/omicslake-workspace/duckdb-rs
 
 ### Dependencies
 
