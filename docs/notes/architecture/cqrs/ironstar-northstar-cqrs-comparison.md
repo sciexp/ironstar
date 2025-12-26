@@ -5,13 +5,13 @@ Both implementations target Rust + Datastar + DuckDB analytics applications but 
 
 ## Executive summary
 
-**Ironstar**: General-purpose CQRS template emphasizing single-node deployment, tokio::broadcast event bus with Zenoh migration path, and pure in-memory projections rebuilt on startup.
+**Ironstar**: General-purpose CQRS template emphasizing single-node deployment, Zenoh event bus (embedded mode) with optional tokio::broadcast fallback, and pure in-memory projections rebuilt on startup.
 
 **Northstar tracer bullet**: Analytics-focused CQRS specification with QuerySessionAggregate for DuckDB query execution, Zenoh from the start, and 5-crate workspace structure.
 
 **Key alignment**: Both use pure sync aggregates, SQLite event store with optimistic locking, SSE with Last-Event-ID reconnection, and UUID-tracked errors.
 
-**Key divergence**: Ironstar starts with tokio::broadcast and migrates to Zenoh; northstar uses Zenoh immediately.
+**Key divergence**: Ironstar uses Zenoh from day one; northstar also uses Zenoh from the start.
 Ironstar uses 8-layer crate decomposition with HasXxx traits; northstar uses 5-crate workspace.
 Ironstar emphasizes 4 critical invariants; northstar focuses on QuerySessionAggregate + DuckDB integration.
 
@@ -113,17 +113,21 @@ The version field enables optimistic locking checks before appending events, pre
 | **Optimistic locking** | Via sequence check | Via version check | ⚠️ Compatible |
 | **Event versioning** | Via upcasters (event schema evolution) | `event_version` column + metadata | ✅ Aligned |
 
-**Ironstar schema (implicit from docs):**
+**Ironstar schema:**
 ```sql
 CREATE TABLE events (
-    sequence INTEGER PRIMARY KEY AUTOINCREMENT,  -- Global monotonic
+    global_sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+    id TEXT NOT NULL UNIQUE,
     aggregate_type TEXT NOT NULL,
     aggregate_id TEXT NOT NULL,
+    aggregate_sequence INTEGER NOT NULL,
     event_type TEXT NOT NULL,
-    payload JSON NOT NULL,
-    metadata JSON,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+    event_version TEXT NOT NULL DEFAULT '1.0.0',
+    payload TEXT NOT NULL,
+    metadata TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    UNIQUE(aggregate_type, aggregate_id, aggregate_sequence)
+) STRICT;
 ```
 
 **Northstar schema:**
@@ -269,10 +273,10 @@ Northstar adds:
 
 **Divergence requiring resolution:**
 
-**Event bus**: Ironstar uses tokio::broadcast with explicit migration path to Zenoh.
-Northstar uses Zenoh from the start.
+**Event bus**: Both ironstar and northstar use Zenoh from the start.
+Ironstar provides DualEventBus pattern for optional coexistence with existing tokio::broadcast codebases.
 
-**Resolution**: Ironstar should adopt DualEventBus pattern during migration phase (see `distributed-event-bus-migration.md`), then fully migrate to Zenoh for production.
+**Resolution**: No divergence — both use Zenoh. The DualEventBus pattern is available as an opt-in compatibility layer when integrating with legacy systems.
 
 ### DuckDB async execution
 
@@ -426,22 +430,20 @@ Northstar can adopt ironstar's analytics caching patterns when query results nee
 
 | Aspect | Ironstar | Northstar Tracer Bullet | Alignment |
 |--------|----------|-------------------------|-----------|
-| **Initial implementation** | tokio::broadcast (single-node) | Zenoh (distribution-ready) | ❌ Divergence |
-| **Migration path** | DualEventBus → full Zenoh | N/A (Zenoh from start) | ⚠️ Compatible |
-| **Key expression filtering** | Zenoh after migration | Zenoh from start | ✅ Aligned |
+| **Initial implementation** | Zenoh (embedded mode, distribution-ready) | Zenoh (distribution-ready) | ✅ Aligned |
+| **Optional fallback** | DualEventBus for tokio::broadcast coexistence | N/A (Zenoh from start) | ⚠️ Compatible |
+| **Key expression filtering** | Zenoh from start | Zenoh from start | ✅ Aligned |
 | **Session-scoped routing** | `events/session/{id}/**` | `viz/{session}/events` | ⚠️ Compatible |
 
-**Ironstar migration strategy:**
+**Ironstar architecture:**
 
 ```
-Phase 1: tokio::broadcast (single-node, simple)
-    ↓
-Phase 2: DualEventBus (both tokio::broadcast + Zenoh, migration in progress)
-    ↓
-Phase 3: Full Zenoh (distributed, key expression filtering)
+Production: Zenoh embedded mode from the start
+    │
+    └─ Optional: DualEventBus pattern for coexistence with legacy tokio::broadcast systems
 ```
 
-**Northstar strategy:**
+**Northstar architecture:**
 
 ```
 Production: Zenoh embedded from the start
@@ -449,23 +451,23 @@ Production: Zenoh embedded from the start
 
 **Assessment:**
 
-**Philosophical divergence**: Ironstar prioritizes simplicity for single-node deployments, adding Zenoh when distribution is needed.
-Northstar prioritizes distribution-readiness from the start.
+**Alignment**: Both ironstar and northstar use Zenoh from the start for event distribution.
+Ironstar provides an optional DualEventBus pattern for compatibility with existing tokio::broadcast codebases during integration scenarios.
 
 **Trade-offs:**
 
 | Approach | Pros | Cons |
 |----------|------|------|
-| **Ironstar (tokio → Zenoh)** | Simpler initial setup, fewer dependencies, faster local dev loop | Migration complexity when scaling |
-| **Northstar (Zenoh from start)** | No migration needed, consistent architecture, ready for distribution | Slightly more complex initial setup |
+| **Zenoh embedded (both)** | Distribution-ready, consistent architecture, key expression filtering, zero migration needed | Slightly more complex than simple tokio channels |
+| **DualEventBus fallback (ironstar only)** | Allows gradual migration from tokio::broadcast in legacy systems | Additional complexity, only needed for integration scenarios |
 
 **Resolution:**
 
-**For general-purpose template (ironstar)**: Keep tokio::broadcast → Zenoh migration path.
-Rationale: Most users deploy single-node apps; they benefit from simpler initial setup.
+**For general-purpose template (ironstar)**: Use Zenoh from the start, with DualEventBus available as an opt-in compatibility layer.
+Rationale: Zenoh embedded mode is simple enough for single-node deployments while remaining distribution-ready.
 
 **For analytics-focused apps (northstar)**: Use Zenoh from the start.
-Rationale: Analytics workloads often scale horizontally; pre-optimize for distribution.
+Rationale: Analytics workloads often scale horizontally; Zenoh provides consistent architecture from day one.
 
 ### Embedded vs networked Zenoh
 
@@ -621,7 +623,7 @@ Compatible approaches.
 
 1. **Aggregate style**: Ironstar functional (`&State`), northstar OOP (`&mut self`) — both valid
 2. **Projection caching**: Ironstar uses ProjectionManager, northstar uses on-demand reconstitution — complementary patterns
-3. **Event bus**: Ironstar migrates tokio::broadcast → Zenoh, northstar uses Zenoh from start — different philosophies but compatible
+3. **Event bus**: Both use Zenoh from the start — ironstar provides optional DualEventBus for tokio::broadcast coexistence
 4. **Key expressions**: Different patterns (`events/session/{id}/**` vs `viz/{session}/events`) but both use Zenoh wildcards
 
 ### ❌ Critical divergences requiring resolution
@@ -649,15 +651,14 @@ Compatible approaches.
 
 ### Should consider from northstar
 
-1. **Zenoh from the start** for analytics-focused applications (keep tokio::broadcast → Zenoh migration for general template)
-2. **Background task spawning pattern** for long-running DuckDB queries
-3. **QuerySessionAggregate pattern** as reference implementation for analytics aggregates
+1. **Background task spawning pattern** for long-running DuckDB queries
+2. **QuerySessionAggregate pattern** as reference implementation for analytics aggregates
 
 ### Ironstar strengths to preserve
 
 1. **4 critical invariants** (Subscribe-Before-Replay, Pure Aggregate, Monotonic Sequence, Events-as-Truth) — excellent teaching framework
 2. **8-layer crate architecture** with HasXxx traits — better modularity for complex applications
-3. **Explicit migration path** from tokio::broadcast to Zenoh — lower barrier to entry for simple apps
+3. **Zenoh-first with optional DualEventBus** — distribution-ready from day one with compatibility layer for legacy systems
 4. **ProjectionManager pattern** — better for read-heavy workloads with complex UI state
 5. **Analytics caching architecture** with moka + Zenoh invalidation — production-ready caching strategy
 
@@ -668,7 +669,7 @@ Ironstar and northstar are highly aligned on fundamental CQRS/ES patterns: pure 
 The main divergences are:
 1. **Event store schema** (global vs per-aggregate sequence) — resolved by hybrid approach
 2. **Error tracking** (northstar has UUIDs, ironstar does not) — ironstar must adopt
-3. **Event bus philosophy** (ironstar gradual migration, northstar Zenoh from start) — both valid for different use cases
+3. **✅ Event bus** — both use Zenoh from the start; ironstar provides optional DualEventBus for legacy system coexistence
 4. **✅ DuckDB async execution** — ironstar has adopted async-duckdb, matching northstar pattern
 
 By adopting the hybrid event store schema, UUID-tracked errors, explicit version tracking, and async-duckdb from northstar, ironstar will gain production-ready CQRS capabilities while preserving its educational clarity and gradual complexity curve.
