@@ -3,60 +3,75 @@
 This document records infrastructure technology selection decisions for the ironstar stack, covering event bus, session management, caching, and asset handling.
 For frontend, backend core, and CQRS implementation decisions, see the related documentation section below.
 
-## tokio::sync::broadcast — event bus as observable
+## Zenoh embedded mode — primary event bus architecture
+
+**Default choice**: Ironstar uses Zenoh in embedded mode as the primary event bus from day one.
 
 **Algebraic justification:**
 
-The broadcast channel implements the *Observer pattern* as a pure data flow:
+Zenoh's key-expression model implements a *free monoid* over path segments, enabling server-side filtering:
 
 ```rust
-use tokio::sync::{broadcast, mpsc};
-use tokio::sync::broadcast::error::SendError;
+use zenoh::prelude::r#async::*;
 
-// Sender<T> + Receiver<T> form a comonadic structure
-// - Sender: coalgebraic (produces values)
-// - Receiver: algebraic (consumes values)
-
-pub struct EventBus {
-    tx: broadcast::Sender<DomainEvent>,
+// Key expressions form a monoid under path concatenation
+// Pattern matching is a semilattice (wildcards, unions)
+pub struct ZenohEventBus {
+    session: Arc<zenoh::Session>,
 }
 
-impl EventBus {
-    // Pure: returns a new receiver, no mutation
-    pub fn subscribe(&self) -> broadcast::Receiver<DomainEvent> {
-        self.tx.subscribe()
+impl ZenohEventBus {
+    // Pure: key expression pattern subscription
+    pub async fn subscribe(&self, pattern: &str) -> Result<Subscriber, zenoh::Error> {
+        self.session.declare_subscriber(pattern).res().await
     }
 
     // Effect explicit: Result indicates success/failure
-    pub fn publish(&self, event: DomainEvent) -> Result<usize, SendError<DomainEvent>> {
-        self.tx.send(event)
+    pub async fn publish(&self, key: &str, payload: Vec<u8>) -> Result<(), zenoh::Error> {
+        self.session.put(key, payload).res().await
     }
 }
 ```
 
-**In-process event notification:**
+**Embedded mode configuration:**
 
-NATS KV Watch could accomplish the same goal with an external server.
-tokio broadcast provides an embedded alternative:
+Zenoh embedded mode requires only 4 configuration lines to disable networking:
 
-- In-process, deterministic, and composable
-- No network effects in the notification path
-- No additional server to deploy
+```rust
+let mut config = zenoh::config::Config::default();
+config.insert_json5("listen/endpoints", "[]").unwrap();
+config.insert_json5("connect/endpoints", "[]").unwrap();
+config.insert_json5("scouting/multicast/enabled", "false").unwrap();
+config.insert_json5("scouting/gossip/enabled", "false").unwrap();
 
-**Why tokio::sync::broadcast over NATS:**
+let session = zenoh::open(config).await.unwrap();
+```
 
-Northstar (the Datastar Go template) uses embedded NATS, but analysis revealed it doesn't do true event sourcing — it uses NATS KV as a document store with last-write-wins semantics.
-For ironstar's single-node deployment target, tokio::sync::broadcast provides sufficient pub/sub without external server dependency.
+**Why Zenoh over NATS:**
 
-**Single-node scaling limits:**
+Northstar (the Datastar Go template) uses embedded NATS, mirroring the Go ecosystem pattern where NATS is the default for real-time applications.
+Zenoh is the Rust-native equivalent: pure Rust implementation, no external server required, key expression filtering, and distribution-ready architecture.
 
-tokio::broadcast is the current choice and is sufficient for single-node deployments up to:
-- ~256 concurrent SSE clients (subscribers)
-- ~1000 events/second throughput
+**Why Zenoh over tokio::broadcast:**
 
-These limits are imposed by in-memory channel capacity and lock contention.
-For deployments exceeding these limits or requiring multi-node distribution, migrate to Zenoh.
-See `../infrastructure/zenoh-event-bus.md` for detailed migration path and Zenoh key expression patterns.
+| Consideration | Zenoh (embedded) | tokio::broadcast |
+|---------------|------------------|------------------|
+| Max subscribers | ~10K | ~256 |
+| Throughput | ~100K events/sec | ~1M events/sec |
+| Key expression filtering | Yes (`events/Todo/**`) | No |
+| Distribution-ready | Yes (config change) | No |
+| Memory overhead | ~2MB | Negligible |
+| Latency | ~100μs | <1μs |
+
+Zenoh provides superior scalability and key expression filtering at the cost of ~100μs additional latency and ~2MB memory overhead.
+For ironstar's CQRS architecture, the benefits of key expression filtering (aggregate-type routing, session-scoped subscriptions) justify this overhead.
+
+**tokio::broadcast as optional fallback:**
+
+tokio::broadcast remains available as an optional fallback for extreme resource constraints (e.g., <10MB memory available).
+See `../infrastructure/distributed-event-bus-migration.md` for the fallback pattern and coexistence strategies.
+
+**For complete Zenoh architecture**: See `../infrastructure/zenoh-event-bus.md` for key expression patterns, subscription semantics, session-scoped routing, and embedded configuration details.
 
 ---
 
@@ -426,17 +441,16 @@ pub struct AppState {
 
 ---
 
-## Distributed event bus migration
+## Event bus fallback options
 
-For Zenoh migration and distributed deployment beyond single-node tokio::broadcast limits, see `../infrastructure/distributed-event-bus-migration.md`.
+For template users with extreme resource constraints who need the tokio::broadcast fallback, see `../infrastructure/distributed-event-bus-migration.md`.
 
 That document covers:
-- When to migrate (scaling triggers)
-- DualEventBus coexistence pattern
-- Zenoh key expression patterns
-- Migration phases (broadcast → dual → Zenoh)
-- Rollback procedure
-- Performance characteristics
+- When to consider the tokio::broadcast fallback (extreme resource constraints)
+- DualEventBus coexistence pattern for adapting ironstar to existing broadcast codebases
+- Deployment modes (Zenoh embedded, broadcast fallback, dual-mode, distributed)
+- Rollback procedure for dual-mode deployments
+- Performance comparison
 
 ---
 
