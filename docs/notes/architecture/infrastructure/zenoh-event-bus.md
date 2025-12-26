@@ -28,15 +28,13 @@ Zenoh handles event notification and routing.
 moka handles analytics caching with TTL and eviction policies.
 Zenoh storage is designed for distributed data synchronization, not caching, so moka remains essential for cache-specific features like per-key TTL, time-to-idle eviction, and size-based eviction.
 
-## Embedded configuration
+## Required configuration: embedded mode
 
-Ironstar configures Zenoh for embedded operation without network activity.
-While Zenoh has no built-in "embedded only" mode, disabling networking requires only four configuration settings:
+Ironstar uses Zenoh in embedded mode by default.
+This configuration disables all network communication, running Zenoh entirely in-process:
 
 ```rust
-use zenoh::Config;
-
-let mut config = Config::default();
+let mut config = zenoh::config::Config::default();
 config.insert_json5("listen/endpoints", "[]").unwrap();
 config.insert_json5("connect/endpoints", "[]").unwrap();
 config.insert_json5("scouting/multicast/enabled", "false").unwrap();
@@ -44,6 +42,15 @@ config.insert_json5("scouting/gossip/enabled", "false").unwrap();
 
 let session = zenoh::open(config).await.unwrap();
 ```
+
+**Purpose of each line:**
+- `listen/endpoints: []` — Don't listen for incoming connections
+- `connect/endpoints: []` — Don't connect to any remote endpoints
+- `scouting/multicast/enabled: false` — Disable multicast discovery
+- `scouting/gossip/enabled: false` — Disable gossip-based peer discovery
+
+This is the canonical configuration for single-binary deployments.
+When multi-node distribution is needed, enable endpoints and scouting via configuration changes — no code changes required.
 
 **Implementation notes:**
 
