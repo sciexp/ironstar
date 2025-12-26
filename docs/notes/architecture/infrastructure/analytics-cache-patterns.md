@@ -371,18 +371,18 @@ pub struct CachedAnalytics {
 /// Analytics cache service
 pub struct AnalyticsCache {
     cache: Cache<String, Vec<u8>>,
-    analytics: Arc<DuckDBService>,
+    duckdb_pool: Arc<async_duckdb::Pool>,
 }
 
 impl AnalyticsCache {
-    pub fn new(analytics: Arc<DuckDBService>) -> Self {
+    pub fn new(duckdb_pool: Arc<async_duckdb::Pool>) -> Self {
         let cache = Cache::builder()
             .max_capacity(1_000)
             .time_to_live(Duration::from_secs(300)) // 5 min default TTL
             .time_to_idle(Duration::from_secs(60))  // evict if unused for 1 min
             .build();
 
-        Self { cache, analytics }
+        Self { cache, duckdb_pool }
     }
 
     /// Get cached result or compute and cache
@@ -394,7 +394,7 @@ impl AnalyticsCache {
     where
         T: Archive + rkyv::Serialize<rkyv::ser::serializers::AllocSerializer<256>>,
         T::Archived: rkyv::Deserialize<T, rkyv::Infallible>,
-        F: FnOnce() -> Result<T, Error>,
+        F: FnOnce(&duckdb::Connection) -> Result<T, duckdb::Error> + Send + 'static,
     {
         // Check cache
         if let Some(bytes) = self.cache.get(key).await {
@@ -403,8 +403,8 @@ impl AnalyticsCache {
             return Ok(archived.deserialize(&mut rkyv::Infallible).unwrap());
         }
 
-        // Compute (on blocking thread pool)
-        let result = tokio::task::spawn_blocking(compute).await??;
+        // Compute via async-duckdb pool
+        let result = self.duckdb_pool.conn(compute).await?;
 
         // Serialize and cache
         let bytes = rkyv::to_bytes::<_, 256>(&result)
