@@ -330,12 +330,12 @@ See `../cqrs/projection-patterns.md` for caching strategies and DuckDB integrati
 ### Observable
 
 An Observable represents a stream of values over time that can be subscribed to.
-In ironstar, the event bus (`tokio::broadcast::Sender`) is an observable, emitting events to multiple subscribers.
+In ironstar, the event bus (Zenoh Publisher) is an observable, emitting events to multiple subscribers.
 
 The Observable pattern comes from functional reactive programming (FRP) and can be understood categorically as a coalgebra over the temporal functor.
 Concretely, subscribers receive each event exactly once in the order emitted (per Rust's broadcast semantics with buffering).
 
-See `../infrastructure/zenoh-event-bus.md` for the migration path from `tokio::broadcast` to Zenoh's distributed pub/sub when scaling beyond single-node deployments.
+See `../infrastructure/zenoh-event-bus.md` for the canonical event bus architecture and `../infrastructure/distributed-event-bus-migration.md` for optional fallback patterns (tokio::broadcast fallback for extreme resource constraints).
 
 ### Effect boundary
 
