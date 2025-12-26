@@ -101,6 +101,59 @@ CREATE INDEX idx_sessions_user ON sessions(user_id) WHERE user_id IS NOT NULL;
 
 **Why TEXT for JSON?** STRICT mode does not support the JSON type. Store JSON as TEXT and deserialize with `serde_json::from_str()` in Rust.
 
+### Migration file naming convention
+
+Database schema changes are managed via numbered migration files following the pattern `NNN_description.sql` where NNN is a zero-padded sequential number and description uses lowercase snake_case.
+
+**Migration directory structure:**
+
+```
+migrations/
+├── 001_create_events.sql
+├── 002_create_sessions.sql
+├── 003_create_users.sql
+├── 004_create_user_identities.sql
+└── ...
+```
+
+**Naming rules:**
+
+- Three-digit zero-padded sequence number (001, 002, ..., 999)
+- Underscore separator between number and description
+- Description in lowercase with underscores (snake_case)
+- `.sql` extension
+
+**Sequential numbering ensures:**
+
+- Deterministic application order (migrations run in lexicographic order)
+- Easy identification of the latest schema version
+- Clear dependency relationships (migration N can assume migrations 1..N-1 have run)
+
+**sqlx migration management:**
+
+Ironstar uses sqlx's built-in migration support for applying and tracking migrations.
+
+```rust
+use sqlx::migrate::MigrateDatabase;
+use sqlx::SqlitePool;
+
+// Apply all pending migrations on startup
+let pool = SqlitePool::connect(&database_url).await?;
+sqlx::migrate!("./migrations")
+    .run(&pool)
+    .await?;
+```
+
+The `sqlx::migrate!` macro embeds migration files at compile time and tracks applied migrations in a `_sqlx_migrations` table.
+This ensures idempotent schema initialization across deployments.
+
+**Migration best practices:**
+
+- Each migration file contains exactly one logical schema change
+- Use `IF NOT EXISTS` for tables and indexes (supports local development re-runs)
+- Never modify existing migration files after deployment (create new migrations for schema changes)
+- Test migrations against empty database and populated database to verify both initial setup and incremental updates
+
 ## Related documentation
 
 - **Rust implementation patterns**: `session-implementation.md` — Session service CRUD, axum extractors, SSE handler integration
