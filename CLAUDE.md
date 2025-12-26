@@ -97,7 +97,7 @@ The Northstar Go template and datastar-go SDK remain valuable reference implemen
 |-------------------|---------------------|-----------|
 | Tailwind + DaisyUI | Open Props + Open Props UI | Design tokens over utility classes; better alignment with server-rendered HTML |
 | esbuild (Go) | Rolldown (Rust) | Rust-native toolchain consistency |
-| Embedded NATS | tokio::broadcast → Zenoh | tokio::broadcast for single-node; Zenoh when scaling to distributed deployments |
+| Embedded NATS | Zenoh (embedded mode) | Rust-native pub/sub with key expression filtering; distribution-ready |
 | hashfs runtime hashing | Rolldown content hashing | Hash computed at build time via bundler, not at runtime |
 | Templ (Go templates) | hypertext (Rust macros) | Compile-time type-checked HTML with lazy evaluation |
 | Air hot reload | cargo-watch + process-compose | Rust ecosystem tooling |
@@ -132,7 +132,7 @@ See `docs/notes/architecture/core/design-principles.md` for the complete princip
 | Sessions | SQLite + sqlx | Sessions table |
 | Analytics | DuckDB | OLAP projections |
 | Analytics Cache | moka | In-memory async cache with TTL |
-| Event Bus | tokio::broadcast → Zenoh | Single-node broadcast sufficient to ~256 subscribers; Zenoh for distribution |
+| Event Bus | Zenoh (embedded mode) | Key expression filtering, distribution-ready pub/sub |
 | Orchestration | process-compose | Declarative process management |
 | Environment | Nix flake | Reproducible builds |
 
@@ -413,21 +413,24 @@ CREATE TABLE events (
 ## Architectural context: embedded vs. external services
 
 This stack prioritizes embedded Rust-native solutions over external server dependencies.
-The event bus starts with tokio::broadcast for single-node deployments, with a documented migration path to Zenoh for distributed scenarios.
+Ironstar uses Zenoh in embedded mode as the primary event bus from day one, providing distribution-ready architecture without external servers.
 
-The embedded approach (SQLite + tokio::broadcast + moka) targets single-node deployments while remaining distribution-ready:
+The embedded approach (SQLite + Zenoh + moka) targets single-node deployments while remaining distribution-ready:
 
 - **SQLite**: Event store and sessions (durability)
-- **tokio::broadcast**: Event notification for single-node (pub/sub)
+- **Zenoh (embedded mode)**: Event notification with key expression filtering (pub/sub)
 - **moka**: Analytics cache with TTL and eviction (caching)
 
-tokio::broadcast is sufficient for single-node deployments up to ~1000 events/sec or ~256 concurrent SSE clients.
-When scaling beyond these limits or deploying across multiple nodes, migrate to Zenoh for key expression filtering and distributed pub/sub.
-See `docs/notes/architecture/infrastructure/zenoh-event-bus.md` for the detailed evaluation and migration path from tokio::broadcast to Zenoh.
+Zenoh embedded mode requires only 4 configuration lines and scales to ~10K concurrent SSE subscribers with key expression filtering (`events/Todo/**`) essential for CQRS routing.
+When multi-node deployment is needed, change Zenoh from embedded mode to peer mode via configuration — no code changes required.
+See `docs/notes/architecture/infrastructure/zenoh-event-bus.md` for complete Zenoh architecture details.
+
+**Optional fallback**: tokio::broadcast remains available for extreme resource constraints (<10MB memory).
+See `docs/notes/architecture/infrastructure/distributed-event-bus-migration.md` for fallback patterns.
 
 Sessions are stored in SQLite alongside the event store (in a separate table), simplifying the stack by using a single embedded database for all persistent state.
 Analytics query results are cached in moka, an async-native in-memory cache with TTL-based eviction.
-Cache entries are invalidated via tokio::broadcast subscription (or Zenoh key expression patterns after migration).
+Cache entries are invalidated via Zenoh key expression subscriptions.
 See `docs/notes/architecture/infrastructure/analytics-cache-architecture.md` for detailed cache design including Zenoh-based cache invalidation (Pattern 4).
 
 **CQRS/ES framework decision:**
