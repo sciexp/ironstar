@@ -43,10 +43,10 @@ Covers backend core technology choices including:
 **Document**: `../decisions/infrastructure-decisions.md`
 
 Covers infrastructure technology choices including:
-- tokio::sync::broadcast for in-process event bus (single-node deployments)
+- Zenoh embedded mode for event bus (primary, scales to ~10K subscribers)
 - SQLite sessions colocated with event store
 - moka for analytics cache with rkyv serialization
-- Zenoh for distributed deployment scaling
+- tokio::broadcast as optional fallback for extreme resource constraints
 - rust-embed for static asset embedding
 - process-compose for development orchestration
 
@@ -54,8 +54,9 @@ Covers infrastructure technology choices including:
 - Embedded components over external services (single-node deployment target)
 - SQLite sessions instead of separate redb database
 - moka cache with TTL-based eviction for analytics results
-- tokio::broadcast sufficient for ~256 subscribers or ~1000 events/sec
-- Zenoh migration path for distributed deployment (see ../infrastructure/zenoh-event-bus.md)
+- Zenoh embedded mode as primary event bus from day one
+- tokio::broadcast available as fallback for minimal deployments (<10MB memory constraint)
+- See ../infrastructure/zenoh-event-bus.md for complete Zenoh architecture details
 
 ### CQRS implementation decisions
 
@@ -136,7 +137,7 @@ Layer 7 (`ironstar` binary) is purely the composition root and main entry point.
 ├─────────────────────────────────────────────────────────────────────┤
 │  Infrastructure Layer (Effect Implementations)                      │
 │  ┌─────────────┬─────────────┬─────────────┬─────────────────────┐ │
-│  │ SQLite/sqlx │ DuckDB      │ moka        │ tokio::broadcast    │ │
+│  │ SQLite/sqlx │ DuckDB      │ moka        │ Zenoh (embedded)    │ │
 │  │ Events+Sess │ Analytics   │ Cache       │ Event Bus           │ │
 │  └─────────────┴─────────────┴─────────────┴─────────────────────┘ │
 ├─────────────────────────────────────────────────────────────────────┤
@@ -153,10 +154,10 @@ Layer 7 (`ironstar` binary) is purely the composition root and main entry point.
 The Application Layer enforces CQRS (Command Query Responsibility Segregation):
 
 **Write side** (command handlers): Commands are validated and passed to pure aggregates, which emit events.
-Events are durably appended to the SQLite event store and published to the tokio::broadcast channel.
+Events are durably appended to the SQLite event store and published via Zenoh.
 Command handlers return immediately after publishing, enabling non-blocking writes.
 
-**Read side** (projections and queries): Projection handlers subscribe to the broadcast channel and maintain denormalized read models.
+**Read side** (projections and queries): Projection handlers subscribe via Zenoh and maintain denormalized read models.
 Query handlers serve data from these projections.
 The SSE feed handler streams events directly to connected clients via datastar-rust's PatchElements.
 
@@ -179,7 +180,7 @@ This separation enables:
 | **moka** | Analytics cache | TTL-based eviction | Cache hit/miss |
 | **rkyv** | Cache serialization | Zero-copy deserialize | Serialize/deserialize boundary |
 | **DuckDB** | Analytics | Pure query | `.execute()` |
-| **tokio::broadcast** | Event bus (fallback) | Observable | `.send()` |
+| **tokio::broadcast** | Event bus (optional fallback) | Observable | `.send()` |
 | **datastar-rust** | Frontend | FRP signals | SSE emit |
 | **open-props** | CSS Tokens | Constants (map/dictionary) | CSS `var()` resolution |
 | **open-props-ui** | CSS Components | Three-layer composition | Style application |
@@ -254,7 +255,7 @@ src/
 │   ├── session_store.rs         # SQLite session storage
 │   ├── analytics.rs             # DuckDB queries
 │   ├── analytics_cache.rs       # moka cache with rkyv serialization
-│   └── event_bus.rs             # tokio::broadcast coordination
+│   └── event_bus.rs             # Zenoh coordination
 ├── presentation/                # HTTP + HTML (effects at boundary)
 │   ├── mod.rs
 │   ├── routes.rs                # Router composition
