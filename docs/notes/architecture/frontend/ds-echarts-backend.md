@@ -169,7 +169,7 @@ use duckdb::{Connection, Result as DuckResult};
 use std::sync::Mutex;
 
 pub struct DuckDBService {
-    conn: Mutex<Connection>,
+    pool: Arc<async_duckdb::Pool>,
 }
 
 pub struct AnalyticsData {
@@ -179,26 +179,32 @@ pub struct AnalyticsData {
 }
 
 impl DuckDBService {
-    pub fn new() -> DuckResult<Self> {
-        let conn = Connection::open_in_memory()?;
+    pub async fn new() -> Result<Self, Error> {
+        // Initialize pool with httpfs extension
+        let pool = async_duckdb::PoolBuilder::new()
+            .path(":memory:")
+            .num_conns(2)
+            .open()
+            .await?;
 
         // Install required extensions
-        conn.execute_batch(
-            r#"
-            INSTALL httpfs; LOAD httpfs;
-            INSTALL parquet; LOAD parquet;
-            "#
-        )?;
+        pool.conn(|conn| {
+            conn.execute_batch(
+                r#"
+                INSTALL httpfs; LOAD httpfs;
+                INSTALL parquet; LOAD parquet;
+                "#
+            )
+        }).await?;
 
-        Ok(Self { conn: Mutex::new(conn) })
+        Ok(Self { pool: Arc::new(pool) })
     }
 
     pub async fn query_chart_data(&self, chart_id: &str) -> Result<AnalyticsData, Error> {
-        // Run on blocking thread pool since DuckDB is sync
         let chart_id = chart_id.to_string();
-        tokio::task::spawn_blocking(move || {
-            let conn = self.conn.lock().unwrap();
 
+        // Non-blocking query via async-duckdb pool
+        self.pool.conn(move |conn| {
             // Example: query from HuggingFace dataset
             let mut stmt = conn.prepare(
                 r#"
@@ -227,7 +233,7 @@ impl DuckDBService {
                 labels,
                 values,
             })
-        }).await?
+        }).await
     }
 
     pub async fn query_drill_down(
@@ -235,7 +241,7 @@ impl DuckDBService {
         series: &str,
         index: i32,
     ) -> Result<serde_json::Value, Error> {
-        // Similar pattern for drill-down queries
+        // Similar pattern for drill-down queries using pool.conn()
         todo!()
     }
 }
