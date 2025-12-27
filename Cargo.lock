@@ -231,6 +231,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-duckdb"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "15ac13a352e64a018472d3966242aa0ad0232b5e0b02a6a043eae74b55746c30"
+dependencies = [
+ "crossbeam-channel",
+ "duckdb",
+ "futures-channel",
+ "futures-util",
+]
+
+[[package]]
 name = "async-lock"
 version = "3.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -709,6 +721,7 @@ dependencies = [
  "num-integer",
  "rust_decimal",
  "strum 0.27.2",
+ "uuid",
 ]
 
 [[package]]
@@ -1358,10 +1371,10 @@ dependencies = [
 name = "ironstar"
 version = "0.1.0"
 dependencies = [
+ "async-duckdb",
  "axum",
  "chrono",
  "datastar",
- "duckdb",
  "hypertext",
  "moka",
  "redb",

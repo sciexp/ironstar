@@ -20,7 +20,7 @@ hypertext = { workspace = true }
 datastar = { workspace = true }
 sqlx = { workspace = true }
 redb = { workspace = true }
-duckdb = { workspace = true }
+async-duckdb = { workspace = true }
 ts-rs = { workspace = true }
 rust-embed = { workspace = true }
 serde = { workspace = true }
