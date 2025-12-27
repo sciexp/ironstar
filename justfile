@@ -714,7 +714,7 @@ rust-clippy:
 # Run Rust tests
 [group('rust')]
 rust-test:
-  cargo test --workspace
+  cargo nextest run --workspace
 
 # Build Rust documentation
 [group('rust')]
