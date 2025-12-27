@@ -681,6 +681,21 @@ cache-all:
   echo ""
   echo "All packages cached."
 
+# Build and cache all flake checks for current system (includes deps)
+[group('nix')]
+cache-checks:
+  #!/usr/bin/env bash
+  set -euo pipefail
+  SYSTEM=$(nix eval --impure --raw --expr 'builtins.currentSystem')
+  echo "Caching all checks for $SYSTEM..."
+  for check in $(nix eval ".#checks.$SYSTEM" --apply 'builtins.attrNames' --json | jq -r '.[]'); do
+    echo ""
+    echo "━━━ Caching $check ━━━"
+    just cache ".#checks.$SYSTEM.$check"
+  done
+  echo ""
+  echo "All checks cached."
+
 # Test cachix push/pull with a simple derivation
 [group('nix')]
 test-cachix:
