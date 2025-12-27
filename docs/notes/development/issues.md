@@ -1,27 +1,27 @@
 # Beads Export
 
-*Generated: Fri, 26 Dec 2025 20:16:25 EST*
+*Generated: Fri, 26 Dec 2025 21:14:20 EST*
 
 ## Summary
 
 | Metric | Count |
 |--------|-------|
-| **Total** | 176 |
-| Open | 158 |
+| **Total** | 158 |
+| Open | 142 |
 | In Progress | 0 |
 | Blocked | 0 |
-| Closed | 18 |
+| Closed | 16 |
 
 ## Quick Actions
 
 Ready-to-run commands for bulk operations:
 
 ```bash
-# Close open items (158 total, showing first 10)
+# Close open items (142 total, showing first 10)
 bd close ironstar-2nt.13 ironstar-2nt.12 ironstar-2nt.11 ironstar-r62.9 ironstar-r62.8 ironstar-r62.7 ironstar-r62.2 ironstar-r62.1 ironstar-r62 ironstar-nyp.8
 
 # View high-priority items (P0/P1)
-bd show ironstar-2nt.13 ironstar-2nt.12 ironstar-2nt.11 ironstar-r62.9 ironstar-r62.8 ironstar-r62.7 ironstar-r62.2 ironstar-r62.1 ironstar-r62 ironstar-nyp.8 ironstar-nyp.6 ironstar-nyp.2 ironstar-nyp.1 ironstar-nyp ironstar-ny3.13 ironstar-ny3.12 ironstar-ny3.11 ironstar-ny3.10 ironstar-ny3.9 ironstar-ny3.8 ironstar-ny3.7 ironstar-ny3.5 ironstar-ny3.4 ironstar-ny3.3 ironstar-ny3.2 ironstar-2nt.7 ironstar-2nt.6 ironstar-2nt.5 ironstar-2nt.4 ironstar-2nt.3 ironstar-2nt.2 ironstar-2nt ironstar-f8b.5 ironstar-f8b.4 ironstar-f8b.3 ironstar-f8b.2 ironstar-f8b.1 ironstar-f8b ironstar-6lq.7 ironstar-6lq ironstar-3gd.3 ironstar-jqv.12 ironstar-nyp.31 ironstar-nyp.30 ironstar-nyp.29 ironstar-nyp.27 ironstar-nyp.26 ironstar-nyp.25 ironstar-nyp.22 ironstar-ny3.17 ironstar-ny3.16 ironstar-753.6 ironstar-nyp.21 ironstar-2nt.10 ironstar-2nt.9 ironstar-nyp.19 ironstar-jqv.7 ironstar-961 ironstar-9b1 ironstar-3gd ironstar-nyp.15 ironstar-753.5 ironstar-753.4 ironstar-jqv ironstar-0tk ironstar-c7z ironstar-amw ironstar-b9h ironstar-09r ironstar-e6k.8 ironstar-e6k.7 ironstar-e6k.6 ironstar-e6k.5 ironstar-e6k.4 ironstar-e6k.3 ironstar-e6k.2 ironstar-e6k.1 ironstar-r62.13 ironstar-r62.10 ironstar-r62.3 ironstar-nyp.12 ironstar-nyp.11 ironstar-nyp.10 ironstar-nyp.9 ironstar-nyp.7 ironstar-nyp.4 ironstar-nyp.3 ironstar-ny3.14 ironstar-ny3.6 ironstar-ny3 ironstar-2nt.8
+bd show ironstar-2nt.13 ironstar-2nt.12 ironstar-2nt.11 ironstar-r62.9 ironstar-r62.8 ironstar-r62.7 ironstar-r62.2 ironstar-r62.1 ironstar-r62 ironstar-nyp.8 ironstar-nyp.6 ironstar-nyp.2 ironstar-nyp.1 ironstar-nyp ironstar-ny3.13 ironstar-ny3.12 ironstar-ny3.11 ironstar-ny3.10 ironstar-ny3.9 ironstar-ny3.8 ironstar-ny3.7 ironstar-ny3.5 ironstar-ny3.4 ironstar-ny3.3 ironstar-ny3.2 ironstar-2nt.7 ironstar-2nt.6 ironstar-2nt.5 ironstar-2nt.4 ironstar-2nt.3 ironstar-2nt.2 ironstar-2nt ironstar-f8b.5 ironstar-f8b.4 ironstar-f8b.3 ironstar-f8b.2 ironstar-f8b.1 ironstar-f8b ironstar-6lq.7 ironstar-6lq ironstar-3gd.3 ironstar-jqv.12 ironstar-nyp.31 ironstar-nyp.30 ironstar-nyp.29 ironstar-nyp.27 ironstar-nyp.26 ironstar-nyp.25 ironstar-nyp.22 ironstar-ny3.17 ironstar-ny3.16 ironstar-753.6 ironstar-nyp.21 ironstar-2nt.10 ironstar-2nt.9 ironstar-nyp.19 ironstar-jqv.7 ironstar-961 ironstar-9b1 ironstar-3gd ironstar-nyp.15 ironstar-753.5 ironstar-753.4 ironstar-jqv ironstar-c7z ironstar-amw ironstar-b9h ironstar-09r ironstar-e6k.8 ironstar-e6k.7 ironstar-e6k.6 ironstar-e6k.5 ironstar-e6k.4 ironstar-e6k.3 ironstar-e6k.2 ironstar-e6k.1 ironstar-r62.13 ironstar-r62.10 ironstar-r62.3 ironstar-nyp.12 ironstar-nyp.11 ironstar-nyp.10 ironstar-nyp.9 ironstar-nyp.7 ironstar-nyp.4 ironstar-nyp.3 ironstar-ny3.14 ironstar-ny3.6 ironstar-ny3 ironstar-2nt.8
 
 ```
 
@@ -91,7 +91,6 @@ bd show ironstar-2nt.13 ironstar-2nt.12 ironstar-2nt.11 ironstar-r62.9 ironstar-
 - [🟢 ironstar-753.5 Implement ds-echarts build and test integration](#ironstar-753-5)
 - [🟢 ironstar-753.4 Implement ds-echarts backend support](#ironstar-753-4)
 - [🟢 ironstar-jqv Authentication and authorization](#ironstar-jqv)
-- [🟢 ironstar-0tk Omicslake presentation slide deck](#ironstar-0tk)
 - [🟢 ironstar-c7z Implement DuckDB remote data source integration (DuckLake/HF pattern)](#ironstar-c7z)
 - [🟢 ironstar-amw Configure SQLite production PRAGMA settings (WAL, synchronous, cache)](#ironstar-amw)
 - [🟢 ironstar-b9h Configure tower-http Brotli compression for SSE responses](#ironstar-b9h)
@@ -140,18 +139,9 @@ bd show ironstar-2nt.13 ironstar-2nt.12 ironstar-2nt.11 ironstar-r62.9 ironstar-
 - [🟢 ironstar-jqv.4 Implement users table schema and UserService](#ironstar-jqv-4)
 - [🟢 ironstar-nyp.14 Implement metrics and observability reference](#ironstar-nyp-14)
 - [🟢 ironstar-nyp.13 Document error handling decisions](#ironstar-nyp-13)
-- [🟢 ironstar-nqq.1 Implement CQRS performance tuning](#ironstar-nqq-1)
 - [🟢 ironstar-jqv.3 Implement concrete session patterns](#ironstar-jqv-3)
 - [🟢 ironstar-jqv.2 Implement session security hardening](#ironstar-jqv-2)
 - [🟢 ironstar-jqv.1 Implement GitHub OAuth provider](#ironstar-jqv-1)
-- [🟢 ironstar-nqq Performance optimization](#ironstar-nqq)
-- [🟢 ironstar-avp Verify code examples compile and run](#ironstar-avp)
-- [🟢 ironstar-ym1 Polish diagrams for visual consistency](#ironstar-ym1)
-- [🟢 ironstar-63r Verify technical accuracy of benchmarks](#ironstar-63r)
-- [🟢 ironstar-z4s Act 4: Expand vision slides](#ironstar-z4s)
-- [🟢 ironstar-b8d Act 3: Expand web interface slides](#ironstar-b8d)
-- [🟢 ironstar-a15 Act 2: Expand solution stack slides](#ironstar-a15)
-- [🟢 ironstar-ubj Act 1: Expand data problem slides](#ironstar-ubj)
 - [🟢 ironstar-6lq.8 Create reusable Rust CI workflow with workflow_call dispatch](#ironstar-6lq-8)
 - [🟢 ironstar-rjs Document nixpkgs-unstable Darwin framework migration](#ironstar-rjs)
 - [🟢 ironstar-apx.5 Add structured logging with tracing](#ironstar-apx-5)
@@ -175,16 +165,10 @@ bd show ironstar-2nt.13 ironstar-2nt.12 ironstar-2nt.11 ironstar-r62.9 ironstar-
 - [🟢 ironstar-r62.5 Implement SSE feed endpoint with event replay](#ironstar-r62-5)
 - [🟢 ironstar-r62.4 Define AppState struct with all dependencies](#ironstar-r62-4)
 - [🟢 ironstar-ny3.1 Create web-components/ project structure with package.json](#ironstar-ny3-1)
-- [🟢 ironstar-nqq.2 Implement advanced performance patterns](#ironstar-nqq-2)
-- [🟢 ironstar-k1z Final review and presentation dry-run](#ironstar-k1z)
 - [🟢 ironstar-nor Research Mosaic visualization integration (TBD)](#ironstar-nor)
 - [🟢 ironstar-apx.3 Define om CLI instantiation tests and metadata](#ironstar-apx-3)
 - [🟢 ironstar-apx Documentation and template](#ironstar-apx)
 - [🟢 ironstar-nyp.5 Implement tokio broadcast event bus](#ironstar-nyp-5)
-- [🟢 ironstar-v4y.3 Define common-utils crate structure](#ironstar-v4y-3)
-- [🟢 ironstar-v4y.2 Define common-types crate structure](#ironstar-v4y-2)
-- [🟢 ironstar-v4y.1 Define common-enums crate structure](#ironstar-v4y-1)
-- [🟢 ironstar-v4y Multi-crate workspace decomposition](#ironstar-v4y)
 - [⚫ ironstar-2nt.1 Initialize src/ directory structure with modular organization](#ironstar-2nt-1)
 - [⚫ ironstar-6lq.6 Add Rust checks to flake.checks for CI integration](#ironstar-6lq-6)
 - [⚫ ironstar-6lq.5 Verify cargo check passes with workspace configuration](#ironstar-6lq-5)
@@ -198,10 +182,8 @@ bd show ironstar-2nt.13 ironstar-2nt.12 ironstar-2nt.11 ironstar-r62.9 ironstar-
 - [⚫ ironstar-cxe.2 Configure secrets management and string replacement](#ironstar-cxe-2)
 - [⚫ ironstar-cxe.1 Run om init with typescript-nix-template parameters](#ironstar-cxe-1)
 - [⚫ ironstar-cxe Template instantiation](#ironstar-cxe)
-- [⚫ ironstar-edx Review narrative arc and timing estimates](#ironstar-edx)
 - [⚫ ironstar-nyp.33 Implement session cleanup background task](#ironstar-nyp-33)
 - [⚫ ironstar-9oj Implement cache invalidation for analytics queries](#ironstar-9oj)
-- [⚫ ironstar-r5f ironstar-6lq](#ironstar-r5f)
 - [⚫ ironstar-nyp.16 Implement DualEventBus for tokio::broadcast to Zenoh migration](#ironstar-nyp-16)
 
 ---
@@ -217,8 +199,6 @@ graph TD
 
     ironstar-09r["ironstar-09r<br/>Implement ds-echarts Lit web componen..."]
     class ironstar-09r open
-    ironstar-0tk["ironstar-0tk<br/>Omicslake presentation slide deck"]
-    class ironstar-0tk open
     ironstar-2nt["ironstar-2nt<br/>Domain layer"]
     class ironstar-2nt open
     ironstar-2nt1["ironstar-2nt.1<br/>Initialize src/ directory structure w..."]
@@ -255,8 +235,6 @@ graph TD
     class ironstar-3gd2 open
     ironstar-3gd3["ironstar-3gd.3<br/>Implement CacheDependency struct for ..."]
     class ironstar-3gd3 open
-    ironstar-63r["ironstar-63r<br/>Verify technical accuracy of benchmarks"]
-    class ironstar-63r open
     ironstar-6lq["ironstar-6lq<br/>Rust workspace integration"]
     class ironstar-6lq open
     ironstar-6lq1["ironstar-6lq.1<br/>Integrate rust-flake patterns (crane,..."]
@@ -299,8 +277,6 @@ graph TD
     class ironstar-9b1 open
     ironstar-9oj["ironstar-9oj<br/>Implement cache invalidation for anal..."]
     class ironstar-9oj closed
-    ironstar-a15["ironstar-a15<br/>Act 2: Expand solution stack slides"]
-    class ironstar-a15 open
     ironstar-amw["ironstar-amw<br/>Configure SQLite production PRAGMA se..."]
     class ironstar-amw open
     ironstar-apx["ironstar-apx<br/>Documentation and template"]
@@ -315,10 +291,6 @@ graph TD
     class ironstar-apx4 open
     ironstar-apx5["ironstar-apx.5<br/>Add structured logging with tracing"]
     class ironstar-apx5 open
-    ironstar-avp["ironstar-avp<br/>Verify code examples compile and run"]
-    class ironstar-avp open
-    ironstar-b8d["ironstar-b8d<br/>Act 3: Expand web interface slides"]
-    class ironstar-b8d open
     ironstar-b9h["ironstar-b9h<br/>Configure tower-http Brotli compressi..."]
     class ironstar-b9h open
     ironstar-c7z["ironstar-c7z<br/>Implement DuckDB remote data source i..."]
@@ -353,8 +325,6 @@ graph TD
     class ironstar-e6k7 open
     ironstar-e6k8["ironstar-e6k.8<br/>Implement todo example route mounting"]
     class ironstar-e6k8 open
-    ironstar-edx["ironstar-edx<br/>Review narrative arc and timing estim..."]
-    class ironstar-edx closed
     ironstar-f8b["ironstar-f8b<br/>Process compose integration"]
     class ironstar-f8b open
     ironstar-f8b1["ironstar-f8b.1<br/>Integrate process-compose-flake patte..."]
@@ -393,16 +363,8 @@ graph TD
     class ironstar-jqv8 open
     ironstar-jqv9["ironstar-jqv.9<br/>Implement RequireAuth axum extractor"]
     class ironstar-jqv9 open
-    ironstar-k1z["ironstar-k1z<br/>Final review and presentation dry-run"]
-    class ironstar-k1z open
     ironstar-nor["ironstar-nor<br/>Research Mosaic visualization integra..."]
     class ironstar-nor open
-    ironstar-nqq["ironstar-nqq<br/>Performance optimization"]
-    class ironstar-nqq open
-    ironstar-nqq1["ironstar-nqq.1<br/>Implement CQRS performance tuning"]
-    class ironstar-nqq1 open
-    ironstar-nqq2["ironstar-nqq.2<br/>Implement advanced performance patterns"]
-    class ironstar-nqq2 open
     ironstar-ny3["ironstar-ny3<br/>Frontend build pipeline"]
     class ironstar-ny3 open
     ironstar-ny31["ironstar-ny3.1<br/>Create web-components/ project struct..."]
@@ -507,8 +469,6 @@ graph TD
     class ironstar-nyp8 open
     ironstar-nyp9["ironstar-nyp.9<br/>Implement SQLite session store with S..."]
     class ironstar-nyp9 open
-    ironstar-r5f["ironstar-r5f<br/>ironstar-6lq"]
-    class ironstar-r5f closed
     ironstar-r62["ironstar-r62<br/>Presentation layer"]
     class ironstar-r62 open
     ironstar-r621["ironstar-r62.1<br/>Add justfile with development and bui..."]
@@ -543,20 +503,6 @@ graph TD
     class ironstar-r629 open
     ironstar-rjs["ironstar-rjs<br/>Document nixpkgs-unstable Darwin fram..."]
     class ironstar-rjs open
-    ironstar-ubj["ironstar-ubj<br/>Act 1: Expand data problem slides"]
-    class ironstar-ubj open
-    ironstar-v4y["ironstar-v4y<br/>Multi-crate workspace decomposition"]
-    class ironstar-v4y open
-    ironstar-v4y1["ironstar-v4y.1<br/>Define common-enums crate structure"]
-    class ironstar-v4y1 open
-    ironstar-v4y2["ironstar-v4y.2<br/>Define common-types crate structure"]
-    class ironstar-v4y2 open
-    ironstar-v4y3["ironstar-v4y.3<br/>Define common-utils crate structure"]
-    class ironstar-v4y3 open
-    ironstar-ym1["ironstar-ym1<br/>Polish diagrams for visual consistency"]
-    class ironstar-ym1 open
-    ironstar-z4s["ironstar-z4s<br/>Act 4: Expand vision slides"]
-    class ironstar-z4s open
     ironstar-zuv["ironstar-zuv<br/>Testing and integration"]
     class ironstar-zuv open
     ironstar-zuv1["ironstar-zuv.1<br/>Create event store integration tests"]
@@ -605,7 +551,6 @@ graph TD
     ironstar-3gd3 -.-> ironstar-3gd
     ironstar-3gd3 -.-> ironstar-nyp25
     ironstar-3gd3 -.-> ironstar-nyp27
-    ironstar-63r -.-> ironstar-0tk
     ironstar-6lq ==> ironstar-cxe
     ironstar-6lq1 -.-> ironstar-6lq
     ironstar-6lq2 -.-> ironstar-6lq
@@ -645,8 +590,6 @@ graph TD
     ironstar-9b1 -.-> ironstar-3gd
     ironstar-9oj -.-> ironstar-3gd
     ironstar-9oj ==> ironstar-nyp12
-    ironstar-a15 -.-> ironstar-0tk
-    ironstar-a15 ==> ironstar-edx
     ironstar-amw -.-> ironstar-nyp
     ironstar-amw ==> ironstar-nyp3
     ironstar-apx ==> ironstar-rjs
@@ -661,9 +604,6 @@ graph TD
     ironstar-apx4 ==> ironstar-nyp3
     ironstar-apx5 -.-> ironstar-apx
     ironstar-apx5 ==> ironstar-r6213
-    ironstar-avp -.-> ironstar-0tk
-    ironstar-b8d -.-> ironstar-0tk
-    ironstar-b8d ==> ironstar-edx
     ironstar-b9h -.-> ironstar-r62
     ironstar-b9h ==> ironstar-r625
     ironstar-c7z -.-> ironstar-3gd
@@ -703,7 +643,6 @@ graph TD
     ironstar-e6k8 ==> ironstar-e6k5
     ironstar-e6k8 ==> ironstar-e6k6
     ironstar-e6k8 ==> ironstar-e6k7
-    ironstar-edx -.-> ironstar-0tk
     ironstar-f8b ==> ironstar-6lq
     ironstar-f8b1 -.-> ironstar-f8b
     ironstar-f8b2 -.-> ironstar-f8b
@@ -738,17 +677,6 @@ graph TD
     ironstar-jqv8 -.-> ironstar-jqv
     ironstar-jqv9 -.-> ironstar-jqv
     ironstar-jqv9 ==> ironstar-jqv7
-    ironstar-k1z -.-> ironstar-0tk
-    ironstar-k1z ==> ironstar-63r
-    ironstar-k1z ==> ironstar-a15
-    ironstar-k1z ==> ironstar-avp
-    ironstar-k1z ==> ironstar-b8d
-    ironstar-k1z ==> ironstar-ubj
-    ironstar-k1z ==> ironstar-ym1
-    ironstar-k1z ==> ironstar-z4s
-    ironstar-nqq1 -.-> ironstar-nqq
-    ironstar-nqq2 -.-> ironstar-nqq
-    ironstar-nqq2 ==> ironstar-nqq1
     ironstar-ny3 ==> ironstar-6lq7
     ironstar-ny31 -.-> ironstar-ny3
     ironstar-ny310 ==> ironstar-2nt5
@@ -881,14 +809,6 @@ graph TD
     ironstar-r629 ==> ironstar-ny313
     ironstar-r629 -.-> ironstar-r62
     ironstar-r629 ==> ironstar-r628
-    ironstar-ubj -.-> ironstar-0tk
-    ironstar-ubj ==> ironstar-edx
-    ironstar-v4y1 -.-> ironstar-v4y
-    ironstar-v4y2 -.-> ironstar-v4y
-    ironstar-v4y3 -.-> ironstar-v4y
-    ironstar-ym1 -.-> ironstar-0tk
-    ironstar-z4s -.-> ironstar-0tk
-    ironstar-z4s ==> ironstar-edx
     ironstar-zuv ==> ironstar-e6k
     ironstar-zuv1 ==> ironstar-nyp3
     ironstar-zuv1 -.-> ironstar-zuv
@@ -3898,41 +3818,6 @@ bd show ironstar-jqv
 
 ---
 
-## 🚀 ironstar-0tk Omicslake presentation slide deck
-
-| Property | Value |
-|----------|-------|
-| **Type** | 🚀 epic |
-| **Priority** | ⚡ High (P1) |
-| **Status** | 🟢 open |
-| **Created** | 2025-12-19 01:15 |
-| **Updated** | 2025-12-19 01:16 |
-
-### Description
-
-Perfect the ~45 minute Omicslake presentation tracing HDF5/AnnData → DuckLake → ironstar/Datastar stack. Located in docs/slides/ironstar-overview/. Target: compelling technical narrative for genomics/data engineering audience.
-
-<details>
-<summary>📋 Commands</summary>
-
-```bash
-# Start working on this issue
-bd update ironstar-0tk -s in_progress
-
-# Add a comment
-bd comment ironstar-0tk 'Your comment here'
-
-# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-0tk -p 1
-
-# View full details
-bd show ironstar-0tk
-```
-
-</details>
-
----
-
 ## 📋 ironstar-c7z Implement DuckDB remote data source integration (DuckLake/HF pattern)
 
 | Property | Value |
@@ -6029,45 +5914,6 @@ bd show ironstar-nyp.13
 
 ---
 
-## 📋 ironstar-nqq.1 Implement CQRS performance tuning
-
-| Property | Value |
-|----------|-------|
-| **Type** | 📋 task |
-| **Priority** | 🔹 Medium (P2) |
-| **Status** | 🟢 open |
-| **Created** | 2025-12-22 00:28 |
-| **Updated** | 2025-12-22 00:28 |
-
-### Description
-
-Channel sizing, backpressure handling, metrics instrumentation. See ~/projects/rust-workspace/ironstar/docs/notes/architecture/cqrs/performance-tuning.md
-
-### Dependencies
-
-- 🔗 **parent-child**: `ironstar-nqq`
-
-<details>
-<summary>📋 Commands</summary>
-
-```bash
-# Start working on this issue
-bd update ironstar-nqq.1 -s in_progress
-
-# Add a comment
-bd comment ironstar-nqq.1 'Your comment here'
-
-# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-nqq.1 -p 1
-
-# View full details
-bd show ironstar-nqq.1
-```
-
-</details>
-
----
-
 ## 📋 ironstar-jqv.3 Implement concrete session patterns
 
 | Property | Value |
@@ -6188,318 +6034,6 @@ bd update ironstar-jqv.1 -p 1
 
 # View full details
 bd show ironstar-jqv.1
-```
-
-</details>
-
----
-
-## 🚀 ironstar-nqq Performance optimization
-
-| Property | Value |
-|----------|-------|
-| **Type** | 🚀 epic |
-| **Priority** | 🔹 Medium (P2) |
-| **Status** | 🟢 open |
-| **Created** | 2025-12-22 00:25 |
-| **Updated** | 2025-12-22 00:25 |
-
-### Description
-
-Optional performance patterns for CQRS pipeline including channel sizing, backpressure, debouncing, batching, and rate limiting. See ~/projects/rust-workspace/ironstar/docs/notes/architecture/cqrs/performance-tuning.md and performance-advanced-patterns.md
-
-<details>
-<summary>📋 Commands</summary>
-
-```bash
-# Start working on this issue
-bd update ironstar-nqq -s in_progress
-
-# Add a comment
-bd comment ironstar-nqq 'Your comment here'
-
-# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-nqq -p 1
-
-# View full details
-bd show ironstar-nqq
-```
-
-</details>
-
----
-
-## 📋 ironstar-avp Verify code examples compile and run
-
-| Property | Value |
-|----------|-------|
-| **Type** | 📋 task |
-| **Priority** | 🔹 Medium (P2) |
-| **Status** | 🟢 open |
-| **Created** | 2025-12-19 01:16 |
-| **Updated** | 2025-12-19 01:16 |
-
-### Description
-
-Test all SQL and Rust code snippets. Ensure hf:// queries work with real datasets. Check that example commands are accurate.
-
-### Dependencies
-
-- 🔗 **parent-child**: `ironstar-0tk`
-
-<details>
-<summary>📋 Commands</summary>
-
-```bash
-# Start working on this issue
-bd update ironstar-avp -s in_progress
-
-# Add a comment
-bd comment ironstar-avp 'Your comment here'
-
-# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-avp -p 1
-
-# View full details
-bd show ironstar-avp
-```
-
-</details>
-
----
-
-## 📋 ironstar-ym1 Polish diagrams for visual consistency
-
-| Property | Value |
-|----------|-------|
-| **Type** | 📋 task |
-| **Priority** | 🔹 Medium (P2) |
-| **Status** | 🟢 open |
-| **Created** | 2025-12-19 01:16 |
-| **Updated** | 2025-12-19 01:16 |
-
-### Description
-
-Ensure all fletcher diagrams use consistent: node sizing, spacing, colors, edge styles. Consider adding subtle animations or build-up for complex diagrams.
-
-### Dependencies
-
-- 🔗 **parent-child**: `ironstar-0tk`
-
-<details>
-<summary>📋 Commands</summary>
-
-```bash
-# Start working on this issue
-bd update ironstar-ym1 -s in_progress
-
-# Add a comment
-bd comment ironstar-ym1 'Your comment here'
-
-# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-ym1 -p 1
-
-# View full details
-bd show ironstar-ym1
-```
-
-</details>
-
----
-
-## 📋 ironstar-63r Verify technical accuracy of benchmarks
-
-| Property | Value |
-|----------|-------|
-| **Type** | 📋 task |
-| **Priority** | 🔹 Medium (P2) |
-| **Status** | 🟢 open |
-| **Created** | 2025-12-19 01:16 |
-| **Updated** | 2025-12-19 01:16 |
-
-### Description
-
-Cross-check all performance claims against source papers. Verify: AnnSQL 700x speedup context, 4.4M cell benchmark details, tiledbsoma AWS region claims, DuckLake release date.
-
-### Dependencies
-
-- 🔗 **parent-child**: `ironstar-0tk`
-
-<details>
-<summary>📋 Commands</summary>
-
-```bash
-# Start working on this issue
-bd update ironstar-63r -s in_progress
-
-# Add a comment
-bd comment ironstar-63r 'Your comment here'
-
-# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-63r -p 1
-
-# View full details
-bd show ironstar-63r
-```
-
-</details>
-
----
-
-## 📋 ironstar-z4s Act 4: Expand vision slides
-
-| Property | Value |
-|----------|-------|
-| **Type** | 📋 task |
-| **Priority** | 🔹 Medium (P2) |
-| **Status** | 🟢 open |
-| **Created** | 2025-12-19 01:16 |
-| **Updated** | 2025-12-19 01:16 |
-
-### Description
-
-Flesh out slides 20-24. Add speaker notes. Consider: more compelling architecture diagram, concrete demo scenario, stronger call-to-action.
-
-### Dependencies
-
-- 🔗 **parent-child**: `ironstar-0tk`
-- ⛔ **blocks**: `ironstar-edx`
-
-<details>
-<summary>📋 Commands</summary>
-
-```bash
-# Start working on this issue
-bd update ironstar-z4s -s in_progress
-
-# Add a comment
-bd comment ironstar-z4s 'Your comment here'
-
-# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-z4s -p 1
-
-# View full details
-bd show ironstar-z4s
-```
-
-</details>
-
----
-
-## 📋 ironstar-b8d Act 3: Expand web interface slides
-
-| Property | Value |
-|----------|-------|
-| **Type** | 📋 task |
-| **Priority** | 🔹 Medium (P2) |
-| **Status** | 🟢 open |
-| **Created** | 2025-12-19 01:16 |
-| **Updated** | 2025-12-19 01:16 |
-
-### Description
-
-Flesh out slides 15-19. Add speaker notes. Consider: CellXGene screenshot for comparison, Datastar event flow animation concept, ironstar code snippet refinement.
-
-### Dependencies
-
-- 🔗 **parent-child**: `ironstar-0tk`
-- ⛔ **blocks**: `ironstar-edx`
-
-<details>
-<summary>📋 Commands</summary>
-
-```bash
-# Start working on this issue
-bd update ironstar-b8d -s in_progress
-
-# Add a comment
-bd comment ironstar-b8d 'Your comment here'
-
-# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-b8d -p 1
-
-# View full details
-bd show ironstar-b8d
-```
-
-</details>
-
----
-
-## 📋 ironstar-a15 Act 2: Expand solution stack slides
-
-| Property | Value |
-|----------|-------|
-| **Type** | 📋 task |
-| **Priority** | 🔹 Medium (P2) |
-| **Status** | 🟢 open |
-| **Created** | 2025-12-19 01:16 |
-| **Updated** | 2025-12-19 01:16 |
-
-### Description
-
-Flesh out slides 9-14. Add speaker notes. Consider: DuckLake metadata schema visualization, httpfs query flow diagram, concrete hf:// query examples with real datasets.
-
-### Dependencies
-
-- 🔗 **parent-child**: `ironstar-0tk`
-- ⛔ **blocks**: `ironstar-edx`
-
-<details>
-<summary>📋 Commands</summary>
-
-```bash
-# Start working on this issue
-bd update ironstar-a15 -s in_progress
-
-# Add a comment
-bd comment ironstar-a15 'Your comment here'
-
-# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-a15 -p 1
-
-# View full details
-bd show ironstar-a15
-```
-
-</details>
-
----
-
-## 📋 ironstar-ubj Act 1: Expand data problem slides
-
-| Property | Value |
-|----------|-------|
-| **Type** | 📋 task |
-| **Priority** | 🔹 Medium (P2) |
-| **Status** | 🟢 open |
-| **Created** | 2025-12-19 01:16 |
-| **Updated** | 2025-12-19 01:16 |
-
-### Description
-
-Flesh out slides 2-8. Add speaker notes. Consider: more concrete examples of AnnData failures, visual showing exponential runtime growth, clearer AnnSQL benchmark presentation.
-
-### Dependencies
-
-- 🔗 **parent-child**: `ironstar-0tk`
-- ⛔ **blocks**: `ironstar-edx`
-
-<details>
-<summary>📋 Commands</summary>
-
-```bash
-# Start working on this issue
-bd update ironstar-ubj -s in_progress
-
-# Add a comment
-bd comment ironstar-ubj 'Your comment here'
-
-# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-ubj -p 1
-
-# View full details
-bd show ironstar-ubj
 ```
 
 </details>
@@ -7530,92 +7064,6 @@ bd show ironstar-ny3.1
 
 ---
 
-## 📋 ironstar-nqq.2 Implement advanced performance patterns
-
-| Property | Value |
-|----------|-------|
-| **Type** | 📋 task |
-| **Priority** | ☕ Low (P3) |
-| **Status** | 🟢 open |
-| **Created** | 2025-12-22 00:28 |
-| **Updated** | 2025-12-22 00:28 |
-
-### Description
-
-Debouncing, batching, rate limiting (optional optimizations). See ~/projects/rust-workspace/ironstar/docs/notes/architecture/cqrs/performance-advanced-patterns.md
-
-### Dependencies
-
-- 🔗 **parent-child**: `ironstar-nqq`
-- ⛔ **blocks**: `ironstar-nqq.1`
-
-<details>
-<summary>📋 Commands</summary>
-
-```bash
-# Start working on this issue
-bd update ironstar-nqq.2 -s in_progress
-
-# Add a comment
-bd comment ironstar-nqq.2 'Your comment here'
-
-# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-nqq.2 -p 1
-
-# View full details
-bd show ironstar-nqq.2
-```
-
-</details>
-
----
-
-## 📋 ironstar-k1z Final review and presentation dry-run
-
-| Property | Value |
-|----------|-------|
-| **Type** | 📋 task |
-| **Priority** | ☕ Low (P3) |
-| **Status** | 🟢 open |
-| **Created** | 2025-12-19 01:16 |
-| **Updated** | 2025-12-19 01:16 |
-
-### Description
-
-Complete read-through for flow. Time each section. Identify any remaining gaps. Prepare for Q&A topics.
-
-### Dependencies
-
-- 🔗 **parent-child**: `ironstar-0tk`
-- ⛔ **blocks**: `ironstar-ubj`
-- ⛔ **blocks**: `ironstar-a15`
-- ⛔ **blocks**: `ironstar-b8d`
-- ⛔ **blocks**: `ironstar-z4s`
-- ⛔ **blocks**: `ironstar-63r`
-- ⛔ **blocks**: `ironstar-ym1`
-- ⛔ **blocks**: `ironstar-avp`
-
-<details>
-<summary>📋 Commands</summary>
-
-```bash
-# Start working on this issue
-bd update ironstar-k1z -s in_progress
-
-# Add a comment
-bd comment ironstar-k1z 'Your comment here'
-
-# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-k1z -p 1
-
-# View full details
-bd show ironstar-k1z
-```
-
-</details>
-
----
-
 ## 📋 ironstar-nor Research Mosaic visualization integration (TBD)
 
 | Property | Value |
@@ -7767,158 +7215,6 @@ bd update ironstar-nyp.5 -p 1
 
 # View full details
 bd show ironstar-nyp.5
-```
-
-</details>
-
----
-
-## 📋 ironstar-v4y.3 Define common-utils crate structure
-
-| Property | Value |
-|----------|-------|
-| **Type** | 📋 task |
-| **Priority** | 💤 Backlog (P4) |
-| **Status** | 🟢 open |
-| **Created** | 2025-12-24 00:54 |
-| **Updated** | 2025-12-24 00:54 |
-
-### Description
-
-Layer 0 foundation crate. Contains: crypto helpers, validation utilities, serialization helpers, extension traits. See crate-architecture.md.
-
-### Dependencies
-
-- 🔗 **parent-child**: `ironstar-v4y`
-
-<details>
-<summary>📋 Commands</summary>
-
-```bash
-# Start working on this issue
-bd update ironstar-v4y.3 -s in_progress
-
-# Add a comment
-bd comment ironstar-v4y.3 'Your comment here'
-
-# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-v4y.3 -p 1
-
-# View full details
-bd show ironstar-v4y.3
-```
-
-</details>
-
----
-
-## 📋 ironstar-v4y.2 Define common-types crate structure
-
-| Property | Value |
-|----------|-------|
-| **Type** | 📋 task |
-| **Priority** | 💤 Backlog (P4) |
-| **Status** | 🟢 open |
-| **Created** | 2025-12-24 00:54 |
-| **Updated** | 2025-12-24 00:54 |
-
-### Description
-
-Layer 0 foundation crate. Contains: MinorUnit, Timestamp, Sequence newtypes. TodoId, TodoText smart constructors with validation. See crate-architecture.md.
-
-### Dependencies
-
-- 🔗 **parent-child**: `ironstar-v4y`
-
-<details>
-<summary>📋 Commands</summary>
-
-```bash
-# Start working on this issue
-bd update ironstar-v4y.2 -s in_progress
-
-# Add a comment
-bd comment ironstar-v4y.2 'Your comment here'
-
-# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-v4y.2 -p 1
-
-# View full details
-bd show ironstar-v4y.2
-```
-
-</details>
-
----
-
-## 📋 ironstar-v4y.1 Define common-enums crate structure
-
-| Property | Value |
-|----------|-------|
-| **Type** | 📋 task |
-| **Priority** | 💤 Backlog (P4) |
-| **Status** | 🟢 open |
-| **Created** | 2025-12-24 00:54 |
-| **Updated** | 2025-12-24 00:54 |
-
-### Description
-
-Layer 0 foundation crate. Contains: AggregateType, EventType, ErrorCode, FilterType enums. No ironstar dependencies. See crate-architecture.md.
-
-### Dependencies
-
-- 🔗 **parent-child**: `ironstar-v4y`
-
-<details>
-<summary>📋 Commands</summary>
-
-```bash
-# Start working on this issue
-bd update ironstar-v4y.1 -s in_progress
-
-# Add a comment
-bd comment ironstar-v4y.1 'Your comment here'
-
-# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-v4y.1 -p 1
-
-# View full details
-bd show ironstar-v4y.1
-```
-
-</details>
-
----
-
-## 🚀 ironstar-v4y Multi-crate workspace decomposition
-
-| Property | Value |
-|----------|-------|
-| **Type** | 🚀 epic |
-| **Priority** | 💤 Backlog (P4) |
-| **Status** | 🟢 open |
-| **Created** | 2025-12-24 00:44 |
-| **Updated** | 2025-12-24 00:44 |
-
-### Description
-
-Implement 8-layer crate decomposition from crate-architecture.md. Includes common-enums/types/utils (Layer 0), ironstar-domain/commands/events (Layer 1), ironstar-app (Layer 2), ironstar-interfaces (Layer 3), ironstar-adapters/analytics/projections/config (Layer 4), ironstar-services (Layer 5), ironstar-web (Layer 6), ironstar binary (Layer 7). Deferred until single-crate grows beyond 800 lines or coupling becomes problematic.
-
-<details>
-<summary>📋 Commands</summary>
-
-```bash
-# Start working on this issue
-bd update ironstar-v4y -s in_progress
-
-# Add a comment
-bd comment ironstar-v4y 'Your comment here'
-
-# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-v4y -p 1
-
-# View full details
-bd show ironstar-v4y
 ```
 
 </details>
@@ -8259,27 +7555,6 @@ Bootstrap the ironstar project from typescript-nix-template using omnix om CLI. 
 
 ---
 
-## 📋 ironstar-edx Review narrative arc and timing estimates
-
-| Property | Value |
-|----------|-------|
-| **Type** | 📋 task |
-| **Priority** | ⚡ High (P1) |
-| **Status** | ⚫ closed |
-| **Created** | 2025-12-19 01:16 |
-| **Updated** | 2025-12-19 01:28 |
-| **Closed** | 2025-12-19 01:28 |
-
-### Description
-
-Validate the 4-act structure (15-15-10-5 min). Ensure logical flow from problem to solution to interface to vision. Check that each slide has one clear concept.
-
-### Dependencies
-
-- 🔗 **parent-child**: `ironstar-0tk`
-
----
-
 ## 📋 ironstar-nyp.33 Implement session cleanup background task
 
 | Property | Value |
@@ -8337,19 +7612,6 @@ Implement cache invalidation via Zenoh subscription. Subscribe to aggregate-type
 
 - 🔗 **parent-child**: `ironstar-3gd`
 - ⛔ **blocks**: `ironstar-nyp.12`
-
----
-
-## 📋 ironstar-r5f ironstar-6lq
-
-| Property | Value |
-|----------|-------|
-| **Type** | 📋 task |
-| **Priority** | 🔹 Medium (P2) |
-| **Status** | ⚫ closed |
-| **Created** | 2025-12-18 18:03 |
-| **Updated** | 2025-12-24 00:45 |
-| **Closed** | 2025-12-24 00:45 |
 
 ---
 
