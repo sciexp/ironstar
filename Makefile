@@ -1,0 +1,237 @@
+# ironstar bootstrap makefile
+#
+# tl;dr:
+#
+# 1. Run 'make bootstrap' to install nix and direnv
+# 2. Run 'make verify' to check your installation
+# 3. Run 'make setup-user' to generate age keys for secrets (first time only)
+# 4. Run 'nix develop' to enter the development environment
+# 5. Use 'just ...' to run development tasks
+#
+# This Makefile helps bootstrap a development environment with nix and direnv.
+# After bootstrap is complete, see the justfile for development workflows.
+
+.DEFAULT_GOAL := help
+
+#-------
+##@ help
+#-------
+
+# based on "https://gist.github.com/prwhite/8168133?permalink_comment_id=4260260#gistcomment-4260260"
+.PHONY: help
+help: ## Display this help. (Default)
+	@grep -hE '^(##@|[A-Za-z0-9_ \-]*?:.*##).*$$' $(MAKEFILE_LIST) | \
+	awk 'BEGIN {FS = ":.*?## "}; /^##@/ {print "\n" substr($$0, 5)} /^[A-Za-z0-9_ \-]*?:.*##/ {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+
+help-sort: ## Display alphabetized version of help (no section headings).
+	@grep -hE '^[A-Za-z0-9_ \-]*?:.*##.*$$' $(MAKEFILE_LIST) | sort | \
+	awk 'BEGIN {FS = ":.*?## "}; /^[A-Za-z0-9_ \-]*?:.*##/ {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+
+# catch-all pattern rule
+%:
+	@:
+
+#-------
+##@ bootstrap
+#-------
+
+.PHONY: bootstrap-prep-darwin
+bootstrap-prep-darwin: ## Install darwin prerequisites (Xcode CLI tools + Homebrew) before 'make bootstrap'
+	@printf "Installing darwin prerequisites...\n\n"
+	@printf "Step 1: Xcode Command Line Tools\n"
+	@if xcode-select -p &>/dev/null; then \
+		printf "  ● Xcode CLI tools already installed\n"; \
+	else \
+		printf "  Installing Xcode CLI tools (this will open a dialog)...\n"; \
+		xcode-select --install; \
+		printf "  Wait for installation to complete, then re-run this target\n"; \
+		exit 1; \
+	fi
+	@printf "\nStep 2: Homebrew\n"
+	@if command -v brew &>/dev/null; then \
+		printf "  ● Homebrew already installed\n"; \
+	else \
+		printf "  Installing Homebrew...\n"; \
+		/bin/bash -c "$$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"; \
+	fi
+	@printf "\n● Darwin prerequisites complete!\n"
+	@printf "Next: Run 'make bootstrap' to install Nix\n"
+
+.PHONY: bootstrap
+bootstrap: ## Main bootstrap target that runs all necessary setup steps
+bootstrap: install-nix install-direnv
+	@printf "\n● Bootstrap of nix and direnv complete!\n\n"
+	@printf "Next steps:\n"
+	@echo "1. Start a new shell session (to load nix in PATH)"
+	@echo "2. Run 'make verify' to check your installation"
+	@echo "3. Run 'make setup-user' to generate age keys (first time setup)"
+	@echo "4. Run 'nix develop' to enter the development environment"
+	@echo "5. Run 'bun install' to install JavaScript dependencies"
+	@echo ""
+	@printf "Optional: Auto-activate development environment with direnv\n"
+	@echo "  - See https://direnv.net/docs/hook.html to add direnv to your shell"
+	@echo "  - Start a new shell session"
+	@echo "  - cd out and back into the project directory"
+	@echo "  - Run 'direnv allow' to activate"
+
+.PHONY: install-nix
+# Download platform-specific binary directly from GitHub Releases.
+# This bypasses both the Fastly CDN (HTTP 618 errors) and the shell wrapper.
+# https://github.com/NixOS/experimental-nix-installer/releases
+#
+# The experimental-nix-installer defaults include:
+#   --extra-conf "experimental-features = nix-command flakes"
+#   --extra-conf "auto-optimise-store = true"
+#   --extra-conf "always-allow-substitutes = true"
+#   --extra-conf "max-jobs = auto"
+#
+# We add trusted-users to allow flake-specified substituters and public keys.
+NIX_INSTALLER_VERSION := 3.11.3
+install-nix: ## Install Nix using the NixOS community installer
+	@echo "Installing Nix..."
+	@if command -v nix >/dev/null 2>&1; then \
+		echo "Nix is already installed."; \
+	else \
+		case "$$(uname -s)-$$(uname -m)" in \
+			Linux-x86_64)  PLATFORM="x86_64-linux" ;; \
+			Linux-aarch64) PLATFORM="aarch64-linux" ;; \
+			Darwin-x86_64) PLATFORM="x86_64-darwin" ;; \
+			Darwin-arm64)  PLATFORM="aarch64-darwin" ;; \
+			*) echo "Unsupported platform: $$(uname -s)-$$(uname -m)"; exit 1 ;; \
+		esac; \
+		INSTALLER_URL="https://github.com/NixOS/experimental-nix-installer/releases/download/$(NIX_INSTALLER_VERSION)/nix-installer-$$PLATFORM"; \
+		echo "Platform: $$PLATFORM"; \
+		echo "Downloading from: $$INSTALLER_URL"; \
+		max_attempts=3; \
+		attempt=1; \
+		while [ $$attempt -le $$max_attempts ]; do \
+			echo "Attempt $$attempt of $$max_attempts..."; \
+			if curl --proto '=https' --tlsv1.2 -sSf -L --retry 3 --retry-delay 5 \
+				"$$INSTALLER_URL" -o /tmp/nix-installer && chmod +x /tmp/nix-installer; then \
+				/tmp/nix-installer install --no-confirm \
+					--extra-conf "trusted-users = root @admin @wheel" && break; \
+			fi; \
+			attempt=$$((attempt + 1)); \
+			if [ $$attempt -le $$max_attempts ]; then \
+				echo "Download or install failed, waiting 10 seconds before retry..."; \
+				sleep 10; \
+			fi; \
+		done; \
+		if [ $$attempt -gt $$max_attempts ]; then \
+			echo "Failed to install nix after $$max_attempts attempts"; \
+			exit 1; \
+		fi; \
+	fi
+
+.PHONY: install-direnv
+install-direnv: ## Install direnv (requires nix to be installed first)
+	@echo "Installing direnv..."
+	@if command -v direnv >/dev/null 2>&1; then \
+		echo "direnv is already installed."; \
+	else \
+		. /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install nixpkgs#direnv; \
+	fi
+	@echo ""
+	@echo "See https://direnv.net/docs/hook.html to add direnv to your shell"
+
+#-------
+##@ verify
+#-------
+
+.PHONY: verify
+verify: ## Verify nix installation and environment setup
+	@printf "\nVerifying installation...\n\n"
+	@printf "Checking nix installation: "
+	@if command -v nix >/dev/null 2>&1; then \
+		printf "● nix found at %s\n" "$$(command -v nix)"; \
+		nix --version; \
+	else \
+		printf "nix not found\n"; \
+		printf "Run 'make install-nix' to install nix\n"; \
+		exit 1; \
+	fi
+	@printf "\nChecking nix flakes support: "
+	@if nix flake --help >/dev/null 2>&1; then \
+		printf "● flakes enabled\n"; \
+	else \
+		printf "flakes not enabled\n"; \
+		exit 1; \
+	fi
+	@printf "\nChecking direnv installation: "
+	@if command -v direnv >/dev/null 2>&1; then \
+		printf "● direnv found\n"; \
+	else \
+		printf "direnv not found (optional but recommended)\n"; \
+		printf "Run 'make install-direnv' to install\n"; \
+	fi
+	@printf "\nChecking flake validity: "
+	@if nix flake metadata . >/dev/null 2>&1; then \
+		printf "● flake is valid\n"; \
+	else \
+		printf "flake has errors\n"; \
+		exit 1; \
+	fi
+	@printf "\nChecking required tools in devShell: "
+	@if nix develop --command bash -c 'command -v bun && command -v just && command -v sops' >/dev/null 2>&1; then \
+		printf "● bun, just, sops available\n"; \
+	else \
+		printf "some tools missing from devShell\n"; \
+		exit 1; \
+	fi
+	@printf "\n● All verification checks passed!\n\n"
+
+#-------
+##@ setup
+#-------
+
+.PHONY: setup-user
+setup-user: ## Generate age key for sops secrets (first time user setup)
+	@printf "\nGenerating age key for secrets management...\n\n"
+	@. /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && \
+	if [ -f ~/.config/sops/age/keys.txt ]; then \
+		printf "Age key already exists at ~/.config/sops/age/keys.txt\n"; \
+		printf "To regenerate, manually delete the file first\n"; \
+		printf "\nYour public key is:\n"; \
+		nix shell nixpkgs#age -c age-keygen -y ~/.config/sops/age/keys.txt 2>/dev/null || printf "Error reading existing key\n"; \
+	else \
+		mkdir -p ~/.config/sops/age; \
+		nix shell nixpkgs#age -c age-keygen -o ~/.config/sops/age/keys.txt; \
+		chmod 600 ~/.config/sops/age/keys.txt; \
+		printf "\n● Age key generated successfully!\n\n"; \
+		printf "Your public key is:\n"; \
+		nix shell nixpkgs#age -c age-keygen -y ~/.config/sops/age/keys.txt; \
+		printf "\nIMPORTANT: Back up your private key securely!\n"; \
+		printf "1. Copy the content of ~/.config/sops/age/keys.txt\n"; \
+		printf "2. Store in a password manager as secure note\n"; \
+		printf "3. Send your PUBLIC key (shown above) to the project admin\n"; \
+	fi
+
+.PHONY: check-secrets
+check-secrets: ## Check if you can decrypt shared secrets (requires age key and admin setup)
+	@printf "\nChecking secrets access...\n\n"
+	@if [ ! -f ~/.config/sops/age/keys.txt ]; then \
+		printf "No age key found. Run 'make setup-user' first\n"; \
+		exit 1; \
+	fi
+	@if nix develop --command sops -d vars/shared.yaml >/dev/null 2>&1; then \
+		printf "● Successfully decrypted shared secrets!\n"; \
+		printf "You have proper access to the secrets system\n"; \
+	else \
+		printf "Cannot decrypt shared secrets\n"; \
+		printf "Possible reasons:\n"; \
+		printf "1. Admin hasn't added your key to .sops.yaml yet\n"; \
+		printf "2. Admin hasn't run 'sops updatekeys' after adding you\n"; \
+		printf "3. Your age key is incorrect\n"; \
+		printf "\nSend your public key to admin:\n"; \
+		age-keygen -y ~/.config/sops/age/keys.txt; \
+		exit 1; \
+	fi
+
+#-------
+##@ clean
+#-------
+
+.PHONY: clean
+clean: ## Clean any temporary files or build artifacts
+	@echo "Cleaning up..."
+	@rm -rf result result-*

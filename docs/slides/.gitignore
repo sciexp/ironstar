@@ -1,0 +1,4 @@
+# Generated slide outputs
+*.pdf
+*/png/
+*/svg/
