@@ -34,16 +34,25 @@ All I/O operations (database queries, API calls, random number generation, syste
 
 ```rust
 // CORRECT: Pure aggregate with pre-validated inputs
-impl Order {
-    pub fn handle_command(state: &OrderState, cmd: OrderCommand) -> Result<Vec<OrderEvent>, OrderError> {
+impl QuerySessionAggregate {
+    pub fn handle_command(state: &QuerySessionState, cmd: QuerySessionCommand) -> Result<Vec<QueryEvent>, QueryError> {
         // No async, no I/O, deterministic
+        match cmd {
+            QuerySessionCommand::StartQuery { query_id, sql } => {
+                if state.status != SessionStatus::Idle {
+                    return Err(QueryError::InvalidTransition);
+                }
+                Ok(vec![QueryEvent::QueryStarted { query_id, sql, started_at: cmd.timestamp }])
+            }
+            // ...
+        }
     }
 }
 
 // INCORRECT: Aggregate performing I/O
-impl Order {
-    pub async fn handle_command(state: &OrderState, cmd: OrderCommand) -> Result<Vec<OrderEvent>, OrderError> {
-        let user = fetch_user_from_db(cmd.user_id).await?; // Violates purity
+impl QuerySessionAggregate {
+    pub async fn handle_command(state: &QuerySessionState, cmd: QuerySessionCommand) -> Result<Vec<QueryEvent>, QueryError> {
+        let results = execute_duckdb_query(&cmd.sql).await?; // Violates purity
         // ...
     }
 }
@@ -89,9 +98,10 @@ Projections can be deleted and rebuilt from events at any time without data loss
 ```rust
 // On startup: rebuild projections from scratch
 let all_events = event_store.load_all().await?;
-let projection = TodoListProjection::from_events(all_events);
+let projection = QueryResultProjection::from_events(all_events);
 
 // Projections are never persisted; they're always derived
+// For analytics workloads, projection results are cached in moka with TTL-based eviction
 ```
 
 This enables:
@@ -190,11 +200,11 @@ src/
 │   └── aggregates/        # Aggregate root logic (validation)
 ├── infrastructure/
 │   ├── event_store.rs     # SqliteEventStore impl
-│   ├── event_bus.rs       # Broadcast channel setup
+│   ├── event_bus.rs       # Zenoh pub/sub setup
 │   └── projections/       # Projection implementations
 │       ├── mod.rs
-│       ├── todo_list.rs
-│       └── analytics.rs
+│       ├── query_result.rs
+│       └── chart_data.rs
 └── presentation/
     ├── handlers/
     │   ├── sse.rs         # SSE feed handler
@@ -204,80 +214,9 @@ src/
 
 ### Configuration defaults
 
-```toml
-# config.toml
-[event_sourcing]
-# Broadcast channel capacity (number of events buffered)
-broadcast_capacity = 256
+Key settings: Broadcast channel capacity 256 events, SQLite WAL mode with synchronous=FULL, SSE keep-alive 15s, Brotli compression enabled (200:1 ratio for HTML), projection rebuild on startup.
 
-# SQLite WAL mode (default: WAL)
-sqlite_journal_mode = "WAL"
-
-# SQLite synchronous mode (default: FULL for durability)
-sqlite_synchronous = "FULL"
-
-[sse]
-# Keep-alive interval (prevent proxy timeouts)
-keep_alive_seconds = 15
-
-# Enable compression (Brotli via tower-http)
-enable_compression = true
-
-[projections]
-# Projection rebuild on startup (default: true for simplicity)
-rebuild_on_startup = true
-
-# Future: snapshot interval (not implemented yet)
-# snapshot_every_n_events = 1000
-```
-
-### Production considerations
-
-#### SQLite tuning
-
-```rust
-use sqlx::SqlitePool;
-
-// Optimize SQLite for event sourcing workload
-sqlx::query("PRAGMA journal_mode=WAL").execute(&pool).await?;
-sqlx::query("PRAGMA synchronous=FULL").execute(&pool).await?;
-sqlx::query("PRAGMA cache_size=-64000").execute(&pool).await?; // 64MB cache
-sqlx::query("PRAGMA temp_store=MEMORY").execute(&pool).await?;
-```
-
-#### Compression
-
-Enable Brotli compression for SSE responses:
-
-```rust
-use axum::{Router, routing::get};
-use tower_http::compression::CompressionLayer;
-
-let app = Router::new()
-    .route("/feed", get(sse_feed))
-    .layer(CompressionLayer::new());
-```
-
-Datastar documentation claims 200:1 compression ratios for HTML over SSE with Brotli.
-
-#### Monitoring
-
-```rust
-use prometheus::{IntCounter, IntGauge, Registry};
-
-pub struct Metrics {
-    events_appended: IntCounter,
-    sse_connections: IntGauge,
-    projection_lag: IntGauge,
-}
-// Note: Prometheus metrics require the prometheus crate in Cargo.toml
-```
-
-Track:
-- Events appended per second
-- Active SSE connections
-- Projection lag (last processed sequence vs last appended sequence)
-- Broadcast channel lag events
+For complete configuration, SQLite tuning, and monitoring patterns, see `performance-tuning.md` and `../decisions/observability-decisions.md`.
 
 ## Trade-off analysis
 
@@ -379,19 +318,19 @@ pub fn load_events_with_upcasting<A: Aggregate>(
         .collect()
 }
 
-// Example upcaster: TodoCreated v1 -> v2 (added priority field)
-struct TodoCreatedV1ToV2;
+// Example upcaster: QueryStarted v1 -> v2 (added dataset_ref field)
+struct QueryStartedV1ToV2;
 
-impl EventUpcaster for TodoCreatedV1ToV2 {
+impl EventUpcaster for QueryStartedV1ToV2 {
     fn can_upcast(&self, event_type: &str, event_version: &str) -> bool {
-        event_type == "TodoCreated" && event_version == "1"
+        event_type == "QueryStarted" && event_version == "1"
     }
 
     fn upcast(&self, mut payload: Value) -> Value {
-        // Add default priority if missing
+        // Add default dataset_ref if missing (for queries before multi-dataset support)
         if let Value::Object(ref mut map) = payload {
-            if !map.contains_key("priority") {
-                map.insert("priority".to_string(), Value::String("normal".to_string()));
+            if !map.contains_key("dataset_ref") {
+                map.insert("dataset_ref".to_string(), Value::Null);
             }
         }
         payload
@@ -401,6 +340,101 @@ impl EventUpcaster for TodoCreatedV1ToV2 {
 
 Upcasters are applied lazily during event loading, not as batch migrations.
 This keeps the event store immutable (events are facts that cannot change) while allowing the domain model to evolve.
+
+## Analytics-specific projection patterns
+
+Analytics projections differ from UI projections in that they cache expensive query results rather than simple in-memory state.
+For ironstar, analytics projections combine event sourcing with DuckDB query caching.
+
+### Query result caching pattern
+
+```rust
+use moka::future::Cache;
+use std::sync::Arc;
+
+/// Projection that caches DuckDB query results
+pub struct QueryResultProjection {
+    cache: Cache<String, Arc<Vec<serde_json::Value>>>,
+    event_rx: tokio::sync::mpsc::Receiver<QueryEvent>,
+}
+
+impl QueryResultProjection {
+    pub fn new(capacity: u64, ttl_seconds: u64) -> Self {
+        let cache = Cache::builder()
+            .max_capacity(capacity)
+            .time_to_live(Duration::from_secs(ttl_seconds))
+            .build();
+
+        Self { cache, event_rx }
+    }
+
+    /// React to QueryCompleted events by invalidating stale cache entries
+    pub async fn handle_event(&mut self, event: QueryEvent) {
+        match event {
+            QueryEvent::QueryCompleted { query_id, .. } => {
+                // Invalidate any cached results for this query
+                self.cache.invalidate(&query_id).await;
+            }
+            QueryEvent::QueryFailed { query_id, .. } => {
+                // Also invalidate on failure to allow retry
+                self.cache.invalidate(&query_id).await;
+            }
+            _ => {}
+        }
+    }
+
+    /// Serve cached result or execute query via DuckDB
+    pub async fn get_or_compute(
+        &self,
+        query_id: &str,
+        compute_fn: impl Future<Output = Result<Vec<serde_json::Value>, AppError>>,
+    ) -> Result<Arc<Vec<serde_json::Value>>, AppError> {
+        self.cache
+            .try_get_with(query_id.to_string(), async move {
+                compute_fn.await.map(Arc::new)
+            })
+            .await
+            .map_err(|e| AppError::Internal(e.to_string()))
+    }
+}
+```
+
+### Zenoh-based cache invalidation
+
+When using Zenoh for event distribution, projections can subscribe to specific key expressions to receive invalidation events:
+
+```rust
+use zenoh::prelude::r#async::*;
+
+/// Subscribe to query completion events for cache invalidation
+pub async fn subscribe_query_events(
+    session: Arc<zenoh::Session>,
+    cache: Arc<Cache<String, Vec<serde_json::Value>>>,
+) -> Result<(), AppError> {
+    let subscriber = session
+        .declare_subscriber("events/QuerySession/**")
+        .res()
+        .await?;
+
+    tokio::spawn(async move {
+        while let Ok(sample) = subscriber.recv_async().await {
+            if let Ok(event) = serde_json::from_slice::<QueryEvent>(sample.payload.contiguous().as_ref()) {
+                match event {
+                    QueryEvent::QueryCompleted { query_id, .. } |
+                    QueryEvent::QueryFailed { query_id, .. } => {
+                        cache.invalidate(&query_id).await;
+                    }
+                    _ => {}
+                }
+            }
+        }
+    });
+
+    Ok(())
+}
+```
+
+See `../infrastructure/analytics-cache-architecture.md` for complete cache design including TTL-based eviction and Zenoh invalidation patterns.
 
 ## Aggregate trait with optimistic locking
 
@@ -447,73 +481,39 @@ pub trait Aggregate: Default + Send + Sync {
 
 ### Optimistic locking with version()
 
-The `version()` method returns the number of events applied to the aggregate, which serves as an optimistic lock when persisting new events.
+The `version()` method returns the number of events applied to the aggregate, serving as an optimistic lock.
+When persisting events, the event store checks that the expected version matches the actual version in the database.
+Concurrent modifications cause the append to fail with a concurrency error, allowing retry with fresh state.
 
-**How it works:**
-
-1. Command handler loads events and reconstitutes aggregate state
-2. Command handler calls `aggregate.version()` to get the expected version
-3. New events are generated via `handle_command()`
-4. Event store append operation includes the expected version
-5. If another command modified the aggregate concurrently (actual version ≠ expected version), the append fails with a concurrency error
-6. The failed command can be retried with fresh state
-
-**Example usage in command handler:**
+**Command handler pattern:**
 
 ```rust
-use tokio::sync::broadcast;
-
 async fn handle_command<A: Aggregate>(
     store: &SqliteEventStore,
     bus: &broadcast::Sender<StoredEvent>,
     aggregate_id: &str,
     command: A::Command,
 ) -> Result<Vec<StoredEvent>, CommandError<A::Error>> {
-    // 1. Load events from store
     let events = store.query_aggregate(A::NAME, aggregate_id).await?;
-
-    // 2. Reconstitute aggregate state
-    let aggregate = events
-        .into_iter()
+    let aggregate = events.into_iter()
         .filter_map(|e| deserialize_event::<A>(&e))
-        .fold(A::default(), |agg, event| {
-            A::apply_event(agg, event)
-        });
+        .fold(A::default(), |agg, event| A::apply_event(agg, event));
 
-    // 3. Capture expected version for optimistic locking
-    let expected_version = aggregate.version();
+    let expected_version = aggregate.version(); // Capture for optimistic lock
 
-    // 4. Handle command (pure, synchronous)
     let new_events = A::handle_command(&aggregate.state, command)
         .map_err(CommandError::Domain)?;
 
-    // 5. Persist with optimistic locking
-    let mut stored = Vec::with_capacity(new_events.len());
-    for event in new_events {
-        let sequence = store.append_with_version(
-            A::NAME,
-            aggregate_id,
-            expected_version,  // Optimistic lock: reject if version differs
-            serialize_event::<A>(aggregate_id, &event),
-        )
-        .await
-        .map_err(CommandError::Persistence)?;
+    let stored = store.append_with_version(
+        A::NAME, aggregate_id, expected_version, new_events
+    ).await?; // Rejects if version differs
 
-        stored.push(StoredEvent { sequence, /* ... */ });
-    }
-
-    // 6. Publish to subscribers
-    for event in &stored {
-        let _ = bus.send(event.clone());
-    }
-
+    for event in &stored { let _ = bus.send(event.clone()); }
     Ok(stored)
 }
 ```
 
-The event store's `append_with_version()` method checks the UNIQUE constraint on `(aggregate_type, aggregate_id, aggregate_sequence)` and rejects the append if the expected version doesn't match the actual version in the database.
-
-See `command-write-patterns.md` for complete command handler patterns and the Aggregate trait implementation used there.
+See `command-write-patterns.md` for complete command handler patterns including error handling and retry strategies.
 
 ## Reference implementation: QuerySessionAggregate
 
@@ -584,35 +584,46 @@ pub struct StoredEvent {
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
-/// Domain events (example for a Todo aggregate)
+/// Domain events (example for a QuerySession aggregate)
 /// Sum type representing all possible events in the domain
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
-pub enum DomainEvent {
-    TodoCreated { id: String, text: String },
-    TodoCompleted { id: String },
-    TodoDeleted { id: String },
-    TodoTextUpdated { id: String, text: String },
+pub enum QueryEvent {
+    QueryStarted {
+        query_id: String,
+        sql: String,
+        dataset_ref: Option<String>,
+        started_at: chrono::DateTime<chrono::Utc>,
+    },
+    QueryCompleted {
+        query_id: String,
+        row_count: usize,
+        duration_ms: u64,
+        completed_at: chrono::DateTime<chrono::Utc>,
+    },
+    QueryFailed {
+        query_id: String,
+        error: String,
+        failed_at: chrono::DateTime<chrono::Utc>,
+    },
 }
 
-impl DomainEvent {
+impl QueryEvent {
     /// Extract event type name for storage in event_type column
     pub fn event_type(&self) -> &'static str {
         match self {
-            Self::TodoCreated { .. } => "TodoCreated",
-            Self::TodoCompleted { .. } => "TodoCompleted",
-            Self::TodoDeleted { .. } => "TodoDeleted",
-            Self::TodoTextUpdated { .. } => "TodoTextUpdated",
+            Self::QueryStarted { .. } => "QueryStarted",
+            Self::QueryCompleted { .. } => "QueryCompleted",
+            Self::QueryFailed { .. } => "QueryFailed",
         }
     }
 
     /// Extract aggregate ID for storage in aggregate_id column
     pub fn aggregate_id(&self) -> &str {
         match self {
-            Self::TodoCreated { id, .. }
-            | Self::TodoCompleted { id }
-            | Self::TodoDeleted { id }
-            | Self::TodoTextUpdated { id, .. } => id,
+            Self::QueryStarted { query_id, .. }
+            | Self::QueryCompleted { query_id, .. }
+            | Self::QueryFailed { query_id, .. } => query_id,
         }
     }
 }
@@ -621,11 +632,20 @@ impl DomainEvent {
 /// Product types containing validated user input
 #[derive(Clone, Debug, Deserialize)]
 #[serde(tag = "type")]
-pub enum Command {
-    CreateTodo { text: String },
-    CompleteTodo { id: String },
-    DeleteTodo { id: String },
-    UpdateTodoText { id: String, text: String },
+pub enum QueryCommand {
+    StartQuery {
+        sql: String,
+        dataset_ref: Option<String>,
+    },
+    CompleteQuery {
+        query_id: String,
+        row_count: usize,
+        duration_ms: u64,
+    },
+    FailQuery {
+        query_id: String,
+        error: String,
+    },
 }
 ```
 
