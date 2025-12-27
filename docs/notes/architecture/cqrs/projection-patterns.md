@@ -110,6 +110,30 @@ Use DuckDB for querying external scientific datasets (HuggingFace Hub, S3, DuckL
 - Session-specific data (use SQLite sessions table).
 - Transactional commands (use event store).
 
+### Analytics projections: materialization vs in-memory
+
+The in-memory projection pattern described above works well for small state (todo lists, session state, UI widgets).
+For analytics projections that produce large result sets (thousands of rows from DuckDB queries), consider alternative strategies:
+
+**Materialized read tables**: Write DuckDB query results to a read-optimized table rather than holding in memory.
+- Suitable for precomputed dashboards, reports, or aggregations that change infrequently
+- Supports pagination and filtering at the database level
+- Trade-off: materialization latency vs memory consumption
+
+**Streaming results**: Stream rows incrementally via SSE rather than buffering entire result set.
+- Suitable for real-time analytics feeds or large exports
+- DuckDB cursor iteration with chunked SSE transmission
+- Trade-off: client-side buffering complexity vs server memory pressure
+
+**Cache-aside with moka**: Cache frequently-accessed query results in moka with TTL-based eviction.
+- Suitable for analytics endpoints with high read-to-write ratios
+- Zenoh key expression subscriptions trigger cache invalidation on relevant events
+- See `../infrastructure/analytics-cache-architecture.md` for detailed cache invalidation patterns (Pattern 4)
+- Trade-off: stale data risk (bounded by TTL) vs query latency
+
+Choose based on query frequency, result set size, and staleness tolerance.
+In-memory projections remain optimal for small, session-scoped state.
+
 ## DuckDB async runtime integration
 
 DuckDB-rs is a synchronous, blocking library, but async-duckdb provides a clean async interface via connection pooling and dedicated background threads.
