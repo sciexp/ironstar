@@ -422,6 +422,72 @@ hypertext's lazy evaluation ensures no work is wasted.
 
 ---
 
+## DatastarRequest extractor for progressive enhancement
+
+The `datastar-rust` crate generates SSE payloads but provides no mechanism to detect whether a request came from a Datastar client.
+This detection is essential for progressive enhancement: the same handler must respond differently to browser navigation (full HTML) versus Datastar signal updates (SSE fragments).
+
+### Implementation
+
+The DatastarRequest extractor checks for the `datastar-request: true` header that Datastar clients automatically inject:
+
+```rust
+use std::convert::Infallible;
+use axum::async_trait;
+use axum::extract::FromRequestParts;
+use http::request::Parts;
+
+#[derive(Debug, Clone, Copy)]
+pub struct DatastarRequest(pub bool);
+
+#[async_trait]
+impl<S: Send + Sync> FromRequestParts<S> for DatastarRequest {
+    type Rejection = Infallible;
+
+    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+        let is_datastar = parts
+            .headers
+            .get("datastar-request")
+            .is_some_and(|value| value.as_bytes() == b"true");
+
+        Ok(Self(is_datastar))
+    }
+}
+```
+
+**Design decisions:**
+- Returns `Infallible` (never fails) — always succeeds with a boolean value
+- Owned by application code, not the SDK — datastar-rust focuses on SSE generation, not request detection
+- Zero runtime cost — single header lookup, no parsing
+
+### Usage in handlers
+
+Branch handler responses based on request origin:
+
+```rust
+async fn page_handler(
+    State(state): State<AppState>,
+    DatastarRequest(is_datastar): DatastarRequest,
+) -> Response {
+    if is_datastar {
+        // Datastar client: return SSE stream with fragments
+        sse_handler(State(state)).await.into_response()
+    } else {
+        // Browser navigation: return full HTML page
+        let html = render_full_page(&state);
+        Html(html).into_response()
+    }
+}
+```
+
+**Benefits:**
+- **Backward compatible**: Application works without JavaScript (full-page responses are baseline)
+- **Composable**: Integrates seamlessly with other axum extractors (State, Session, etc.)
+- **Type-safe**: Compiler enforces two-path handling via pattern matching
+- **Testable**: Write tests for both branches independently
+
+---
+
 ## Summary: when to use which pattern
 
 | Scenario | Pattern | Key Attributes |
