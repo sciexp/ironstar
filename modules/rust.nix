@@ -45,9 +45,16 @@
             pname = "ironstar-fmt";
           };
 
-          rust-test = crane-lib.cargoTest {
+          rust-test = crane-lib.cargoNextest {
             inherit src cargoArtifacts;
             pname = "ironstar-test";
+            partitions = 1;
+            partitionType = "count";
+          };
+
+          rust-doctest = crane-lib.cargoDocTest {
+            inherit src cargoArtifacts;
+            pname = "ironstar-doctest";
           };
         }
       ];
