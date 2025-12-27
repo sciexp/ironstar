@@ -207,6 +207,28 @@ let app = Router::new()
 Without write timeout, dead connections remain open until TCP keepalive triggers (OS default: 2 hours on Linux).
 Recommended: Set write timeout to 2-3x keep-alive interval (e.g., 45s timeout with 15s keep-alive).
 
+## Analytics streaming patterns
+
+Analytics queries differ from entity streaming: large result sets (batch with sequence IDs), long-running queries (checkpoint via Last-Event-ID), chart events (PatchSignals with specs), and graceful lag degradation (signal staleness vs force reconnect).
+
+**Query lifecycle**: Stream QueryStarted → QueryCompleted → ChartConfigured events via `PatchSignals::new().fragment("analytics.status", state).id(query_id)`.
+Client shows loading via `data-show="analytics.status.status === 'Started'"`.
+
+**Chart updates**: Send ECharts/Vega-Lite specs with update mode (Replace/Merge/Append) via `PatchSignals::new().fragment("chart.config", ChartConfig { data, update_mode })`.
+Client: `<ds-echarts data-on-load="$chart.config && $element.updateChart($chart.config)">`.
+See `ds-echarts-integration-guide.md`.
+
+**Large results**: Batch 100-1000 rows per event with `is_final` flag.
+Alternative: pagination via `data-on-click="@get('/analytics/next-page')"`.
+
+**Lagged receivers**: Unlike entity streams (force reconnect), analytics signal staleness and continue via `PatchSignals::new().fragment("analytics.staleness", warning)`.
+Strategies: drop oldest (dashboards), buffer (bursts), sample Nth (high-frequency).
+See `performance-tuning.md`.
+
+**Checkpointing**: Resume interrupted queries using Last-Event-ID to fetch cached results via `cache.get_results_after(checkpoint)`.
+Stream with sequence IDs: `.id((start_batch + idx).to_string())`.
+Cache: moka with TTL, invalidate via Zenoh (see `analytics-cache-architecture.md` Pattern 3).
+
 ## Resource guarantees
 
 | Resource | Cleanup Trigger | Guaranteed By |
