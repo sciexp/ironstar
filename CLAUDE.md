@@ -426,7 +426,7 @@ When multi-node deployment is needed, change Zenoh from embedded mode to peer mo
 See `docs/notes/architecture/infrastructure/zenoh-event-bus.md` for complete Zenoh architecture details.
 
 **Optional fallback**: tokio::broadcast remains available for extreme resource constraints (<10MB memory).
-See `docs/notes/architecture/infrastructure/distributed-event-bus-migration.md` for fallback patterns.
+See `docs/notes/architecture/infrastructure/event-bus-compatibility-patterns.md` for fallback patterns.
 
 Sessions are stored in SQLite alongside the event store (in a separate table), simplifying the stack by using a single embedded database for all persistent state.
 Analytics query results are cached in moka, an async-native in-memory cache with TTL-based eviction.
@@ -542,7 +542,7 @@ Read these when working on CSS, bundling, or web components:
 Read these when working with pub/sub, event distribution, or scaling beyond single-node:
 
 - **Zenoh event bus**: `docs/notes/architecture/infrastructure/zenoh-event-bus.md` — Key expression patterns, embedded config, Zenoh architecture
-- **Distributed event bus migration**: `docs/notes/architecture/infrastructure/distributed-event-bus-migration.md` — Migration from tokio::broadcast to Zenoh, DualEventBus pattern, scaling triggers, rollback procedure
+- **Event bus compatibility patterns**: `docs/notes/architecture/infrastructure/event-bus-compatibility-patterns.md` — DualEventBus pattern for legacy Zenoh integration, compatibility strategies, testing approaches
 
 ### External references
 

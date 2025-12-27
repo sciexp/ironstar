@@ -3091,7 +3091,7 @@ bd show ironstar-nyp.27
 
 ### Description
 
-Configure zenoh::Config for embedded mode with peer discovery disabled per distributed-event-bus-migration.md.
+Configure zenoh::Config for embedded mode with peer discovery disabled per event-bus-compatibility-patterns.md.
 
 ### Dependencies
 
@@ -7192,7 +7192,7 @@ bd show ironstar-apx
 
 ### Description
 
-Implement tokio::broadcast fallback for environments with less than 10MB memory constraints. See docs/notes/architecture/infrastructure/distributed-event-bus-migration.md for usage criteria. Primary implementation uses ZenohEventBus. Local refs: ~/projects/rust-workspace/tokio
+Implement tokio::broadcast fallback for environments with less than 10MB memory constraints. See docs/notes/architecture/infrastructure/event-bus-compatibility-patterns.md for usage criteria. Primary implementation uses ZenohEventBus. Local refs: ~/projects/rust-workspace/tokio
 
 ### Dependencies
 
@@ -7628,7 +7628,7 @@ Implement cache invalidation via Zenoh subscription. Subscribe to aggregate-type
 
 ### Description
 
-Implement DualEventBus coexistence pattern from distributed-event-bus-migration.md. Phase 1: add Zenoh alongside broadcast. Phase 2: incremental subscriber migration. Phase 3: remove broadcast. Deferred until scaling beyond ~256 SSE subscribers.
+Implement DualEventBus coexistence pattern from event-bus-compatibility-patterns.md. Phase 1: add Zenoh alongside broadcast. Phase 2: incremental subscriber migration. Phase 3: remove broadcast. Deferred until scaling beyond ~256 SSE subscribers.
 
 ### Dependencies
 

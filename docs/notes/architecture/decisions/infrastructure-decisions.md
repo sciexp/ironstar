@@ -69,7 +69,7 @@ For ironstar's CQRS architecture, the benefits of key expression filtering (aggr
 **tokio::broadcast as optional fallback:**
 
 tokio::broadcast remains available as an optional fallback for extreme resource constraints (e.g., <10MB memory available).
-See `../infrastructure/distributed-event-bus-migration.md` for the fallback pattern and coexistence strategies.
+See `../infrastructure/event-bus-compatibility-patterns.md` for the fallback pattern and coexistence strategies.
 
 **For complete Zenoh architecture**: See `../infrastructure/zenoh-event-bus.md` for key expression patterns, subscription semantics, session-scoped routing, and embedded configuration details.
 

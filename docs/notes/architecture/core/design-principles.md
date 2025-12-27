@@ -335,7 +335,7 @@ In ironstar, the event bus (Zenoh Publisher) is an observable, emitting events t
 The Observable pattern comes from functional reactive programming (FRP) and can be understood categorically as a coalgebra over the temporal functor.
 Concretely, subscribers receive each event exactly once in the order emitted (per Rust's broadcast semantics with buffering).
 
-See `../infrastructure/zenoh-event-bus.md` for the canonical event bus architecture and `../infrastructure/distributed-event-bus-migration.md` for optional fallback patterns (tokio::broadcast fallback for extreme resource constraints).
+See `../infrastructure/zenoh-event-bus.md` for the canonical event bus architecture and `../infrastructure/event-bus-compatibility-patterns.md` for optional fallback patterns (tokio::broadcast fallback for extreme resource constraints).
 
 ### Effect boundary
 

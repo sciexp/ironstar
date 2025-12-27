@@ -27,11 +27,11 @@ The analysis reveals that ironstar and northstar are complementary halves of a u
 
 **Problem**:
 - `architecture-decisions.md` states: "Zenoh (embedded mode) as primary event bus from day one"
-- `distributed-event-bus-migration.md` describes: "migration path from tokio::broadcast to Zenoh"
+- `distributed-event-bus-migration.md` described: "migration path from tokio::broadcast to Zenoh"
 
-These are mutually exclusive architectural positions.
+These appeared mutually exclusive, but the document's scope has been clarified.
 
-**Resolution**: Delete `distributed-event-bus-migration.md` and commit to Zenoh-first architecture.
+**Resolution**: Rename `distributed-event-bus-migration.md` to `event-bus-compatibility-patterns.md` to reflect its actual scope: compatibility patterns for optional tokio::broadcast fallback in resource-constrained environments, not migration guidance for ironstar itself.
 
 **Rationale**:
 - Zenoh embedded mode requires only 4 lines of configuration
@@ -173,9 +173,9 @@ The following patterns are compatible between ironstar and northstar, enabling c
 ### Phase 0: Documentation Cleanup (1-2 days)
 
 **Priority 1 - Resolve contradictions:**
-1. Delete `distributed-event-bus-migration.md`
-2. Update `architecture-decisions.md` to explicitly state "no tokio::broadcast fallback"
-3. Update `CLAUDE.md` to remove fallback references
+1. Rename `distributed-event-bus-migration.md` to `event-bus-compatibility-patterns.md`
+2. Update all documentation references to use the new filename
+3. Update `event-bus-compatibility-patterns.md` header to clarify scope: compatibility patterns, not migration guidance
 
 **Priority 2 - Create missing documents:**
 4. Create `error-types.md` with error hierarchy
