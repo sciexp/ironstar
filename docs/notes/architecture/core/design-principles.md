@@ -34,38 +34,49 @@ The `handle_command` function receives immutable state and a command, returning 
 No I/O, no async, no hidden dependencies.
 
 ```rust
-impl Order {
+impl QuerySession {
     pub fn handle_command(
-        state: &OrderState,
-        cmd: OrderCommand,
-    ) -> Result<Vec<OrderEvent>, OrderError> {
+        state: &QuerySessionState,
+        cmd: QueryCommand,
+    ) -> Result<Vec<QueryEvent>, QueryError> {
         match cmd {
-            OrderCommand::Pay { amount } => {
-                if state.status != OrderStatus::Pending {
-                    return Err(OrderError::InvalidTransition);
+            QueryCommand::ExecuteQuery { dataset, sql, chart_config } => {
+                if state.has_running_query() {
+                    return Err(QueryError::QueryAlreadyRunning);
                 }
-                if amount != state.total {
-                    return Err(OrderError::AmountMismatch);
+                if dataset.is_empty() || sql.is_empty() {
+                    return Err(QueryError::InvalidQuery);
                 }
-                Ok(vec![OrderEvent::Paid { amount }])
+                Ok(vec![QueryEvent::QueryStarted {
+                    query_id: QueryId::new(),
+                    dataset,
+                    sql,
+                    chart_config,
+                    timestamp: Utc::now(),
+                }])
             }
-            OrderCommand::Ship => {
-                if state.status != OrderStatus::Paid {
-                    return Err(OrderError::NotPaid);
+            QueryCommand::CancelQuery { query_id } => {
+                if state.current_query_id != Some(query_id) {
+                    return Err(QueryError::NoSuchQuery);
                 }
-                Ok(vec![OrderEvent::Shipped])
+                Ok(vec![QueryEvent::QueryCancelled { query_id }])
             }
         }
     }
 
-    pub fn apply_event(state: OrderState, event: &OrderEvent) -> OrderState {
+    pub fn apply_event(state: QuerySessionState, event: &QueryEvent) -> QuerySessionState {
         match event {
-            OrderEvent::Paid { .. } => OrderState {
-                status: OrderStatus::Paid,
-                ..state
+            QueryEvent::QueryStarted { query_id, dataset, sql, chart_config, .. } => {
+                QuerySessionState {
+                    current_query_id: Some(*query_id),
+                    dataset: dataset.clone(),
+                    sql: sql.clone(),
+                    chart_config: chart_config.clone(),
+                    ..state
+                }
             },
-            OrderEvent::Shipped => OrderState {
-                status: OrderStatus::Shipped,
+            QueryEvent::QueryCancelled { .. } => QuerySessionState {
+                current_query_id: None,
                 ..state
             },
         }
@@ -120,32 +131,43 @@ Because aggregates are pure functions, testing requires no infrastructure.
 
 ```rust
 #[test]
-fn aggregate_rejects_shipping_unpaid_order() {
-    let state = OrderState {
-        status: OrderStatus::Pending,
-        total: 100,
+fn aggregate_rejects_concurrent_queries() {
+    let state = QuerySessionState {
+        current_query_id: Some(QueryId::new()),
+        dataset: "iris.parquet".to_string(),
+        sql: "SELECT * FROM iris".to_string(),
+        chart_config: None,
     };
-    let cmd = OrderCommand::Ship;
+    let cmd = QueryCommand::ExecuteQuery {
+        dataset: "penguins.parquet".to_string(),
+        sql: "SELECT * FROM penguins".to_string(),
+        chart_config: None,
+    };
 
-    let result = Order::handle_command(&state, cmd);
+    let result = QuerySession::handle_command(&state, cmd);
 
-    assert!(matches!(result, Err(OrderError::NotPaid)));
+    assert!(matches!(result, Err(QueryError::QueryAlreadyRunning)));
 }
 
 #[test]
-fn aggregate_accepts_valid_payment() {
-    let state = OrderState {
-        status: OrderStatus::Pending,
-        total: 100,
+fn aggregate_accepts_valid_query() {
+    let state = QuerySessionState {
+        current_query_id: None,
+        dataset: String::new(),
+        sql: String::new(),
+        chart_config: None,
     };
-    let cmd = OrderCommand::Pay { amount: 100 };
+    let cmd = QueryCommand::ExecuteQuery {
+        dataset: "iris.parquet".to_string(),
+        sql: "SELECT * FROM iris LIMIT 10".to_string(),
+        chart_config: None,
+    };
 
-    let result = Order::handle_command(&state, cmd);
+    let result = QuerySession::handle_command(&state, cmd);
 
-    assert!(matches!(
-        result.as_deref(),
-        Ok(&[OrderEvent::Paid { amount: 100 }])
-    ));
+    assert!(result.is_ok());
+    let events = result.unwrap();
+    assert!(matches!(events.as_slice(), [QueryEvent::QueryStarted { .. }]));
 }
 ```
 
@@ -344,16 +366,16 @@ In ironstar, the async/sync boundary marks the effect boundary: async functions 
 
 ```rust
 // Pure domain logic (sync, no effects)
-impl Order {
-    pub fn handle_command(state: &OrderState, cmd: OrderCommand) -> Result<Vec<OrderEvent>, OrderError> {
+impl QuerySession {
+    pub fn handle_command(state: &QuerySessionState, cmd: QueryCommand) -> Result<Vec<QueryEvent>, QueryError> {
         // Pure computation
     }
 }
 
 // Effect boundary (async, performs I/O)
-async fn execute_command(cmd: OrderCommand, store: Arc<dyn EventStore>) -> Result<(), AppError> {
+async fn execute_command(cmd: QueryCommand, store: Arc<dyn EventStore>) -> Result<(), AppError> {
     let state = load_state(&store).await?; // Effect: database read
-    let events = Order::handle_command(&state, cmd)?; // Pure computation
+    let events = QuerySession::handle_command(&state, cmd)?; // Pure computation
     for event in events {
         store.append(event).await?; // Effect: database write
     }
