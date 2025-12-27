@@ -16,9 +16,9 @@ use uuid::Uuid;
 use chrono::Utc;
 
 /// Command handler example
-async fn handle_add_todo(
+async fn handle_execute_query(
     State(app_state): State<AppState>,
-    ReadSignals(signals): ReadSignals<AddTodoCommand>,
+    ReadSignals(signals): ReadSignals<ExecuteAnalyticsQuery>,
 ) -> impl IntoResponse {
     // Note: ValidationError type is defined in event-sourcing-core.md
     // 1. Validate command (pure function)
@@ -43,54 +43,55 @@ async fn handle_add_todo(
 }
 
 /// Pure command validation and event generation
-fn validate_and_emit_events(cmd: AddTodoCommand) -> Result<Vec<DomainEvent>, ValidationError> {
-    if cmd.text.is_empty() {
-        return Err(ValidationError::EmptyText);
-    }
+/// See "Analytics query validation" section for detailed validation logic
+fn validate_and_emit_events(cmd: ExecuteAnalyticsQuery) -> Result<Vec<DomainEvent>, ValidationError> {
+    // Validate SQL safety, dataset URL, query complexity, and timeout
+    // Full validation logic shown in "Analytics query validation" section below
 
-    Ok(vec![DomainEvent::TodoAdded {
-        id: Uuid::new_v4(),
-        text: cmd.text,
-        created_at: Utc::now(),
+    Ok(vec![DomainEvent::QueryStarted {
+        query_id: Uuid::new_v4(),
+        sql: cmd.sql,
+        dataset_url: cmd.dataset_url,
+        timeout_ms: cmd.timeout_ms.unwrap_or(30_000),
+        started_at: Utc::now(),
     }])
 }
 ```
 
 ### Loading indicator integration
 
-Frontend pattern (Datastar):
+Frontend adds loading class, backend removes it via SSE:
 
 ```html
-<div id="main" data-init="@get('/feed')">
-    <form data-on:submit.prevent="
-        el.classList.add('loading');
-        @post('/add-todo', {body: {text: $todoText}})
-    ">
-        <input data-model="$todoText" />
-        <button type="submit">
-            Add Todo
-            <span data-show="el.closest('form').classList.contains('loading')">
-                Saving...
-            </span>
-        </button>
-    </form>
-
-    <ul id="todo-list">
-        <!-- SSE updates will morph this -->
-    </ul>
-</div>
+<form data-on:submit.prevent="
+    el.classList.add('loading');
+    @post('/execute-query', {body: {sql: $querySql, dataset_url: $datasetUrl}})
+">
+    <textarea data-model="$querySql" placeholder="SELECT * FROM table"></textarea>
+    <input data-model="$datasetUrl" placeholder="hf://datasets/owner/repo" />
+    <button type="submit">
+        Execute Query
+        <span data-show="el.closest('form').classList.contains('loading')">Running...</span>
+    </button>
+</form>
+<div id="query-results"><!-- SSE updates will morph this --></div>
 ```
 
-Backend removes loading indicator via SSE update:
+Backend removes loading indicator:
 
 ```rust
-fn render_todo_list(state: &TodoListState) -> String {
+fn render_query_results(state: &QueryResultsState) -> String {
     hypertext::html! {
-        <ul id="todo-list">
-            @for todo in &state.todos {
-                <li id={"todo-" (&todo.id)}>{&todo.text}</li>
+        <div id="query-results">
+            @if let Some(result) = &state.current_result {
+                <table>
+                    <thead><tr>@for col in &result.columns { <th>{col}</th> }</tr></thead>
+                    <tbody>@for row in &result.rows {
+                        <tr>@for cell in row { <td>{cell}</td> }</tr>
+                    }</tbody>
+                </table>
             }
-        </ul>
+        </div>
         <script data-effect="el.remove()">
             "document.querySelector('form').classList.remove('loading');"
         </script>
@@ -106,8 +107,8 @@ This pattern ensures:
 
 ## Chart data streaming
 
-Charts receive configuration updates via SSE using the same PatchSignals pattern.
-For the complete ECharts Lit component implementation with Light DOM rendering and Open Props token integration, see `../frontend/ds-echarts-integration-guide.md`.
+Charts receive configuration updates via SSE using PatchSignals.
+See `../frontend/ds-echarts-integration-guide.md` for complete ECharts Lit component implementation.
 
 ```rust
 async fn chart_data_sse(
@@ -115,31 +116,116 @@ async fn chart_data_sse(
     Path(chart_id): Path<String>,
 ) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let stream = async_stream::stream! {
-        // Initial chart data from DuckDB
         let data = state.analytics.query_chart_data(&chart_id).await?;
-        let option = build_echarts_option(&data);
-
         yield Ok(PatchSignals::new(
-            serde_json::json!({"chartOption": option, "loading": false}).to_string()
+            serde_json::json!({"chartOption": build_echarts_option(&data)}).to_string()
         ).write_as_axum_sse_event());
 
-        // Subscribe to real-time updates via Zenoh
-        let mut sub = state.event_bus
-            .subscribe(&format!("charts/{}/updates", chart_id))
-            .await;
-
+        let mut sub = state.event_bus.subscribe(&format!("charts/{}/updates", chart_id)).await;
         while let Some(update) = sub.next().await {
             yield Ok(PatchSignals::new(
                 serde_json::json!({"chartOption": build_echarts_option(&update)}).to_string()
             ).write_as_axum_sse_event());
         }
     };
-
     Sse::new(stream)
 }
 ```
 
-This pattern streams initial chart configuration followed by incremental updates triggered by Zenoh events.
+## Analytics query validation
+
+Analytics queries require specialized validation to prevent SQL injection, resource exhaustion, and data corruption.
+The validation layer combines SQL safety checks, query complexity limits, dataset URL validation, and timeout policies.
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ValidationError {
+    UnsafeSQL,
+    InvalidDatasetURL,
+    QueryTooComplex,
+    TimeoutTooLong,
+}
+
+impl std::fmt::Display for ValidationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::UnsafeSQL => write!(f, "Query contains unsafe SQL (DROP, DELETE, etc.)"),
+            Self::InvalidDatasetURL => write!(f, "Dataset URL must use hf:// protocol"),
+            Self::QueryTooComplex => write!(f, "Query complexity exceeds maximum"),
+            Self::TimeoutTooLong => write!(f, "Query timeout exceeds max (60s)"),
+        }
+    }
+}
+
+impl std::error::Error for ValidationError {}
+
+// SQL safety: prevent destructive operations (defense-in-depth with read-only connections)
+fn is_sql_safe(sql: &str) -> bool {
+    let sql_upper = sql.to_uppercase();
+    !sql_upper.contains("DROP ")
+        && !sql_upper.contains("DELETE ")
+        && !sql_upper.contains("TRUNCATE ")
+        && !sql_upper.contains("ALTER ")
+        && !sql_upper.contains("INSERT ")
+        && !sql_upper.contains("UPDATE ")
+}
+
+// Query complexity: coarse-grained heuristic to prevent resource exhaustion
+const MAX_QUERY_COMPLEXITY: u32 = 50;
+
+fn estimate_query_complexity(sql: &str) -> u32 {
+    let sql_upper = sql.to_uppercase();
+    let mut complexity = 0;
+    complexity += (sql_upper.matches("JOIN ").count() * 10) as u32;
+    complexity += (sql_upper.matches("SELECT ").count().saturating_sub(1) * 5) as u32;
+    complexity += (sql_upper.matches("GROUP BY").count() * 2) as u32;
+    complexity
+}
+
+// Dataset URL: validate protocol (hf:// for HuggingFace, future: s3://, https://)
+fn validate_dataset_url(url: &str) -> Result<(), ValidationError> {
+    if !url.starts_with("hf://") {
+        return Err(ValidationError::InvalidDatasetURL);
+    }
+    Ok(())
+}
+
+// Timeout policy: default 30s, max 60s
+const DEFAULT_QUERY_TIMEOUT_MS: u64 = 30_000;
+const MAX_QUERY_TIMEOUT_MS: u64 = 60_000;
+
+fn validate_timeout(timeout_ms: Option<u64>) -> Result<u64, ValidationError> {
+    let timeout = timeout_ms.unwrap_or(DEFAULT_QUERY_TIMEOUT_MS);
+    if timeout > MAX_QUERY_TIMEOUT_MS {
+        return Err(ValidationError::TimeoutTooLong);
+    }
+    Ok(timeout)
+}
+
+// Complete validation pipeline combining all checks
+fn validate_and_emit_events(cmd: ExecuteAnalyticsQuery) -> Result<Vec<DomainEvent>, ValidationError> {
+    if !is_sql_safe(&cmd.sql) {
+        return Err(ValidationError::UnsafeSQL);
+    }
+    if let Some(dataset) = &cmd.dataset_url {
+        validate_dataset_url(dataset)?;
+    }
+    if estimate_query_complexity(&cmd.sql) > MAX_QUERY_COMPLEXITY {
+        return Err(ValidationError::QueryTooComplex);
+    }
+    let timeout_ms = validate_timeout(cmd.timeout_ms)?;
+
+    Ok(vec![DomainEvent::QueryStarted {
+        query_id: Uuid::new_v4(),
+        sql: cmd.sql,
+        dataset_url: cmd.dataset_url,
+        timeout_ms,
+        started_at: Utc::now(),
+    }])
+}
+```
+
+This validation pipeline runs synchronously before any I/O, returning 400 Bad Request on failure.
 
 ## Aggregate trait
 
