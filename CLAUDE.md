@@ -255,6 +255,9 @@ See their TodoMVC implementations for SSE formatting and signal parsing patterns
 
 | Dependency | Local Path | Description |
 |------------|------------|-------------|
+| nix-cargo-crane | `~/projects/nix-workspace/nix-cargo-crane` | Crane library for Nix-based Rust builds (cargoNextest, cargoTest, cargoDocTest) |
+| rust-flake | `~/projects/rust-workspace/rust-flake` | Flake module abstraction over crane with rust-overlay integration |
+| cargo-nextest | `~/projects/rust-workspace/nextest` | Fast test runner with partitioning, JUnit output, retries |
 | process-compose | `~/projects/nix-workspace/process-compose` | Process orchestration |
 | process-compose-flake | `~/projects/nix-workspace/process-compose-flake` | Nix flake integration |
 | rolldown | `~/projects/rust-workspace/rolldown` | Rust-native JS/CSS bundler |
