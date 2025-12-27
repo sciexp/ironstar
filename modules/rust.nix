@@ -18,9 +18,10 @@
       inherit (config.rust-project) crane-lib src;
 
       # Workspace-level cargoArtifacts for tests
+      # Note: buildDepsOnly automatically appends "-deps" suffix to pname
       cargoArtifacts = crane-lib.buildDepsOnly {
         inherit src;
-        pname = "ironstar-deps";
+        pname = "ironstar";
       };
     in
     {
