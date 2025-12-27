@@ -169,6 +169,23 @@ This separation enables:
 
 ---
 
+## Development approach
+
+Ironstar follows Scott Wlaschin's type-driven development from "Domain Modeling Made Functional":
+
+1. **Workflows drive types** — The analytics query workflow (execute query → transform results → stream to chart) defines the domain types
+2. **Types drive implementation** — Define `QuerySession`, `DatasetRef`, `SqlQuery` signatures first with `todo!()` implementations
+3. **Effects at boundaries** — Pure aggregate logic, async I/O isolated to application layer
+4. **Make illegal states unrepresentable** — Smart constructors validate inputs at construction time
+
+The analytics dashboard (DuckDB queries, ds-echarts visualization, SSE streaming) is the core product, not a deferred example.
+This means the domain model centers on `QuerySession` as the primary aggregate, not a generic "Todo" placeholder.
+The workflow drives the type signatures: dataset selection, query execution, result transformation, and incremental chart updates all have explicit representations in the domain layer.
+
+By treating analytics as the primary domain from day one, ironstar demonstrates realistic CQRS patterns for streaming query results to reactive charts via SSE, rather than deferring these concerns to a hypothetical future implementation.
+
+---
+
 ## Component selection matrix
 
 | Component | Role | Algebraic Property | Effect Boundary |
