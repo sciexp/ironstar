@@ -39,23 +39,26 @@
       };
 
       # Workspace-level checks (per-crate clippy is autowired separately)
+      # Note: crane functions auto-append suffixes (-fmt, -nextest, -doctest)
       checks = lib.mkMerge [
         {
           rust-fmt = crane-lib.cargoFmt {
             inherit src;
-            pname = "ironstar-fmt";
+            pname = "ironstar";
           };
 
           rust-test = crane-lib.cargoNextest {
             inherit src cargoArtifacts;
-            pname = "ironstar-test";
+            pname = "ironstar";
             partitions = 1;
             partitionType = "count";
+            # Allow empty test suite during early development
+            cargoNextestExtraArgs = "--no-tests";
           };
 
           rust-doctest = crane-lib.cargoDocTest {
             inherit src cargoArtifacts;
-            pname = "ironstar-doctest";
+            pname = "ironstar";
           };
         }
       ];
