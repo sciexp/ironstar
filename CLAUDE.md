@@ -164,7 +164,7 @@ ts-rs = { version = "11.1", features = ["serde-compat", "uuid-impl"] }
 moka = { version = "0.12", features = ["future"] }
 
 # rkyv for zero-copy deserialization
-rkyv = { version = "0.8", features = ["validation"] }
+rkyv = { version = "0.8", features = ["bytecheck"] }
 
 # zenoh for pub/sub with key expression filtering
 zenoh = { version = "1.0" }
