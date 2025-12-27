@@ -53,7 +53,7 @@
             partitions = 1;
             partitionType = "count";
             # Allow empty test suite during early development
-            cargoNextestExtraArgs = "--no-tests";
+            cargoNextestExtraArgs = "--no-tests=pass";
           };
 
           rust-doctest = crane-lib.cargoDocTest {
