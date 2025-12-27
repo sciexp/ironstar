@@ -88,6 +88,7 @@
             # Rust toolchain (version defined in rust.nix)
             config.rust-project.toolchain
             cargo-edit
+            cargo-nextest
 
             # Core development tools
             bun
