@@ -18,7 +18,7 @@
       inherit (config.rust-project) crane-lib src;
 
       # Common args for consistent caching across all crane derivations.
-      # Critical: must match rust-flake's autowired args exactly to share deps.
+      # Pure crane pattern: single commonArgs shared by all derivations.
       # See: nix-cargo-crane/docs/faq/constant-rebuilds.md
       commonArgs = {
         inherit src;
@@ -27,20 +27,16 @@
         # Use dev profile for faster compilation during development.
         # Release builds use [profile.release] from Cargo.toml (strip, lto, opt-level=z).
         CARGO_PROFILE = "dev";
-        # Must match rust-flake's per-crate pattern: -p <crate-name>
-        # rust-flake overrides cargoExtraArgs with "-p ironstar" in crate.nix
-        cargoExtraArgs = "-p ironstar";
         # Match crate.nix nativeBuildInputs for identical derivation hash
         nativeBuildInputs = [ pkgs.pkg-config ];
       };
 
-      # Workspace-level cargoArtifacts for tests
+      # Single cargoArtifacts derivation shared by all crane outputs
       # Note: buildDepsOnly automatically appends "-deps" suffix to pname
       cargoArtifacts = crane-lib.buildDepsOnly commonArgs;
     in
     {
-      # Configure per-crate crane args via crate.nix files
-      # Packages (ironstar, ironstar-doc) are autowired by rust-flake via autoWire in crate.nix
+      # Configure rust-project toolchain (no per-crate defaults needed)
       rust-project = {
         crateNixFile = "crate.nix";
         toolchain = pkgs.rust-bin.stable.${rustToolchainVersion}.default.override {
@@ -52,41 +48,46 @@
             "llvm-tools-preview" # Required for cargo-llvm-cov coverage
           ];
         };
-        # Global defaults for all autowired crate outputs (clippy, doc, crate).
-        # Note: rust-flake hardcodes cargoExtraArgs = "-p <crate>" in crate.nix,
-        # so we only set attributes that aren't overridden.
-        defaults.perCrate.crane.args = {
-          CARGO_PROFILE = "dev";
-        };
       };
 
-      # Workspace-level checks (per-crate clippy is autowired separately)
-      # Note: crane functions auto-append suffixes (-fmt, -nextest, -doctest)
-      checks = lib.mkMerge [
-        {
-          rust-fmt = crane-lib.cargoFmt {
-            inherit src;
-            pname = "ironstar";
-          };
+      # Manual wiring: packages
+      packages = {
+        default = self'.packages.ironstar;
+        ironstar = crane-lib.buildPackage (commonArgs // { inherit cargoArtifacts; });
+      };
 
-          rust-test = crane-lib.cargoNextest (
-            commonArgs
-            // {
-              inherit cargoArtifacts;
-              partitions = 1;
-              partitionType = "count";
-              # Allow empty test suite during early development
-              cargoNextestExtraArgs = "--no-tests=pass";
-            }
-          );
+      # Manual wiring: checks
+      # Note: crane functions auto-append suffixes (-fmt, -nextest, -clippy)
+      checks = {
+        rust-fmt = crane-lib.cargoFmt {
+          inherit src;
+          pname = "ironstar";
+        };
 
-          # Doctests disabled: examples as integration tests in crates/*/tests/
-          # See CLAUDE.md "Testing conventions" for rationale
-          # rust-doctest = crane-lib.cargoDocTest {
-          #   inherit src cargoArtifacts;
-          #   pname = "ironstar";
-          # };
-        }
-      ];
+        rust-test = crane-lib.cargoNextest (
+          commonArgs
+          // {
+            inherit cargoArtifacts;
+            partitions = 1;
+            partitionType = "count";
+            # Allow empty test suite during early development
+            cargoNextestExtraArgs = "--no-tests=pass";
+          }
+        );
+
+        ironstar-clippy = crane-lib.cargoClippy (
+          commonArgs
+          // {
+            inherit cargoArtifacts;
+            cargoClippyExtraArgs = "--all-targets -- --deny warnings";
+          }
+        );
+
+        # Doctests disabled: examples as integration tests in crates/*/tests/
+        # See CLAUDE.md "Testing conventions" for rationale
+        # rust-doctest = crane-lib.cargoDocTest (
+        #   commonArgs // { inherit cargoArtifacts; }
+        # );
+      };
     };
 }
