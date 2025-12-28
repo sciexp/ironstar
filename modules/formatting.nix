@@ -14,6 +14,9 @@
         # Nix formatting
         programs.nixfmt.enable = true;
 
+        # Rust formatting (uses rustfmt from rust-toolchain.toml)
+        programs.rustfmt.enable = true;
+
         # TypeScript/JavaScript/JSON via biome
         programs.biome = {
           enable = true;
