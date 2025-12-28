@@ -468,6 +468,22 @@ cargo test                     # Run tests
 just test                      # Run all tests including integration
 ```
 
+## Testing conventions
+
+Doctests are disabled (`doctest = false` in `[lib]`).
+Write runnable examples as integration tests in each crate's `tests/` directory (e.g., `crates/ironstar/tests/`).
+This ensures all tests run through cargo-nextest with consistent parallelization, retries, and output formatting.
+
+For documentation, use `no_run` blocks for illustration without execution:
+
+```rust
+/// Creates a new aggregate.
+///
+/// ```no_run
+/// let agg = MyAggregate::new();
+/// ```
+```
+
 ## Project structure
 
 See `docs/notes/architecture/core/architecture-decisions.md` section 4 for the complete project structure tree with module organization and file-level documentation.
