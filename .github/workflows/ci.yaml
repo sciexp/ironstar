@@ -439,7 +439,9 @@ jobs:
         env:
           SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
         with:
-          installer: ${{ inputs.nix_installer || 'quick' }}
+          # Use 'full' for heavy nix builds: enables nothing-but-nix disk reclamation (~50GB)
+          # Override via workflow_dispatch for debugging with 'quick' if needed
+          installer: ${{ inputs.nix_installer || 'full' }}
           system: ${{ matrix.system }}
           enable-cachix: true
           cachix-name: ${{ vars.CACHIX_CACHE_NAME }}
