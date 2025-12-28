@@ -58,6 +58,7 @@ pub mod analytics;
 pub mod commands;
 pub mod errors;
 pub mod events;
+pub mod query_session;
 pub mod todo;
 pub mod values;
 
@@ -73,4 +74,10 @@ pub use values::{TodoId, TodoText, TODO_TEXT_MAX_LENGTH};
 pub use analytics::{
     AnalyticsValidationError, ChartConfig, ChartType, DatasetRef, QueryId, SqlQuery,
     DATASET_REF_MAX_LENGTH, SQL_QUERY_MAX_LENGTH,
+};
+
+// QuerySession re-exports
+pub use query_session::{
+    QuerySessionAggregate, QuerySessionCommand, QuerySessionError, QuerySessionEvent,
+    QuerySessionState, QuerySessionStatus,
 };
