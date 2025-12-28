@@ -185,7 +185,8 @@ jobs:
           echo "Discovered packages: $PACKAGES"
 
   # job 3: flake-validation
-  # validates flake structure and developer tooling (justfile recipes, nix flake check)
+  # validates flake evaluation and developer tooling (justfile recipes)
+  # Note: actual checks are built by the 'nix (checks)' matrix job
   flake-validation:
     needs: [secrets-scan, set-variables]
     runs-on: ubuntu-latest
@@ -244,8 +245,9 @@ jobs:
       - name: Validate flake structure
         if: steps.cache.outputs.should-run == 'true'
         run: |
-          # Run full nix flake check
-          nix develop --accept-flake-config -c just check
+          # Fast evaluation only - actual builds done by 'nix (checks)' job
+          nix flake show --json > /dev/null
+          echo "Flake structure valid"
 
       - name: Create job result marker
         if: success() && steps.cache.outputs.should-run == 'true' && steps.cache.outputs.cache-source == 'none'
