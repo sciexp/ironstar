@@ -18,19 +18,20 @@
       inherit (config.rust-project) crane-lib src;
 
       # Common args for consistent caching across all crane derivations.
-      # Critical: cargoExtraArgs must match between buildDepsOnly and all checks
-      # to avoid rebuilding dependencies (especially expensive ones like libduckdb-sys).
+      # Critical: must match rust-flake's autowired args exactly to share deps.
       # See: nix-cargo-crane/docs/faq/constant-rebuilds.md
       commonArgs = {
         inherit src;
         pname = "ironstar";
+        strictDeps = true;
         # Use dev profile for faster compilation during development.
         # Release builds use [profile.release] from Cargo.toml (strip, lto, opt-level=z).
         CARGO_PROFILE = "dev";
-        # Consistent feature flags prevent cache invalidation.
-        # --locked: use Cargo.lock exactly
-        # --all-features: build all features so deps are complete
-        cargoExtraArgs = "--locked --all-features";
+        # Must match rust-flake's per-crate pattern: -p <crate-name>
+        # rust-flake overrides cargoExtraArgs with "-p ironstar" in crate.nix
+        cargoExtraArgs = "-p ironstar";
+        # Match crate.nix nativeBuildInputs for identical derivation hash
+        nativeBuildInputs = [ pkgs.pkg-config ];
       };
 
       # Workspace-level cargoArtifacts for tests
@@ -52,10 +53,10 @@
           ];
         };
         # Global defaults for all autowired crate outputs (clippy, doc, crate).
-        # Must match commonArgs to share cached dependencies.
+        # Note: rust-flake hardcodes cargoExtraArgs = "-p <crate>" in crate.nix,
+        # so we only set attributes that aren't overridden.
         defaults.perCrate.crane.args = {
           CARGO_PROFILE = "dev";
-          cargoExtraArgs = "--locked --all-features";
         };
       };
 
