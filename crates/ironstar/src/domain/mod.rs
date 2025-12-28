@@ -7,6 +7,7 @@
 //! # Module Organization
 //!
 //! - [`aggregate`]: The `Aggregate` trait and `AggregateRoot` wrapper
+//! - [`analytics`]: Analytics value objects (QueryId, DatasetRef, SqlQuery, ChartConfig)
 //! - [`commands`]: Command types (requests to change state)
 //! - [`errors`]: Domain error types for validation failures
 //! - [`events`]: Event types (facts that occurred)
@@ -53,6 +54,7 @@
 //! ```
 
 pub mod aggregate;
+pub mod analytics;
 pub mod commands;
 pub mod errors;
 pub mod events;
@@ -66,3 +68,9 @@ pub use errors::TodoError;
 pub use events::TodoEvent;
 pub use todo::{TodoAggregate, TodoState, TodoStatus};
 pub use values::{TodoId, TodoText, TODO_TEXT_MAX_LENGTH};
+
+// Analytics re-exports
+pub use analytics::{
+    AnalyticsValidationError, ChartConfig, ChartType, DatasetRef, QueryId, SqlQuery,
+    DATASET_REF_MAX_LENGTH, SQL_QUERY_MAX_LENGTH,
+};
