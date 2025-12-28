@@ -346,6 +346,15 @@ mod tests {
     }
 
     #[test]
+    fn handle_decrement_emits_decremented_event() {
+        let root = AggregateRoot::<TestAggregate>::new();
+        let events = root.handle(TestCommand::Decrement).unwrap();
+
+        assert_eq!(events.len(), 1);
+        assert!(matches!(events[0], TestEvent::Decremented));
+    }
+
+    #[test]
     fn fold_events_produces_correct_state() {
         let state = TestAggregate::fold_events(vec![
             TestEvent::Incremented,

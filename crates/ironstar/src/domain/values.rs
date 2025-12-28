@@ -40,7 +40,7 @@ pub const TODO_TEXT_MAX_LENGTH: usize = 500;
 /// - `TodoId::new()` - Generate a new random ID
 /// - `TodoId::from_uuid(uuid)` - Wrap an existing UUID (for deserialization)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, TS)]
-#[ts(export, export_to = "domain/")]
+#[ts(export, export_to = "domain/", type = "string")]
 #[serde(transparent)]
 pub struct TodoId(Uuid);
 
@@ -93,7 +93,7 @@ impl std::fmt::Display for TodoId {
 /// assert_eq!(text.as_str(), "Buy groceries"); // Trimmed
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, TS)]
-#[ts(export, export_to = "domain/")]
+#[ts(export, export_to = "domain/", type = "string")]
 #[serde(try_from = "String", into = "String")]
 pub struct TodoText(String);
 
