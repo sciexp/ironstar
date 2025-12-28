@@ -5,16 +5,9 @@
   autoWire = [ ];
   crane = {
     args = {
-      # System duckdb for dev builds (avoids libduckdb-sys C++ compilation).
-      # For production bundled builds, remove duckdb from buildInputs and
-      # re-enable "bundled" feature in Cargo.toml.
-      buildInputs =
-        lib.optionals pkgs.stdenv.isLinux [
-          pkgs.openssl
-        ]
-        ++ [
-          pkgs.duckdb
-        ];
+      buildInputs = lib.optionals pkgs.stdenv.isLinux [
+        pkgs.openssl
+      ];
 
       nativeBuildInputs = [
         pkgs.pkg-config

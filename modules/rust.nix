@@ -27,9 +27,7 @@
         # Use dev profile for faster compilation during development.
         # Release builds use [profile.release] from Cargo.toml (strip, lto, opt-level=z).
         CARGO_PROFILE = "dev";
-        # System duckdb for dev builds (avoids libduckdb-sys C++ compilation).
-        # For production bundled builds, remove duckdb and re-enable "bundled" feature in Cargo.toml.
-        buildInputs = [ pkgs.duckdb ];
+        # Match crate.nix nativeBuildInputs for identical derivation hash
         nativeBuildInputs = [ pkgs.pkg-config ];
       };
 
