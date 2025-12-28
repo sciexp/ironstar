@@ -22,7 +22,8 @@ redb = { version = "3.1" }
 async-duckdb = { version = "0.3", features = ["bundled", "parquet", "json", "chrono", "uuid"] }
 
 # TypeScript type generation
-ts-rs = { version = "11.1", features = ["serde-compat", "uuid-impl", "chrono-impl"] }
+# no-serde-warnings: suppress warnings for serde attrs ts-rs doesn't parse (transparent, try_from, into)
+ts-rs = { version = "11.1", features = ["serde-compat", "uuid-impl", "chrono-impl", "no-serde-warnings"] }
 
 # Asset embedding
 rust-embed = { version = "8", features = ["include-exclude"] }
