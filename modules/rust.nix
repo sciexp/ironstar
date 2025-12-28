@@ -56,10 +56,12 @@
             cargoNextestExtraArgs = "--no-tests=pass";
           };
 
-          rust-doctest = crane-lib.cargoDocTest {
-            inherit src cargoArtifacts;
-            pname = "ironstar";
-          };
+          # Doctests disabled: examples as integration tests in crates/*/tests/
+          # See CLAUDE.md "Testing conventions" for rationale
+          # rust-doctest = crane-lib.cargoDocTest {
+          #   inherit src cargoArtifacts;
+          #   pname = "ironstar";
+          # };
         }
       ];
     };

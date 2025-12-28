@@ -12,6 +12,7 @@ path = "src/main.rs"
 [lib]
 name = "ironstar"
 path = "src/lib.rs"
+doctest = false
 
 [dependencies]
 axum = { workspace = true }
