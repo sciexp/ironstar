@@ -59,12 +59,12 @@
       # Manual wiring: checks
       # Note: crane functions auto-append suffixes (-fmt, -nextest, -clippy)
       checks = {
-        rust-fmt = crane-lib.cargoFmt {
+        workspace-fmt = crane-lib.cargoFmt {
           inherit src;
           pname = "ironstar";
         };
 
-        rust-test = crane-lib.cargoNextest (
+        workspace-test = crane-lib.cargoNextest (
           commonArgs
           // {
             inherit cargoArtifacts;
@@ -75,7 +75,7 @@
           }
         );
 
-        ironstar-clippy = crane-lib.cargoClippy (
+        workspace-clippy = crane-lib.cargoClippy (
           commonArgs
           // {
             inherit cargoArtifacts;
