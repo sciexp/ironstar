@@ -8,11 +8,8 @@
 //!
 //! - [`aggregate`]: The `Aggregate` trait and `AggregateRoot` wrapper
 //! - [`analytics`]: Analytics value objects (QueryId, DatasetRef, SqlQuery, ChartConfig)
-//! - [`commands`]: Command types (requests to change state)
-//! - [`errors`]: Domain error types for validation failures
-//! - [`events`]: Event types (facts that occurred)
-//! - [`values`]: Value objects with smart constructors
-//! - [`todo`]: Todo aggregate implementation
+//! - [`query_session`]: QuerySession aggregate (commands, events, state, errors)
+//! - [`todo`]: Todo aggregate (commands, events, state, values, errors)
 //!
 //! # Design Principles
 //!
@@ -33,9 +30,9 @@
 //! ```rust,ignore
 //! use ironstar::domain::{
 //!     aggregate::AggregateRoot,
-//!     commands::TodoCommand,
-//!     todo::TodoAggregate,
-//!     values::TodoId,
+//!     TodoCommand,
+//!     TodoAggregate,
+//!     TodoId,
 //! };
 //!
 //! // Create an aggregate root (tracks state + version)
@@ -55,20 +52,17 @@
 
 pub mod aggregate;
 pub mod analytics;
-pub mod commands;
-pub mod errors;
-pub mod events;
 pub mod query_session;
 pub mod todo;
-pub mod values;
 
 // Re-export key types for ergonomic imports
 pub use aggregate::{Aggregate, AggregateRoot};
-pub use commands::TodoCommand;
-pub use errors::TodoError;
-pub use events::TodoEvent;
-pub use todo::{TodoAggregate, TodoState, TodoStatus};
-pub use values::{TodoId, TodoText, TODO_TEXT_MAX_LENGTH};
+
+// Todo re-exports (from todo/)
+pub use todo::{
+    TodoAggregate, TodoCommand, TodoError, TodoEvent, TodoId, TodoState, TodoStatus, TodoText,
+    TODO_TEXT_MAX_LENGTH,
+};
 
 // Analytics re-exports
 pub use analytics::{
