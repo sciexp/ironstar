@@ -1,0 +1,8 @@
+# Clippy configuration
+# https://doc.rust-lang.org/clippy/lint_configuration.html
+
+# Allow idiomatic test patterns in #[cfg(test)] modules and #[test] functions.
+# These lints prevent panics in production code but are overly pedantic for
+# tests where panics are the expected failure mode.
+allow-unwrap-in-tests = true
+allow-indexing-slicing-in-tests = true
