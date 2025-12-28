@@ -17,12 +17,25 @@
       rustToolchainVersion = "1.92.0";
       inherit (config.rust-project) crane-lib src;
 
-      # Workspace-level cargoArtifacts for tests
-      # Note: buildDepsOnly automatically appends "-deps" suffix to pname
-      cargoArtifacts = crane-lib.buildDepsOnly {
+      # Common args for consistent caching across all crane derivations.
+      # Critical: cargoExtraArgs must match between buildDepsOnly and all checks
+      # to avoid rebuilding dependencies (especially expensive ones like libduckdb-sys).
+      # See: nix-cargo-crane/docs/faq/constant-rebuilds.md
+      commonArgs = {
         inherit src;
         pname = "ironstar";
+        # Use dev profile for faster compilation during development.
+        # Release builds use [profile.release] from Cargo.toml (strip, lto, opt-level=z).
+        CARGO_PROFILE = "dev";
+        # Consistent feature flags prevent cache invalidation.
+        # --locked: use Cargo.lock exactly
+        # --all-features: build all features so deps are complete
+        cargoExtraArgs = "--locked --all-features";
       };
+
+      # Workspace-level cargoArtifacts for tests
+      # Note: buildDepsOnly automatically appends "-deps" suffix to pname
+      cargoArtifacts = crane-lib.buildDepsOnly commonArgs;
     in
     {
       # Configure per-crate crane args via crate.nix files
@@ -38,6 +51,12 @@
             "llvm-tools-preview" # Required for cargo-llvm-cov coverage
           ];
         };
+        # Global defaults for all autowired crate outputs (clippy, doc, crate).
+        # Must match commonArgs to share cached dependencies.
+        defaults.perCrate.crane.args = {
+          CARGO_PROFILE = "dev";
+          cargoExtraArgs = "--locked --all-features";
+        };
       };
 
       # Workspace-level checks (per-crate clippy is autowired separately)
@@ -49,14 +68,16 @@
             pname = "ironstar";
           };
 
-          rust-test = crane-lib.cargoNextest {
-            inherit src cargoArtifacts;
-            pname = "ironstar";
-            partitions = 1;
-            partitionType = "count";
-            # Allow empty test suite during early development
-            cargoNextestExtraArgs = "--no-tests=pass";
-          };
+          rust-test = crane-lib.cargoNextest (
+            commonArgs
+            // {
+              inherit cargoArtifacts;
+              partitions = 1;
+              partitionType = "count";
+              # Allow empty test suite during early development
+              cargoNextestExtraArgs = "--no-tests=pass";
+            }
+          );
 
           # Doctests disabled: examples as integration tests in crates/*/tests/
           # See CLAUDE.md "Testing conventions" for rationale
