@@ -60,14 +60,14 @@ pub use aggregate::{Aggregate, AggregateRoot};
 
 // Todo re-exports (from todo/)
 pub use todo::{
-    TodoAggregate, TodoCommand, TodoError, TodoEvent, TodoId, TodoState, TodoStatus, TodoText,
-    TODO_TEXT_MAX_LENGTH,
+    TODO_TEXT_MAX_LENGTH, TodoAggregate, TodoCommand, TodoError, TodoEvent, TodoId, TodoState,
+    TodoStatus, TodoText,
 };
 
 // Analytics re-exports
 pub use analytics::{
-    AnalyticsValidationError, ChartConfig, ChartType, DatasetRef, QueryId, SqlQuery,
-    DATASET_REF_MAX_LENGTH, SQL_QUERY_MAX_LENGTH,
+    AnalyticsValidationError, ChartConfig, ChartType, DATASET_REF_MAX_LENGTH, DatasetRef, QueryId,
+    SQL_QUERY_MAX_LENGTH, SqlQuery,
 };
 
 // QuerySession re-exports

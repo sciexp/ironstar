@@ -100,14 +100,14 @@ pub struct DatasetRef(String);
 impl DatasetRef {
     /// Recognized URI scheme prefixes for dataset references.
     const VALID_PREFIXES: &'static [&'static str] = &[
-        "hf://",     // HuggingFace Hub
-        "s3://",     // S3-compatible storage
-        "gs://",     // Google Cloud Storage
-        "az://",     // Azure Blob Storage
-        "file://",   // Local absolute path (file URI)
-        "./",        // Local relative path
-        "../",       // Local relative path (parent)
-        "/",         // Local absolute path (Unix)
+        "hf://",   // HuggingFace Hub
+        "s3://",   // S3-compatible storage
+        "gs://",   // Google Cloud Storage
+        "az://",   // Azure Blob Storage
+        "file://", // Local absolute path (file URI)
+        "./",      // Local relative path
+        "../",     // Local relative path (parent)
+        "/",       // Local absolute path (Unix)
     ];
 
     /// Create a new DatasetRef, validating the input.

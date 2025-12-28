@@ -449,7 +449,10 @@ mod tests {
             let events = QuerySessionAggregate::handle_command(&state, cmd).unwrap();
 
             assert_eq!(events.len(), 1);
-            assert!(matches!(events[0], QuerySessionEvent::ExecutionBegan { .. }));
+            assert!(matches!(
+                events[0],
+                QuerySessionEvent::ExecutionBegan { .. }
+            ));
         }
 
         #[test]
@@ -501,7 +504,11 @@ mod tests {
             assert_eq!(events.len(), 1);
             assert!(matches!(
                 &events[0],
-                QuerySessionEvent::QueryCompleted { row_count: 100, duration_ms: 1500, .. }
+                QuerySessionEvent::QueryCompleted {
+                    row_count: 100,
+                    duration_ms: 1500,
+                    ..
+                }
             ));
         }
 
@@ -629,8 +636,7 @@ mod tests {
                 started_at: Utc::now(),
             };
 
-            let state =
-                QuerySessionAggregate::apply_event(QuerySessionState::default(), event);
+            let state = QuerySessionAggregate::apply_event(QuerySessionState::default(), event);
 
             assert!(matches!(state.status, QuerySessionStatus::Pending { .. }));
         }

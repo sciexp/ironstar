@@ -55,9 +55,16 @@ mod tests {
 
     #[test]
     fn error_display_messages() {
-        assert_eq!(TodoError::EmptyText.to_string(), "todo text cannot be empty");
         assert_eq!(
-            TodoError::TextTooLong { max: 500, actual: 512 }.to_string(),
+            TodoError::EmptyText.to_string(),
+            "todo text cannot be empty"
+        );
+        assert_eq!(
+            TodoError::TextTooLong {
+                max: 500,
+                actual: 512
+            }
+            .to_string(),
             "todo text cannot exceed 500 characters (got 512)"
         );
         assert_eq!(

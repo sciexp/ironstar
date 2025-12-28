@@ -46,4 +46,4 @@ pub use commands::TodoCommand;
 pub use errors::TodoError;
 pub use events::TodoEvent;
 pub use state::{TodoState, TodoStatus};
-pub use values::{TodoId, TodoText, TODO_TEXT_MAX_LENGTH};
+pub use values::{TODO_TEXT_MAX_LENGTH, TodoId, TodoText};

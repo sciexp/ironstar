@@ -30,6 +30,6 @@ pub use errors::AnalyticsValidationError;
 
 // Re-export values
 pub use values::{
-    ChartConfig, ChartType, DatasetRef, QueryId, SqlQuery, DATASET_REF_MAX_LENGTH,
-    SQL_QUERY_MAX_LENGTH,
+    ChartConfig, ChartType, DATASET_REF_MAX_LENGTH, DatasetRef, QueryId, SQL_QUERY_MAX_LENGTH,
+    SqlQuery,
 };

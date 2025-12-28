@@ -133,9 +133,7 @@ mod tests {
 
     #[test]
     fn command_roundtrips_through_json() {
-        let original = TodoCommand::Complete {
-            id: TodoId::new(),
-        };
+        let original = TodoCommand::Complete { id: TodoId::new() };
 
         let json = serde_json::to_string(&original).unwrap();
         let parsed: TodoCommand = serde_json::from_str(&json).unwrap();

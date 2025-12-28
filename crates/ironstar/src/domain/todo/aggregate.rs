@@ -114,11 +114,7 @@ impl Aggregate for TodoAggregate {
 ///
 /// Validates that the aggregate doesn't already exist and that the text
 /// is valid. Returns a Created event with the current timestamp.
-fn handle_create(
-    state: &TodoState,
-    id: TodoId,
-    text: String,
-) -> Result<Vec<TodoEvent>, TodoError> {
+fn handle_create(state: &TodoState, id: TodoId, text: String) -> Result<Vec<TodoEvent>, TodoError> {
     // Aggregate should not exist yet
     if state.exists() {
         return Err(TodoError::InvalidTransition {
@@ -252,7 +248,9 @@ mod tests {
         let events = TodoAggregate::handle_command(&state, cmd).unwrap();
 
         assert_eq!(events.len(), 1);
-        assert!(matches!(&events[0], TodoEvent::Created { text, .. } if text.as_str() == "Buy groceries"));
+        assert!(
+            matches!(&events[0], TodoEvent::Created { text, .. } if text.as_str() == "Buy groceries")
+        );
     }
 
     #[test]
@@ -265,7 +263,9 @@ mod tests {
 
         let events = TodoAggregate::handle_command(&state, cmd).unwrap();
 
-        assert!(matches!(&events[0], TodoEvent::Created { text, .. } if text.as_str() == "Trim me"));
+        assert!(
+            matches!(&events[0], TodoEvent::Created { text, .. } if text.as_str() == "Trim me")
+        );
     }
 
     #[test]
