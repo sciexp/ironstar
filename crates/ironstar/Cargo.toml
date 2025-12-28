@@ -35,6 +35,9 @@ chrono = { workspace = true }
 moka = { workspace = true }
 rkyv = { workspace = true }
 
+# Event bus
+zenoh = { workspace = true }
+
 [dev-dependencies]
 tokio = { workspace = true }
 
