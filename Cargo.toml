@@ -19,10 +19,7 @@ datastar = { version = "0.3", features = ["axum"] }
 # Database and persistence
 sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite", "json"] }
 redb = { version = "3.1" }
-# Development: use system duckdb from nixpkgs for fast iteration (no C++ compilation).
-# Production: re-enable "bundled" feature for self-contained binary:
-#   async-duckdb = { version = "0.3", features = ["bundled", "parquet", "json", "chrono", "uuid"] }
-async-duckdb = { version = "0.3", default-features = false, features = ["parquet", "json", "chrono", "uuid"] }
+async-duckdb = { version = "0.3", features = ["bundled", "parquet", "json", "chrono", "uuid"] }
 
 # TypeScript type generation
 # no-serde-warnings: suppress warnings for serde attrs ts-rs doesn't parse (transparent, try_from, into)
