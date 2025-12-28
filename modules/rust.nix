@@ -35,6 +35,7 @@
             "rust-analyzer"
             "clippy"
             "rustfmt"
+            "llvm-tools-preview" # Required for cargo-llvm-cov coverage
           ];
         };
       };
