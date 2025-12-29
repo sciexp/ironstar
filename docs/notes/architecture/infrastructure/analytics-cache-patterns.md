@@ -255,6 +255,17 @@ fn matches_key_expression(pattern: &str, key: &str) -> bool {
 }
 ```
 
+#### Performance considerations
+
+| Aspect | broadcast | Zenoh |
+|--------|-----------|-------|
+| Latency (p50) | ~10μs | ~100μs |
+| Filtering | Client-side | Server-side |
+| Distribution-ready | No | Yes |
+
+The latency difference is negligible compared to DuckDB query time (1-10ms).
+Use Zenoh for architectural consistency with the event bus.
+
 ### DuckLake catalog pattern
 
 DuckLake catalogs are small SQLite metadata databases (~5MB) that map logical tables to parquet data files.
@@ -320,17 +331,6 @@ Regardless of catalog source, parquet data is fetched on-demand via httpfs (~100
 This is where moka caching provides value — caching query results avoids repeated parquet fetches.
 
 Canonical test dataset: `hf://datasets/sciexp/fixtures/lakes/frozen/space.db`
-
-#### Performance considerations
-
-| Aspect | broadcast | Zenoh |
-|--------|-----------|-------|
-| Latency (p50) | ~10μs | ~100μs |
-| Filtering | Client-side | Server-side |
-| Distribution-ready | No | Yes |
-
-The latency difference is negligible compared to DuckDB query time (1-10ms).
-Use Zenoh for architectural consistency with the event bus.
 
 ## SSE/Datastar integration
 
