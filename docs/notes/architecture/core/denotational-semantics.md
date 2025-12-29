@@ -404,6 +404,66 @@ This is crucial for deterministic replay:
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
+## Sessions as indexed profunctor
+
+The semantic model above treats commands and events as globally visible.
+In practice, ironstar partitions event delivery via sessions, creating an indexed family of projections.
+
+### Session structure
+
+Sessions do not modify the source-of-truth event log—they partition the pub/sub delivery layer:
+
+```
+EventLog (global, authoritative)
+    ↓ persist (all events)
+SQLite events table
+    ↓ publish to Zenoh
+Key expression: events/{aggregate_type}/{aggregate_id}
+    ↓ filter by session subscription
+events/session/{session_id}/**
+    ↓ per-session SSE stream
+Client receives only subscribed events
+```
+
+### Indexed profunctor interpretation
+
+The profunctor `P: Command^op × View → Set` extends to an indexed family:
+
+```
+P_s : Command^op × View → Set    (for each session s)
+P_s(cmd, view) = { data flows visible to session s }
+```
+
+Where:
+- Commands are session-agnostic (global write path)
+- Event log remains the single source of truth
+- Zenoh key expressions implement the indexing: `events/session/{s}/**`
+- Each session receives a filtered projection of the event stream
+
+### What sessions are NOT
+
+Sessions do not:
+- Affect the free monoid structure (events are global)
+- Create per-session event logs (single log, filtered views)
+- Modify the catamorphism (state reconstruction is global)
+- Change the Galois connection (projections derive from full log)
+
+Sessions are a delivery-layer optimization, not a semantic-layer modification.
+The algebraic properties (monoid laws, catamorphism uniqueness, adjunction) hold on the global event log; sessions filter which events reach which clients.
+
+### Session state vs domain state
+
+Session state (preferences, auth context) is orthogonal to event-sourced domain state:
+
+| Aspect | Domain State | Session State |
+|--------|--------------|---------------|
+| Storage | Event log (append-only) | Sessions table (mutable) |
+| Lifetime | Permanent | Ephemeral (TTL) |
+| Reconstruction | Catamorphism from events | Direct lookup |
+| Consistency | Strong (total order) | Eventual (per-session) |
+
+Session data enables personalization without polluting the event stream.
+
 ## Related documents
 
 ### Within ironstar
