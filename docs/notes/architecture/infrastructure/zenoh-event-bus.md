@@ -68,6 +68,10 @@ Zenoh provides server-side filtering via key expressions with wildcards:
 | `**` | Zero or more segments | `a/**/c` matches `a/c`, `a/b/c`, `a/b/d/c` |
 | `$*` | Within segment | `ab$*cd` matches `abxxcd` |
 
+> **Semantic foundation**: Key expressions form a free monoid under path concatenation.
+> Pattern matching (wildcards, unions) defines the quotient relation for per-session filtering.
+> See [denotational-semantics.md § Free monoid](../core/denotational-semantics.md#event-log-as-free-monoid).
+
 **Multi-pattern subscriptions:**
 
 A single subscriber watches one key expression pattern.
