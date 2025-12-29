@@ -255,44 +255,69 @@ fn matches_key_expression(pattern: &str, key: &str) -> bool {
 }
 ```
 
-### DuckLake remote catalog pattern
+### DuckLake catalog pattern
 
-When attaching DuckLake datasets from HuggingFace, the ATTACH operation has two distinct phases with different latency profiles.
-
-**Phase 1: Metadata download** (~2s latency)
-
-The ATTACH command downloads the DuckLake metadata catalog (`space.db`) from HuggingFace Hub via httpfs.
-This happens once per connection and establishes the schema for subsequent queries.
-
-**Phase 2: On-demand data fetching** (~100-500ms per query)
-
-Individual parquet files are fetched on-demand through DuckDB's httpfs extension as queries execute.
-
-Query DuckLake version information using the provided table functions:
+DuckLake catalogs are small SQLite metadata databases (~5MB) that map logical tables to parquet data files.
+Once attached, query tables directly:
 
 ```sql
--- List recent snapshots with metadata
-SELECT snapshot_id, snapshot_time, changes
-FROM ducklake_snapshots('space')
-ORDER BY snapshot_id DESC LIMIT 5;
-
--- Get current snapshot ID
-SELECT id as snapshot_id FROM ducklake_current_snapshot('space');
+ATTACH 'ducklake:lakes/frozen/space.db' AS space;
+SELECT * FROM space.main.astronauts ORDER BY total_space_days DESC LIMIT 10;
 ```
 
-Cache keys should incorporate the snapshot ID for coherence across dataset versions:
+The DuckLake extension handles catalog→parquet mapping transparently via httpfs.
+
+#### Embedded vs runtime catalogs
+
+**Embedded catalogs** (recommended for known datasets):
+
+Embed DuckLake catalogs in the binary via `rust_embed` to eliminate ATTACH latency:
+
+```rust
+#[derive(RustEmbed)]
+#[folder = "assets/ducklake-catalogs/"]
+struct DuckLakeCatalogs;
+
+// Extract to temp file at startup, ATTACH locally (~0ms)
+let catalog = DuckLakeCatalogs::get("space.db").unwrap();
+let temp_path = std::env::temp_dir().join("ironstar-space.db");
+std::fs::write(&temp_path, catalog.data)?;
+conn.execute_batch(&format!("ATTACH 'ducklake:{}' AS space;", temp_path.display()))?;
+```
+
+Cache keys use build-time versioning (no runtime snapshot query needed):
+
+```rust
+const CATALOG_VERSION: &str = env!("CARGO_PKG_VERSION");
+let cache_key = format!("embedded:space:{}:{}:{:x}",
+    CATALOG_VERSION, table_name, query_hash);
+```
+
+Cache invalidation is automatic: new binary deploy = new cache keys.
+
+**Runtime catalogs** (for user-provided datasets):
+
+Attach from HuggingFace at runtime (~2s download penalty):
+
+```sql
+ATTACH 'ducklake:hf://datasets/sciexp/fixtures/lakes/frozen/space.db' AS space;
+```
+
+Cache keys require runtime snapshot query:
 
 ```rust
 let snapshot_id: u64 = conn.query_row(
     "SELECT id FROM ducklake_current_snapshot('space')",
     [], |row| row.get(0)
 )?;
-let cache_key = format!("ducklake:sciexp/fixtures:{}:{}:{:x}",
+let cache_key = format!("remote:sciexp/fixtures:{}:{}:{:x}",
     snapshot_id, table_name, query_hash);
 ```
 
-**Important:** ATTACH should occur once at connection pool initialization via `conn_for_each`, not per query.
-This amortizes the ~2s metadata download cost across all subsequent queries on that connection.
+#### Data fetching
+
+Regardless of catalog source, parquet data is fetched on-demand via httpfs (~100-500ms per query).
+This is where moka caching provides value — caching query results avoids repeated parquet fetches.
 
 Canonical test dataset: `hf://datasets/sciexp/fixtures/lakes/frozen/space.db`
 
