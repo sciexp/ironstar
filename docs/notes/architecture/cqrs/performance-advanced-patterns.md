@@ -30,6 +30,10 @@ pub struct StoredEvent {
 
 ## Event debouncing
 
+> **CRITICAL**: Debouncing must only be applied to projections where catamorphism uniqueness is not required for correctness.
+> Safe uses include UI state updates (typing indicators, scroll position).
+> Never debounce events representing critical state transitions (order placed, payment processed, inventory reserved) as this violates the free monoid structure and can cause data loss during replay.
+
 Debouncing aggregates rapid-fire events into a single representative event, reducing SSE bandwidth and client-side morph operations.
 Useful when a user action triggers multiple events in quick succession (e.g., typing in a text field, dragging a slider).
 
