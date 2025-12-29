@@ -1,5 +1,5 @@
 {
-  description = "ironstar: TypeScript monorepo with Astro, Bun, and Nix";
+  description = "Rust + Datastar template for reactive, event-sourced hypermedia applications";
 
   inputs = {
     nixpkgs.url = "https://channels.nixos.org/nixpkgs-unstable/nixexprs.tar.xz";
