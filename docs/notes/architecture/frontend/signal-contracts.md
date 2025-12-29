@@ -1,5 +1,9 @@
 # Type-safe signal contracts with ts-rs
 
+> **Semantic foundation**: Datastar signals form a comonad, dual to server-side monads.
+> The `extract` operation (accessing signal value) and `extend` operation (computed signals) satisfy comonad laws.
+> See [denotational-semantics.md § Comonad](../core/denotational-semantics.md#client-signals-as-comonad).
+
 Ironstar uses ts-rs to generate TypeScript type definitions from Rust signal structs, ensuring type safety across the full Datastar request/response cycle.
 
 ## The contract problem
