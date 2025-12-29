@@ -2,7 +2,7 @@
 name = "ironstar"
 version.workspace = true
 edition.workspace = true
-description = "Reactive, event-sourced web application with hypermedia-driven architecture"
+description = "Rust + Datastar template for reactive, event-sourced hypermedia applications"
 license.workspace = true
 
 [[bin]]
