@@ -23,8 +23,6 @@
     git-hooks.url = "github:cachix/git-hooks.nix";
     git-hooks.flake = false;
 
-    # rust-overlay hoisted from rust-flake for nix-unit sandbox compatibility
-    # (nix-unit can't fetch transitive dependencies in sandbox mode)
     rust-overlay.url = "github:oxalica/rust-overlay";
     rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
 
