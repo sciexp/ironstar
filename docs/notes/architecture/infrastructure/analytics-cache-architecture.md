@@ -191,6 +191,10 @@ For structured columnar results that need further processing (e.g., feeding into
 
 ### Recommendation: moka with rkyv serialization
 
+> **Semantic foundation**: The cache implements memoization over the query profunctor.
+> TTL-based invalidation approximates naturality failure detection.
+> See [denotational-semantics.md § Memoization](../core/denotational-semantics.md#duckdb-analytics-as-quotient-with-memoization).
+
 For ironstar's single-node deployment target with rebuildable cache:
 
 | Component | Choice | Rationale |
