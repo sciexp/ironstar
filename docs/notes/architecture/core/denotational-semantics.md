@@ -5,6 +5,15 @@ The model serves as both a reference for implementation decisions and a pedagogi
 
 For the theoretical foundations underlying these patterns, see the preference documents at `~/.claude/commands/preferences/theoretical-foundations.md`.
 
+## Mathematical rigor
+
+This document uses category theory as an organizational framework and source of intuition for ironstar's architecture.
+The algebraic structures (monads, comonads, profunctors, coalgebras) provide precise vocabulary for describing data flow and composition properties.
+
+Claims are grounded in established mathematical structures but presented at an accessible engineering level.
+Formal proofs are omitted; the document aims for "informed by category theory" rather than "formally derived from it."
+For complete categorical definitions, see the theoretical-foundations.md preference document.
+
 ## Overview
 
 ironstar implements a **profunctor-structured architecture** where:
@@ -13,7 +22,7 @@ ironstar implements a **profunctor-structured architecture** where:
 - Event log is a free monoid providing the canonical source of truth
 - State is reconstructed via catamorphism (unique fold from initiality)
 - Read models are Galois-connected quotients enabling independent scaling
-- SSE transport is a functor preserving event structure
+- SSE transport is a deterministic projection function
 - Client signals are comonadic (dual to server-side monadic effects)
 - Web components are coalgebraic Moore machines with bisimulation equivalence
 - Analytics are quotients with memoized query profunctors
@@ -67,7 +76,7 @@ ironstar implements a **profunctor-structured architecture** where:
 ║      └──(fold_events)───┴─────────┼────────┴── Galois Connection ──────────────  ║
 ║                                   │                                              ║
 ╠═══════════════════════════════════╪══════════════════════════════════════════════╣
-║                          SSE TRANSPORT (Functor)                                 ║
+║                          SSE TRANSPORT (Function)                                ║
 ║                                   │                                              ║
 ║             DomainEvent ────(project)────▶ PatchEvent                            ║
 ║                                   │                                              ║
@@ -170,6 +179,11 @@ fn fold_events(events: impl IntoIterator<Item = Self::Event>) -> Self::State {
 Given the `apply_event` algebra, there is exactly one correct way to reconstruct state.
 This is why event sourcing enables deterministic replay.
 
+Uniqueness requires `apply_event` to be a pure, deterministic function with no side effects.
+Non-determinism (time-dependent logic, randomness, I/O) breaks the initiality guarantee.
+
+Event schema evolution via Upcasters preserves catamorphism uniqueness only when each Upcaster is a monoid homomorphism: `upcast(∅) = ∅` and `upcast(e₁ ++ e₂) = upcast(e₁) ++ upcast(e₂)`.
+
 ### Projections as Galois connection
 
 The relationship between event log and read models forms a Galois connection:
@@ -184,12 +198,18 @@ For ironstar:
 - `QuerySessionStatus`: execution state machine position
 - DuckDB analytics: aggregated OLAP views
 
+EventLog is ordered by prefix: `e₁ ⊑ e₂` iff `e₁` is a prefix of `e₂` (in sequence order).
+The `concrete` function returns the canonical (minimal) event sequence that projects to the given view.
+
 Properties:
 
 ```
 abstract ∘ concrete ∘ abstract = abstract  (projection stable)
 concrete ∘ abstract ∘ concrete = concrete  (reconstruction stable)
 ```
+
+The adjunction holds for the prefix lattice of EventLog.
+Views that lose information beyond recoverable prefix violate one direction; the connection is weaker than strict mathematical adjunction due to projection lossiness.
 
 Multiple event sequences map to the same read model (projection is many-to-one).
 This explains why read models are disposable—they can always be rebuilt from events.
@@ -213,23 +233,17 @@ This quotient structure enables:
 - Snapshots (store quotient representatives)
 - Parallel projection (commutative events can be processed concurrently)
 
-### SSE streaming as functor
+### SSE streaming as projection function
 
-The transformation from domain events to transport events is a functor:
+The transformation from domain events to transport events is a deterministic function `F: Event → Patch`.
+Each event type maps to exactly one patch type:
 
 ```
-F : DomainEvent → PatchEvent
-
-F(TodoCreated{...})    = PatchElements { selector: "#todos", html: "<li>..." }
+F(TodoCreated{...})    = PatchElements { selector: "#todos", html: "..." }
 F(QueryCompleted{...}) = PatchSignals { signals: {"status": "completed"} }
 ```
 
-Functor laws:
-
-```
-F(id) = id                    -- no-op events map to no patches
-F(g ∘ f) = F(g) ∘ F(f)       -- sequential projection preserves composition
-```
+This function is well-defined (total, deterministic) and preserves event identity (no-op events produce no patches).
 
 In datastar-rust, the `DatastarEvent` is the canonical representation that all specific types convert into:
 
@@ -322,7 +336,8 @@ let patch = project(event);
 let enhanced_view = transform(patch);  // covariant
 ```
 
-The event log is the pivot point (the "hom-set") mediating between command and query sides.
+The event log acts as a natural transformation mediating between the command-side functor (contravariant in commands) and query-side functor (covariant in views).
+It is not a hom-set in the categorical sense but rather the data structure through which all information flows—the pivot point of the profunctor composition.
 This explains CQRS's core insight: the two sides can scale independently because they only share the event log interface.
 
 ## Temporal structure
@@ -364,7 +379,7 @@ This is crucial for deterministic replay:
 | Free monoid (events) | Associativity, identity | Events can be batched, replayed |
 | Catamorphism (fold) | Uniqueness from initiality | Deterministic state reconstruction |
 | Galois (projection) | Adjunction properties | Read models are rebuildable |
-| Functor (SSE) | Preserves id and composition | Patches are independent |
+| Function (SSE) | Total, deterministic | Patches are independent |
 | Comonad (signals) | Extract/extend laws | Derived signals compose correctly |
 | Coalgebra (components) | Bisimulation equivalence | Morphing preserves behavior |
 
