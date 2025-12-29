@@ -255,6 +255,47 @@ fn matches_key_expression(pattern: &str, key: &str) -> bool {
 }
 ```
 
+### DuckLake remote catalog pattern
+
+When attaching DuckLake datasets from HuggingFace, the ATTACH operation has two distinct phases with different latency profiles.
+
+**Phase 1: Metadata download** (~2s latency)
+
+The ATTACH command downloads the DuckLake metadata catalog (`space.db`) from HuggingFace Hub via httpfs.
+This happens once per connection and establishes the schema for subsequent queries.
+
+**Phase 2: On-demand data fetching** (~100-500ms per query)
+
+Individual parquet files are fetched on-demand through DuckDB's httpfs extension as queries execute.
+
+Query DuckLake version information using the provided table functions:
+
+```sql
+-- List recent snapshots with metadata
+SELECT snapshot_id, snapshot_time, changes
+FROM ducklake_snapshots('space')
+ORDER BY snapshot_id DESC LIMIT 5;
+
+-- Get current snapshot ID
+SELECT id as snapshot_id FROM ducklake_current_snapshot('space');
+```
+
+Cache keys should incorporate the snapshot ID for coherence across dataset versions:
+
+```rust
+let snapshot_id: u64 = conn.query_row(
+    "SELECT id FROM ducklake_current_snapshot('space')",
+    [], |row| row.get(0)
+)?;
+let cache_key = format!("ducklake:sciexp/fixtures:{}:{}:{:x}",
+    snapshot_id, table_name, query_hash);
+```
+
+**Important:** ATTACH should occur once at connection pool initialization via `conn_for_each`, not per query.
+This amortizes the ~2s metadata download cost across all subsequent queries on that connection.
+
+Canonical test dataset: `hf://datasets/sciexp/fixtures/lakes/frozen/space.db`
+
 #### Performance considerations
 
 | Aspect | broadcast | Zenoh |
