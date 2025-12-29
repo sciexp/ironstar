@@ -7,16 +7,15 @@ For frontend, backend core, infrastructure, and CQRS decisions, see the related 
 
 **Algebraic justification:**
 
-A bundler implements a morphism in the category of module graphs: `Bundle: ModuleGraph -> OutputChunks`.
-For this morphism to compose cleanly with other build steps, it must be *referentially transparent*: identical inputs yield identical outputs.
+A bundler implements a composition of functors over module graphs:
 
-Rolldown's three-stage pipeline makes this explicit:
+- **Scan** (parsing functor): SourceFiles → ModuleGraph
+- **Link** (resolution functor): ModuleGraph → SymbolTable
+- **Generate** (codegen functor): (ModuleGraph, SymbolTable) → OutputChunks
 
-```
-Scan: Sources -> ModuleGraph      (parsing as functor)
-Link: ModuleGraph -> SymbolTable  (resolution as join semilattice)
-Generate: (ModuleGraph, SymbolTable) -> Chunks  (codegen as fold)
-```
+Each stage is referentially transparent—identical inputs produce identical outputs.
+This functional purity enables deterministic, content-addressed builds where hash stability implies correctness.
+The three-stage architecture ensures each transformation is independently testable and composable.
 
 Each stage transforms immutable data structures.
 The `ModuleTable` and `SymbolRefDb` built during scanning are not mutated during linking; linking produces a new `SymbolTable`.
