@@ -259,6 +259,10 @@ let bus = DualEventBus::new_zenoh(config).await?;
 
 **Future: Zenoh storage backend (fully distributed)**
 
+> **ARCHITECTURAL WARNING**: Zenoh storage uses last-write-wins semantics, which fundamentally differs from the append-only free monoid structure of the SQLite event store.
+> Replacing SQLite with Zenoh storage would require a new semantic model—the current CQRS architecture assumes append-only events with unique fold (catamorphism).
+> This section is retained for reference but should not be implemented without revising the algebraic foundations in denotational-semantics.md.
+
 Replace SQLite event store with Zenoh's RocksDB/S3 storage backend for fully distributed event sourcing.
 
 ```rust
