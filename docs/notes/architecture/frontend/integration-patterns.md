@@ -134,7 +134,7 @@ All state flows through signals, and the component merely translates between the
 > **Semantic foundation**: Lit components are Moore machine coalgebras.
 > The `updated()` lifecycle is the transition function; `render()` produces output.
 > Bisimulation equivalence justifies `data-ignore-morph` safety.
-> See [denotational-semantics.md § Coalgebra](../core/denotational-semantics.md#web-components-as-coalgebras-moore-machines).
+> See [semantic-model.md § Coalgebra](../core/semantic-model.md#web-components-as-coalgebras-moore-machines).
 
 **Note:** This is the standard pattern for ANY TypeScript library integration (not just ECharts).
 Use Lit instead of vanilla web components when you need lifecycle management, reactive properties, or observer coordination for libraries like ECharts, D3, Plotly, Three.js, Mapbox GL, etc.
