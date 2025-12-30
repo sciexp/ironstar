@@ -70,7 +70,7 @@ Zenoh provides server-side filtering via key expressions with wildcards:
 
 > **Semantic foundation**: Key expressions form a free monoid under path concatenation.
 > Pattern matching (wildcards, unions) defines the quotient relation for per-session filtering.
-> See [denotational-semantics.md § Free monoid](../core/denotational-semantics.md#event-log-as-free-monoid).
+> See [semantic-model.md § Free monoid](../core/semantic-model.md#event-log-as-free-monoid).
 
 **Multi-pattern subscriptions:**
 
