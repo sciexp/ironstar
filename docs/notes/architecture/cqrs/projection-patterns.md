@@ -25,7 +25,7 @@ Projections are read models derived from event streams, optimized for specific q
 
 > **Semantic foundation**: Projections implement a Galois connection with the event log.
 > The `apply` method is the catamorphism algebra; `rebuild` is the unique fold from initiality.
-> See [denotational-semantics.md § Catamorphism](../core/denotational-semantics.md#state-reconstruction-as-catamorphism) and [§ Galois connection](../core/denotational-semantics.md#projections-as-galois-connection).
+> See [semantic-model.md § Catamorphism](../core/semantic-model.md#state-reconstruction-as-catamorphism) and [§ Galois connection](../core/semantic-model.md#projections-as-galois-connection).
 
 ```rust
 use async_trait::async_trait;
