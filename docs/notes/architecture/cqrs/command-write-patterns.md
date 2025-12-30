@@ -273,7 +273,7 @@ pub trait Aggregate: Default + Send + Sync {
 
 > **Semantic foundation**: The `Result<Vec<Event>, Error>` return type is a Kleisli arrow in the Result monad.
 > Composition via `?` operator short-circuits on error.
-> See [denotational-semantics.md § Kleisli composition](../core/denotational-semantics.md#command-handling-as-kleisli-composition).
+> See [semantic-model.md § Kleisli composition](../core/semantic-model.md#command-handling-as-kleisli-composition).
 
 The async command handler (in the application layer) orchestrates I/O around the pure aggregate:
 
