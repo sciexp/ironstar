@@ -1,4 +1,4 @@
-# Algebraic architecture
+# Semantic model
 
 This document describes the unified theoretical model of ironstar's data flow, grounding each architectural layer in algebraic structures from category theory.
 The model serves as both a reference for implementation decisions and a pedagogical guide to how abstract mathematical concepts manifest in production systems.
@@ -26,6 +26,36 @@ ironstar implements a **profunctor-structured architecture** where:
 - Client signals are comonadic (dual to server-side monadic effects)
 - Web components are coalgebraic Moore machines with bisimulation equivalence
 - Analytics are quotients with memoized query profunctors
+
+## The interpretation function
+
+The semantic model defines an interpretation function mapping architectural descriptions to categorical structures:
+
+```
+⟦−⟧ : ArchitecturalDescription → Category
+```
+
+| Domain (syntax) | Codomain (semantics) |
+|-----------------|----------------------|
+| Component names ("event store", "projection") | Objects in a category |
+| Data flow descriptions ("commands flow to events") | Morphisms |
+| Composition patterns ("handler then persist") | Morphism composition |
+| Architectural invariants ("append-only") | Algebraic laws (monoid identity, associativity) |
+
+Concretely for ironstar:
+
+| Architectural term | Denotation |
+|--------------------|------------|
+| `⟦event store⟧` | Free(Event) — the free monoid on Event |
+| `⟦command handler⟧` | Kleisli arrow `A → T B` in the Result monad |
+| `⟦fold_events⟧` | The unique catamorphism from initial algebra |
+| `⟦projection⟧` | Upper adjoint in a Galois connection |
+| `⟦SSE stream⟧` | Deterministic function `Event → Patch` |
+| `⟦datastar signals⟧` | Comonad (extract + extend) |
+| `⟦web component⟧` | Coalgebra for `F(S) = Output × (Input → S)` |
+| `⟦whole system⟧` | Profunctor `P : Cmd^op × View → Set` |
+
+The interpretation is *semantic* because it assigns mathematical meanings (denotations) to architectural descriptions (signs), enabling reasoning about system properties through the properties of the mathematical objects rather than the syntactic form of the description.
 
 ## The complete data flow
 
@@ -491,4 +521,5 @@ Session data enables personalization without polluting the event stream.
 
 | Date | Change |
 |------|--------|
+| 2025-12-29 | Rename from "Algebraic architecture" to "Semantic model"; add interpretation function tables |
 | 2025-12-29 | Initial synthesis from preference documents and codebase analysis |
