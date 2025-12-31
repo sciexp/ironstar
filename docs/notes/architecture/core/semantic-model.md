@@ -214,9 +214,9 @@ Non-determinism (time-dependent logic, randomness, I/O) breaks the initiality gu
 
 Event schema evolution via Upcasters preserves catamorphism uniqueness only when each Upcaster is a monoid homomorphism: `upcast(∅) = ∅` and `upcast(e₁ ++ e₂) = upcast(e₁) ++ upcast(e₂)`.
 
-### Projections as Galois connection
+### Projections as abstraction-concretion pairs
 
-The relationship between event log and read models forms a Galois connection:
+The relationship between event log and read models forms an abstraction-concretion pair:
 
 ```
 abstract : EventLog → ReadModel    (projection, lossy)
@@ -228,21 +228,18 @@ For ironstar:
 - `QuerySessionStatus`: execution state machine position
 - DuckDB analytics: aggregated OLAP views
 
-EventLog is ordered by prefix: `e₁ ⊑ e₂` iff `e₁` is a prefix of `e₂` (in sequence order).
-The `concrete` function returns the canonical (minimal) event sequence that projects to the given view.
-
-Properties:
+This pair exhibits closure properties rather than a strict Galois connection:
 
 ```
-abstract ∘ concrete ∘ abstract = abstract  (projection stable)
-concrete ∘ abstract ∘ concrete = concrete  (reconstruction stable)
+abstract ∘ concrete ∘ abstract = abstract  (projection is idempotent)
+concrete ∘ abstract ∘ concrete = concrete  (reconstruction is stable)
 ```
 
-The adjunction holds for the prefix lattice of EventLog.
-Views that lose information beyond recoverable prefix violate one direction; the connection is weaker than strict mathematical adjunction due to projection lossiness.
+The relationship is weaker than a formal Galois connection because projection is lossy: multiple event sequences map to the same read model.
+This many-to-one property explains why read models are disposable—they can always be rebuilt from events.
 
-Multiple event sequences map to the same read model (projection is many-to-one).
-This explains why read models are disposable—they can always be rebuilt from events.
+The key insight is not the categorical adjunction but the *reconstruction guarantee*: given any read model state, there exists at least one event sequence that produces it.
+This enables event log compaction, snapshotting, and parallel projection without loss of information.
 
 ### Read models as quotients
 
@@ -286,7 +283,8 @@ impl From<PatchSignals> for DatastarEvent { ... }
 
 DuckDB queries produce quotients of source data:
 - SQL `GROUP BY` defines equivalence classes
-- Aggregations (`SUM`, `COUNT`, `AVG`) are monoid homomorphisms on those classes
+- Aggregations like `SUM` and `COUNT` are monoid homomorphisms on those classes.
+Note that `AVG` is *not* a monoid homomorphism because averaging does not distribute over concatenation: `avg(xs ++ ys) ≠ (avg(xs) + avg(ys)) / 2` in general.
 - The result set is the quotient
 
 Moka caching implements memoization over the query profunctor:
@@ -366,8 +364,8 @@ let patch = project(event);
 let enhanced_view = transform(patch);  // covariant
 ```
 
-The event log acts as a natural transformation mediating between the command-side functor (contravariant in commands) and query-side functor (covariant in views).
-It is not a hom-set in the categorical sense but rather the data structure through which all information flows—the pivot point of the profunctor composition.
+The event log acts as the mediating data structure between the command-side (contravariant in commands) and query-side (covariant in views).
+It is not a natural transformation in the categorical sense but rather the pivot point through which all information flows—the shared interface that enables independent scaling of the two sides.
 This explains CQRS's core insight: the two sides can scale independently because they only share the event log interface.
 
 ## Temporal structure
