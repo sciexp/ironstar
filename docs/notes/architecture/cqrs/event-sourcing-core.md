@@ -9,6 +9,12 @@ Detailed implementation patterns are split into focused documents linked below.
 Ironstar's event sourcing implementation depends on four fundamental invariants that must never be violated.
 Understanding these invariants is essential before implementing any CQRS component.
 
+These invariants derive from Kevin Hoffman's "Ten Laws of Event Sourcing" (see `~/.claude/commands/preferences/event-sourcing.md` for complete Law definitions):
+- Subscribe-before-replay relates to event ordering semantics
+- Pure aggregate invariant embodies **Law 4** (work is a side effect)
+- Monotonic sequence invariant supports **Law 1** (events are immutable)
+- Events-as-source-of-truth embodies **Laws 3 and 5** (all projection data from events)
+
 ### Subscribe-before-replay invariant
 
 SSE handlers must subscribe to the event bus *before* loading historical events from the event store.
@@ -673,13 +679,33 @@ pub enum QueryCommand {
 - Lince Rust example: `/Users/crs58/projects/rust-workspace/datastar-rust-lince/`
 - SSE spec: https://html.spec.whatwg.org/multipage/server-sent-events.html
 
+### Primary references
+
+- Kevin Hoffman, *Real World Event Sourcing* — Ten Laws of Event Sourcing, process managers, injectors/notifiers
+- Scott Wlaschin, *Domain Modeling Made Functional* — Aggregates as consistency boundaries, workflows as pipelines
+- `~/.claude/commands/preferences/event-sourcing.md` — Theoretical synthesis and decision frameworks
+
 ### CQRS and event sourcing frameworks
+
+Rust pattern libraries (study material, not dependencies):
+
+| Library | Patterns Studied | Maturity |
+|---------|------------------|----------|
+| cqrs-es | TestFramework DSL, GenericQuery, Aggregate trait | Production |
+| esrs | Pure sync aggregates (adopted), Schema/Upcaster pattern | Production |
+| sqlite-es | SQLite event store schema, optimistic locking | Production |
+| kameo_es | Actor + ES composition, causation tracking, projection backends | Alpha |
+| SierraDB | Distributed event store design, partition-based sharding | Pre-production |
+
+Local paths for pattern study:
 
 - cqrs-es TestFramework: `/Users/crs58/projects/rust-workspace/cqrs-es/src/test/framework.rs`
 - cqrs-es TestExecutor: `/Users/crs58/projects/rust-workspace/cqrs-es/src/test/executor.rs`
 - cqrs-es TestValidator: `/Users/crs58/projects/rust-workspace/cqrs-es/src/test/validator.rs`
 - esrs pure Aggregate trait: `/Users/crs58/projects/rust-workspace/event_sourcing.rs/src/aggregate.rs`
 - sqlite-es event repository: `/Users/crs58/projects/rust-workspace/sqlite-es/src/event_repository.rs`
+- kameo_es Entity trait: `/Users/crs58/projects/rust-workspace/kameo_es/` (Alpha — actor patterns)
+- SierraDB event store: `/Users/crs58/projects/rust-workspace/sierradb/` (Pre-production — distributed design reference)
 - CQRS pattern: https://martinfowler.com/bliki/CQRS.html
 
 ### Analytics caching
