@@ -2,6 +2,11 @@
 
 **Pattern reference**: This guide implements Pattern 1.5 from `integration-patterns.md` — Lit components for TypeScript library integration.
 
+> **Semantic foundation**: ds-echarts is a Moore machine coalgebra.
+> The Lit `updated()` lifecycle implements the transition function; `render()` produces output.
+> Bisimulation equivalence justifies `data-ignore-morph` safety.
+> See [semantic-model.md § Web components as coalgebras](../core/semantic-model.md#web-components-as-coalgebras-moore-machines).
+
 This guide covers the integration of the ds-echarts Lit component from the northstar Go template into ironstar's Rust + hypertext + Datastar architecture.
 
 ## Overview
