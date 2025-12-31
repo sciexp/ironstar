@@ -4,6 +4,11 @@ title: Chart transformer pattern
 
 # Chart transformer pattern
 
+> **Semantic foundation**: Chart transformation implements quotient projection.
+> `ChartTransformer` is a functor from DuckDB query results to ECharts option JSON.
+> Multiple QueryResult instances may map to the same chart (many-to-one quotient).
+> See [semantic-model.md § DuckDB analytics as quotient](../core/semantic-model.md#duckdb-analytics-as-quotient-with-memoization).
+
 The ChartTransformer pattern bridges the analytics layer (DuckDB query results) and the visualization layer (ECharts options JSON).
 This document describes the trait design, column-to-axis mapping strategy, chart type configurations, and error handling patterns for transforming tabular data into chart specifications.
 
