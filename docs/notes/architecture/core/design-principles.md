@@ -20,6 +20,23 @@ This translates to concrete selection criteria:
 | Boundary isolation | Effects pushed to edges, pure core |
 | Type-level guarantees | Invalid states unrepresentable |
 
+### Alignment with Hoffman's Laws
+
+Ironstar's guiding principles align with Kevin Hoffman's "Ten Laws of Event Sourcing" from *Real World Event Sourcing*.
+The following Laws are explicitly embodied in our architecture:
+
+| Hoffman's Law | Ironstar Principle |
+|---------------|-------------------|
+| **Law 1**: Events are immutable and past tense | Events stored in append-only SQLite; event types use past tense naming |
+| **Law 3**: All projection data from events | Projections derive exclusively from event stream, no external data sources |
+| **Law 4**: Work is a side effect | Pure aggregates with all I/O at boundaries; async/sync boundary marks effect boundary |
+| **Law 5**: All projections stem from events | DuckDB analytics and moka cache are disposable, rebuilt from events |
+| **Law 8**: Event schemas are immutable | Schema evolution via versioned event types with upcasters, not mutations |
+| **Law 10**: Never test internal state | TestFramework DSL asserts events, not aggregate internals |
+
+For complete Law definitions and theoretical synthesis, see `~/.claude/commands/preferences/event-sourcing.md`.
+For implementation details, see `../decisions/cqrs-implementation-decisions.md`.
+
 ---
 
 ## Domain layer principles
