@@ -207,17 +207,33 @@ All dependencies with local source code available for reference.
 
 ### CQRS/Event sourcing references
 
-| Reference | Local Path | Patterns to Study |
-|-----------|------------|-------------------|
-| cqrs-es | `~/projects/rust-workspace/cqrs-es` | Aggregate trait, EventStore abstraction, GenericQuery projections, TestFramework DSL, event upcasting |
-| sqlite-es | `~/projects/rust-workspace/sqlite-es` | SQLite event table schema, optimistic locking, stream-based replay |
-| esrs (event_sourcing.rs) | `~/projects/rust-workspace/event_sourcing.rs` | Pure sync aggregates, Schema/Upcaster pattern, TransactionalEventHandler vs EventHandler |
+For theoretical foundations and cross-cutting event sourcing principles, see `~/.claude/commands/preferences/event-sourcing.md`.
+That document synthesizes Hoffman's Laws with category-theoretic grounding and provides decision frameworks for when to use event sourcing.
+
+**Primary references:**
+
+| Source | Type | Key Patterns |
+|--------|------|--------------|
+| Kevin Hoffman, *Real World Event Sourcing* | Book | Ten Laws of Event Sourcing, process managers, injectors/notifiers, event schema evolution |
+| Scott Wlaschin, *Domain Modeling Made Functional* | Book | Aggregates as consistency boundaries, workflows as pipelines, algebraic domain modeling |
+
+**Rust pattern libraries** (study material, not dependencies):
+
+| Reference | Local Path | Patterns to Study | Maturity |
+|-----------|------------|-------------------|----------|
+| cqrs-es | `~/projects/rust-workspace/cqrs-es` | Aggregate trait, EventStore abstraction, GenericQuery projections, TestFramework DSL, event upcasting | Production |
+| sqlite-es | `~/projects/rust-workspace/sqlite-es` | SQLite event table schema, optimistic locking, stream-based replay | Production |
+| esrs (event_sourcing.rs) | `~/projects/rust-workspace/event_sourcing.rs` | Pure sync aggregates, Schema/Upcaster pattern, TransactionalEventHandler vs EventHandler | Production |
+| kameo_es | `~/projects/rust-workspace/kameo_es` | Actor + ES composition, causation tracking, multiple projection backends | Alpha |
+| SierraDB | `~/projects/rust-workspace/sierradb` | Distributed event store design, partition-based sharding, segment storage | Pre-production |
 
 These crates are *reference implementations only* — ironstar implements its own CQRS layer following their patterns but adapted for hypertext + datastar integration.
+The design embodies Hoffman's Law 4 (work is a side effect): aggregates remain pure functions with all I/O at boundaries.
+
 The key adopted patterns are:
 - Pure synchronous aggregates (from esrs): `handle_command(state, cmd) -> Result<Vec<Event>, Error>` with no async/side effects
-- Event schema evolution via Upcaster pattern (from esrs)
-- TestFramework DSL for aggregate testing (from cqrs-es)
+- Event schema evolution via Upcaster pattern (from esrs), following Hoffman's Law 8 (event schemas are immutable)
+- TestFramework DSL for aggregate testing (from cqrs-es), following Hoffman's Law 10 (never test internal state)
 - SQLite event store schema with global sequence for SSE Last-Event-ID (adapted from sqlite-es)
 
 ### Datastar ecosystem
@@ -385,7 +401,14 @@ Mosaic integration pattern TBD.
 
 ## Event sourcing model
 
-Ironstar uses event sourcing with CQRS separation:
+Ironstar uses event sourcing with CQRS separation, implementing key principles from Kevin Hoffman's "Real World Event Sourcing".
+The architecture explicitly embodies several of Hoffman's Laws:
+
+- **Law 1** (events are immutable and past tense): Events represent completed actions, stored in append-only SQLite
+- **Law 3** (all projection data from events): Projections derive exclusively from the event stream, never external sources
+- **Law 4** (work is a side effect): Aggregates are pure functions; all I/O happens at axum/Zenoh boundaries
+- **Law 5** (all projections stem from events): DuckDB analytics and moka cache are disposable, rebuilt from events
+- **Law 8** (event schemas are immutable): Schema evolution uses versioned event types with upcasters
 
 **Write side (commands):**
 
@@ -414,6 +437,9 @@ CREATE TABLE events (
     UNIQUE(aggregate_type, aggregate_id, sequence)
 );
 ```
+
+The global `id` column provides monotonic ordering for SSE `Last-Event-ID` semantics, enabling clients to resume from any point in the event stream.
+See `~/.claude/commands/preferences/event-sourcing.md` for complete Law definitions and theoretical grounding.
 
 ## Architectural context: embedded vs. external services
 
