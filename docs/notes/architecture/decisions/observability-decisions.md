@@ -1,5 +1,9 @@
 # Observability decisions
 
+> **Semantic foundation**: Observability instruments the profunctor data flow.
+> Metrics and traces track the command-side (contravariant composition) and query-side (covariant projection) of the CQRS pipeline.
+> See [semantic-model.md § The complete profunctor](../core/semantic-model.md#the-complete-profunctor).
+
 This document covers ironstar's observability architecture: structured logging with the tracing crate, Prometheus metrics for operational visibility, health checks, and development vs production logging configuration.
 Observability is critical for debugging CQRS pipelines, diagnosing performance bottlenecks, and maintaining production systems.
 

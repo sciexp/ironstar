@@ -128,6 +128,10 @@ async fn login_handler(
 
 ### Callback handling
 
+> **Semantic foundation**: The OAuth callback flow is Kleisli composition in the Result monad.
+> Each step (validate → exchange → fetch → upsert) is a Kleisli arrow that short-circuits on error.
+> See [semantic-model.md § Command handling as Kleisli composition](../core/semantic-model.md#command-handling-as-kleisli-composition).
+
 GitHub redirects back with authorization code and state parameter.
 Server validates state, exchanges code for token, fetches profile, creates/updates user, binds session.
 

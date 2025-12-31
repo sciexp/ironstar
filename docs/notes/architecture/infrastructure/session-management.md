@@ -1,5 +1,9 @@
 # Session management
 
+> **Semantic foundation**: Sessions implement indexed profunctor filtering.
+> Session-scoped Zenoh subscriptions partition event delivery without modifying the global event log's free monoid structure.
+> See [semantic-model.md § Sessions as indexed profunctor](../core/semantic-model.md#sessions-as-indexed-profunctor).
+
 Session management for Ironstar, enabling per-user SSE subscriptions and state isolation in a Datastar-driven hypermedia application.
 
 ## Design principles

@@ -1,5 +1,9 @@
 # SSE connection lifecycle
 
+> **Semantic foundation**: SSE streaming is a deterministic projection function from domain events to transport events.
+> The transformation `Event → Patch` is total and preserves event identity.
+> See [semantic-model.md § SSE streaming as projection function](../core/semantic-model.md#sse-streaming-as-projection-function).
+
 This document covers the complete SSE connection lifecycle in ironstar, from connection establishment through active streaming to disconnection and cleanup.
 Understanding these patterns is critical for implementing reliable event streaming and debugging connection issues.
 
