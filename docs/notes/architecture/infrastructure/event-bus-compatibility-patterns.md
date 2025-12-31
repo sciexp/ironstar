@@ -99,6 +99,11 @@ pub struct ZenohStorageEventStore {
 }
 ```
 
+> **Semantic preservation**: Both tokio::broadcast and Zenoh implement the same event notification semantics.
+> Dual-publishing preserves the profunctor composition invariants: events flow to both buses with identical ordering.
+> The free monoid structure is maintained regardless of which bus delivers the event.
+> See [semantic-model.md § The complete profunctor](../core/semantic-model.md#the-complete-profunctor).
+
 **DualEventBus implementation:**
 
 ```rust
