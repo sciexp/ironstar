@@ -4,6 +4,11 @@ title: DatastarRequest extractor
 
 # DatastarRequest extractor
 
+> **Semantic foundation**: The DatastarRequest extractor implements profunctor dimap.
+> It transforms the input (HTTP request → boolean) to determine which output transformation applies (HTML vs SSE).
+> This enables the application to be bifunctorial: one functor for initial page loads, another for SSE updates.
+> See [semantic-model.md § The complete profunctor](../core/semantic-model.md#the-complete-profunctor).
+
 The DatastarRequest extractor is a critical pattern for implementing progressive enhancement in Datastar applications.
 It enables handlers to distinguish between full HTML page loads (browser navigation) and SSE fragment updates (Datastar interactions).
 
