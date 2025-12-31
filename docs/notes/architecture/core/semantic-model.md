@@ -21,7 +21,7 @@ ironstar implements a **profunctor-structured architecture** where:
 - Write side is Kleisli composition in the Result monad
 - Event log is a free monoid providing the canonical source of truth
 - State is reconstructed via catamorphism (unique fold from initiality)
-- Read models are Galois-connected quotients enabling independent scaling
+- Read models are abstraction-concretion paired quotients enabling independent scaling
 - SSE transport is a deterministic projection function
 - Client signals are comonadic (dual to server-side monadic effects)
 - Web components are coalgebraic Moore machines with bisimulation equivalence
