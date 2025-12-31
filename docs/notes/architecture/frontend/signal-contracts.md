@@ -6,6 +6,23 @@
 
 Ironstar uses ts-rs to generate TypeScript type definitions from Rust signal structs, ensuring type safety across the full Datastar request/response cycle.
 
+## Comonad operations in practice
+
+The `extract` operation gets the current signal value:
+
+```typescript
+const count = $count.value;  // extract: Signal Int → Int
+```
+
+The `extend` operation derives computed signals:
+
+```typescript
+// extend: (Signal Int → Bool) → Signal Int → Signal Bool
+const isPositive = computed(() => $count.value > 0);
+```
+
+Comonad laws ensure computed signals compose correctly.
+
 ## The contract problem
 
 Datastar signals flow through multiple boundaries:
