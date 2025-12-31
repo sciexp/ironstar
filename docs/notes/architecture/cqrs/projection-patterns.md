@@ -3,6 +3,20 @@
 This document covers projection caching strategies, DuckDB integration for analytics, and the projection trait pattern for ironstar.
 Projections are read models derived from event streams, optimized for specific query patterns.
 
+## Hoffman's projection Laws
+
+Projections in ironstar adhere to Kevin Hoffman's Laws governing read model behavior (see `~/.claude/commands/preferences/event-sourcing.md` for complete definitions):
+
+| Law | Constraint | Ironstar Implementation |
+|-----|-----------|------------------------|
+| **Law 3**: All projection data from events | Projections cannot pull data from external sources or wall clocks | `rebuild()` and `apply()` methods receive only event data |
+| **Law 4**: Work is a side effect | Projections must not perform I/O during event processing | Projection trait methods are pure transformations |
+| **Law 5**: All projections stem from events | Every projection value derives from at least one event | No projection state exists without corresponding events |
+| **Law 9**: Projectors cannot share | Each projector owns its state exclusively | Separate ProjectionManager instances with isolated RwLock |
+
+These Laws ensure projections are disposable (can be rebuilt from events), testable (pure functions), and replay-safe (deterministic).
+The moka cache + Zenoh invalidation pattern (see "Cache-aside with moka" below) maintains these guarantees while optimizing for read latency.
+
 ## Projection caching strategy
 
 **Decision: Pure in-memory projections with snapshot recovery on startup, no persistent projection state.**
