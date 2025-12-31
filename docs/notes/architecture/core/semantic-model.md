@@ -49,7 +49,7 @@ Concretely for ironstar:
 | `⟦event store⟧` | Free(Event) — the free monoid on Event |
 | `⟦command handler⟧` | Kleisli arrow `A → T B` in the Result monad |
 | `⟦fold_events⟧` | The unique catamorphism from initial algebra |
-| `⟦projection⟧` | Upper adjoint in a Galois connection |
+| `⟦projection⟧` | Abstraction function (upper adjoint) |
 | `⟦SSE stream⟧` | Deterministic function `Event → Patch` |
 | `⟦datastar signals⟧` | Comonad (extract + extend) |
 | `⟦web component⟧` | Coalgebra for `F(S) = Output × (Input → S)` |
@@ -190,6 +190,7 @@ The event store is the free monoid over domain event types:
 | Generators | `TodoEvent`, `QuerySessionEvent` variants |
 
 SQLite enforces the monoid structure:
+
 - `global_sequence` (AUTOINCREMENT) ensures total ordering
 - `aggregate_sequence` enables per-aggregate versioning for optimistic concurrency
 - Append-only semantics: no updates or deletes (except compaction)
@@ -224,6 +225,7 @@ concrete : ReadModel → EventLog    (reconstruction, partial)
 ```
 
 For ironstar:
+
 - `TodoMVC` read model: current todo list state
 - `QuerySessionStatus`: execution state machine position
 - DuckDB analytics: aggregated OLAP views
@@ -252,10 +254,12 @@ EventLog/≡ ≅ ReadModel
 Where `e1 ≡ e2` iff `project(e1) = project(e2)`.
 
 For the todo list:
+
 - `[Created{id:1}, Completed{id:1}]` and `[Created{id:1}, Completed{id:1}, Uncompleted{id:1}, Completed{id:1}]` are equivalent
 - Both produce the same final state: todo #1 is completed
 
 This quotient structure enables:
+
 - Log compaction (remove redundant events)
 - Snapshots (store quotient representatives)
 - Parallel projection (commutative events can be processed concurrently)
@@ -282,6 +286,7 @@ impl From<PatchSignals> for DatastarEvent { ... }
 ### DuckDB analytics as quotient with memoization
 
 DuckDB queries produce quotients of source data:
+
 - SQL `GROUP BY` defines equivalence classes
 - Aggregations like `SUM` and `COUNT` are monoid homomorphisms on those classes.
 Note that `AVG` is *not* a monoid homomorphism because averaging does not distribute over concatenation: `avg(xs ++ ys) ≠ (avg(xs) + avg(ys)) / 2` in general.
@@ -316,10 +321,12 @@ extend f ∘ extend g = extend (f ∘ extend g)  -- extension composes
 ```
 
 This is the categorical dual of monads:
+
 - Monads: effect production (server-side event sourcing)
 - Comonads: context consumption (client-side signal derivation)
 
 The duality manifests architecturally:
+
 - Server produces events via monadic Kleisli composition
 - Client consumes updates via comonadic signal derivation
 
@@ -334,6 +341,7 @@ coalgebra(state) = (render(state), (input) => transition(state, input))
 ```
 
 Where:
+
 - State: `{ option, theme, chart instance, event handlers }`
 - Output: Rendered canvas/SVG via `render()`
 - Input: Attribute changes (`option`, `theme`) and chart events (`click`, `datazoom`)
@@ -379,6 +387,7 @@ The system has bitemporal semantics:
 | Table version time | DuckLake snapshots (if enabled) | When analytics snapshot was taken |
 
 SSE reconnection uses `global_sequence` as `Last-Event-ID`:
+
 - Client sends last received ID
 - Server replays events since that sequence
 - Monotonic sequences with no gaps ensure no missed updates
@@ -395,6 +404,7 @@ The `QuerySession` aggregate demonstrates effect ordering:
 6. Those events persisted, streamed via SSE
 
 This is crucial for deterministic replay:
+
 - The event log records QueryStarted before execution begins
 - If server crashes mid-execution, replay sees QueryStarted but no completion
 - Recovery logic can detect incomplete queries and retry
@@ -463,6 +473,7 @@ P_s(cmd, view) = { data flows visible to session s }
 ```
 
 Where:
+
 - Commands are session-agnostic (global write path)
 - Event log remains the single source of truth
 - Zenoh key expressions implement the indexing: `events/session/{s}/**`
@@ -471,6 +482,7 @@ Where:
 ### What sessions are NOT
 
 Sessions do not:
+
 - Affect the free monoid structure (events are global)
 - Create per-session event logs (single log, filtered views)
 - Modify the catamorphism (state reconstruction is global)
