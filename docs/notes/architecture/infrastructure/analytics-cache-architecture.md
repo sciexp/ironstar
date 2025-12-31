@@ -194,6 +194,10 @@ For structured columnar results that need further processing (e.g., feeding into
 > **Semantic foundation**: The cache implements memoization over the query profunctor.
 > TTL-based invalidation approximates naturality failure detection.
 > See [semantic-model.md § Memoization](../core/semantic-model.md#duckdb-analytics-as-quotient-with-memoization).
+>
+> **Naturality failure in operational terms**: A cached query result becomes invalid when the underlying data changes in a way that would produce a different result.
+> TTL-based invalidation is a conservative approximation—it invalidates after a fixed time regardless of whether the data actually changed.
+> Event-driven invalidation (Pattern 4) detects the actual data changes that cause naturality failure.
 
 For ironstar's single-node deployment target with rebuildable cache:
 
