@@ -312,6 +312,25 @@ ironstar/
     └── ...
 ```
 
+## Algebraic interpretation of layers
+
+The 8-layer crate structure corresponds to semantic boundaries in the algebraic model:
+
+| Crate Layer | Algebraic Structure | Example |
+|-------------|---------------------|---------|
+| Layer 0 (Foundation) | Initial objects, primitive types | `Sequence`, `Timestamp` |
+| Layer 1 (Domain) | Free structures (sum types) | `TodoEvent`, `Command` enums |
+| Layer 2 (Application) | Algebras and catamorphisms | `handle_command`, `fold_events` |
+| Layer 3 (Interfaces) | Port abstractions (type classes) | `EventStore` trait |
+| Layer 4 (Infrastructure) | Effect implementations | SQLite adapter |
+| Layer 5 (Services) | Composition roots | `All`, `HasXxx` traits |
+| Layer 6 (Presentation) | Projection functions | SSE handlers |
+| Layer 7 (Binary) | Fixpoint (main loop) | `main.rs` |
+
+The layer dependency rule (Layer N depends only on layers below) reflects algebraic generality: lower layers provide more general structures that higher layers specialize.
+
+See [semantic-model.md](semantic-model.md) for the complete algebraic architecture.
+
 ## Related documentation
 
 - Layers 4-7 and composition patterns: `crate-services-composition.md`
