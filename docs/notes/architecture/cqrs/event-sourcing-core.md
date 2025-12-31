@@ -11,7 +11,7 @@ Understanding these invariants is essential before implementing any CQRS compone
 
 These invariants derive from Kevin Hoffman's "Ten Laws of Event Sourcing" (see `~/.claude/commands/preferences/event-sourcing.md` for complete Law definitions):
 - Subscribe-before-replay relates to event ordering semantics
-- Pure aggregate invariant embodies **Law 4** (work is a side effect)
+- Pure aggregate invariant embodies **Law 7** (work is a side effect)
 - Monotonic sequence invariant supports **Law 1** (events are immutable)
 - Events-as-source-of-truth embodies **Laws 3 and 5** (all projection data from events)
 

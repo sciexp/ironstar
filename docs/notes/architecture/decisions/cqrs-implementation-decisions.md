@@ -325,13 +325,13 @@ The custom CQRS implementation decision was informed by both theoretical princip
 
 | Source | Contribution |
 |--------|--------------|
-| Kevin Hoffman, *Real World Event Sourcing* | Laws 4, 8, 10 directly inform pure aggregates, schema immutability, and testing patterns |
+| Kevin Hoffman, *Real World Event Sourcing* | Laws 7, 2, 10 directly inform pure aggregates, schema immutability, and testing patterns |
 | Scott Wlaschin, *Domain Modeling Made Functional* | Aggregates as consistency boundaries, smart constructor pattern |
 | `~/.claude/commands/preferences/event-sourcing.md` | Theoretical synthesis and decision frameworks |
 
-Hoffman's **Law 4** (work is a side effect) is the central principle: aggregates contain no I/O, enabling pure functional domain logic.
-**Law 8** (event schemas are immutable) drives the upcaster pattern for schema evolution.
-**Law 10** (never test internal state) enables the TestFramework DSL pattern where tests assert events, not aggregate internals.
+Hoffman's **Law 7** (work is a side effect) is the central principle: aggregates contain no I/O, enabling pure functional domain logic.
+**Law 2** (event schemas are immutable) drives the upcaster pattern for schema evolution.
+**Law 10** (aggregates own event streams) enables the TestFramework DSL pattern where tests assert events, not aggregate internals.
 
 **Rust pattern libraries** (study material, not dependencies):
 

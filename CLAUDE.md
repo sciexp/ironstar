@@ -228,12 +228,12 @@ That document synthesizes Hoffman's Laws with category-theoretic grounding and p
 | SierraDB | `~/projects/rust-workspace/sierradb` | Distributed event store design, partition-based sharding, segment storage | Pre-production |
 
 These crates are *reference implementations only* — ironstar implements its own CQRS layer following their patterns but adapted for hypertext + datastar integration.
-The design embodies Hoffman's Law 4 (work is a side effect): aggregates remain pure functions with all I/O at boundaries.
+The design embodies Hoffman's Law 7 (work is a side effect): aggregates remain pure functions with all I/O at boundaries.
 
 The key adopted patterns are:
 - Pure synchronous aggregates (from esrs): `handle_command(state, cmd) -> Result<Vec<Event>, Error>` with no async/side effects
-- Event schema evolution via Upcaster pattern (from esrs), following Hoffman's Law 8 (event schemas are immutable)
-- TestFramework DSL for aggregate testing (from cqrs-es), following Hoffman's Law 10 (never test internal state)
+- Event schema evolution via Upcaster pattern (from esrs), following Hoffman's Law 2 (event schemas are immutable)
+- TestFramework DSL for aggregate testing (from cqrs-es), following Hoffman's Law 10 (aggregates own event streams)
 - SQLite event store schema with global sequence for SSE Last-Event-ID (adapted from sqlite-es)
 
 ### Datastar ecosystem
@@ -406,9 +406,9 @@ The architecture explicitly embodies several of Hoffman's Laws:
 
 - **Law 1** (events are immutable and past tense): Events represent completed actions, stored in append-only SQLite
 - **Law 3** (all projection data from events): Projections derive exclusively from the event stream, never external sources
-- **Law 4** (work is a side effect): Aggregates are pure functions; all I/O happens at axum/Zenoh boundaries
+- **Law 7** (work is a side effect): Aggregates are pure functions; all I/O happens at axum/Zenoh boundaries
 - **Law 5** (all projections stem from events): DuckDB analytics and moka cache are disposable, rebuilt from events
-- **Law 8** (event schemas are immutable): Schema evolution uses versioned event types with upcasters
+- **Law 2** (event schemas are immutable): Schema evolution uses versioned event types with upcasters
 
 **Write side (commands):**
 
