@@ -317,6 +317,36 @@ For guaranteed consistency on read-after-write, handlers can explicitly wait for
 
 ---
 
+## References
+
+The custom CQRS implementation decision was informed by both theoretical principles and practical pattern study.
+
+**Primary sources:**
+
+| Source | Contribution |
+|--------|--------------|
+| Kevin Hoffman, *Real World Event Sourcing* | Laws 4, 8, 10 directly inform pure aggregates, schema immutability, and testing patterns |
+| Scott Wlaschin, *Domain Modeling Made Functional* | Aggregates as consistency boundaries, smart constructor pattern |
+| `~/.claude/commands/preferences/event-sourcing.md` | Theoretical synthesis and decision frameworks |
+
+Hoffman's **Law 4** (work is a side effect) is the central principle: aggregates contain no I/O, enabling pure functional domain logic.
+**Law 8** (event schemas are immutable) drives the upcaster pattern for schema evolution.
+**Law 10** (never test internal state) enables the TestFramework DSL pattern where tests assert events, not aggregate internals.
+
+**Rust pattern libraries** (study material, not dependencies):
+
+| Library | Patterns Studied | Maturity | Notes |
+|---------|------------------|----------|-------|
+| cqrs-es | TestFramework DSL, GenericQuery | Production | Elegant testing pattern adopted |
+| esrs | Pure sync aggregates, Upcaster | Production | Core aggregate pattern adopted |
+| sqlite-es | Event store schema | Production | Schema patterns referenced |
+| kameo_es | Causation tracking, projection backends | Alpha | Actor patterns orthogonal to ironstar; causation tracking worth noting |
+| SierraDB | Distributed event store design | Pre-production | Future reference for multi-node scaling; not suitable for current embedded approach |
+
+The custom implementation enables direct hypertext + datastar integration without adapter layers, while preserving the discipline these frameworks encode.
+
+---
+
 ## Related documentation
 
 - Design principles: `../core/design-principles.md`
