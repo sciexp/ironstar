@@ -210,12 +210,18 @@ All dependencies with local source code available for reference.
 For theoretical foundations and cross-cutting event sourcing principles, see `~/.claude/commands/preferences/event-sourcing.md`.
 That document synthesizes Hoffman's Laws with category-theoretic grounding and provides decision frameworks for when to use event sourcing.
 
-**Primary references:**
+**Primary source materials:**
 
-| Source | Type | Key Patterns |
-|--------|------|--------------|
-| Kevin Hoffman, *Real World Event Sourcing* | Book | Ten Laws of Event Sourcing, process managers, injectors/notifiers, event schema evolution |
-| Scott Wlaschin, *Domain Modeling Made Functional* | Book | Aggregates as consistency boundaries, workflows as pipelines, algebraic domain modeling |
+| Source | Local Path | Key Patterns |
+|--------|------------|--------------|
+| Kevin Hoffman, *Real World Event Sourcing* (2024) | `~/projects/functional-programming-workspace/real-world-event-sourcing/` | Ten Laws of Event Sourcing, process managers, injectors/notifiers, event schema evolution |
+| Debasish Ghosh, *Functional and Reactive Domain Modeling* (2016) | `~/projects/functional-programming-workspace/functional-and-reactive-domain-modeling/` | Module algebra (signatures/algebras/interpreters), algebraic laws, free monads, reactive streams |
+| Scott Wlaschin, *Domain Modeling Made Functional* (2018) | `~/projects/functional-programming-workspace/domain-modeling-made-functional/` | Aggregates as consistency boundaries, workflows as pipelines, railway-oriented programming |
+
+The preference documents synthesize all three approaches:
+- Wlaschin provides practical patterns (smart constructors, workflows as pipelines, making illegal states unrepresentable)
+- Ghosh provides algebraic foundations (signatures/algebras/interpreters, laws as specifications, abstraction hierarchy)
+- Hoffman provides event sourcing depth (aggregate design, projection patterns, process managers, operational concerns)
 
 **Rust pattern libraries** (study material, not dependencies):
 
