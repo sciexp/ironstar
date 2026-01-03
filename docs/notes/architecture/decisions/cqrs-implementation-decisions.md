@@ -317,6 +317,39 @@ For guaranteed consistency on read-after-write, handlers can explicitly wait for
 
 ---
 
+## Deferred patterns: Process managers and sagas
+
+Ironstar v1 targets single-aggregate analytics workflows.
+Multi-aggregate coordination patterns are deferred:
+
+### What's deferred
+
+- **Process managers** (Hoffman Laws 8-9): Stateful coordinators that consume events and emit commands across aggregate boundaries
+- **Sagas**: Long-running transactions with compensation logic
+- **Choreography patterns**: Event-driven coordination without central orchestrator
+
+### Why deferred
+
+1. **Scope focus**: v1 demonstrates CQRS/ES patterns with QuerySession and Todo aggregates independently
+2. **Complexity budget**: Process managers add significant operational complexity
+3. **Single-node deployment**: Distribution patterns aren't needed for embedded architecture
+
+### When to introduce
+
+Consider process managers when:
+- Workflows span multiple aggregates (Order → Payment → Shipping)
+- Compensation logic is required (rollback on partial failure)
+- Long-running processes need durable state (days/weeks)
+
+### Reference
+
+See `~/.claude/commands/preferences/event-sourcing.md` for:
+- Law 8: Never manage more than one flow per process manager
+- Law 9: Process managers consume events and emit commands
+- Saga implementation patterns with compensation
+
+---
+
 ## References
 
 The custom CQRS implementation decision was informed by both theoretical principles and practical pattern study.

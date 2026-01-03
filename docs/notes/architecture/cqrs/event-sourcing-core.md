@@ -14,6 +14,49 @@ These invariants derive from Kevin Hoffman's "Ten Laws of Event Sourcing" (see `
 - Pure aggregate invariant embodies **Law 7** (work is a side effect)
 - Monotonic sequence invariant supports **Law 1** (events are immutable)
 - Events-as-source-of-truth embodies **Laws 3 and 5** (all projection data from events)
+- Failure events preserve state relates to **Law 6** (failures are events)
+
+### Law 6: Failure events preserve previous state
+
+When an aggregate rejects a command due to validation failure or business rule violation, the rejection should be captured as a **failure event** that does NOT modify aggregate state.
+
+**Why this matters:**
+- Audit trail of attempted but rejected operations
+- Retry semantics with idempotency guarantees
+- Analytics on failure patterns and error rates
+- Debugging complex workflows
+
+**Implementation pattern:**
+
+```rust
+// Failure event variant in QuerySessionEvent
+QueryFailed {
+    query_id: QueryId,
+    error: QueryError,
+    failed_at: DateTime<Utc>,
+}
+
+// apply_event for failure event returns state unchanged
+fn apply_event(state: QuerySessionState, event: QuerySessionEvent) -> QuerySessionState {
+    match event {
+        QuerySessionEvent::QueryFailed { .. } => {
+            // State machine transitions to Failed status
+            // but core data (dataset_ref, sql, etc.) preserved
+            QuerySessionState {
+                status: QuerySessionStatus::Failed { ... },
+                ..state  // Preserve other fields
+            }
+        }
+        // ... other variants
+    }
+}
+```
+
+**Failure vs. Error distinction:**
+- **Failure event**: Business rule violation captured in event stream (e.g., `QueryFailed`)
+- **Command error**: Validation rejection before event emission (e.g., `Err(QuerySessionError::QueryAlreadyInProgress)`)
+
+Both are valid—failure events capture rejections that should be audited; command errors handle precondition violations that don't need persistence.
 
 ### Subscribe-before-replay invariant
 
@@ -668,6 +711,25 @@ pub enum QueryCommand {
 - `DomainEvent` uses `#[serde(tag = "type")]` for tagged union JSON serialization, making event payloads human-readable.
 - `ValidationError` uses `thiserror::Error` to automatically implement `std::error::Error` with proper Display formatting.
 - `AppError` uses `#[from]` attribute to enable automatic conversion from `ValidationError` and `sqlx::Error` via the `?` operator.
+
+## Future: Composable commands via free monads
+
+For complex workflows requiring command composition, effect tracking, and testable command sequences, free monads provide a powerful abstraction layer.
+
+**Pattern overview:**
+- Commands become pure data structures (functor)
+- Monadic composition sequences commands without executing effects
+- Interpreters execute command trees in different contexts (production, test, simulation)
+
+**When to consider:**
+- Multi-aggregate workflows requiring coordination
+- Complex validation pipelines with rollback
+- Command replay and simulation scenarios
+
+Ironstar v1 uses direct command handling.
+Free monad layer is deferred for v2 when multi-aggregate orchestration is required.
+
+**Reference:** `~/.claude/commands/preferences/event-sourcing.md` lines 494-636 for complete free monad implementation patterns.
 
 ## References
 

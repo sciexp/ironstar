@@ -186,6 +186,59 @@ By treating analytics as the primary domain from day one, ironstar demonstrates 
 
 ---
 
+## Strategic domain classification
+
+Ironstar's architectural investment follows strategic domain analysis principles.
+Each domain is classified to determine appropriate type sophistication and development investment.
+
+### Classification matrix
+
+| Domain | Classification | Type Sophistication | Rationale |
+|--------|---------------|---------------------|-----------|
+| QuerySession (analytics) | **Core** | Smart constructors, state machines, full event sourcing | Differentiating capability—analytics query management is ironstar's primary value proposition |
+| Todo | **Generic Example** | Simple ADTs, basic validation | Stock TodoMVC pattern for demonstration; no domain-specific innovation |
+| Event sourcing infrastructure | **Generic** | Trait abstractions, adapter pattern | Reusable CQRS/ES foundation applicable to any domain |
+| Session management | **Supporting** | Standard patterns, security focus | Necessary for operation but not differentiating |
+| Authentication (OAuth) | **Supporting** | Library wrappers, configuration | Cross-cutting concern using established protocols |
+
+### Investment implications
+
+**Core domains** (QuerySession) justify:
+- Extensive testing (property-based, state machine coverage)
+- Formal specification consideration (Idris2 type-level proofs)
+- Deep documentation (semantic-model.md categorical grounding)
+- Custom implementation over libraries
+
+**Supporting domains** (Session, Auth) receive:
+- Standard patterns from established libraries
+- Configuration-driven behavior
+- Adequate but not exhaustive testing
+
+**Generic domains** (ES infrastructure, Todo example) receive:
+- Trait-based abstractions for flexibility
+- Implementation following ecosystem conventions
+- Documentation focused on usage, not theory
+
+### Type sophistication gradient
+
+| Classification | Type Approach | Example |
+|---------------|---------------|---------|
+| Core | Dependent types, refinement types, smart constructors with rich validation | `SqlQuery::new()` validates SQL safety, length, complexity |
+| Supporting | Smart constructors, newtypes, standard ADTs | `SessionId` newtype wrapper |
+| Generic | Simple types, library wrappers | `TodoId(Uuid)` minimal wrapper |
+
+This gradient ensures development investment matches strategic importance.
+Core domain types receive the most sophisticated treatment because bugs there have the highest business impact.
+
+### Discovery connection
+
+Strategic classification emerges from discovery sessions (see `discovery-and-specification.md`):
+- Core Domain Charts plot complexity vs. differentiation
+- Purpose Alignment Model identifies build vs. buy decisions
+- EventStorming reveals which aggregates carry domain complexity
+
+---
+
 ## Component selection matrix
 
 | Component | Role | Algebraic Property | Effect Boundary |

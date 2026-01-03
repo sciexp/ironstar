@@ -403,6 +403,100 @@ async fn execute_command(cmd: QueryCommand, store: Arc<dyn EventStore>) -> Resul
 Isolating effects at boundaries enables local reasoning about pure functions, testability without mocks, and principled composition.
 See `design-principles.md` section "Effect boundaries" for the complete layer model.
 
+### Module algebra (signature/algebra/interpreter)
+
+Domain services follow a three-part structure from Debasish Ghosh's "Functional and Reactive Domain Modeling":
+
+**Signature**: A trait defining abstract operations without implementation.
+The signature publishes the contract—what operations exist and their types.
+
+```rust
+// Signature: abstract operations
+pub trait EventStore: Send + Sync {
+    type Error: Error;
+
+    async fn append(&self, events: Vec<StoredEvent>) -> Result<(), Self::Error>;
+    async fn load(&self, stream_id: &str) -> Result<Vec<StoredEvent>, Self::Error>;
+}
+```
+
+**Algebra**: A concrete implementation of the signature.
+Multiple algebras can implement the same signature for different contexts.
+
+```rust
+// Algebra: SQLite implementation
+pub struct SqliteEventStore { pool: SqlitePool }
+
+impl EventStore for SqliteEventStore {
+    type Error = sqlx::Error;
+
+    async fn append(&self, events: Vec<StoredEvent>) -> Result<(), Self::Error> {
+        // SQLite-specific implementation
+    }
+}
+
+// Algebra: In-memory implementation (for testing)
+pub struct InMemoryEventStore { events: Arc<RwLock<Vec<StoredEvent>>> }
+
+impl EventStore for InMemoryEventStore {
+    type Error = Infallible;
+    // In-memory implementation
+}
+```
+
+**Interpreter**: Runtime selection and execution context.
+Configuration determines which algebra is instantiated.
+
+```rust
+// Interpreter: configuration-driven selection
+fn create_event_store(config: &Config) -> Box<dyn EventStore<Error = anyhow::Error>> {
+    match config.storage {
+        StorageConfig::Sqlite { path } => Box::new(SqliteEventStore::new(path)),
+        StorageConfig::InMemory => Box::new(InMemoryEventStore::new()),
+    }
+}
+```
+
+This separation enables:
+
+- **Testability**: Swap SqliteEventStore for InMemoryEventStore in tests
+- **Flexibility**: Add new storage backends without changing clients
+- **Clarity**: Interface contract is explicit and documented
+
+### Categorical vocabulary
+
+Ironstar's architecture uses concepts from category theory.
+Plain-English definitions:
+
+**Free monoid**: A structure where the only operation is "append" with no inverse.
+Event streams are free monoids—you can only add events, never remove or modify them.
+The "free" means no additional laws beyond associativity and identity.
+
+**Catamorphism**: A fold operation that reduces a structure to a single value.
+State reconstruction is a catamorphism: `fold(apply_event, initial_state, events) → current_state`.
+The term means "downward shape"—collapsing structure.
+
+**Kleisli arrow**: A function that returns a wrapped value, like `A → Result<B, E>`.
+Command validation is Kleisli composition—each step returns Result, and the `?` operator chains them.
+Named after mathematician Heinrich Kleisli.
+
+**Functor**: A structure-preserving map between categories.
+ACLs are functors—they translate types and operations from one context to another while preserving relationships.
+The `map` operation on Option/Result is a functor.
+
+**Adjunction**: A pair of functors that are "optimal" translations between categories.
+Projections form a Galois connection (a type of adjunction)—abstracting events to views loses information, but concretizing views back gives the "best approximation."
+
+**Coalgebra**: The dual of algebra—instead of combining values, it unfolds them.
+Web components are coalgebras: given current state, produce output and next-state function.
+State machines are coalgebraic.
+
+**Profunctor**: A two-argument functor, contravariant in the first argument, covariant in the second.
+CQRS has profunctor structure: commands (input) compose backwards, views (output) compose forwards.
+
+These terms appear in `semantic-model.md` with formal definitions.
+This glossary provides intuition.
+
 ---
 
 ## Related documentation
