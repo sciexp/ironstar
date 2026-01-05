@@ -11,7 +11,7 @@ Understanding these invariants is essential before implementing any CQRS compone
 
 These invariants derive from Kevin Hoffman's "Ten Laws of Event Sourcing" (see `~/.claude/commands/preferences/event-sourcing.md` for complete Law definitions):
 - Subscribe-before-replay relates to event ordering semantics
-- Pure aggregate invariant embodies **Law 7** (work is a side effect)
+- Pure Decider invariant embodies **Law 7** (work is a side effect)
 - Monotonic sequence invariant supports **Law 1** (events are immutable)
 - Events-as-source-of-truth embodies **Laws 3 and 5** (all projection data from events)
 - Failure events preserve state relates to **Law 6** (failures are events)
@@ -76,39 +76,67 @@ let mut rx = state.event_bus.subscribe(); // Events emitted during replay are lo
 The correct ordering ensures that even if new events arrive during historical replay, they are buffered in the broadcast channel and will be processed after replay completes.
 See `sse-connection-lifecycle.md` for the complete connection state machine.
 
-### Pure aggregate invariant
+### Pure Decider invariant
 
-Aggregate `handle_command` and `apply_event` functions must be pure: synchronous, deterministic, with no side effects.
-All I/O operations (database queries, API calls, random number generation, system time) must occur in the application layer before calling the aggregate.
+Decider `decide` and `evolve` functions must be pure: synchronous, deterministic, with no side effects.
+All I/O operations (database queries, API calls, random number generation, system time) must occur in the application layer before calling the Decider.
+
+ironstar uses fmodel-rust's Decider pattern, which enforces purity via type signatures:
 
 ```rust
-// CORRECT: Pure aggregate with pre-validated inputs
-impl QuerySessionAggregate {
-    pub fn handle_command(state: &QuerySessionState, cmd: QuerySessionCommand) -> Result<Vec<QueryEvent>, QueryError> {
-        // No async, no I/O, deterministic
-        match cmd {
-            QuerySessionCommand::StartQuery { query_id, sql } => {
-                if state.status != SessionStatus::Idle {
-                    return Err(QueryError::InvalidTransition);
+// CORRECT: Pure Decider with pre-validated inputs
+pub fn query_session_decider<'a>() -> Decider<'a, QuerySessionCommand, QuerySessionState, QueryEvent, QueryError> {
+    Decider {
+        decide: Box::new(|command, state| {
+            // No async, no I/O, deterministic
+            match command {
+                QuerySessionCommand::StartQuery { query_id, sql } => {
+                    if state.status != SessionStatus::Idle {
+                        return Ok(vec![QueryEvent::NotStarted {
+                            reason: "Invalid state transition".into()
+                        }]);
+                    }
+                    Ok(vec![QueryEvent::QueryStarted {
+                        query_id: query_id.clone(),
+                        sql: sql.clone(),
+                        started_at: Utc::now()
+                    }])
                 }
-                Ok(vec![QueryEvent::QueryStarted { query_id, sql, started_at: cmd.timestamp }])
+                // ...
             }
-            // ...
-        }
+        }),
+        evolve: Box::new(|state, event| {
+            // Pure state transition
+            match event {
+                QueryEvent::QueryStarted { .. } => QuerySessionState {
+                    status: SessionStatus::Running,
+                    ..state.clone()
+                },
+                // ...
+            }
+        }),
+        initial_state: Box::new(|| QuerySessionState::default()),
     }
 }
 
-// INCORRECT: Aggregate performing I/O
-impl QuerySessionAggregate {
-    pub async fn handle_command(state: &QuerySessionState, cmd: QuerySessionCommand) -> Result<Vec<QueryEvent>, QueryError> {
-        let results = execute_duckdb_query(&cmd.sql).await?; // Violates purity
+// INCORRECT: Attempting async in Decider (compile error)
+pub fn bad_decider() -> Decider<...> {
+    Decider {
+        decide: Box::new(|command, state| async {  // ❌ Type error: expects sync Fn
+            let results = execute_duckdb_query(&command.sql).await?;
+            // ...
+        }),
         // ...
     }
 }
 ```
 
-This purity enables testing aggregates without infrastructure, replaying events to reconstruct state, and reasoning about domain logic independently of I/O concerns.
-See `../core/design-principles.md` for the complete pure aggregate pattern and `command-write-patterns.md` for testing strategies.
+The Decider type signature enforces purity by construction:
+- `decide: Box<dyn Fn(&C, &S) -> Result<Vec<E>, Error> + Send + Sync>` — no async, no mutable state
+- `evolve: Box<dyn Fn(&S, &E) -> S + Send + Sync>` — pure state transition
+
+This purity enables testing Deciders without infrastructure, replaying events to reconstruct state, and reasoning about domain logic independently of I/O concerns.
+See `../core/design-principles.md` for the complete pure Decider pattern and `command-write-patterns.md` for testing strategies with DeciderTestSpecification.
 
 ### Monotonic sequence invariant
 
@@ -343,10 +371,13 @@ impl UpcasterChain {
 }
 
 /// Load events with automatic schema upcasting
-pub fn load_events_with_upcasting<A: Aggregate>(
+pub fn load_events_with_upcasting<E>(
     raw_events: Vec<StoredEvent>,
     upcaster_chain: &UpcasterChain,
-) -> Vec<A::Event> {
+) -> Vec<E>
+where
+    E: serde::de::DeserializeOwned,
+{
     raw_events
         .into_iter()
         .filter_map(|stored| {
@@ -485,98 +516,113 @@ pub async fn subscribe_query_events(
 
 See `../infrastructure/analytics-cache-architecture.md` for complete cache design including TTL-based eviction and Zenoh invalidation patterns.
 
-## Aggregate trait with optimistic locking
+## Decider pattern with optimistic locking
 
-The Aggregate trait requires a `version()` method for optimistic concurrency control.
+ironstar uses fmodel-rust's Decider pattern for event sourcing.
+The Decider pattern separates pure domain logic (decide/evolve) from effect-laden infrastructure (EventRepository).
+
+### Decider type signatures
+
+```rust
+use fmodel_rust::decider::Decider;
+
+/// Core Decider (pure domain)
+pub struct Decider<'a, C, S, E, Error = ()> {
+    /// Validates command against current state and emits events
+    /// Pure function: no async, no I/O, no side effects
+    pub decide: Box<dyn Fn(&C, &S) -> Result<Vec<E>, Error> + 'a + Send + Sync>,
+
+    /// Applies an event to produce new state
+    /// Pure state transition function
+    pub evolve: Box<dyn Fn(&S, &E) -> S + 'a + Send + Sync>,
+
+    /// Returns the initial state for a new aggregate
+    pub initial_state: Box<dyn Fn() -> S + 'a + Send + Sync>,
+}
+```
+
+### Mapping from previous Aggregate trait
+
+The Decider pattern maps directly to ironstar's previous Aggregate trait:
+
+| Previous Aggregate Trait | fmodel-rust Decider | Notes |
+|--------------------------|---------------------|-------|
+| `handle_command(state, cmd) → Result<Vec<Event>, Error>` | `decide: Fn(&C, &S) → Result<Vec<E>, Error>` | Direct 1:1 |
+| `apply_event(state, event) → State` | `evolve: Fn(&S, &E) → S` | Direct 1:1 |
+| `State::default()` | `initial_state: Fn() → S` | Direct 1:1 |
+| `version()` method | `EventRepository::version_provider` | Version tracking moved to repository |
+
+The key difference: version tracking moves from the Aggregate trait to the EventRepository implementation.
+This separates pure domain logic (Decider) from infrastructure concerns (version management).
+
+### Optimistic locking with EventRepository
+
+The EventRepository trait provides `version_provider()` for optimistic concurrency control.
 This prevents lost updates when two concurrent commands target the same aggregate.
 
 ```rust
-use std::error::Error;
+use fmodel_rust::aggregate::EventRepository;
 
-/// Pure synchronous aggregate with no side effects.
-///
-/// Aggregates derive their state solely from their event stream.
-/// Applying the same events in the same order always yields identical state.
-pub trait Aggregate: Default + Send + Sync {
-    /// Unique name for this aggregate type.
-    /// Changing this breaks the link between existing aggregates and their events.
-    const NAME: &'static str;
+/// Infrastructure boundary for event persistence
+pub trait EventRepository<C, E, Version, Error> {
+    /// Fetch events for an aggregate identified by command
+    fn fetch_events(&self, command: &C) -> impl Future<Output = Result<Vec<(E, Version)>, Error>> + Send;
 
-    /// Internal aggregate state, derived from events.
-    type State: Default + Clone + Send + Sync;
+    /// Save events with optimistic locking
+    /// Returns error if version conflict detected
+    fn save(&self, events: &[E]) -> impl Future<Output = Result<Vec<(E, Version)>, Error>> + Send;
 
-    /// Commands represent requests to change state.
-    type Command;
-
-    /// Events represent facts that occurred in the domain.
-    type Event: Clone;
-
-    /// Domain errors from command validation.
-    type Error: Error;
-
-    /// Pure function: validates command against current state and emits events.
-    /// No async, no I/O, no side effects.
-    fn handle_command(state: &Self::State, cmd: Self::Command) -> Result<Vec<Self::Event>, Self::Error>;
-
-    /// Pure state transition: applies an event to produce new state.
-    /// If the event cannot be applied (programmer error), this may panic.
-    fn apply_event(state: Self::State, event: Self::Event) -> Self::State;
-
-    /// Returns the current aggregate version (number of events applied).
-    /// Used for optimistic locking when appending events to the event store.
-    fn version(&self) -> u64;
+    /// Get current version for optimistic lock
+    fn version_provider(&self, event: &E) -> impl Future<Output = Result<Option<Version>, Error>> + Send;
 }
 ```
 
-### Optimistic locking with version()
-
-The `version()` method returns the number of events applied to the aggregate, serving as an optimistic lock.
-When persisting events, the event store checks that the expected version matches the actual version in the database.
-Concurrent modifications cause the append to fail with a concurrency error, allowing retry with fresh state.
-
-**Command handler pattern:**
+**Command handler pattern with EventSourcedAggregate:**
 
 ```rust
-async fn handle_command<A: Aggregate>(
-    store: &SqliteEventStore,
-    bus: &broadcast::Sender<StoredEvent>,
-    aggregate_id: &str,
-    command: A::Command,
-) -> Result<Vec<StoredEvent>, CommandError<A::Error>> {
-    let events = store.query_aggregate(A::NAME, aggregate_id).await?;
-    let aggregate = events.into_iter()
-        .filter_map(|e| deserialize_event::<A>(&e))
-        .fold(A::default(), |agg, event| A::apply_event(agg, event));
+use fmodel_rust::aggregate::EventSourcedAggregate;
 
-    let expected_version = aggregate.version(); // Capture for optimistic lock
+async fn handle_command(
+    repository: Arc<SqliteEventRepository>,
+    decider: Decider<QueryCommand, QueryState, QueryEvent, QueryError>,
+    command: QueryCommand,
+) -> Result<Vec<(QueryEvent, Uuid)>, AppError> {
+    let aggregate = EventSourcedAggregate::new(repository, decider);
 
-    let new_events = A::handle_command(&aggregate.state, command)
-        .map_err(CommandError::Domain)?;
+    // EventSourcedAggregate handles:
+    // 1. fetch_events() to load current state
+    // 2. Fold events via evolve() to reconstruct state
+    // 3. Call decide() with command and state
+    // 4. save() new events with version_provider() for optimistic lock
+    let events = aggregate.handle(&command).await?;
 
-    let stored = store.append_with_version(
-        A::NAME, aggregate_id, expected_version, new_events
-    ).await?; // Rejects if version differs
-
-    for event in &stored { let _ = bus.send(event.clone()); }
-    Ok(stored)
+    Ok(events)
 }
 ```
 
+The EventRepository implementation (SQLite) uses the `previous_id` field for optimistic locking:
+- First event in stream: `previous_id = NULL`
+- Subsequent events: `previous_id = event_id` of previous event
+- `UNIQUE(previous_id)` constraint prevents concurrent appends
+- Conflict detection: second writer violates unique constraint → retry with fresh state
+
 See `command-write-patterns.md` for complete command handler patterns including error handling and retry strategies.
+For the SQLite EventRepository implementation, see the fmodel-rust adoption evaluation: `../decisions/fmodel-rust-adoption-evaluation.md`.
 
-## Reference implementation: QuerySessionAggregate
+## Reference implementation: QuerySession Decider
 
-For a concrete example of the Aggregate pattern applied to analytics workloads, see the northstar tracer bullet specification:
+For a concrete example of the Decider pattern applied to analytics workloads, see the northstar tracer bullet specification, which ironstar adapts to use fmodel-rust's Decider:
 
-**Source:** `~/projects/lakescope-workspace/datastar-go-nats-template-northstar/docs/notes/architecture/rust-cqrs-es-datastar/domain-layer.md`
+**Original specification (custom Aggregate trait):** `~/projects/lakescope-workspace/datastar-go-nats-template-northstar/docs/notes/architecture/rust-cqrs-es-datastar/domain-layer.md`
 
-The QuerySessionAggregate demonstrates:
+**ironstar implementation:** QuerySession as a Decider function with the following characteristics:
 - Session-scoped analytics with query lifecycle states (Pending → Executing → Completed/Failed)
-- DuckDB async query execution spawned from command handler
-- Zenoh publication of result events
+- DuckDB async query execution spawned from application layer after event persistence
+- Zenoh publication of result events for SSE broadcast
 - Value objects with smart constructors (DatasetRef, SqlQuery, QueryId)
 
-This reference implementation shows how the pure sync aggregate pattern applies to long-running analytics operations where the actual query execution happens asynchronously after event persistence.
+The Decider pattern enforces that query execution happens in the application layer (after `EventSourcedAggregate::handle()` persists events), not within the pure `decide()` function.
+This preserves the async/sync boundary: Decider functions are pure and synchronous, while I/O operations occur in the application layer using the EventSourcedAggregate wrapper.
 
 ## Appendix: Common type definitions
 
@@ -712,24 +758,50 @@ pub enum QueryCommand {
 - `ValidationError` uses `thiserror::Error` to automatically implement `std::error::Error` with proper Display formatting.
 - `AppError` uses `#[from]` attribute to enable automatic conversion from `ValidationError` and `sqlx::Error` via the `?` operator.
 
-## Future: Composable commands via free monads
+## Future: Multi-aggregate coordination with Saga
 
-For complex workflows requiring command composition, effect tracking, and testable command sequences, free monads provide a powerful abstraction layer.
+For complex workflows requiring multi-aggregate coordination, fmodel-rust provides the Saga pattern for event-driven choreography.
 
-**Pattern overview:**
-- Commands become pure data structures (functor)
-- Monadic composition sequences commands without executing effects
-- Interpreters execute command trees in different contexts (production, test, simulation)
+**Saga pattern overview:**
+- Pure function: `react: Fn(&ActionResult) → Vec<Action>`
+- Maps action results (events from one aggregate) to new actions (commands for other aggregates)
+- Enables process manager semantics without external orchestration
 
-**When to consider:**
-- Multi-aggregate workflows requiring coordination
-- Complex validation pipelines with rollback
-- Command replay and simulation scenarios
+**When to use:**
+- Multi-aggregate workflows requiring coordination (e.g., Order → Payment → Shipping)
+- Compensating transactions for rollback scenarios
+- Event-driven choreography between bounded contexts
 
-Ironstar v1 uses direct command handling.
-Free monad layer is deferred for v2 when multi-aggregate orchestration is required.
+**Example from fmodel-rust-demo:**
 
-**Reference:** `~/.claude/commands/preferences/event-sourcing.md` lines 494-636 for complete free monad implementation patterns.
+```rust
+use fmodel_rust::saga::Saga;
+
+pub fn order_payment_saga<'a>() -> Saga<'a, OrderEvent, PaymentCommand> {
+    Saga {
+        react: Box::new(|event| match event {
+            OrderEvent::Placed { order_id, amount, .. } => {
+                vec![PaymentCommand::InitiatePayment {
+                    order_id: order_id.clone(),
+                    amount: amount.clone(),
+                }]
+            }
+            OrderEvent::Cancelled { order_id, .. } => {
+                vec![PaymentCommand::RefundPayment {
+                    order_id: order_id.clone(),
+                }]
+            }
+            _ => vec![],
+        }),
+    }
+}
+```
+
+Ironstar v1 uses single-aggregate Deciders with direct command handling.
+Saga-based coordination is available when multi-aggregate workflows are needed.
+
+**Alternative (deferred):** Free monad layer for advanced command composition and simulation.
+See `~/.claude/commands/preferences/event-sourcing.md` lines 494-636 for free monad implementation patterns.
 
 ## References
 
@@ -749,15 +821,30 @@ Free monad layer is deferred for v2 when multi-aggregate orchestration is requir
 
 ### CQRS and event sourcing frameworks
 
-Rust pattern libraries (study material, not dependencies):
+**Primary framework (dependency):**
 
-| Library | Patterns Studied | Maturity |
-|---------|------------------|----------|
-| cqrs-es | TestFramework DSL, GenericQuery, Aggregate trait | Production |
-| esrs | Pure sync aggregates (adopted), Schema/Upcaster pattern | Production |
-| sqlite-es | SQLite event store schema, optimistic locking | Production |
-| kameo_es | Actor + ES composition, causation tracking, projection backends | Alpha |
-| SierraDB | Distributed event store design, partition-based sharding | Pre-production |
+| Library | Role | Maturity |
+|---------|------|----------|
+| fmodel-rust | Decider pattern, EventRepository trait, Saga coordination, DeciderTestSpecification | Production |
+
+Local paths:
+
+- fmodel-rust library: `/Users/crs58/projects/rust-workspace/fmodel-rust/`
+- fmodel-rust demo (Order + Restaurant): `/Users/crs58/projects/rust-workspace/fmodel-rust-demo/`
+- fmodel-rust PostgreSQL adapter: `/Users/crs58/projects/rust-workspace/fmodel-rust-postgres/` (reference for SQLite port)
+- fmodel (Kotlin original): `/Users/crs58/projects/rust-workspace/fmodel/` (canonical reference)
+
+See `../decisions/fmodel-rust-adoption-evaluation.md` for complete evaluation and adoption rationale.
+
+**Alternative frameworks (study material, not dependencies):**
+
+| Library | Patterns Studied | Why Not Adopted |
+|---------|------------------|-----------------|
+| cqrs-es | TestFramework DSL, GenericQuery, Aggregate trait | Mutable `apply(&mut self)` violates purity |
+| esrs | Pure sync aggregates, Schema/Upcaster pattern | PostgreSQL-only; no SQLite backend |
+| sqlite-es | SQLite event store schema, optimistic locking | Thin adapter; patterns adopted, not library |
+| kameo_es | Actor + ES composition, causation tracking, projection backends | Alpha maturity |
+| SierraDB | Distributed event store design, partition-based sharding | Pre-production; overkill for single-node |
 
 Local paths for pattern study:
 
