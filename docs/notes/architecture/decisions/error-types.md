@@ -215,6 +215,12 @@ use std::fmt;
 
 /// Aggregate-level errors combining validation and domain errors.
 ///
+/// Note: The 'Aggregate' in AggregateError refers to error aggregation (combining
+/// multiple validation errors into a single result), not domain aggregates or
+/// event sourcing aggregates.
+/// This error type is used equally with fmodel-rust's Decider pattern and works
+/// at the application layer boundary.
+///
 /// The `Validation` variant holds a `Vec` to support applicative validation:
 /// collect all field errors rather than failing on the first.
 /// The `Domain` variant holds a single error for monadic (fail-fast) semantics.
