@@ -5,13 +5,13 @@ Both implementations target Rust + Datastar + DuckDB analytics applications but 
 
 ## Executive summary
 
-**Ironstar**: General-purpose CQRS template emphasizing single-node deployment, Zenoh event bus (embedded mode) with optional tokio::broadcast fallback, and pure in-memory projections rebuilt on startup.
+**Ironstar**: General-purpose CQRS template using fmodel-rust's Decider pattern for event sourcing, emphasizing single-node deployment with Zenoh event bus (embedded mode) and pure in-memory projections rebuilt on startup.
 
 **Northstar tracer bullet**: Analytics-focused CQRS specification with QuerySessionAggregate for DuckDB query execution, Zenoh from the start, and 5-crate workspace structure.
 
 **Key alignment**: Both use pure sync aggregates, SQLite event store with optimistic locking, SSE with Last-Event-ID reconnection, and UUID-tracked errors.
 
-**Key divergence**: Ironstar uses Zenoh from day one; northstar also uses Zenoh from the start.
+**Key divergence**: Ironstar uses fmodel-rust's Decider pattern (pure function enforcement via type system) while northstar uses trait-based aggregates with mutable apply methods.
 Ironstar uses 8-layer crate decomposition with HasXxx traits; northstar uses 5-crate workspace.
 Ironstar emphasizes 4 critical invariants; northstar focuses on QuerySessionAggregate + DuckDB integration.
 
@@ -19,24 +19,52 @@ Ironstar emphasizes 4 critical invariants; northstar focuses on QuerySessionAggr
 
 ### Signature and purity
 
-| Aspect | Ironstar | Northstar Tracer Bullet | Alignment |
-|--------|----------|-------------------------|-----------|
-| **Pure sync aggregates** | `handle_command(state, cmd) -> Result<Vec<Event>, Error>` | `handle(&self, command) -> Result<Vec<Event>, Error>` | ✅ Aligned |
-| **Async in aggregate** | Forbidden (Pure Aggregate Invariant) | Forbidden | ✅ Aligned |
-| **I/O location** | Application layer before aggregate | Application layer (CommandHandler spawns DuckDB queries) | ✅ Aligned |
-| **State management** | Immutable state passed to pure functions | Mutable `&self` with immutable internal state | ⚠️ Compatible (different styles) |
+| Aspect | Ironstar (fmodel-rust) | Northstar Tracer Bullet | Alignment |
+|--------|------------------------|-------------------------|-----------|
+| **Pure sync aggregates** | `Decider { decide: Fn(&C, &S) -> Result<Vec<E>, Error>, evolve: Fn(&S, &E) -> S }` | `handle(&self, command) -> Result<Vec<Event>, Error>` | ✅ Aligned (fmodel stricter) |
+| **Async in aggregate** | Forbidden by type signature (no async) | Forbidden | ✅ Aligned |
+| **I/O location** | EventRepository (infrastructure) | Application layer (CommandHandler spawns DuckDB queries) | ✅ Aligned |
+| **State management** | Pure functions, no mutation | Mutable `&mut self.apply()` | ⚠️ fmodel enforces purity via types |
+| **Purity enforcement** | Type system (Fn signature cannot contain async/I/O) | Convention + documentation | ✅ fmodel stronger |
 
-**Ironstar pattern:**
+**Ironstar pattern (fmodel-rust Decider):**
 ```rust
-pub trait Aggregate: Default + Send + Sync {
-    const NAME: &'static str;
-    type State: Default + Clone + Send + Sync;
-    type Command;
-    type Event: Clone;
-    type Error: Error;
+use fmodel_rust::decider::Decider;
 
-    fn handle_command(state: &Self::State, cmd: Self::Command) -> Result<Vec<Self::Event>, Self::Error>;
-    fn apply_event(state: Self::State, event: Self::Event) -> Self::State;
+pub fn todo_decider<'a>() -> Decider<'a, TodoCommand, Option<TodoState>, TodoEvent, TodoError> {
+    Decider {
+        decide: Box::new(|command, state| match command {
+            TodoCommand::Create { id, text } => {
+                if state.is_some() {
+                    Ok(vec![TodoEvent::NotCreated {
+                        id: id.clone(),
+                        reason: "Todo already exists".into()
+                    }])
+                } else {
+                    Ok(vec![TodoEvent::Created {
+                        id: id.clone(),
+                        text: text.clone(),
+                        created_at: Utc::now()
+                    }])
+                }
+            }
+            // ... other commands
+        }),
+
+        evolve: Box::new(|state, event| match event {
+            TodoEvent::Created { id, text, created_at } => Some(TodoState {
+                id: id.clone(),
+                text: text.clone(),
+                created_at: *created_at,
+                status: TodoStatus::Active,
+                completed_at: None,
+            }),
+            TodoEvent::NotCreated { .. } => state.clone(),
+            // ... other events
+        }),
+
+        initial_state: Box::new(|| None),
+    }
 }
 ```
 
@@ -57,22 +85,47 @@ pub trait Aggregate: Default + Serialize + for<'de> Deserialize<'de> + Clone + S
 
 **Assessment:**
 
-Both enforce pure synchronous aggregates with no side effects.
-Ironstar uses immutable functional style (`state: &Self::State`), while northstar uses mutable methods (`&mut self`).
-Both approaches are valid — ironstar's functional style aligns with esrs reference patterns, while northstar's mutable style is more conventional OOP.
+Both enforce pure synchronous aggregates with no side effects, but fmodel-rust provides stronger guarantees.
+Ironstar uses fmodel-rust's Decider pattern where pure functions are enforced by type signatures: `Fn(&C, &S) -> Result<Vec<E>, Error>` cannot contain async or I/O operations.
+Northstar uses trait-based aggregates with mutable `apply(&mut self)` methods, relying on convention to prevent side effects.
 
-**Divergence requiring resolution:**
+fmodel-rust's approach directly implements Hoffman's Law 7 ("Work is a side effect") by making it type-impossible to perform I/O in decision logic.
 
-None.
-The functional vs OOP style is an implementation detail that doesn't affect correctness.
-Ironstar can adopt northstar's mutable style for aggregate state management if preferred.
+**Key advantage of fmodel-rust:**
+
+The `Decider` type signature guarantees purity at compile time.
+You cannot accidentally introduce async I/O into decision logic because the Fn signature rejects it.
+This is stronger than northstar's convention-based approach where `handle(&self)` could theoretically perform I/O if the developer violates the pattern.
 
 ### Version tracking
 
-| Aspect | Ironstar | Northstar Tracer Bullet | Alignment |
-|--------|----------|-------------------------|-----------|
-| **Version field** | Not explicit in Aggregate trait | `version(&self) -> u64` method | ❌ Divergence |
-| **Optimistic locking** | Via EventStore with sequence numbers | Via version field in aggregate | ⚠️ Compatible |
+| Aspect | Ironstar (fmodel-rust) | Northstar Tracer Bullet | Alignment |
+|--------|------------------------|-------------------------|-----------|
+| **Version field** | Delegated to EventRepository::version_provider | `version(&self) -> u64` method in aggregate | ✅ Delegated to infrastructure |
+| **Optimistic locking** | `previous_id` UNIQUE constraint in SQLite | Via version field passed to event_store | ✅ Compatible (different mechanisms) |
+
+**Ironstar's version tracking (fmodel-rust EventRepository):**
+```rust
+impl<C, E> EventRepository<C, E, Uuid, EventStoreError> for SqliteEventRepository {
+    async fn version_provider(&self, event: &E) -> Result<Option<Uuid>, EventStoreError> {
+        let row = sqlx::query_scalar::<_, String>(
+            "SELECT event_id FROM events
+             WHERE decider_id = ? AND decider = ?
+             ORDER BY offset DESC LIMIT 1"
+        )
+        .bind(event.identifier())
+        .bind(event.decider_type())
+        .fetch_optional(&self.pool)
+        .await?;
+
+        row.map(|id| id.parse().map_err(EventStoreError::from)).transpose()
+    }
+}
+
+// Optimistic locking via previous_id UNIQUE constraint
+// INSERT INTO events (event_id, previous_id, ...) VALUES (?, ?, ...)
+// Second concurrent writer violates UNIQUE(previous_id) → retry
+```
 
 **Northstar's version tracking:**
 ```rust
@@ -94,13 +147,21 @@ self.event_store.append_events(
 
 **Assessment:**
 
-Northstar explicitly tracks aggregate version for optimistic locking at the aggregate level.
-Ironstar relies on SQLite AUTOINCREMENT sequence numbers for monotonic ordering.
+Both implementations provide optimistic locking but use different mechanisms.
+Ironstar uses fmodel-rust's EventRepository trait where version tracking is delegated to the infrastructure layer via `version_provider()`.
+The SQLite implementation uses a `previous_id` column with UNIQUE constraint: the first event has `previous_id = NULL`, subsequent events reference the previous event's UUID.
+When two writers attempt to append concurrently, the second violates the UNIQUE constraint and must retry.
 
-**Resolution:**
+Northstar tracks version explicitly in the aggregate and passes it to the event store for validation.
 
-Ironstar should add `version(&self) -> u64` to its Aggregate trait to match northstar.
-The version field enables optimistic locking checks before appending events, preventing concurrent modification conflicts.
+**Key advantage of fmodel-rust's approach:**
+
+Version tracking is an infrastructure concern, not a domain concern.
+The Decider (pure domain logic) doesn't need to know about versioning.
+The EventRepository handles optimistic locking at the database level via the `previous_id` mechanism.
+This separation preserves the Decider's purity while still preventing concurrent modification conflicts.
+
+See evaluation document lines 200-207 for detailed explanation of the `previous_id` optimistic locking mechanism.
 
 ## 2. Event store schema
 
@@ -195,32 +256,35 @@ This schema provides:
 | **Publish** | tokio::broadcast::send() | ZenohPublisher::publish_batch() | ❌ Divergence |
 | **Async query execution** | async-duckdb Client/Pool with async API | async-duckdb Client/Pool with async API | ✅ Aligned |
 
-**Ironstar pattern:**
+**Ironstar pattern (fmodel-rust EventSourcedAggregate):**
 ```rust
-async fn handle_command<A: Aggregate>(
-    store: &SqliteEventStore,
-    bus: &broadcast::Sender<StoredEvent>,
-    aggregate_id: &str,
-    cmd: A::Command,
-) -> Result<Vec<A::Event>, CommandError<A::Error>> {
-    // 1. Load
-    let events = store.load_events(A::NAME, aggregate_id).await?;
-    let state = A::from_events(events);
+use fmodel_rust::aggregate::EventSourcedAggregate;
 
-    // 2. Decide (pure)
-    let new_events = A::handle_command(&state, cmd)?;
+pub async fn handle_todo_command(
+    State(app_state): State<AppState>,
+    Json(command): Json<TodoCommand>,
+) -> impl IntoResponse {
+    let aggregate = EventSourcedAggregate::new(
+        app_state.event_repository.clone(),
+        todo_decider(),
+    );
 
-    // 3. Persist
-    for event in &new_events {
-        store.append(A::NAME, aggregate_id, event).await?;
+    // EventSourcedAggregate handles load → decide → persist internally
+    match aggregate.handle(&command).await {
+        Ok(events) => {
+            // Publish to Zenoh for SSE broadcast
+            for (event, _version) in &events {
+                app_state.zenoh.put(
+                    format!("events/Todo/{}", event.identifier()),
+                    serde_json::to_vec(event).unwrap(),
+                ).await.ok();
+            }
+            (StatusCode::ACCEPTED, Json(events)).into_response()
+        }
+        Err(err) => {
+            (StatusCode::BAD_REQUEST, Json(err)).into_response()
+        }
     }
-
-    // 4. Publish
-    for event in &new_events {
-        let _ = bus.send(event.clone());
-    }
-
-    Ok(new_events)
 }
 ```
 
@@ -265,11 +329,22 @@ pub async fn handle(
 
 **Assessment:**
 
-Both follow the classic CQRS command handling pattern.
+Both follow the classic CQRS command handling pattern: load → decide → persist → publish.
+
+Key differences:
+1. **Ironstar (fmodel-rust)**: The `EventSourcedAggregate::handle()` method encapsulates the load → decide → persist flow, exposing only the command input and event output. The Axum handler only needs to publish events to Zenoh.
+2. **Northstar**: The command handler explicitly orchestrates load → decide → persist → publish, giving more control but requiring more boilerplate.
+
 Northstar adds:
-1. Explicit optimistic locking with version check
-2. Background task spawning for long-running DuckDB queries
-3. Zenoh publication instead of tokio::broadcast
+1. Explicit optimistic locking with version check (ironstar handles this in EventRepository)
+2. Background task spawning for long-running DuckDB queries (analytics-specific pattern)
+3. Zenoh publication (both use Zenoh)
+
+**Key advantage of fmodel-rust's EventSourcedAggregate:**
+
+The application layer becomes simpler: receive command → call aggregate.handle() → publish events.
+The load-decide-persist complexity is handled by the EventSourcedAggregate abstraction.
+This reduces boilerplate while maintaining testability (the Decider itself is pure and easily tested).
 
 **Divergence requiring resolution:**
 
@@ -611,42 +686,42 @@ Compatible approaches.
 
 ### ✅ Strong alignments
 
-1. **Pure sync aggregates**: Both forbid async/I/O in aggregates
+1. **Pure sync aggregates**: Both forbid async/I/O in aggregates (fmodel-rust enforces via type system)
 2. **SQLite event store**: Both use SQLite for durable event storage
 3. **Event versioning**: Both support schema evolution via event versioning
 4. **SSE reconnection**: Both use event sequence for gap detection
 5. **DuckDB integration**: Both use DuckDB for analytics queries
 6. **Smart constructors**: Both use value objects with validation (DatasetRef, SqlQuery)
 7. **thiserror error handling**: Both use consistent error patterns
+8. **Optimistic locking**: Both prevent concurrent modifications (ironstar via `previous_id` UNIQUE, northstar via version field)
 
 ### ⚠️ Compatible differences
 
-1. **Aggregate style**: Ironstar functional (`&State`), northstar OOP (`&mut self`) — both valid
-2. **Projection caching**: Ironstar uses ProjectionManager, northstar uses on-demand reconstitution — complementary patterns
-3. **Event bus**: Both use Zenoh from the start — ironstar provides optional DualEventBus for tokio::broadcast coexistence
-4. **Key expressions**: Different patterns (`events/session/{id}/**` vs `viz/{session}/events`) but both use Zenoh wildcards
+1. **Aggregate abstraction**: Ironstar uses fmodel-rust Decider (pure functions), northstar uses trait with `&mut self.apply()` — fmodel enforces stronger purity guarantees
+2. **Version tracking**: Ironstar delegates to EventRepository::version_provider, northstar tracks in aggregate state — both provide optimistic locking
+3. **Command handling**: Ironstar uses EventSourcedAggregate (encapsulates load/decide/persist), northstar uses explicit orchestration — different ergonomics
+4. **Projection caching**: Ironstar uses ProjectionManager, northstar uses on-demand reconstitution — complementary patterns
+5. **Event bus**: Both use Zenoh from the start — ironstar provides optional DualEventBus for tokio::broadcast coexistence
+6. **Key expressions**: Different patterns (`events/session/{id}/**` vs `viz/{session}/events`) but both use Zenoh wildcards
 
 ### ❌ Critical divergences requiring resolution
 
-1. **Event store schema**: Ironstar uses global sequence, northstar uses per-aggregate sequence
-   - **Resolution**: Hybrid schema with both global_sequence (SSE) and aggregate_sequence (optimistic locking)
+1. **Event store schema**: Ironstar uses fmodel-rust schema with `previous_id` for optimistic locking, northstar uses per-aggregate sequence
+   - **Resolution**: Ironstar's fmodel-rust schema (from evaluation doc lines 136-198) provides both global `offset` (for SSE) and `previous_id` UNIQUE constraint (for optimistic locking). Northstar can adopt this pattern.
 
-2. **UUID-tracked errors**: Northstar has explicit UUID + backtrace, ironstar does not
-   - **Resolution**: Ironstar must adopt UUID-tracked error pattern
+2. **UUID-tracked errors**: Northstar has explicit UUID + backtrace, ironstar does not yet (but compatible with fmodel-rust)
+   - **Resolution**: Ironstar must adopt UUID-tracked error pattern (not a fmodel-rust concern, orthogonal)
 
-3. **Version tracking**: Northstar has explicit `version()` method, ironstar does not
-   - **Resolution**: Ironstar should add `version(&self) -> u64` to Aggregate trait
-
-4. **async-duckdb vs spawn_blocking**: Northstar uses async-duckdb for non-blocking DuckDB operations with connection pooling
+3. **async-duckdb vs spawn_blocking**: Northstar uses async-duckdb for non-blocking DuckDB operations with connection pooling
    - **Resolution status: ✅ Resolved** — Ironstar has adopted async-duckdb with read-only Pool for analytics queries
 
 ## Recommendations for ironstar
 
 ### Must adopt from northstar
 
-1. **Hybrid event store schema** combining global sequence (SSE) and aggregate sequence (optimistic locking)
-2. **UUID-tracked errors** with backtrace for distributed error correlation
-3. **Explicit version() method** in Aggregate trait for optimistic locking
+1. **✅ fmodel-rust Decider pattern** for event sourcing (adopted) — stronger purity guarantees via type system
+2. **✅ fmodel-rust EventRepository** with SQLite implementation (adopted) — `previous_id` UNIQUE constraint for optimistic locking
+3. **UUID-tracked errors** with backtrace for distributed error correlation
 4. **✅ async-duckdb for DuckDB analytics integration** with read-only connection pooling (adopted)
 
 ### Should consider from northstar
@@ -654,25 +729,42 @@ Compatible approaches.
 1. **Background task spawning pattern** for long-running DuckDB queries
 2. **QuerySessionAggregate pattern** as reference implementation for analytics aggregates
 
-### Ironstar strengths to preserve
+### Ironstar strengths to preserve and extend
 
-1. **4 critical invariants** (Subscribe-Before-Replay, Pure Aggregate, Monotonic Sequence, Events-as-Truth) — excellent teaching framework
-2. **8-layer crate architecture** with HasXxx traits — better modularity for complex applications
-3. **Zenoh-first with optional DualEventBus** — distribution-ready from day one with compatibility layer for legacy systems
-4. **ProjectionManager pattern** — better for read-heavy workloads with complex UI state
-5. **Analytics caching architecture** with moka + Zenoh invalidation — production-ready caching strategy
+1. **fmodel-rust Decider pattern** — type-enforced purity, algebraic composition via `combine()`, built-in TestSpecification DSL
+2. **fmodel-rust EventRepository abstraction** — separates domain (Decider) from infrastructure (event persistence), enables `previous_id` optimistic locking
+3. **4 critical invariants** (Subscribe-Before-Replay, Pure Aggregate, Monotonic Sequence, Events-as-Truth) — excellent teaching framework, now stronger with fmodel-rust
+4. **8-layer crate architecture** with HasXxx traits — better modularity for complex applications
+5. **Zenoh-first with optional DualEventBus** — distribution-ready from day one with compatibility layer for legacy systems
+6. **ProjectionManager pattern** — better for read-heavy workloads with complex UI state
+7. **Analytics caching architecture** with moka + Zenoh invalidation — production-ready caching strategy
+
+### New capabilities from fmodel-rust adoption
+
+1. **Saga/process managers** — built-in `Saga<Event, Command>` for event-driven choreography across aggregates
+2. **Composition primitives** — `combine()` for multi-aggregate workflows, `merge()` for shared event types
+3. **Given/When/Then testing** — `DeciderTestSpecification` for property-based aggregate testing
+4. **Separation of concerns** — Decider (pure domain), EventSourcedAggregate (application), EventRepository (infrastructure)
 
 ## Conclusion
 
 Ironstar and northstar are highly aligned on fundamental CQRS/ES patterns: pure sync aggregates, SQLite event store, event versioning, and SSE reconnection.
 
-The main divergences are:
-1. **Event store schema** (global vs per-aggregate sequence) — resolved by hybrid approach
-2. **Error tracking** (northstar has UUIDs, ironstar does not) — ironstar must adopt
-3. **✅ Event bus** — both use Zenoh from the start; ironstar provides optional DualEventBus for legacy system coexistence
-4. **✅ DuckDB async execution** — ironstar has adopted async-duckdb, matching northstar pattern
+Ironstar's adoption of fmodel-rust strengthens its architectural foundation:
+1. **Purity enforcement**: The Decider type signature (`Fn(&C, &S) -> Result<Vec<E>, Error>`) makes it impossible to accidentally introduce async/I/O in domain logic — stronger than northstar's convention-based approach
+2. **Version tracking**: The EventRepository's `version_provider()` method and `previous_id` UNIQUE constraint delegate optimistic locking to infrastructure, keeping the Decider pure
+3. **Composition**: fmodel-rust's `combine()` and `Saga` enable multi-aggregate workflows without custom event bus wiring
+4. **Testing**: The built-in `DeciderTestSpecification` provides given/when/then testing that ironstar's architecture documents already specify
 
-By adopting the hybrid event store schema, UUID-tracked errors, explicit version tracking, and async-duckdb from northstar, ironstar will gain production-ready CQRS capabilities while preserving its educational clarity and gradual complexity curve.
-async-duckdb adoption is now complete across all ironstar documentation.
+The main remaining divergence is **UUID-tracked errors** — ironstar must adopt northstar's pattern of embedding UUID + backtrace in error types for production observability.
+This is orthogonal to fmodel-rust and applies to both approaches.
 
-The northstar tracer bullet serves as an excellent reference implementation for analytics-specific patterns (QuerySessionAggregate, DuckDB async execution, background task spawning) that ironstar can adopt when implementing analytics features.
+**Key insight**: Ironstar's fmodel-rust adoption positions it as a more theoretically grounded template than northstar.
+The Decider pattern is the minimal algebraic interface for functional event sourcing (from Jérémie Chassaing's work), directly implementing the category-theoretic foundations in ironstar's preference documents.
+Northstar remains an excellent reference implementation for analytics-specific patterns (QuerySessionAggregate, DuckDB query execution, background task spawning).
+
+Both templates serve complementary purposes:
+- **Ironstar**: General-purpose template with stronger functional purity via fmodel-rust, 8-layer crate architecture, and distribution-ready Zenoh from day one
+- **Northstar**: Analytics-focused reference with QuerySessionAggregate pattern and DuckDB integration best practices
+
+The northstar tracer bullet serves as an excellent reference implementation for analytics-specific patterns that ironstar can adopt when implementing analytics features.
