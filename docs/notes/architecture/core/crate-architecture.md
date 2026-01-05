@@ -155,17 +155,17 @@ Pure types with no async, no I/O, no infrastructure dependencies.
 
 | Crate | Purpose | Contains |
 |-------|---------|----------|
-| `ironstar-domain` | Aggregate definitions | Aggregate trait, state machines, apply_event |
+| `ironstar-domain` | Decider functions | Decider pattern implementation (decide/evolve functions), state machines |
 | `ironstar-commands` | Command types | Command enums, validation logic (pure) |
 | `ironstar-events` | Event types | DomainEvent enum, event metadata |
 
 ### Layer 2: Application (depends on Layers 0-1)
 
-Pure business logic orchestrating domain types.
+Business logic orchestrating domain types with effect boundaries.
 
 | Crate | Purpose | Contains |
 |-------|---------|----------|
-| `ironstar-app` | Command/query handlers | handle_command orchestration, projection updates |
+| `ironstar-app` | Command/query handlers | EventSourcedAggregate wiring, projection updates |
 
 ### Layer 3: Interfaces (depends on Layers 0-2)
 
@@ -206,7 +206,7 @@ ironstar/
 │   │   ├── crate.nix
 │   │   └── src/
 │   │       ├── lib.rs
-│   │       ├── aggregates/
+│   │       ├── deciders/                    # Decider functions (decide/evolve pattern)
 │   │       │   ├── mod.rs
 │   │       │   └── todo.rs
 │   │       ├── values.rs
@@ -319,15 +319,16 @@ The 8-layer crate structure corresponds to semantic boundaries in the algebraic 
 | Crate Layer | Algebraic Structure | Example |
 |-------------|---------------------|---------|
 | Layer 0 (Foundation) | Initial objects, primitive types | `Sequence`, `Timestamp` |
-| Layer 1 (Domain) | Free structures (sum types) | `TodoEvent`, `Command` enums |
-| Layer 2 (Application) | Algebras and catamorphisms | `handle_command`, `fold_events` |
-| Layer 3 (Interfaces) | Port abstractions (type classes) | `EventStore` trait |
-| Layer 4 (Infrastructure) | Effect implementations | SQLite adapter |
+| Layer 1 (Domain) | Free structures (sum types) | `TodoEvent`, `Command` enums, Decider functions |
+| Layer 2 (Application) | Algebras and catamorphisms | `EventSourcedAggregate::handle`, `fold_events` |
+| Layer 3 (Interfaces) | Port abstractions (type classes) | `EventRepository`, `EventStore` traits |
+| Layer 4 (Infrastructure) | Effect implementations | SQLite EventRepository adapter |
 | Layer 5 (Services) | Composition roots | `All`, `HasXxx` traits |
 | Layer 6 (Presentation) | Projection functions | SSE handlers |
 | Layer 7 (Binary) | Fixpoint (main loop) | `main.rs` |
 
 The layer dependency rule (Layer N depends only on layers below) reflects algebraic generality: lower layers provide more general structures that higher layers specialize.
+fmodel-rust's Decider pattern enforces purity at Layer 1 via type signatures: `decide` and `evolve` are synchronous functions with no async or I/O capabilities.
 
 See [semantic-model.md](semantic-model.md) for the complete algebraic architecture.
 
