@@ -3,35 +3,34 @@
 This document records CQRS and event sourcing implementation decisions for the ironstar stack, covering aggregate patterns, event schema evolution, and framework selection rationale.
 For frontend, backend core, and infrastructure decisions, see the related documentation section below.
 
-## Pure aggregate pattern — domain logic as state machines
+## fmodel-rust adoption — the Decider pattern for functional event sourcing
 
-Ironstar adopts the pure synchronous aggregate pattern from esrs (Prima.it's event_sourcing.rs).
-Aggregates are side-effect-free state machines:
+Ironstar adopts fmodel-rust's Decider pattern, the minimal algebraic interface for functional event sourcing.
+Deciders are pure functions (`decide`, `evolve`, `initial_state`) with no async or side effects, directly implementing ironstar's "effects explicit in type signatures" design principle.
 
 ```rust
-pub trait Aggregate: Default + Send + Sync {
-    const TYPE: &'static str;
-    type State: Clone + Send + Sync;
-    type Command;
-    type Event: DomainEvent;
-    type Error: std::error::Error;
-
-    // Pure function: State × Command → Result<Vec<Event>, Error>
-    fn handle_command(state: &Self::State, cmd: Self::Command) -> Result<Vec<Self::Event>, Self::Error>;
-
-    // Pure function: State × Event → State
-    fn apply_event(state: Self::State, event: Self::Event) -> Self::State;
+pub struct Decider<'a, C, S, E, Error = ()> {
+    pub decide: Box<dyn Fn(&C, &S) -> Result<Vec<E>, Error> + 'a + Send + Sync>,
+    pub evolve: Box<dyn Fn(&S, &E) -> S + 'a + Send + Sync>,
+    pub initial_state: Box<dyn Fn() -> S + 'a + Send + Sync>,
 }
 ```
 
-**Why synchronous aggregates:**
+The Decider pattern enforces purity by construction: function signatures prohibit async, mutable state, or hidden I/O.
+This is the canonical implementation of Ghosh's module algebra (Signature → Algebra → Interpreter) with category-theoretic grounding: Decider is an algebra (folding events) paired with a coalgebra (unfolding commands).
+
+For complete adoption rationale, see `fmodel-rust-adoption-evaluation.md`.
+
+**Why synchronous Deciders:**
 
 - All I/O isolated at application layer boundaries (command handlers, event store)
-- Aggregates become pure functions, trivially testable
+- Deciders become pure functions, trivially testable
 - No hidden async dependencies inside domain logic
 - Aligns with the "effects explicit in types" design principle
+- fmodel-rust enforces this via type signatures, preventing accidental violations
 
-External service calls (validation against external APIs, lookups) happen in the command handler *before* calling `handle_command`, not inside the aggregate.
+External service calls (validation against external APIs, lookups) happen in the command handler *before* calling `Decider::decide`, not inside the Decider.
+This is the rationale for choosing fmodel-rust over cqrs-es, which allows mutable `apply(&mut self)` patterns that violate purity.
 
 **Smart constructors for domain validation:**
 
@@ -60,63 +59,56 @@ impl TodoText {
 
 This pattern shifts validation to construction time.
 Once a `TodoText` value exists, the type system guarantees it satisfies the invariants.
-Command handlers validate input by constructing these types before passing data to aggregates, keeping aggregate logic focused on business rules rather than format validation.
+Command handlers validate input by constructing these types before passing data to Deciders, keeping Decider logic focused on business rules rather than format validation.
 
-**Test framework DSL (inspired by cqrs-es):**
+**Test framework DSL (from fmodel-rust):**
 
-The pure aggregate pattern enables elegant given/when/then testing:
+The pure Decider pattern enables elegant given/when/then testing via fmodel-rust's `DeciderTestSpecification`:
 
 ```rust
-TestFramework::with(service)
-    .given(vec![PreviousEvent::Created { ... }])
-    .when(Command::Update { ... })
-    .then_expect_events(vec![Event::Updated { ... }]);
+DeciderTestSpecification::default()
+    .for_decider(todo_decider())
+    .given(vec![])  // No prior events
+    .when(TodoCommand::Create { id, text })
+    .then_expect_events(vec![TodoEvent::Created { id, text, created_at }]);
 ```
 
-This DSL is possible because `handle_command` is a pure function — no mocking of async dependencies required.
+This DSL is possible because `Decider::decide` and `Decider::evolve` are pure functions — no mocking of async dependencies required.
+See evaluation document appendix for additional test examples including failure event assertions.
 
-**Framework vs. custom implementation decision:**
+**Framework adoption decision: fmodel-rust**
 
-Ironstar evaluated three Rust CQRS/ES crates:
+After evaluating multiple Rust CQRS/ES crates (see `fmodel-rust-adoption-evaluation.md` for complete analysis), ironstar adopts fmodel-rust as its event sourcing foundation.
 
-| Crate | Strengths | Limitations |
-|-------|-----------|-------------|
-| **cqrs-es** | Mature, elegant test DSL | Abstractions may conflict with hypertext + datastar integration |
-| **esrs** | Pure aggregates, upcaster pattern | PostgreSQL-only |
-| **sqlite-es** | SQLite adapter for cqrs-es | Thin wrapper, patterns valuable but library unnecessary |
+| Crate | Status | Relationship to ironstar |
+|-------|--------|--------------------------|
+| **fmodel-rust** | ADOPTED | Primary event sourcing abstraction |
+| **cqrs-es** | Studied | Patterns now provided by fmodel-rust (testing DSL, event store abstraction) |
+| **esrs** | Studied | Patterns now provided by fmodel-rust (pure sync aggregates) |
+| **sqlite-es** | Reference | Event store schema patterns inform SQLite EventRepository implementation |
 
-Decision: implement custom CQRS layer adopting patterns from these libraries, not the frameworks themselves.
-This preserves flexibility for tight integration with hypertext templates and datastar SSE generation.
+**Why fmodel-rust was chosen:**
 
-**Patterns adopted:**
+1. **Pure function enforcement**: Type signatures guarantee `decide` and `evolve` are side-effect-free (no async, no mutable state)
+2. **Composition primitives**: Built-in `combine()` and `merge()` enable multi-aggregate workflows without custom event bus wiring
+3. **Testing DSL**: `DeciderTestSpecification` provides given/when/then testing ironstar's docs specify
+4. **SQLite compatibility**: EventRepository trait is database-agnostic; SQLite implementation requires only trivial type mappings (see evaluation doc)
+5. **Framework-agnostic**: Zero web dependencies; Axum integration is handler composition, not library lock-in
+6. **Category-theoretic grounding**: Decider is the minimal realization of Ghosh's module algebra, satisfying ironstar's theoretical foundations requirements
 
-From **esrs**:
-- Pure synchronous aggregates: `handle_command(state, cmd) -> Result<Vec<Event>, Error>` with no async/side effects
-- Schema/Upcaster pattern for event evolution
-- Clear separation between domain logic and infrastructure
+**What ironstar implements:**
 
-From **cqrs-es**:
-- TestFramework DSL for given/when/then testing
-- GenericQuery pattern for projections
-- Event store trait abstraction
+- Custom SQLite EventRepository (fmodel-rust-postgres schema adapted for SQLite)
+- Event schema evolution via custom Upcaster pattern (orthogonal to Decider)
+- Zenoh event bus for SSE broadcast (fmodel-rust's EventRepository handles persistence, not notification)
 
-From **sqlite-es**:
-- Event store schema with compound primary key
-- JSON payload for event data
-- Optimistic locking via sequence numbers
+**Patterns from studied libraries:**
 
-**Rationale for custom implementation:**
-
-While these frameworks provide excellent patterns, direct dependency on them introduces constraints:
-
-1. **Integration complexity**: cqrs-es's abstractions (GenericQuery, EventEnvelope) require adapters to work with hypertext templates and datastar SSE
-2. **Backend limitations**: esrs only supports PostgreSQL; porting to SQLite would require rewriting the storage layer
-3. **Unnecessary indirection**: sqlite-es is a thin adapter over cqrs-es; the value is in understanding the patterns, not the library code
-
-The custom approach allows:
-- Direct conversion from domain events to SSE patches via hypertext templates
-- SQLite event store optimized for SSE Last-Event-ID support (global sequence numbers)
-- Lighter dependency footprint without sacrificing pattern quality
+The evaluation of cqrs-es, esrs, and sqlite-es informed ironstar's architecture, but these patterns are now provided by fmodel-rust:
+- Pure synchronous domain logic (esrs) → `Decider::decide` and `Decider::evolve`
+- TestFramework DSL (cqrs-es) → `DeciderTestSpecification`
+- Event store abstraction (cqrs-es) → `EventRepository` trait
+- SQLite schema patterns (sqlite-es) → Adapted for fmodel-rust's EventRepository
 
 ---
 
@@ -216,11 +208,11 @@ Ironstar's CQRS implementation separates write operations (commands) from read o
 **Write side (command processing):**
 
 ```
-HTTP POST → Command Handler → Aggregate.handle_command → Events
+HTTP POST → Command Handler → Decider.decide → Events
     ↓
-Append to SQLite event store
+Append to SQLite event store via EventRepository
     ↓
-Publish to tokio::broadcast
+Publish to Zenoh for SSE broadcast
     ↓
 Return HTTP 202 Accepted
 ```
@@ -239,7 +231,7 @@ HTTP GET/SSE → Query Handler → Read from Read Model → Return data
 |----------|----------------|---------|
 | **Separation of concerns** | Commands write events; queries read projections | Optimized data models for each use case |
 | **Event-driven updates** | Projections subscribe to event bus | Eventually consistent read models |
-| **Pure domain logic** | Aggregates are sync pure functions | Testable without mocking |
+| **Pure domain logic** | Deciders are sync pure functions | Testable without mocking |
 | **SSE integration** | Events convert directly to PatchElements | Real-time UI updates |
 | **Audit trail** | SQLite append-only event log | Complete history for debugging/replay |
 
@@ -328,6 +320,9 @@ Multi-aggregate coordination patterns are deferred:
 - **Sagas**: Long-running transactions with compensation logic
 - **Choreography patterns**: Event-driven coordination without central orchestrator
 
+fmodel-rust provides the `Saga` abstraction for future implementation when multi-aggregate workflows are needed.
+The `Saga` pattern enables event-to-command choreography (reacting to events by emitting commands to other aggregates) without custom event bus wiring.
+
 ### Why deferred
 
 1. **Scope focus**: v1 demonstrates CQRS/ES patterns with QuerySession and Todo aggregates independently
@@ -348,40 +343,45 @@ See `~/.claude/commands/preferences/event-sourcing.md` for:
 - Law 9: Process managers consume events and emit commands
 - Saga implementation patterns with compensation
 
+See `fmodel-rust-adoption-evaluation.md` appendix (Phase 6) for example Saga implementation with fmodel-rust.
+
 ---
 
 ## References
 
-The custom CQRS implementation decision was informed by both theoretical principles and practical pattern study.
+The fmodel-rust adoption decision was informed by both theoretical principles and practical pattern study.
 
 **Primary sources:**
 
 | Source | Contribution |
 |--------|--------------|
-| Kevin Hoffman, *Real World Event Sourcing* | Laws 7, 2, 10 directly inform pure aggregates, schema immutability, and testing patterns |
+| Kevin Hoffman, *Real World Event Sourcing* | Laws 7, 2, 10 directly inform pure Deciders, schema immutability, and testing patterns |
 | Scott Wlaschin, *Domain Modeling Made Functional* | Aggregates as consistency boundaries, smart constructor pattern |
+| Debasish Ghosh, *Functional and Reactive Domain Modeling* | Module algebra (Signature → Algebra → Interpreter), theoretical grounding for Decider pattern |
 | `~/.claude/commands/preferences/event-sourcing.md` | Theoretical synthesis and decision frameworks |
 
-Hoffman's **Law 7** (work is a side effect) is the central principle: aggregates contain no I/O, enabling pure functional domain logic.
+Hoffman's **Law 7** (work is a side effect) is the central principle: Deciders contain no I/O, enabling pure functional domain logic.
 **Law 2** (event schemas are immutable) drives the upcaster pattern for schema evolution.
-**Law 10** (aggregates own event streams) enables the TestFramework DSL pattern where tests assert events, not aggregate internals.
+**Law 10** (aggregates own event streams) enables the DeciderTestSpecification DSL pattern where tests assert events, not Decider internals.
 
-**Rust pattern libraries** (study material, not dependencies):
+**Rust event sourcing libraries:**
 
-| Library | Patterns Studied | Maturity | Notes |
-|---------|------------------|----------|-------|
-| cqrs-es | TestFramework DSL, GenericQuery | Production | Elegant testing pattern adopted |
-| esrs | Pure sync aggregates, Upcaster | Production | Core aggregate pattern adopted |
-| sqlite-es | Event store schema | Production | Schema patterns referenced |
-| kameo_es | Causation tracking, projection backends | Alpha | Actor patterns orthogonal to ironstar; causation tracking worth noting |
-| SierraDB | Distributed event store design | Pre-production | Future reference for multi-node scaling; not suitable for current embedded approach |
+| Library | Status | Maturity | Notes |
+|---------|--------|----------|-------|
+| **fmodel-rust** | ADOPTED | Production | Primary event sourcing abstraction; Decider pattern enforces purity |
+| **cqrs-es** | Studied | Production | TestFramework DSL pattern now provided by fmodel-rust's DeciderTestSpecification |
+| **esrs** | Studied | Production | Pure sync aggregate pattern now provided by fmodel-rust's Decider |
+| **sqlite-es** | Reference | Production | Schema patterns inform SQLite EventRepository implementation |
+| **kameo_es** | Studied | Alpha | Actor patterns orthogonal to ironstar; causation tracking worth noting |
+| **SierraDB** | Reference | Pre-production | Future reference for multi-node scaling; not suitable for current embedded approach |
 
-The custom implementation enables direct hypertext + datastar integration without adapter layers, while preserving the discipline these frameworks encode.
+For complete adoption rationale including SQLite compatibility analysis and migration path, see `fmodel-rust-adoption-evaluation.md`.
 
 ---
 
 ## Related documentation
 
+- fmodel-rust adoption evaluation: `fmodel-rust-adoption-evaluation.md` (complete rationale, SQLite compatibility, migration path)
 - Design principles: `../core/design-principles.md`
 - Frontend stack decisions: `frontend-stack-decisions.md`
 - Backend core decisions: `backend-core-decisions.md`
