@@ -227,428 +227,323 @@ fn validate_and_emit_events(cmd: ExecuteAnalyticsQuery) -> Result<Vec<DomainEven
 
 This validation pipeline runs synchronously before any I/O, returning 400 Bad Request on failure.
 
-## Aggregate trait
+## Decider pattern (fmodel-rust)
 
-Aggregates are pure functions with no async or side effects.
-External service calls happen in the command handler before invoking the aggregate.
-This design, adapted from esrs, ensures aggregates are trivially testable and deterministic.
+Ironstar uses fmodel-rust's Decider pattern as the minimal algebraic interface for functional event sourcing.
+The Decider enforces pure decision logic with no async or side effects through its type signature.
+This implementation realizes the theoretical foundations from `~/.claude/commands/preferences/domain-modeling.md` and directly addresses ironstar's explicit rejection of mutable aggregate patterns.
+
+See `../decisions/fmodel-rust-adoption-evaluation.md` for the complete evaluation and migration path.
+
+### Decider structure
 
 ```rust
-use std::error::Error;
+use fmodel_rust::decider::Decider;
 
-/// Pure synchronous aggregate with no side effects.
-///
-/// Aggregates derive their state solely from their event stream.
-/// Applying the same events in the same order always yields identical state.
-pub trait Aggregate: Default + Send + Sync {
-    /// Unique name for this aggregate type.
-    /// Changing this breaks the link between existing aggregates and their events.
-    const NAME: &'static str;
+/// Decider for Todo aggregate
+pub fn todo_decider<'a>() -> Decider<'a, TodoCommand, Option<TodoState>, TodoEvent, TodoError> {
+    Decider {
+        // Pure command validation: (command, state) → Result<Vec<Event>, Error>
+        decide: Box::new(|command, state| match command {
+            TodoCommand::Create { id, text } => {
+                if state.is_some() {
+                    // Failure event, not error - preserves event log completeness
+                    Ok(vec![TodoEvent::NotCreated {
+                        id: id.clone(),
+                        reason: "Todo already exists".into()
+                    }])
+                } else {
+                    Ok(vec![TodoEvent::Created {
+                        id: id.clone(),
+                        text: text.clone(),
+                        created_at: Utc::now()
+                    }])
+                }
+            }
+            TodoCommand::Complete => {
+                match state {
+                    Some(s) if s.status == TodoStatus::Active => {
+                        Ok(vec![TodoEvent::Completed { completed_at: Utc::now() }])
+                    }
+                    _ => Ok(vec![TodoEvent::NotCompleted {
+                        reason: "Cannot complete: invalid state".into()
+                    }])
+                }
+            }
+            // ... other commands
+        }),
 
-    /// Internal aggregate state, derived from events.
-    type State: Default + Clone + Send + Sync;
+        // Pure state evolution: (state, event) → state
+        evolve: Box::new(|state, event| match event {
+            TodoEvent::Created { id, text, created_at } => Some(TodoState {
+                id: id.clone(),
+                text: text.clone(),
+                created_at: *created_at,
+                status: TodoStatus::Active,
+                completed_at: None,
+            }),
+            TodoEvent::NotCreated { .. } => state.clone(),  // Failure events preserve state
+            TodoEvent::Completed { completed_at } => state.clone().map(|mut s| {
+                s.status = TodoStatus::Completed;
+                s.completed_at = Some(*completed_at);
+                s
+            }),
+            TodoEvent::NotCompleted { .. } => state.clone(),
+            // ... other events
+        }),
 
-    /// Commands represent requests to change state.
-    type Command;
-
-    /// Events represent facts that occurred in the domain.
-    type Event: Clone;
-
-    /// Domain errors from command validation.
-    type Error: Error;
-
-    /// Pure function: validates command against current state and emits events.
-    /// No async, no I/O, no side effects.
-    fn handle_command(state: &Self::State, cmd: Self::Command) -> Result<Vec<Self::Event>, Self::Error>;
-
-    /// Pure state transition: applies an event to produce new state.
-    /// If the event cannot be applied (programmer error), this may panic.
-    fn apply_event(state: Self::State, event: Self::Event) -> Self::State;
-
-    /// Returns the current aggregate version (number of events applied).
-    /// Used for optimistic locking when appending events to the event store.
-    fn version(&self) -> u64;
+        // Initial state factory
+        initial_state: Box::new(|| None),
+    }
 }
 ```
 
-> **Semantic foundation**: The `Result<Vec<Event>, Error>` return type is a Kleisli arrow in the Result monad.
+### Mapping from previous Aggregate trait
+
+The Decider pattern maps directly to the previous Aggregate trait design:
+
+| Previous Pattern | Decider Equivalent | Purpose |
+|------------------|-------------------|---------|
+| `Aggregate::handle_command(state, cmd)` | `Decider::decide` | Command validation and event generation |
+| `Aggregate::apply_event(state, event)` | `Decider::evolve` | Pure state transition from event |
+| `Aggregate::State::default()` | `Decider::initial_state` | Factory for empty state |
+
+The key difference: Decider enforces purity through boxed function pointers with no async, no mutable state, and referential transparency guaranteed by type signature.
+This directly implements Hoffman's Law 7: "Work is a side effect."
+
+> **Semantic foundation**: The `decide` function returns `Result<Vec<Event>, Error>`, which is a Kleisli arrow in the Result monad.
 > Composition via `?` operator short-circuits on error.
 > See [semantic-model.md § Kleisli composition](../core/semantic-model.md#command-handling-as-kleisli-composition).
 
-The async command handler (in the application layer) orchestrates I/O around the pure aggregate:
+### EventSourcedAggregate for async I/O orchestration
+
+The async command handler uses fmodel-rust's `EventSourcedAggregate` to orchestrate I/O around the pure Decider:
 
 ```rust
-use tokio::sync::broadcast;
+use fmodel_rust::aggregate::EventSourcedAggregate;
+use zenoh::Session;
 
-/// Command error wrapping domain and infrastructure errors
-#[derive(Debug)]
-pub enum CommandError<E> {
-    Domain(E),
-    Persistence(sqlx::Error),
-}
+/// Axum handler for Todo commands
+pub async fn handle_todo_command(
+    State(app_state): State<AppState>,
+    Json(command): Json<TodoCommand>,
+) -> impl IntoResponse {
+    // Create EventSourcedAggregate wiring repository + decider
+    let aggregate = EventSourcedAggregate::new(
+        app_state.event_repository.clone(),
+        todo_decider(),
+    );
 
-/// Async command handler orchestrating I/O around pure aggregate logic
-pub async fn handle_command<A: Aggregate>(
-    store: &SqliteEventStore,
-    bus: &broadcast::Sender<StoredEvent>,
-    aggregate_id: &str,
-    command: A::Command,
-) -> Result<Vec<StoredEvent>, CommandError<A::Error>> {
-    // 1. Load events from store (async I/O)
-    let events = store.query_aggregate(A::NAME, aggregate_id)
-        .await
-        .map_err(CommandError::Persistence)?;
-
-    // 2. Reconstruct state by folding events
-    let state = events.into_iter()
-        .filter_map(|e| deserialize_event::<A>(&e))
-        .fold(A::State::default(), A::apply_event);
-
-    // 3. Handle command (pure, synchronous)
-    let new_events = A::handle_command(&state, command)
-        .map_err(CommandError::Domain)?;
-
-    // 4. Persist new events (async I/O)
-    let mut stored = Vec::with_capacity(new_events.len());
-    for event in new_events {
-        let sequence = store.append(serialize_event::<A>(aggregate_id, &event))
-            .await
-            .map_err(CommandError::Persistence)?;
-        stored.push(StoredEvent { sequence, /* ... */ });
+    // Handle command (fetch events, fold to state, decide, persist)
+    match aggregate.handle(&command).await {
+        Ok(events) => {
+            // Publish to Zenoh for SSE broadcast (replaces tokio::broadcast)
+            for (event, _version) in &events {
+                let key = format!("events/Todo/{}", event.identifier());
+                let payload = serde_json::to_vec(event).unwrap();
+                app_state.zenoh.put(key, payload).await.ok();
+            }
+            (StatusCode::ACCEPTED, Json(events)).into_response()
+        }
+        Err(err) => {
+            (StatusCode::BAD_REQUEST, Json(err)).into_response()
+        }
     }
-
-    // 5. Publish to subscribers (fire and forget)
-    for event in &stored {
-        let _ = bus.send(event.clone());
-    }
-
-    Ok(stored)
 }
+```
 
-// Helper functions (implementation details)
-fn deserialize_event<A: Aggregate>(stored: &StoredEvent) -> Option<A::Event> {
+The `EventSourcedAggregate::handle()` method performs the following steps:
+1. Fetch events from repository (async I/O)
+2. Fold events using `evolve` to reconstruct state (pure)
+3. Call `decide` with command and state (pure)
+4. Persist new events via repository (async I/O)
+5. Return events with version metadata
+
+This pattern cleanly separates pure decision logic (Decider) from effectful I/O (EventRepository), with Zenoh handling event broadcast to SSE subscribers.
+
+// Helper functions remain unchanged
+fn deserialize_event<E: serde::de::DeserializeOwned>(stored: &StoredEvent) -> Option<E> {
     serde_json::from_value(stored.payload.clone()).ok()
 }
 
-fn serialize_event<A: Aggregate>(aggregate_id: &str, event: &A::Event) -> DomainEvent {
-    // Convert to DomainEvent for storage
-    todo!()
-}
-```
-
-## Aggregate testing patterns
-
-The given/when/then pattern provides declarative aggregate testing without persistence or I/O.
-This pattern is adapted from cqrs-es TestFramework.
-
-```rust
-use std::fmt::Debug;
-use std::marker::PhantomData;
-
-/// Test framework for aggregate behavior verification
-pub struct AggregateTestFramework<A: Aggregate> {
-    _phantom: PhantomData<A>,
-}
-
-impl<A: Aggregate> AggregateTestFramework<A> {
-    /// Start a test with existing events (aggregate has prior state)
-    pub fn given(events: Vec<A::Event>) -> AggregateTestExecutor<A> {
-        let state = events.into_iter().fold(A::State::default(), A::apply_event);
-        AggregateTestExecutor { state, _phantom: PhantomData }
-    }
-
-    /// Start a test with no prior events (fresh aggregate)
-    pub fn given_no_previous_events() -> AggregateTestExecutor<A> {
-        AggregateTestExecutor {
-            state: A::State::default(),
-            _phantom: PhantomData,
-        }
-    }
-}
-
-/// Executes a command against the test state
-pub struct AggregateTestExecutor<A: Aggregate> {
-    state: A::State,
-    _phantom: PhantomData<A>,
-}
-
-impl<A: Aggregate> AggregateTestExecutor<A> {
-    /// Execute a command and capture the result for validation
-    pub fn when(self, command: A::Command) -> AggregateTestResult<A> {
-        let result = A::handle_command(&self.state, command);
-        AggregateTestResult { result }
-    }
-
-    /// Add more events to the test state before executing command
-    pub fn and(mut self, events: Vec<A::Event>) -> Self {
-        for event in events {
-            self.state = A::apply_event(self.state, event);
-        }
-        self
-    }
-}
-
-/// Validates command results
-pub struct AggregateTestResult<A: Aggregate> {
-    result: Result<Vec<A::Event>, A::Error>,
-}
-
-impl<A: Aggregate> AggregateTestResult<A>
-where
-    A::Event: PartialEq + Debug,
-{
-    /// Assert the command produced the expected events
-    pub fn then_expect_events(self, expected: Vec<A::Event>) {
-        let events = self.result.unwrap_or_else(|err| {
-            panic!("expected success, received error: '{err}'");
-        });
-        assert_eq!(events, expected);
-    }
-}
-
-impl<A: Aggregate> AggregateTestResult<A>
-where
-    A::Error: PartialEq + Debug,
-{
-    /// Assert the command produced the expected error
-    pub fn then_expect_error(self, expected: A::Error) {
-        match self.result {
-            Ok(events) => panic!("expected error, received events: '{events:?}'"),
-            Err(err) => assert_eq!(err, expected),
-        }
-    }
-}
-
-impl<A: Aggregate> AggregateTestResult<A> {
-    /// Assert the command produced an error with the expected message
-    pub fn then_expect_error_message(self, expected_message: &str) {
-        match self.result {
-            Ok(events) => panic!("expected error, received events: '{events:?}'"),
-            Err(err) => assert_eq!(err.to_string(), expected_message),
-        }
-    }
-
-    /// Get the raw result for custom assertions
-    pub fn inspect_result(self) -> Result<Vec<A::Event>, A::Error> {
-        self.result
+fn serialize_event<E: serde::Serialize + EventType + DeciderType>(
+    aggregate_id: &str,
+    event: &E,
+) -> DomainEvent {
+    DomainEvent {
+        event_id: Uuid::new_v4(),
+        aggregate_type: E::decider_type().to_string(),
+        aggregate_id: aggregate_id.to_string(),
+        event_type: E::event_type().to_string(),
+        payload: serde_json::to_value(event).expect("event serialization should not fail"),
+        created_at: Utc::now(),
     }
 }
 ```
 
-Example usage with a concrete aggregate:
+## Decider testing with DeciderTestSpecification
+
+fmodel-rust provides a built-in given/when/then DSL for declarative Decider testing without persistence or I/O.
+The `DeciderTestSpecification` API provides fluent test composition with state verification.
 
 ```rust
 #[cfg(test)]
 mod tests {
+    use fmodel_rust::decider::DeciderTestSpecification;
     use super::*;
 
-    // Assume Order aggregate with OrderCommand, OrderEvent, OrderError, OrderState
+    #[test]
+    fn test_create_todo() {
+        let id = TodoId::new();
+        let text = TodoText::new("Buy groceries").unwrap();
+
+        DeciderTestSpecification::default()
+            .for_decider(todo_decider())
+            .given(vec![])  // No prior events (fresh aggregate)
+            .when(TodoCommand::Create { id: id.clone(), text: text.clone() })
+            .then(vec![TodoEvent::Created {
+                id: id.clone(),
+                text: text.clone(),
+                created_at: /* timestamp captured during test */
+            }]);
+    }
 
     #[test]
-    fn test_order_placement() {
-        AggregateTestFramework::<Order>::given_no_previous_events()
-            .when(OrderCommand::Place {
-                customer_id: "cust-123".into(),
-                items: vec![LineItem { sku: "SKU-1".into(), qty: 2 }],
-            })
-            .then_expect_events(vec![
-                OrderEvent::Placed {
-                    customer_id: "cust-123".into(),
-                    items: vec![LineItem { sku: "SKU-1".into(), qty: 2 }],
+    fn test_create_existing_todo_emits_failure_event() {
+        let id = TodoId::new();
+        let text = TodoText::new("Buy groceries").unwrap();
+
+        DeciderTestSpecification::default()
+            .for_decider(todo_decider())
+            .given(vec![
+                TodoEvent::Created {
+                    id: id.clone(),
+                    text: text.clone(),
+                    created_at: Utc::now()
                 }
-            ]);
+            ])
+            .when(TodoCommand::Create { id: id.clone(), text: text.clone() })
+            .then(vec![TodoEvent::NotCreated {
+                id: id.clone(),
+                reason: "Todo already exists".into(),
+            }]);
     }
 
     #[test]
-    fn test_cannot_ship_unpaid_order() {
-        AggregateTestFramework::<Order>::given(vec![
-            OrderEvent::Placed {
-                customer_id: "cust-123".into(),
-                items: vec![LineItem { sku: "SKU-1".into(), qty: 2 }],
-            },
-        ])
-        .when(OrderCommand::Ship)
-        .then_expect_error(OrderError::NotPaid);
+    fn test_complete_active_todo() {
+        let id = TodoId::new();
+        let text = TodoText::new("Buy groceries").unwrap();
+
+        DeciderTestSpecification::default()
+            .for_decider(todo_decider())
+            .given(vec![
+                TodoEvent::Created {
+                    id: id.clone(),
+                    text: text.clone(),
+                    created_at: Utc::now()
+                }
+            ])
+            .when(TodoCommand::Complete)
+            .then_state(Some(TodoState {
+                id,
+                text: TodoText::new("Buy groceries").unwrap(),
+                status: TodoStatus::Completed,
+                completed_at: Some(/* timestamp captured */),
+                created_at: /* timestamp captured */,
+            }));
     }
 
     #[test]
-    fn test_complete_order_flow() {
-        AggregateTestFramework::<Order>::given_no_previous_events()
-            .when(OrderCommand::Place { /* ... */ })
-            .then_expect_events(vec![OrderEvent::Placed { /* ... */ }]);
+    fn test_cannot_complete_deleted_todo() {
+        let id = TodoId::new();
+        let text = TodoText::new("Buy groceries").unwrap();
 
-        // Test with accumulated state
-        AggregateTestFramework::<Order>::given(vec![
-            OrderEvent::Placed { /* ... */ },
-        ])
-        .and(vec![
-            OrderEvent::Paid { amount: 100 },
-        ])
-        .when(OrderCommand::Ship)
-        .then_expect_events(vec![OrderEvent::Shipped]);
+        DeciderTestSpecification::default()
+            .for_decider(todo_decider())
+            .given(vec![
+                TodoEvent::Created { id: id.clone(), text: text.clone(), created_at: Utc::now() },
+                TodoEvent::Deleted { deleted_at: Utc::now() },
+            ])
+            .when(TodoCommand::Complete)
+            .then(vec![TodoEvent::NotCompleted {
+                reason: "Cannot complete: invalid state".into(),
+            }]);
     }
 }
 ```
 
-This pattern tests aggregate logic in isolation without persistence or I/O.
+### DeciderTestSpecification API
+
+The test DSL provides three primary assertion methods:
+
+- `.then(events)`: Assert the command produced exactly these events
+- `.then_state(state)`: Assert the final state after applying emitted events
+- `.then_error(error)`: Assert the command produced a domain error (not failure event)
+
+Note: ironstar's Decider pattern emits failure events rather than returning errors for business rule violations.
+This preserves event log completeness (see Hoffman's Laws in `~/.claude/commands/preferences/event-sourcing.md`).
+Use `.then(vec![FailureEvent])` for business rule violations, `.then_error()` only for programmer errors.
+
+This pattern tests Decider logic in isolation without persistence or I/O.
 The pure synchronous design makes tests fast, deterministic, and easy to reason about.
 
-## Event store trait
+## EventRepository trait (fmodel-rust)
+
+Ironstar implements fmodel-rust's `EventRepository<C, E, Version, Error>` trait for SQLite persistence.
+This trait defines the async boundary between pure Decider logic and effectful storage operations.
 
 ```rust
-use async_trait::async_trait;
-use sqlx::SqlitePool;
+use fmodel_rust::aggregate::EventRepository;
 
-#[async_trait]
-pub trait EventStore: Send + Sync {
-    /// Append event and return assigned sequence number
-    async fn append(&self, event: DomainEvent) -> Result<i64, Error>;
+/// fmodel-rust EventRepository trait signature
+pub trait EventRepository<C, E, Version, Error> {
+    /// Fetch all events for the aggregate identified by command
+    fn fetch_events(&self, command: &C) -> impl Future<Output = Result<Vec<(E, Version)>, Error>> + Send;
 
+    /// Persist new events and return with assigned versions
+    fn save(&self, events: &[E]) -> impl Future<Output = Result<Vec<(E, Version)>, Error>> + Send;
+
+    /// Get the latest version for an aggregate (for optimistic locking)
+    fn version_provider(&self, event: &E) -> impl Future<Output = Result<Option<Version>, Error>> + Send;
+}
+```
+
+### SQLite implementation
+
+Ironstar provides a custom SQLite implementation of this trait.
+The implementation follows the schema from `../decisions/fmodel-rust-adoption-evaluation.md` section "Recommended SQLite schema" (lines 135-198).
+
+See the evaluation document lines 232-315 for the complete `SqliteEventRepository` implementation pattern.
+
+Key design points:
+- `Version` type is `Uuid` for optimistic locking via `previous_id` unique constraint
+- Events store as JSON with `event_version` metadata for schema evolution
+- Global `offset INTEGER PRIMARY KEY AUTOINCREMENT` provides SSE Last-Event-ID semantics
+- Triggers enforce event stream immutability and ordering constraints
+
+### Additional query methods for SSE and projections
+
+Beyond the fmodel-rust EventRepository trait, ironstar's SQLite implementation provides supplementary query methods:
+
+```rust
+impl SqliteEventRepository {
     /// Query all events (for projection rebuild)
-    async fn query_all(&self) -> Result<Vec<StoredEvent>, Error>;
+    pub async fn query_all(&self) -> Result<Vec<StoredEvent>, Error>;
 
     /// Query events since sequence number (for SSE replay)
-    async fn query_since_sequence(&self, since: i64) -> Result<Vec<StoredEvent>, Error>;
-
-    /// Query events for specific aggregate (for debugging)
-    async fn query_aggregate(
-        &self,
-        aggregate_type: &str,
-        aggregate_id: &str,
-    ) -> Result<Vec<StoredEvent>, Error>;
+    pub async fn query_since_sequence(&self, since: i64) -> Result<Vec<StoredEvent>, Error>;
 
     /// Returns the earliest sequence number in the store.
     /// Used for bounded replay when snapshots are unavailable.
-    /// Returns None if the store is empty.
-    async fn earliest_sequence(&self) -> Result<Option<i64>, Error>;
+    pub async fn earliest_sequence(&self) -> Result<Option<i64>, Error>;
 
     /// Returns the latest sequence number in the store.
     /// Used for consistency checks and SSE Last-Event-ID validation.
-    /// Returns None if the store is empty.
-    async fn latest_sequence(&self) -> Result<Option<i64>, Error>;
-}
-// Note: Error, DomainEvent, and StoredEvent types are defined in event-sourcing-core.md
-
-/// SQLite implementation
-pub struct SqliteEventStore {
-    pool: sqlx::SqlitePool,
-}
-
-impl SqliteEventStore {
-    pub async fn new(database_url: &str) -> Result<Self, Error> {
-        let pool = sqlx::SqlitePool::connect(database_url).await?;
-
-        // Create table if not exists
-        sqlx::query(
-            r#"
-            CREATE TABLE IF NOT EXISTS events (
-                global_sequence INTEGER PRIMARY KEY AUTOINCREMENT,
-                id TEXT NOT NULL UNIQUE,
-                aggregate_type TEXT NOT NULL,
-                aggregate_id TEXT NOT NULL,
-                aggregate_sequence INTEGER NOT NULL,
-                event_type TEXT NOT NULL,
-                event_version TEXT NOT NULL DEFAULT '1.0.0',
-                payload TEXT NOT NULL,
-                metadata TEXT,
-                created_at TEXT DEFAULT (datetime('now')),
-                UNIQUE(aggregate_type, aggregate_id, aggregate_sequence)
-            ) STRICT;
-            CREATE INDEX IF NOT EXISTS idx_aggregate
-                ON events(aggregate_type, aggregate_id, aggregate_sequence);
-            "#,
-        )
-        .execute(&pool)
-        .await?;
-
-        Ok(Self { pool })
-    }
-}
-
-#[async_trait]
-impl EventStore for SqliteEventStore {
-    async fn append(&self, event: DomainEvent) -> Result<i64, Error> {
-        let stored = StoredEvent::from_domain(event);
-
-        let result = sqlx::query(
-            r#"
-            INSERT INTO events (aggregate_type, aggregate_id, event_type, payload, metadata)
-            VALUES (?, ?, ?, ?, ?)
-            "#,
-        )
-        .bind(&stored.aggregate_type)
-        .bind(&stored.aggregate_id)
-        .bind(&stored.event_type)
-        .bind(&stored.payload)
-        .bind(&stored.metadata)
-        .execute(&self.pool)
-        .await?;
-
-        Ok(result.last_insert_rowid())
-    }
-
-    async fn query_all(&self) -> Result<Vec<StoredEvent>, Error> {
-        let events = sqlx::query_as::<_, StoredEvent>(
-            "SELECT * FROM events ORDER BY sequence ASC",
-        )
-        .fetch_all(&self.pool)
-        .await?;
-
-        Ok(events)
-    }
-
-    async fn query_since_sequence(&self, since: i64) -> Result<Vec<StoredEvent>, Error> {
-        let events = sqlx::query_as::<_, StoredEvent>(
-            "SELECT * FROM events WHERE sequence > ? ORDER BY sequence ASC",
-        )
-        .bind(since)
-        .fetch_all(&self.pool)
-        .await?;
-
-        Ok(events)
-    }
-
-    async fn query_aggregate(
-        &self,
-        aggregate_type: &str,
-        aggregate_id: &str,
-    ) -> Result<Vec<StoredEvent>, Error> {
-        let events = sqlx::query_as::<_, StoredEvent>(
-            r#"
-            SELECT * FROM events
-            WHERE aggregate_type = ? AND aggregate_id = ?
-            ORDER BY sequence ASC
-            "#,
-        )
-        .bind(aggregate_type)
-        .bind(aggregate_id)
-        .fetch_all(&self.pool)
-        .await?;
-
-        Ok(events)
-    }
-
-    async fn earliest_sequence(&self) -> Result<Option<i64>, Error> {
-        let result: Option<(i64,)> = sqlx::query_as(
-            "SELECT MIN(sequence) FROM events",
-        )
-        .fetch_optional(&self.pool)
-        .await?;
-
-        Ok(result.map(|(seq,)| seq))
-    }
-
-    async fn latest_sequence(&self) -> Result<Option<i64>, Error> {
-        let result: Option<(i64,)> = sqlx::query_as(
-            "SELECT MAX(sequence) FROM events",
-        )
-        .fetch_optional(&self.pool)
-        .await?;
-
-        Ok(result.map(|(seq,)| seq))
-    }
+    pub async fn latest_sequence(&self) -> Result<Option<i64>, Error>;
 }
 ```
+
+Note: Error, DomainEvent, and StoredEvent types are defined in event-sourcing-core.md.
 
 ## Related documentation
 
