@@ -169,6 +169,9 @@ rkyv = { version = "0.8", features = ["bytecheck"] }
 # zenoh for pub/sub with key expression filtering
 zenoh = { version = "1.0" }
 
+# fmodel-rust for functional event sourcing (Decider pattern)
+fmodel-rust = { version = "0.9" }
+
 # oauth2 for GitHub OAuth (primary auth provider)
 oauth2 = { version = "4.4" }
 
@@ -183,6 +186,7 @@ oauth2 = { version = "4.4" }
 - `async-duckdb` feature `bundled` is strongly recommended to avoid system DuckDB version mismatches
 - `async-duckdb` wraps duckdb-rs internally; do not depend on duckdb directly
 - `zenoh` runs embedded by default; configure with empty endpoints to disable networking
+- `fmodel-rust` default features require `Send` bounds; use `features = ["not-send-futures"]` for single-threaded async
 - `oauth2` is used for GitHub OAuth; add `openidconnect` when implementing Google OIDC
 
 ## Local dependency paths
@@ -202,10 +206,39 @@ All dependencies with local source code available for reference.
 | async-duckdb | `~/projects/rust-workspace/async-duckdb` | Async DuckDB wrapper with connection pooling |
 | duckdb-rs | `~/projects/omicslake-workspace/duckdb-rs` | DuckDB Rust bindings (wrapped by async-duckdb) |
 | ts-rs | `~/projects/rust-workspace/ts-rs` | TypeScript type generation from Rust structs |
-| cqrs-es | `~/projects/rust-workspace/cqrs-es` | CQRS/ES framework (reference patterns, not dependency) |
-| sqlite-es | `~/projects/rust-workspace/sqlite-es` | SQLite backend for cqrs-es (reference for event store schema) |
+| fmodel-rust | `~/projects/rust-workspace/fmodel-rust` | Functional domain modeling with Decider pattern (primary ES abstraction) |
 
-### CQRS/Event sourcing references
+### fmodel ecosystem
+
+fmodel-rust implements Jérémie Chassaing's Decider pattern, the minimal algebraic interface for functional event sourcing.
+ironstar adopts fmodel-rust as its primary event sourcing abstraction based on the evaluation in `docs/notes/architecture/decisions/fmodel-rust-adoption-evaluation.md`.
+
+| Repository | Local Path | Description |
+|------------|------------|-------------|
+| fmodel-rust | `~/projects/rust-workspace/fmodel-rust` | Core library: Decider, View, Saga, EventSourcedAggregate |
+| fmodel-rust-demo | `~/projects/rust-workspace/fmodel-rust-demo` | Complete working example with Order + Restaurant domains |
+| fmodel-rust-postgres | `~/projects/rust-workspace/fmodel-rust-postgres` | PostgreSQL EventRepository implementation (reference for SQLite port) |
+| fmodel (Kotlin) | `~/projects/rust-workspace/fmodel` | Original Kotlin implementation (canonical reference) |
+
+**Key abstractions:**
+
+- `Decider<C, S, E>`: Pure decision-making (`decide`, `evolve`, `initial_state`)
+- `View<S, E>`: Pure event projection for read models
+- `Saga<AR, A>`: Event-to-command choreography for process managers
+- `EventSourcedAggregate`: Application layer wiring Decider + EventRepository
+
+**Composition:**
+
+- `combine()`: Merge independent Deciders (different command/event types)
+- `merge()`: Merge Deciders/Views with same event type
+
+See `~/projects/rust-workspace/fmodel-rust/README.md` for complete API documentation.
+
+### CQRS/Event sourcing references (historical)
+
+These libraries were evaluated during ironstar's architecture design phase.
+fmodel-rust was selected over cqrs-es/esrs due to its pure function enforcement and algebraic composition model.
+See `docs/notes/architecture/decisions/fmodel-rust-adoption-evaluation.md` for the complete evaluation.
 
 For theoretical foundations and cross-cutting event sourcing principles, see `~/.claude/commands/preferences/event-sourcing.md`.
 That document synthesizes Hoffman's Laws with category-theoretic grounding and provides decision frameworks for when to use event sourcing.
@@ -223,24 +256,21 @@ The preference documents synthesize all three approaches:
 - Ghosh provides algebraic foundations (signatures/algebras/interpreters, laws as specifications, abstraction hierarchy)
 - Hoffman provides event sourcing depth (aggregate design, projection patterns, process managers, operational concerns)
 
-**Rust pattern libraries** (study material, not dependencies):
+**Rust pattern libraries** (evaluated, not adopted as dependencies):
 
-| Reference | Local Path | Patterns to Study | Maturity |
-|-----------|------------|-------------------|----------|
-| cqrs-es | `~/projects/rust-workspace/cqrs-es` | Aggregate trait, EventStore abstraction, GenericQuery projections, TestFramework DSL, event upcasting | Production |
-| sqlite-es | `~/projects/rust-workspace/sqlite-es` | SQLite event table schema, optimistic locking, stream-based replay | Production |
-| esrs (event_sourcing.rs) | `~/projects/rust-workspace/event_sourcing.rs` | Pure sync aggregates, Schema/Upcaster pattern, TransactionalEventHandler vs EventHandler | Production |
-| kameo_es | `~/projects/rust-workspace/kameo_es` | Actor + ES composition, causation tracking, multiple projection backends | Alpha |
-| SierraDB | `~/projects/rust-workspace/sierradb` | Distributed event store design, partition-based sharding, segment storage | Pre-production |
+| Reference | Local Path | Patterns Studied | Why Not Adopted |
+|-----------|------------|------------------|-----------------|
+| cqrs-es | `~/projects/rust-workspace/cqrs-es` | Aggregate trait, EventStore abstraction, TestFramework DSL | Mutable `apply(&mut self)` violates purity |
+| sqlite-es | `~/projects/rust-workspace/sqlite-es` | SQLite event schema, optimistic locking | Thin adapter; value in patterns, not library |
+| esrs | `~/projects/rust-workspace/event_sourcing.rs` | Pure sync aggregates, Upcaster pattern | PostgreSQL-only; no SQLite backend |
+| kameo_es | `~/projects/rust-workspace/kameo_es` | Actor + ES composition | Alpha maturity |
+| SierraDB | `~/projects/rust-workspace/sierradb` | Distributed event store design | Pre-production; overkill for single-node |
 
-These crates are *reference implementations only* — ironstar implements its own CQRS layer following their patterns but adapted for hypertext + datastar integration.
-The design embodies Hoffman's Law 7 (work is a side effect): aggregates remain pure functions with all I/O at boundaries.
-
-The key adopted patterns are:
-- Pure synchronous aggregates (from esrs): `handle_command(state, cmd) -> Result<Vec<Event>, Error>` with no async/side effects
-- Event schema evolution via Upcaster pattern (from esrs), following Hoffman's Law 2 (event schemas are immutable)
-- TestFramework DSL for aggregate testing (from cqrs-es), following Hoffman's Law 10 (aggregates own event streams)
-- SQLite event store schema with global sequence for SSE Last-Event-ID (adapted from sqlite-es)
+**Patterns retained from these references** (now implemented via fmodel-rust):
+- Pure synchronous decision logic: fmodel's `Decider::decide` and `Decider::evolve`
+- Event schema evolution: custom Upcaster pattern at deserialization layer
+- TestFramework DSL: fmodel's `DeciderTestSpecification` with given/when/then
+- SQLite event store schema: custom `EventRepository` implementation with global sequence for SSE Last-Event-ID
 
 ### Datastar ecosystem
 
@@ -541,6 +571,7 @@ Consult these when questioning "why this technology?" for specific subsystems:
 - **Backend core**: `docs/notes/architecture/decisions/backend-core-decisions.md` — axum + hypertext integration, lazy rendering strategy
 - **Infrastructure**: `docs/notes/architecture/decisions/infrastructure-decisions.md` — SQLite vs PostgreSQL, Zenoh vs NATS, embedded vs external services
 - **CQRS implementation**: `docs/notes/architecture/decisions/cqrs-implementation-decisions.md` — Custom CQRS vs cqrs-es/esrs frameworks, pure sync aggregates
+- **fmodel-rust adoption**: `docs/notes/architecture/decisions/fmodel-rust-adoption-evaluation.md` — Decider pattern adoption, SQLite EventRepository, migration path
 - **Build tooling**: `docs/notes/architecture/decisions/build-tooling-decisions.md` — Rolldown configuration, asset embedding, dev/prod modes
 - **Authentication**: `docs/notes/architecture/decisions/oauth-authentication.md` — OAuth-only auth (GitHub first, Google planned), provider strategy, RBAC patterns
 - **Error handling**: `docs/notes/architecture/decisions/error-handling-decisions.md` — Error types, Result propagation, user-facing messages
@@ -552,7 +583,7 @@ Consult these when questioning "why this technology?" for specific subsystems:
 
 Read these when implementing specific subsystems or integrating libraries:
 
-- **Event sourcing core**: `docs/notes/architecture/cqrs/event-sourcing-core.md` — Aggregate patterns, command handling, event schema, event store
+- **Event sourcing core**: `docs/notes/architecture/cqrs/event-sourcing-core.md` — Decider patterns, command handling, event schema, event store
 - **Session management**: `docs/notes/architecture/infrastructure/session-management.md` — Session cookies, SQLite schema, axum extractors, per-session Zenoh keys
 - **Session implementation**: `docs/notes/architecture/infrastructure/session-implementation.md` — Concrete implementation patterns, middleware integration, session lifecycle
 - **Session security**: `docs/notes/architecture/infrastructure/session-security.md` — CSRF protection, secure cookie attributes, session fixation prevention
