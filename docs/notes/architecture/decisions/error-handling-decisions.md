@@ -175,8 +175,7 @@ The complete error flow from command validation through aggregate execution to H
 ```rust
 // ironstar-web/src/handlers/commands.rs
 use axum::{extract::State, response::IntoResponse, Json};
-use ironstar_app::command_handlers::handle_command;
-use ironstar_domain::aggregates::TodoAggregate;
+use ironstar_app::command_handlers::handle_todo_command;
 use ironstar_domain::commands::TodoCommand;
 use ironstar_web::error::AppError;
 use std::sync::Arc;
@@ -186,14 +185,13 @@ pub async fn handle_add_todo(
     State(state): State<Arc<AppState>>,
     Json(cmd): Json<TodoCommand>,
 ) -> Result<impl IntoResponse, AppError> {
-    // 1. Command handler returns Result<Vec<Event>, AggregateError>
-    let events = handle_command::<TodoAggregate>(
-        &state.event_store,
-        &state.event_bus,
-        &cmd.aggregate_id,
+    // 1. Call application layer handler (uses EventSourcedAggregate + todo_decider internally)
+    let events = handle_todo_command(
+        state.event_repository.clone(),
+        state.event_bus.clone(),
         cmd,
     )
-    .await?; // AggregateError -> AppError via From impl
+    .await?; // CommandError -> AppError via From impl
 
     // 2. Return 202 Accepted (SSE will deliver the update)
     Ok(axum::http::StatusCode::ACCEPTED)
@@ -202,10 +200,11 @@ pub async fn handle_add_todo(
 
 ### Aggregate pattern
 
-Pure aggregate with domain-specific error type.
+Pure decision logic using fmodel-rust's Decider pattern.
 
 ```rust
 // ironstar-domain/src/aggregates/todo.rs
+use fmodel_rust::decider::Decider;
 use ironstar_domain::error::{DomainError, ValidationError};
 use ironstar_domain::events::TodoEvent;
 use ironstar_domain::commands::TodoCommand;
@@ -217,119 +216,116 @@ pub struct TodoState {
     pub completed: bool,
 }
 
-impl Default for TodoState {
-    fn default() -> Self {
-        Self {
-            text: String::new(),
-            completed: false,
-        }
-    }
-}
-
-pub struct TodoAggregate;
-
-impl TodoAggregate {
-    /// Pure command handler - returns domain errors only
-    pub fn handle_command(
-        state: &TodoState,
-        cmd: TodoCommand,
-    ) -> Result<Vec<TodoEvent>, AggregateError> {
-        match cmd {
-            TodoCommand::Add { text } => {
-                // Validation errors
-                if text.is_empty() {
-                    return Err(ValidationError::EmptyField {
-                        field: "text".to_string(),
+/// Decider factory for todo aggregates
+pub fn todo_decider<'a>() -> Decider<'a, TodoCommand, Option<TodoState>, TodoEvent, AggregateError> {
+    Decider {
+        decide: Box::new(|command, state| {
+            match command {
+                TodoCommand::Add { text } => {
+                    // Validation errors
+                    if text.is_empty() {
+                        return Err(ValidationError::new(
+                            ValidationErrorKind::EmptyField {
+                                field: "text".to_string(),
+                            }
+                        ).into());
                     }
-                    .into());
-                }
 
-                if text.len() > 500 {
-                    return Err(ValidationError::TooLong {
-                        field: "text".to_string(),
-                        max_length: 500,
-                        actual_length: text.len(),
+                    if text.len() > 500 {
+                        return Err(ValidationError::new(
+                            ValidationErrorKind::TooLong {
+                                field: "text".to_string(),
+                                max_length: 500,
+                                actual_length: text.len(),
+                            }
+                        ).into());
                     }
-                    .into());
-                }
 
-                Ok(vec![TodoEvent::Added { text }])
-            }
-            TodoCommand::Toggle => {
-                // Domain errors
-                if state.text.is_empty() {
-                    return Err(DomainError::NotFound {
-                        aggregate_type: "Todo".to_string(),
-                        aggregate_id: "".to_string(),
+                    // Check if already exists
+                    if state.is_some() {
+                        return Err(DomainError::new(
+                            DomainErrorKind::AlreadyExists {
+                                aggregate_type: "Todo".to_string(),
+                                aggregate_id: text.clone(),
+                            }
+                        ).into());
                     }
-                    .into());
+
+                    Ok(vec![TodoEvent::Added { text: text.clone() }])
                 }
+                TodoCommand::Toggle => {
+                    // Domain errors
+                    match state {
+                        Some(s) => Ok(vec![TodoEvent::Toggled {
+                            completed: !s.completed,
+                        }]),
+                        None => Err(DomainError::new(
+                            DomainErrorKind::NotFound {
+                                aggregate_type: "Todo".to_string(),
+                                aggregate_id: "".to_string(),
+                            }
+                        ).into()),
+                    }
+                }
+            }
+        }),
 
-                Ok(vec![TodoEvent::Toggled {
-                    completed: !state.completed,
-                }])
+        evolve: Box::new(|state, event| {
+            match event {
+                TodoEvent::Added { text } => Some(TodoState {
+                    text: text.clone(),
+                    completed: false,
+                }),
+                TodoEvent::Toggled { completed } => state.clone().map(|mut s| {
+                    s.completed = *completed;
+                    s
+                }),
             }
-        }
-    }
+        }),
 
-    pub fn apply_event(mut state: TodoState, event: TodoEvent) -> TodoState {
-        match event {
-            TodoEvent::Added { text } => {
-                state.text = text;
-                state
-            }
-            TodoEvent::Toggled { completed } => {
-                state.completed = completed;
-                state
-            }
-        }
+        initial_state: Box::new(|| None),
     }
 }
 ```
 
 ### Application layer orchestration
 
-Command handler orchestrating I/O around pure aggregate.
+Command handler orchestrating I/O around pure Decider using fmodel-rust's EventSourcedAggregate.
 
 ```rust
 // ironstar-app/src/command_handlers.rs
-use ironstar_interfaces::{EventStore, EventBus};
-use ironstar_domain::aggregates::Aggregate;
+use fmodel_rust::aggregate::EventSourcedAggregate;
+use ironstar_domain::aggregates::todo::todo_decider;
+use ironstar_domain::commands::TodoCommand;
+use ironstar_domain::events::TodoEvent;
 use ironstar_app::error::AggregateError;
 use ironstar_interfaces::error::InfrastructureError;
+use ironstar_interfaces::EventBus;
+use uuid::Uuid;
 
-/// Orchestrate command handling with error propagation
-pub async fn handle_command<A: Aggregate>(
-    event_store: &dyn EventStore,
-    event_bus: &dyn EventBus,
-    aggregate_id: &str,
-    command: A::Command,
-) -> Result<Vec<A::Event>, CommandError> {
-    // 1. Load events (can fail with InfrastructureError)
-    let events = event_store
-        .query_aggregate(A::NAME, aggregate_id)
-        .await?;
+/// Orchestrate todo command handling with error propagation
+pub async fn handle_todo_command(
+    event_repository: Arc<SqliteEventRepository>,
+    event_bus: Arc<dyn EventBus>,
+    command: TodoCommand,
+) -> Result<Vec<(TodoEvent, Uuid)>, CommandError> {
+    // 1. Create EventSourcedAggregate wrapping pure Decider and EventRepository
+    let aggregate = EventSourcedAggregate::new(
+        event_repository.clone(),
+        todo_decider(),
+    );
 
-    // 2. Reconstruct state
-    let state = events
-        .into_iter()
-        .filter_map(|e| deserialize_event::<A>(&e))
-        .fold(A::State::default(), A::apply_event);
+    // 2. Handle command - fetches events, applies Decider, persists results
+    // Can fail with AggregateError (from Decider) or InfrastructureError (from EventRepository)
+    let events = aggregate.handle(&command).await?;
 
-    // 3. Handle command (can fail with AggregateError)
-    let new_events = A::handle_command(&state, command)?;
-
-    // 4. Persist events (can fail with InfrastructureError)
-    for event in &new_events {
-        event_store.append(serialize_event::<A>(aggregate_id, event)).await?;
+    // 3. Publish to event bus (fire and forget)
+    for (event, version) in &events {
+        let key = format!("events/Todo/{}", command.aggregate_id());
+        let _ = event_bus.publish(&key, event).await;
     }
 
-    // 5. Publish to event bus (fire and forget)
-    for event in &new_events {
-        let _ = event_bus.publish(event);
-    }
-
-    Ok(new_events)
+    Ok(events)
 }
 
 /// Command error unifying aggregate and infrastructure errors
@@ -562,42 +558,65 @@ pub async fn handle_command_with_logging(
 
 ## Error handling testing
 
-### Testing aggregate error conditions
+### Testing Decider error conditions
+
+Using fmodel-rust's DeciderTestSpecification for given/when/then style testing:
 
 ```rust
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ironstar_domain::error::ValidationError;
+    use fmodel_rust::decider::DeciderTestSpecification;
+    use ironstar_domain::error::{ValidationError, ValidationErrorKind};
 
     #[test]
     fn test_empty_text_validation() {
-        let state = TodoState::default();
         let cmd = TodoCommand::Add {
             text: String::new(),
         };
 
-        let result = TodoAggregate::handle_command(&state, cmd);
+        // DeciderTestSpecification validates error types
+        let result = (todo_decider().decide)(&cmd, &None);
 
         assert!(matches!(
             result,
-            Err(AggregateError::Validation(ValidationError::EmptyField { .. }))
+            Err(AggregateError::Validation(errors))
+            if errors.iter().any(|e| matches!(
+                e.kind(),
+                ValidationErrorKind::EmptyField { field } if field == "text"
+            ))
         ));
     }
 
     #[test]
     fn test_too_long_text_validation() {
-        let state = TodoState::default();
         let cmd = TodoCommand::Add {
             text: "a".repeat(501),
         };
 
-        let result = TodoAggregate::handle_command(&state, cmd);
+        let result = (todo_decider().decide)(&cmd, &None);
 
         assert!(matches!(
             result,
-            Err(AggregateError::Validation(ValidationError::TooLong { .. }))
+            Err(AggregateError::Validation(errors))
+            if errors.iter().any(|e| matches!(
+                e.kind(),
+                ValidationErrorKind::TooLong { max_length, .. } if *max_length == 500
+            ))
         ));
+    }
+
+    #[test]
+    fn test_toggle_nonexistent_todo() {
+        // Using DeciderTestSpecification for behavior testing
+        DeciderTestSpecification::default()
+            .for_decider(todo_decider())
+            .given(vec![])  // No prior events
+            .when(TodoCommand::Toggle)
+            .then_error(|err| {
+                matches!(err, AggregateError::Domain(e)
+                    if matches!(e.kind(), DomainErrorKind::NotFound { .. }))
+            });
     }
 }
 ```
