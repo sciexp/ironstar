@@ -210,7 +210,9 @@ All dependencies with local source code available for reference.
 
 ### fmodel ecosystem
 
-fmodel-rust implements Jérémie Chassaing's Decider pattern, the minimal algebraic interface for functional event sourcing.
+The fmodel ecosystem is built upon Jérémie Chassaing's Decider pattern, the minimal algebraic interface for functional event sourcing.
+The Decider pattern enforces near-pure functional semantics: `decide(command, state) → events` and `evolve(state, event) → state` are synchronous pure functions with no I/O, making aggregates trivially testable and composable.
+Fraktalio maintains implementations across languages (Kotlin, Rust, TypeScript) and the fstore-sql persistence layer, all sharing this foundational pattern.
 ironstar adopts fmodel-rust as its primary event sourcing abstraction based on the evaluation in `docs/notes/architecture/decisions/fmodel-rust-adoption-evaluation.md`.
 
 | Repository | Local Path | Description |
