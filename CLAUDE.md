@@ -216,9 +216,24 @@ ironstar adopts fmodel-rust as its primary event sourcing abstraction based on t
 | Repository | Local Path | Description |
 |------------|------------|-------------|
 | fmodel-rust | `~/projects/rust-workspace/fmodel-rust` | Core library: Decider, View, Saga, EventSourcedAggregate |
-| fmodel-rust-demo | `~/projects/rust-workspace/fmodel-rust-demo` | Complete working example with Order + Restaurant domains |
-| fmodel-rust-postgres | `~/projects/rust-workspace/fmodel-rust-postgres` | PostgreSQL EventRepository implementation (reference for SQLite port) |
+| fmodel-rust-demo | `~/projects/rust-workspace/fmodel-rust-demo` | Working example implementing fstore-sql pattern with sqlx (Order + Restaurant domains) |
+| fmodel-rust-postgres | `~/projects/rust-workspace/fmodel-rust-postgres` | PostgreSQL EventRepository implementing fstore-sql pattern via pgrx |
+| fstore-sql | `~/projects/rust-workspace/fstore-sql` | Canonical PostgreSQL event store schema (SQL functions API, not Rust); reference for all EventRepository implementations |
 | fmodel (Kotlin) | `~/projects/rust-workspace/fmodel` | Original Kotlin implementation (canonical reference) |
+
+**fstore-sql pattern:**
+
+fstore-sql is not a Rust crate but a PostgreSQL-native event store schema maintained by Fraktalio.
+Both fmodel-rust-demo and fmodel-rust-postgres implement this pattern rather than importing it as a dependency.
+The pattern provides:
+
+- `events` table with `previous_id` UUID chain for optimistic locking
+- `offset BIGSERIAL` for global monotonic ordering (SSE Last-Event-ID)
+- Immutability via PostgreSQL rules preventing DELETE/UPDATE
+- `stream_events()` function with partition locking for concurrent consumers
+
+ironstar's SQLite schema (in the evaluation document, lines 135-198) adapts this pattern for SQLite.
+Key files: `~/projects/rust-workspace/fstore-sql/schema.sql` (468 lines), `~/projects/rust-workspace/fstore-sql/README.md`.
 
 **Key abstractions:**
 
