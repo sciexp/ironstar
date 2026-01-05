@@ -44,19 +44,19 @@ For implementation details, see `../decisions/cqrs-implementation-decisions.md`.
 The domain layer contains pure business logic with no infrastructure dependencies.
 This purity enables local reasoning, trivial testing, and clean separation of concerns.
 
-### Pure aggregates
+### Pure domain logic via Decider pattern
 
-Aggregates are pure synchronous functions with no side effects.
-The `handle_command` function receives immutable state and a command, returning either events or an error.
-No I/O, no async, no hidden dependencies.
+Domain logic implements the Decider pattern, enforcing purity through type signatures.
+fmodel-rust's `Decider::decide` receives immutable state and a command, returning either events or an error.
+fmodel-rust's `Decider::evolve` applies events to state, producing new state.
+No I/O, no async, no hidden dependencies—purity enforced by construction.
 
 ```rust
-impl QuerySession {
-    pub fn handle_command(
-        state: &QuerySessionState,
-        cmd: QueryCommand,
-    ) -> Result<Vec<QueryEvent>, QueryError> {
-        match cmd {
+use fmodel_rust::decider::Decider;
+
+pub fn query_session_decider<'a>() -> Decider<'a, QueryCommand, QuerySessionState, QueryEvent, QueryError> {
+    Decider {
+        decide: Box::new(|command, state| match command {
             QueryCommand::ExecuteQuery { dataset, sql, chart_config } => {
                 if state.has_running_query() {
                     return Err(QueryError::QueryAlreadyRunning);
@@ -66,46 +66,47 @@ impl QuerySession {
                 }
                 Ok(vec![QueryEvent::QueryStarted {
                     query_id: QueryId::new(),
-                    dataset,
-                    sql,
-                    chart_config,
+                    dataset: dataset.clone(),
+                    sql: sql.clone(),
+                    chart_config: chart_config.clone(),
                     timestamp: Utc::now(),
                 }])
             }
             QueryCommand::CancelQuery { query_id } => {
-                if state.current_query_id != Some(query_id) {
+                if state.current_query_id != Some(*query_id) {
                     return Err(QueryError::NoSuchQuery);
                 }
-                Ok(vec![QueryEvent::QueryCancelled { query_id }])
+                Ok(vec![QueryEvent::QueryCancelled { query_id: *query_id }])
             }
-        }
-    }
+        }),
 
-    pub fn apply_event(state: QuerySessionState, event: &QueryEvent) -> QuerySessionState {
-        match event {
+        evolve: Box::new(|state, event| match event {
             QueryEvent::QueryStarted { query_id, dataset, sql, chart_config, .. } => {
                 QuerySessionState {
                     current_query_id: Some(*query_id),
                     dataset: dataset.clone(),
                     sql: sql.clone(),
                     chart_config: chart_config.clone(),
-                    ..state
+                    ..*state
                 }
-            },
+            }
             QueryEvent::QueryCancelled { .. } => QuerySessionState {
                 current_query_id: None,
-                ..state
-            },
-        }
+                ..*state
+            }
+        }),
+
+        initial_state: Box::new(|| QuerySessionState::default()),
     }
 }
 ```
 
-This purity has algebraic significance: aggregates form a *coalgebra* over the state type, with events as the coproduct.
-The `apply_event` function is the unfold operation, reconstructing state from the event stream.
+This purity has algebraic significance: Deciders form a *coalgebra* over the state type, with events as the coproduct.
+The `evolve` function is the unfold operation, reconstructing state from the event stream.
+fmodel-rust enforces purity via type signatures: `decide` and `evolve` are pure functions with no async, no mutable state.
 
-External service calls (API lookups, validation against external data) happen in the command handler *before* calling the aggregate.
-The aggregate receives pre-validated, pre-enriched data.
+External service calls (API lookups, validation against external data) happen in the command handler *before* calling the Decider.
+The Decider receives pre-validated, pre-enriched data.
 
 ### Effect boundaries
 
@@ -124,15 +125,15 @@ See `crate-architecture.md` for the complete layering and multi-crate decomposit
 
 ```
 Domain Layer (Pure)
-    Aggregate::handle_command — sync, pure, no I/O
-    Aggregate::apply_event — sync, pure, deterministic
+    Decider::decide — sync, pure, no I/O
+    Decider::evolve — sync, pure, deterministic
 
 Application Layer (Effect Boundary)
-    handle_command handler — async, I/O for loading/saving
+    EventSourcedAggregate::handle — async, I/O for loading/saving
     Projection updaters — async, I/O for read models
 
 Infrastructure Layer (Effect Implementation)
-    EventStore::append — async, database I/O
+    EventRepository::save — async, database I/O
     EventBus::publish — async, channel send
 ```
 
@@ -142,54 +143,62 @@ This separation enables:
 - Swapping infrastructure implementations without touching domain code
 - Reasoning about business rules independent of I/O concerns
 
-### Testing pure aggregates
+### Testing pure Deciders
 
-Because aggregates are pure functions, testing requires no infrastructure.
+Because Deciders are pure functions, testing requires no infrastructure.
+fmodel-rust provides `DeciderTestSpecification` for given/when/then testing:
 
 ```rust
-#[test]
-fn aggregate_rejects_concurrent_queries() {
-    let state = QuerySessionState {
-        current_query_id: Some(QueryId::new()),
-        dataset: "iris.parquet".to_string(),
-        sql: "SELECT * FROM iris".to_string(),
-        chart_config: None,
-    };
-    let cmd = QueryCommand::ExecuteQuery {
-        dataset: "penguins.parquet".to_string(),
-        sql: "SELECT * FROM penguins".to_string(),
-        chart_config: None,
-    };
+#[cfg(test)]
+mod tests {
+    use fmodel_rust::decider::DeciderTestSpecification;
+    use super::*;
 
-    let result = QuerySession::handle_command(&state, cmd);
+    #[test]
+    fn decider_rejects_concurrent_queries() {
+        let query_id = QueryId::new();
+        let existing_state = QuerySessionState {
+            current_query_id: Some(query_id),
+            dataset: "iris.parquet".to_string(),
+            sql: "SELECT * FROM iris".to_string(),
+            chart_config: None,
+        };
 
-    assert!(matches!(result, Err(QueryError::QueryAlreadyRunning)));
-}
+        DeciderTestSpecification::default()
+            .for_decider(query_session_decider())
+            .given_state(existing_state)
+            .when(QueryCommand::ExecuteQuery {
+                dataset: "penguins.parquet".to_string(),
+                sql: "SELECT * FROM penguins".to_string(),
+                chart_config: None,
+            })
+            .then_error(QueryError::QueryAlreadyRunning);
+    }
 
-#[test]
-fn aggregate_accepts_valid_query() {
-    let state = QuerySessionState {
-        current_query_id: None,
-        dataset: String::new(),
-        sql: String::new(),
-        chart_config: None,
-    };
-    let cmd = QueryCommand::ExecuteQuery {
-        dataset: "iris.parquet".to_string(),
-        sql: "SELECT * FROM iris LIMIT 10".to_string(),
-        chart_config: None,
-    };
-
-    let result = QuerySession::handle_command(&state, cmd);
-
-    assert!(result.is_ok());
-    let events = result.unwrap();
-    assert!(matches!(events.as_slice(), [QueryEvent::QueryStarted { .. }]));
+    #[test]
+    fn decider_accepts_valid_query() {
+        DeciderTestSpecification::default()
+            .for_decider(query_session_decider())
+            .given(vec![])  // No prior events
+            .when(QueryCommand::ExecuteQuery {
+                dataset: "iris.parquet".to_string(),
+                sql: "SELECT * FROM iris LIMIT 10".to_string(),
+                chart_config: None,
+            })
+            .then(vec![QueryEvent::QueryStarted {
+                query_id: /* captured */,
+                dataset: "iris.parquet".to_string(),
+                sql: "SELECT * FROM iris LIMIT 10".to_string(),
+                chart_config: None,
+                timestamp: /* captured */,
+            }]);
+    }
 }
 ```
 
 No database setup, no async runtime, no mocking.
-This is the payoff of pure aggregates: business logic becomes as testable as a calculator.
+This is the payoff of pure Deciders: business logic becomes as testable as a calculator.
+fmodel-rust's `DeciderTestSpecification` DSL provides given/when/then assertions matching the evaluation doc pattern (lines 462-517).
 
 ---
 
@@ -383,19 +392,21 @@ In ironstar, the async/sync boundary marks the effect boundary: async functions 
 
 ```rust
 // Pure domain logic (sync, no effects)
-impl QuerySession {
-    pub fn handle_command(state: &QuerySessionState, cmd: QueryCommand) -> Result<Vec<QueryEvent>, QueryError> {
-        // Pure computation
+pub fn query_session_decider<'a>() -> Decider<'a, QueryCommand, QuerySessionState, QueryEvent, QueryError> {
+    Decider {
+        decide: Box::new(|command, state| {
+            // Pure computation
+        }),
+        evolve: Box::new(|state, event| {
+            // Pure state transition
+        }),
+        initial_state: Box::new(|| QuerySessionState::default()),
     }
 }
 
 // Effect boundary (async, performs I/O)
-async fn execute_command(cmd: QueryCommand, store: Arc<dyn EventStore>) -> Result<(), AppError> {
-    let state = load_state(&store).await?; // Effect: database read
-    let events = QuerySession::handle_command(&state, cmd)?; // Pure computation
-    for event in events {
-        store.append(event).await?; // Effect: database write
-    }
+async fn execute_command(cmd: QueryCommand, aggregate: EventSourcedAggregate<...>) -> Result<(), AppError> {
+    let events = aggregate.handle(&cmd).await?;  // Effect: fetch, decide (pure), evolve (pure), save
     Ok(())
 }
 ```
@@ -488,6 +499,7 @@ The `map` operation on Option/Result is a functor.
 Projections form a Galois connection (a type of adjunction)—abstracting events to views loses information, but concretizing views back gives the "best approximation."
 
 **Coalgebra**: The dual of algebra—instead of combining values, it unfolds them.
+Deciders are coalgebras: given current state and command, produce events and next state.
 Web components are coalgebras: given current state, produce output and next-state function.
 State machines are coalgebraic.
 
