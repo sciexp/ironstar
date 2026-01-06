@@ -206,6 +206,9 @@ SQLite enforces the monoid structure:
 - `aggregate_sequence` enables per-aggregate versioning for optimistic concurrency
 - Append-only semantics: no updates or deletes (except compaction)
 
+> **Implementation note:** The fmodel-rust schema uses `previous_id` UUID chain rather than integer `aggregate_sequence` for optimistic locking.
+> See `decisions/fmodel-rust-adoption-evaluation.md` for rationale.
+
 The initiality of the free monoid guarantees that for any monoid homomorphism `h : Event → M`, there exists a unique fold `fold_h : [Event] → M`.
 
 ### State reconstruction as catamorphism
