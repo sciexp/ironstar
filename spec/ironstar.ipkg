@@ -1,0 +1,16 @@
+package ironstar
+version = 0.1.0
+
+opts = "--ignore-missing-ipkg -Wno-shadowing"
+
+depends = base
+
+modules = Core.Decider,
+          Core.View,
+          Core.Saga,
+          Core.Effect,
+          Core.Event,
+          Analytics.Stub,
+          Session.Stub,
+          Workspace.Stub,
+          Todo.Stub
