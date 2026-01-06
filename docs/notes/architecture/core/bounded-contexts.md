@@ -1,35 +1,208 @@
-# Bounded context design
+# Bounded contexts
 
-This document describes bounded context patterns for ironstar, covering context identification, relationship types, and integration strategies.
-While ironstar v1 operates as a single bounded context, this document provides the foundation for future decomposition.
+Ironstar organizes domain logic into four bounded contexts with distinct responsibilities, invariants, and strategic classifications.
+This separation emerged from Domain-Driven Design principles: contexts should have clear boundaries where the same term means different things, different invariants apply, or different change drivers exist.
 
-## Current context structure
+## Bounded contexts overview
 
-Ironstar v1 contains implicit context boundaries within a single deployable unit:
+Ironstar has four bounded contexts with distinct responsibilities:
+
+### Analytics (Core)
+
+**Strategic classification**: Core domain (primary differentiator)
+
+**Aggregates:**
+- `Catalog`: DuckLake catalog selection and versioning
+- `QuerySession`: Query execution context and result caching
+- `ChartDefinition`: Visualization type specifications (ECharts/Vega-Lite schemas)
+
+**Concern**: Scientific data analysis — what data to query, how to transform it
+
+**Invariants:**
+- Query validity against DuckLake schema versions
+- Column existence in selected catalogs
+- Chart type compatibility with query result shapes
+- Transformation pipeline correctness
+
+**Ubiquitous language**: Query, Dataset, Result, Chart, Projection, Catalog, Transformation
+
+**Integration**: Publishes `ChartDefinition` updates consumed by Workspace bounded context via Customer-Supplier relationship
+
+### Session (Supporting)
+
+**Strategic classification**: Supporting domain
+
+**Aggregates:**
+- `Session`: Authentication lifecycle management
+
+**Concern**: WHO is the user, authentication state
+
+**Invariants:**
+- Session expiry enforcement (TTL)
+- OAuth token validity (GitHub/Google)
+- CSRF token matching
+- Session fixation prevention
+
+**Ubiquitous language**: Session, User, Permission, Token, AuthProvider
+
+**Note**: Session is per-login; does NOT include persistent user preferences, saved queries, or dashboard layouts — those belong to Workspace bounded context
+
+**Integration**: Provides authenticated `User` identity to Workspace via Shared Kernel pattern
+
+### Workspace (Supporting)
+
+**Strategic classification**: Supporting domain
+
+**Aggregates:**
+- `Dashboard`: Layout configuration, tab organization, chart placements
+- `SavedQuery`: Named queries with parameters
+- `UserPreferences`: Theme, defaults, UI state
+
+**Concern**: User's persistent saved state across sessions — WHERE charts appear, WHICH queries are saved, HOW the UI is configured
+
+**Invariants:**
+- Layout validity (non-overlapping regions, valid grid positions)
+- Unique names within workspace scope (SavedQuery, Dashboard)
+- Chart placement references valid ChartDefinitions
+- Tab organization consistency
+
+**Ubiquitous language**: Dashboard, Layout, SavedQuery, UserPreferences, Tab, ChartPlacement, Grid
+
+**Lifetime**: Persists across session boundaries — a user logs out (Session expires) but their Dashboard configuration and SavedQuery definitions remain intact for next login
+
+**Relationship:**
+- Requires authenticated User (from Session)
+- Persists across session boundaries
+- Customer-Supplier relationship with Analytics (consumes ChartDefinitions)
+
+**Integration:**
+- Customer-Supplier with Analytics: Consumes `ChartDefinition` schemas to position charts on dashboards
+- Requires authenticated `User` from Session: Workspace operations only valid within authenticated context
+
+### Todo (Generic Example)
+
+**Strategic classification**: Generic domain (template demonstration)
+
+**Aggregates:**
+- `Todo`: Simple task with title, completion status
+
+**Concern**: Simple CRUD for demonstrating event sourcing patterns
+
+**Invariants:**
+- Title non-empty
+- Completion state boolean
+
+**Ubiquitous language**: Todo, Task, Complete, Delete, TodoList
+
+**Integration**: Standalone — no dependencies on other bounded contexts; serves as reference implementation for CQRS/ES patterns
+
+## Context map
+
+The following diagram shows integration patterns between bounded contexts.
+Arrows indicate dependency direction.
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                     Ironstar Monolith                           │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
-│  │   Session    │  │     Todo     │  │   Analytics  │          │
-│  │   Context    │  │   Context    │  │   Context    │          │
-│  │              │  │              │  │              │          │
-│  │ - Auth state │  │ - Aggregates │  │ - Queries    │          │
-│  │ - Permissions│  │ - Events     │  │ - Projections│          │
-│  │ - User prefs │  │ - Commands   │  │ - Cache      │          │
-│  └──────────────┘  └──────────────┘  └──────────────┘          │
-│         │                  │                  │                 │
-│         └──────────────────┼──────────────────┘                 │
-│                            │                                    │
-│                    ┌───────▼───────┐                           │
-│                    │  Event Bus    │                           │
-│                    │   (Zenoh)     │                           │
-│                    └───────────────┘                           │
-└─────────────────────────────────────────────────────────────────┘
+Session (Supporting) ────[Shared Kernel: User identity]────> Workspace (Supporting)
+                                                                      │
+Analytics (Core) ──────────────[Customer-Supplier: ChartDefinition]───┘
+
+Todo (Generic) ────────────────[Standalone demonstration]
 ```
 
-These implicit boundaries become explicit when contexts split into separate crates or services.
-Current monolithic structure enables rapid prototyping while maintaining clear domain separation.
+**Relationship patterns:**
+
+- **Shared Kernel** (Session → Workspace): User identity is shared concept; both contexts must agree on User structure
+- **Customer-Supplier** (Analytics → Workspace): Analytics publishes ChartDefinition schemas; Workspace consumes them for dashboard layout
+- **Standalone** (Todo): No integration; purely illustrative
+
+## Design decision rationale
+
+### Why separate Workspace from Session?
+
+Workspace was separated from Session because they have fundamentally different concerns, lifetimes, and invariants.
+
+**Different concerns:**
+- Session: Authentication lifecycle — token validation, expiry, OAuth flows
+- Workspace: Persistent user state — layouts, saved queries, preferences
+
+**Different lifetimes:**
+- Session: Ephemeral, expires after TTL (hours/days)
+- Workspace: Durable, persists across sessions (months/years)
+
+**Different invariants:**
+- Session: Token validity, CSRF protection, session fixation prevention
+- Workspace: Layout validity, unique naming, chart reference integrity
+
+**Different change drivers:**
+- Session: Security requirements, OAuth provider changes, token formats
+- Workspace: UI/UX evolution, layout features, query management
+
+**Cleaner boundaries:**
+Keeping Session focused solely on authentication prevents it from becoming a dumping ground for "user-related stuff."
+Workspace explicitly owns persistent state, making the domain model clearer.
+
+### Why separate Workspace from Analytics?
+
+Workspace was separated from Analytics because they use the same term "Chart" but mean entirely different things, have different concerns, and serve different strategic purposes.
+
+**Different language:**
+- Analytics: "Chart" = data transformation specification (SQL query + ECharts/Vega-Lite schema)
+- Workspace: "Chart" = positioned UI element (x/y coordinates, width/height, tab placement)
+
+**Different concerns:**
+- Analytics: Data correctness, transformation validity, catalog versioning
+- Workspace: Visual arrangement, layout persistence, user customization
+
+**Different change drivers:**
+- Analytics: Data source changes, new transformation types, query optimization
+- Workspace: UI/UX improvements, layout features, dashboard templates
+
+**Strategic clarity:**
+- Analytics: Core domain (competitive differentiator via scientific analysis)
+- Workspace: Supporting domain (necessary for usability but not differentiating)
+
+**Avoid coupling:**
+Mixing these concerns would tangle unrelated invariants: Analytics validating chart schema correctness would be coupled with Workspace validating grid positions.
+The Customer-Supplier relationship keeps them decoupled: Analytics evolves ChartDefinition schemas independently; Workspace consumes them as stable contracts.
+
+## Strategic classification
+
+Following Eric Evans's strategic design patterns, each context is classified by its role in competitive differentiation:
+
+- **Core domain**: Primary source of competitive advantage; requires custom development and deep domain expertise
+- **Supporting domain**: Necessary but not differentiating; supports core domain operations
+- **Generic domain**: Commodity functionality; could be replaced with off-the-shelf solutions
+
+This classification guides investment decisions: Core domains receive most architectural attention, Supporting domains balance simplicity with capability, Generic domains prefer proven patterns over innovation.
+
+## Implementation boundaries
+
+Each bounded context maps to a Rust module with isolated types, events, and projections:
+
+```
+crates/ironstar/src/domain/
+├── analytics/       # Core domain
+├── session/         # Supporting domain
+├── workspace/       # Supporting domain
+└── todo/            # Generic example
+```
+
+Events from different contexts use distinct type namespaces:
+- `AnalyticsEvent::QueryExecuted`
+- `SessionEvent::UserLoggedIn`
+- `WorkspaceEvent::DashboardCreated`
+- `TodoEvent::TodoCompleted`
+
+Zenoh key expressions enforce context isolation:
+- `events/Analytics/**`
+- `events/Session/**`
+- `events/Workspace/**`
+- `events/Todo/**`
+
+Cross-context integration happens via:
+1. **Shared Kernel**: Workspace imports `Session::User` type
+2. **Customer-Supplier**: Workspace subscribes to `events/Analytics/ChartDefinition/**` keys
+3. **Process Managers**: Coordinate multi-context workflows (e.g., Dashboard creation after first login)
 
 ## Context relationship patterns
 
@@ -56,7 +229,7 @@ Downstream influences upstream priorities.
 
 **When to use**: Clear producer-consumer relationship with negotiation.
 
-**Ironstar example**: Event sourcing infrastructure (upstream) serves domain aggregates (downstream).
+**Ironstar example**: Analytics (upstream) serves Workspace (downstream) with ChartDefinition schemas.
 
 **Implementation**:
 - Downstream requests features via issues
@@ -180,6 +353,19 @@ Generated TypeScript types ensure frontend/backend type alignment without manual
 
 For each bounded context, document using the Context Canvas pattern from DDD.
 
+### Analytics context canvas
+
+| Aspect | Description |
+|--------|-------------|
+| **Name** | Analytics Context |
+| **Purpose** | Execute analytical queries against remote datasets |
+| **Strategic classification** | Core |
+| **Ubiquitous language** | Query, Dataset, Result, Chart, Projection, Catalog, Transformation |
+| **Business decisions** | Query timeout (30s), SQL safety rules (read-only), caching policy (5min TTL) |
+| **Inbound communication** | Query commands via HTTP, invalidation events via Zenoh |
+| **Outbound communication** | Query events, SSE result streaming, cached projections, ChartDefinition updates |
+| **Dependencies** | DuckDB, remote data sources (HuggingFace, S3 via httpfs), Session context, moka cache, Zenoh event bus |
+
 ### Session context canvas
 
 | Aspect | Description |
@@ -193,6 +379,19 @@ For each bounded context, document using the Context Canvas pattern from DDD.
 | **Outbound communication** | Session validation results, user identity claims |
 | **Dependencies** | OAuth providers (GitHub, Google), SQLite session store |
 
+### Workspace context canvas
+
+| Aspect | Description |
+|--------|-------------|
+| **Name** | Workspace Context |
+| **Purpose** | Manage user's persistent saved state across sessions |
+| **Strategic classification** | Supporting |
+| **Ubiquitous language** | Dashboard, Layout, SavedQuery, UserPreferences, Tab, ChartPlacement, Grid |
+| **Business decisions** | Layout grid system (12-column), max tabs per dashboard (20), saved query retention (indefinite) |
+| **Inbound communication** | Layout commands via HTTP, ChartDefinition updates via Zenoh, User identity from Session |
+| **Outbound communication** | Workspace events, SSE layout updates, saved query results |
+| **Dependencies** | Session context (User identity), Analytics context (ChartDefinition schemas), SQLite workspace store, Zenoh event bus |
+
 ### Todo context canvas
 
 | Aspect | Description |
@@ -205,19 +404,6 @@ For each bounded context, document using the Context Canvas pattern from DDD.
 | **Inbound communication** | Commands via HTTP POST with session context |
 | **Outbound communication** | Events via Zenoh, SSE updates to subscribed clients |
 | **Dependencies** | Event store, Session context (for ownership), Zenoh event bus |
-
-### Analytics context canvas
-
-| Aspect | Description |
-|--------|-------------|
-| **Name** | Analytics Context |
-| **Purpose** | Execute analytical queries against remote datasets |
-| **Strategic classification** | Core |
-| **Ubiquitous language** | Query, Dataset, Result, Chart, Projection |
-| **Business decisions** | Query timeout (30s), SQL safety rules (read-only), caching policy (5min TTL) |
-| **Inbound communication** | Query commands via HTTP, invalidation events via Zenoh |
-| **Outbound communication** | Query events, SSE result streaming, cached projections |
-| **Dependencies** | DuckDB, remote data sources (HuggingFace, S3 via httpfs), Session context, moka cache, Zenoh event bus |
 
 ## Category-theoretic view
 
