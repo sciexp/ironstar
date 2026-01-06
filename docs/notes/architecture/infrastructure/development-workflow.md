@@ -379,6 +379,9 @@ CREATE INDEX IF NOT EXISTS idx_events_aggregate
     ON events(aggregate_type, aggregate_id, aggregate_sequence);
 ```
 
+> **Schema status:** This describes the planned NYP.35 schema.
+> The fmodel-rust adoption may reconcile this to use `previous_id` chain per `analysis/fmodel-rust-blocking-analysis.md`.
+
 The schema uses dual sequence tracking: `global_sequence` for SSE Last-Event-ID and `aggregate_sequence` for optimistic locking.
 TEXT types are required by STRICT mode; JSON data is stored as TEXT and parsed by application code.
 
