@@ -26,7 +26,7 @@ Ironstar has four bounded contexts with distinct responsibilities:
 
 **Ubiquitous language**: Query, Dataset, Result, Chart, Projection, Catalog, Transformation
 
-**Integration**: Publishes `ChartDefinition` updates consumed by Workspace bounded context via Customer-Supplier relationship
+**Integration**: Publishes `ChartDefinition` updates consumed by Workspace bounded context via Customer-Supplier relationship; no coupling to Generality Canary (Todo)
 
 ### Session (Supporting)
 
@@ -79,14 +79,16 @@ Ironstar has four bounded contexts with distinct responsibilities:
 - Customer-Supplier with Analytics: Consumes `ChartDefinition` schemas to position charts on dashboards
 - Requires authenticated `User` from Session: Workspace operations only valid within authenticated context
 
-### Todo (Generic Example)
+### Todo (Generality Canary)
 
-**Strategic classification**: Generic domain (template demonstration)
+**Strategic classification**: Generic domain (template generality validation)
 
 **Aggregates:**
 - `Todo`: Simple task with title, completion status
 
-**Concern**: Simple CRUD for demonstrating event sourcing patterns
+**Concern**: Prove template patterns generalize beyond scientific data analysis
+
+**Purpose**: Todo exists to validate that ironstar's CQRS/ES infrastructure (EventRepository, Zenoh pub/sub, Session identity, fmodel-rust Deciders) works for ANY domain — not just Analytics. If Todo can be implemented cleanly without coupling to Analytics-specific concepts, the template is genuinely reusable.
 
 **Invariants:**
 - Title non-empty
@@ -94,7 +96,7 @@ Ironstar has four bounded contexts with distinct responsibilities:
 
 **Ubiquitous language**: Todo, Task, Complete, Delete, TodoList
 
-**Integration**: Standalone — no dependencies on other bounded contexts; serves as reference implementation for CQRS/ES patterns
+**Integration**: Fully isolated — shares infrastructure (EventRepository, Zenoh, Session) but NO domain coupling with other bounded contexts. This isolation is intentional: coupling Todo to Analytics would defeat its purpose as a generality test.
 
 ## Context map
 
@@ -106,14 +108,14 @@ Session (Supporting) ────[Shared Kernel: User identity]────> Wor
                                                                       │
 Analytics (Core) ──────────────[Customer-Supplier: ChartDefinition]───┘
 
-Todo (Generic) ────────────────[Standalone demonstration]
+Todo (Generality Canary) ──────[Isolated for template generality validation]
 ```
 
 **Relationship patterns:**
 
 - **Shared Kernel** (Session → Workspace): User identity is shared concept; both contexts must agree on User structure
 - **Customer-Supplier** (Analytics → Workspace): Analytics publishes ChartDefinition schemas; Workspace consumes them for dashboard layout
-- **Standalone** (Todo): No integration; purely illustrative
+- **Isolated** (Todo): No domain coupling with other contexts; validates template generality by proving CQRS/ES infrastructure works for any domain without coupling to Analytics-specific concerns
 
 ## Design decision rationale
 
@@ -184,7 +186,7 @@ crates/ironstar/src/domain/
 ├── analytics/       # Core domain
 ├── session/         # Supporting domain
 ├── workspace/       # Supporting domain
-└── todo/            # Generic example
+└── todo/            # Generality canary
 ```
 
 Events from different contexts use distinct type namespaces:
@@ -397,8 +399,8 @@ For each bounded context, document using the Context Canvas pattern from DDD.
 | Aspect | Description |
 |--------|-------------|
 | **Name** | Todo Context |
-| **Purpose** | Demonstrate aggregate patterns with familiar domain |
-| **Strategic classification** | Generic Example |
+| **Purpose** | Validate template generality by proving CQRS/ES patterns work for any domain without coupling to Analytics-specific concerns |
+| **Strategic classification** | Generality Canary |
 | **Ubiquitous language** | Todo, Task, Complete, Delete, TodoList |
 | **Business decisions** | Todo lifecycle state machine (created → completed/deleted) |
 | **Inbound communication** | Commands via HTTP POST with session context |
