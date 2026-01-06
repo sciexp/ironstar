@@ -1,5 +1,8 @@
 # fmodel-rust blocking analysis
 
+> **Resolution status:** The fmodel-rust adoption evaluation (`decisions/fmodel-rust-adoption-evaluation.md`) is the canonical decision.
+> This analysis document identified the conflicts; the reconciliation was executed via `reconcile-issue-graph.sh` closing nyp.1, nyp.3, nyp.6, nyp.7.
+
 ## Executive summary
 
 The ironstar project has **critical architectural inconsistency** in its dependency graph.
