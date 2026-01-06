@@ -236,7 +236,7 @@ Layers eliminate the need for specificity hacks like:
 /* web-components/styles/main.css */
 
 /* Declare layers upfront - establishes precedence */
-@layer openprops, normalize, theme, components, utilities, app;
+@layer openprops, normalize, theme, compositions, components, utilities, app;
 
 /* Import Open Props design tokens into dedicated layer */
 @import "open-props/style" layer(openprops);
@@ -259,6 +259,15 @@ Layers eliminate the need for specificity hacks like:
     --surface-default: light-dark(var(--gray-0), var(--gray-9));
     /* ... theme tokens */
   }
+}
+
+/* Compositions layer - CUBE CSS layout primitives */
+@layer compositions {
+  @import "./compositions/stack.css";
+  @import "./compositions/cluster.css";
+  @import "./compositions/center.css";
+  @import "./compositions/sidebar.css";
+  /* ... other composition primitives */
 }
 
 /* Components layer - Open Props UI component styles */
@@ -323,6 +332,86 @@ Individual component files can use layers internally:
   }
 }
 ```
+
+### Composition layer details
+
+The composition layer implements CUBE CSS layout primitives that provide semantic, composable layouts without viewport breakpoints.
+These primitives use intrinsic design principles where layouts respond to available space rather than specific viewport widths.
+
+**Purpose**: Compositions handle spatial relationships between elements (vertical spacing, horizontal clustering, centering, sidebars) using flexbox and grid with custom property configuration.
+
+**Layer position**: The `compositions` layer sits between `theme` (which defines design tokens) and `components` (which style specific UI patterns).
+Compositions consume theme tokens like `--size-3` but don't define visual styling like colors or shadows.
+Components may contain composition classes, but compositions remain layout-agnostic.
+
+**The eight primitives**:
+
+1. **Stack**: Vertical spacing between siblings via owl selector (`> * + *`)
+2. **Box**: Padded container with optional border
+3. **Center**: Horizontal centering with maximum width
+4. **Cluster**: Wrapping horizontal group with gap spacing
+5. **Sidebar**: Fixed-width sidebar with flexible main content
+6. **Switcher**: Conditional horizontal/vertical layout based on container width
+7. **Cover**: Full-height container with centered principal element
+8. **Grid**: Auto-filling responsive grid
+
+For complete CSS patterns and custom property reference, see `~/.claude/commands/preferences/hypermedia-development/04-css-architecture.md`.
+The "Composition primitives" section below provides detailed documentation of each primitive with examples.
+
+**Integration with hypertext templates**:
+
+Composition classes appear directly in server-rendered HTML, following CUBE CSS class grouping conventions:
+
+```rust
+use hypertext::{html_elements, GlobalAttributes, Renderable};
+
+html! {
+  <div class="[ stack ] [ card ]" style="--stack-space: var(--size-5)">
+    <h2>"Card Title"</h2>
+    <p>"Content with vertical rhythm"</p>
+    <div class="[ cluster ]" style="--cluster-justify: flex-end">
+      <button class="button">"Cancel"</button>
+      <button class="button">"Confirm"</button>
+    </div>
+  </div>
+}
+```
+
+Square brackets group classes for readability: `[ compositions ] [ components ] [ utilities ]`.
+
+**Light DOM compatibility**:
+
+Lit web components using Open Props tokens render to Light DOM (not Shadow DOM) to inherit CSS custom properties.
+Composition primitives work identically in server-rendered HTML and Lit component templates because there's no Shadow DOM boundary blocking token inheritance.
+
+**Algebraic properties**:
+
+Composition primitives exhibit properties analogous to algebraic structures:
+
+- **Closure**: Composing primitives yields valid layouts (Stack > Grid > Cluster nests correctly)
+- **Local reasoning**: A Stack behaves identically regardless of parent context (like pure functions)
+- **Identity**: An empty composition (div with no layout class) acts as identity—no layout transformation
+- **Associativity**: Nesting order doesn't affect semantic meaning (though visual results may differ)
+
+These properties emerge from CSS flexbox/grid intrinsic sizing rather than being explicitly enforced, but they're reliable enough to treat compositions as a layout algebra.
+See `docs/notes/architecture/core/design-principles.md` for theoretical foundations.
+
+**File structure**:
+
+```
+web-components/styles/compositions/
+├── index.css         # Imports all primitives
+├── stack.css         # Vertical spacing
+├── box.css           # Padded container
+├── center.css        # Horizontal centering
+├── cluster.css       # Wrapping horizontal groups
+├── sidebar.css       # Fixed sidebar + flexible content
+├── switcher.css      # Conditional layout switching
+├── cover.css         # Full-height centered content
+└── grid.css          # Auto-filling grid
+```
+
+Each file contains a single composition class with configurable custom properties and no visual styling (colors, shadows, borders beyond structural needs).
 
 ### Unlayered styles
 
@@ -495,6 +584,16 @@ The main CSS entry point imports Open Props tokens, theme customizations, and co
 
 /* Theme layer - application-specific tokens */
 @import "./theme.css";
+
+/* Composition layer - CUBE CSS layout primitives */
+@import "./compositions/stack.css";
+@import "./compositions/cluster.css";
+@import "./compositions/center.css";
+@import "./compositions/sidebar.css";
+@import "./compositions/switcher.css";
+@import "./compositions/box.css";
+@import "./compositions/cover.css";
+@import "./compositions/grid.css";
 
 /* Component styles (copied from Open Props UI, owned by project) */
 @import "./components/button.css";
