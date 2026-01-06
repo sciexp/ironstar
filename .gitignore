@@ -57,3 +57,6 @@ coverage/
 # bv (beads viewer) local config and caches
 .bv/
 *.html
+
+# D2 rendered output (regenerated from source)
+docs/notes/event-modeling/rendered/
