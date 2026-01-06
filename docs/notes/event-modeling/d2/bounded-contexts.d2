@@ -1,0 +1,252 @@
+# Ironstar Bounded Contexts
+# Strategic domain classification and integration patterns
+
+direction: right
+
+# Color conventions (Event Modeling standard)
+# Aggregates: #f1c40f (yellow)
+# Commands: #3498db (blue)
+# Events: #e67e22 (orange)
+# Read Models: #2ecc71 (green)
+# External Systems: #9b59b6 (purple)
+
+# Strategic classification legend
+legend: {
+  label: "Strategic Classification"
+  style.stroke: "#666"
+  style.fill: "#fafafa"
+
+  core: "Core" {
+    style.fill: "#fff3cd"
+    style.stroke: "#f1c40f"
+    style.stroke-width: 3
+  }
+  supporting: "Supporting" {
+    style.fill: "#e8f4fd"
+    style.stroke: "#3498db"
+    style.stroke-width: 2
+  }
+  generic: "Generic" {
+    style.fill: "#f5f5f5"
+    style.stroke: "#999"
+    style.stroke-width: 1
+    style.stroke-dash: 3
+  }
+}
+
+# Session Context (Supporting - upstream identity provider)
+session: "Session Context" {
+  label: "Session Context\n[Supporting]"
+  style.fill: "#e8f4fd"
+  style.stroke: "#3498db"
+  style.stroke-width: 2
+
+  session_aggregate: "Session" {
+    label: "Session\n(Aggregate)"
+    style.fill: "#f1c40f"
+  }
+
+  user_identity: "UserIdentity" {
+    label: "UserIdentity\n(Value Object)"
+    style.fill: "#ffeaa7"
+  }
+
+  # Inbound: OAuth callbacks
+  oauth_callback: "OAuth Callback" {
+    style.fill: "#9b59b6"
+    style.font-color: "#fff"
+  }
+
+  # Events
+  session_created: "SessionCreated" {
+    style.fill: "#e67e22"
+    style.font-color: "#fff"
+  }
+  session_expired: "SessionExpired" {
+    style.fill: "#e67e22"
+    style.font-color: "#fff"
+  }
+
+  oauth_callback -> session_aggregate: "authenticates"
+  session_aggregate -> session_created
+  session_aggregate -> session_expired
+  session_aggregate -> user_identity: "contains"
+}
+
+# Todo Context (Generic Example - demonstration only)
+todo: "Todo Context" {
+  label: "Todo Context\n[Generic Example]"
+  style.fill: "#f5f5f5"
+  style.stroke: "#999"
+  style.stroke-width: 1
+  style.stroke-dash: 3
+
+  todo_aggregate: "Todo" {
+    label: "Todo\n(Aggregate)"
+    style.fill: "#f1c40f"
+  }
+
+  # Commands
+  create_todo: "CreateTodo" {
+    style.fill: "#3498db"
+    style.font-color: "#fff"
+  }
+  complete_todo: "CompleteTodo" {
+    style.fill: "#3498db"
+    style.font-color: "#fff"
+  }
+
+  # Events
+  todo_created: "TodoCreated" {
+    style.fill: "#e67e22"
+    style.font-color: "#fff"
+  }
+  todo_completed: "TodoCompleted" {
+    style.fill: "#e67e22"
+    style.font-color: "#fff"
+  }
+
+  # Read Models
+  todo_list: "TodoList" {
+    label: "TodoList\n(Read Model)"
+    style.fill: "#2ecc71"
+    style.font-color: "#fff"
+  }
+
+  create_todo -> todo_aggregate
+  complete_todo -> todo_aggregate
+  todo_aggregate -> todo_created
+  todo_aggregate -> todo_completed
+  todo_created -> todo_list: "projects to"
+  todo_completed -> todo_list: "projects to"
+}
+
+# Analytics Context (Core - key differentiator)
+analytics: "Analytics Context" {
+  label: "Analytics Context\n[Core]"
+  style.fill: "#fff3cd"
+  style.stroke: "#f1c40f"
+  style.stroke-width: 3
+
+  query_session: "QuerySession" {
+    label: "QuerySession\n(Aggregate)"
+    style.fill: "#f1c40f"
+  }
+
+  # Commands
+  start_query: "StartQuery" {
+    style.fill: "#3498db"
+    style.font-color: "#fff"
+  }
+  cancel_query: "CancelQuery" {
+    style.fill: "#3498db"
+    style.font-color: "#fff"
+  }
+
+  # Events
+  query_started: "QueryStarted" {
+    style.fill: "#e67e22"
+    style.font-color: "#fff"
+  }
+  query_completed: "QueryCompleted" {
+    style.fill: "#e67e22"
+    style.font-color: "#fff"
+  }
+  query_failed: "QueryFailed" {
+    style.fill: "#e67e22"
+    style.font-color: "#fff"
+  }
+
+  # Read Models
+  query_results: "QueryResults" {
+    label: "QueryResults\n(Read Model)"
+    style.fill: "#2ecc71"
+    style.font-color: "#fff"
+  }
+  chart_data: "ChartData" {
+    label: "ChartData\n(Read Model)"
+    style.fill: "#2ecc71"
+    style.font-color: "#fff"
+  }
+
+  start_query -> query_session
+  cancel_query -> query_session
+  query_session -> query_started
+  query_session -> query_completed
+  query_session -> query_failed
+  query_completed -> query_results: "projects to"
+  query_completed -> chart_data: "projects to"
+}
+
+# Event Bus (Zenoh)
+event_bus: "Event Bus (Zenoh)" {
+  style.fill: "#ecf0f1"
+  style.stroke: "#7f8c8d"
+  style.stroke-width: 2
+  style.border-radius: 8
+
+  key_expressions: "Key Expressions" {
+    label: |md
+      events/session/{id}/**
+      events/todo/{id}/**
+      events/analytics/{id}/**
+    |
+    style.fill: "#fff"
+    style.font-size: 12
+  }
+}
+
+# Integration patterns (edges between contexts)
+
+# Session → Todo: Customer-Supplier (Session upstream)
+session -> todo: "Customer-Supplier" {
+  style.stroke: "#3498db"
+  style.stroke-width: 2
+  source-arrowhead: {
+    shape: diamond
+    style.filled: true
+  }
+  target-arrowhead: {
+    shape: arrow
+  }
+}
+
+# Session → Analytics: Customer-Supplier (Session upstream)
+session -> analytics: "Customer-Supplier" {
+  style.stroke: "#3498db"
+  style.stroke-width: 2
+  source-arrowhead: {
+    shape: diamond
+    style.filled: true
+  }
+  target-arrowhead: {
+    shape: arrow
+  }
+}
+
+# Todo → Analytics: Partnership (shared event schemas)
+todo -> analytics: "Partnership" {
+  style.stroke: "#27ae60"
+  style.stroke-width: 2
+  style.stroke-dash: 5
+  source-arrowhead: {
+    shape: arrow
+  }
+  target-arrowhead: {
+    shape: arrow
+  }
+}
+
+# All contexts publish to event bus
+session -> event_bus: "publish" {
+  style.stroke: "#e67e22"
+  style.stroke-dash: 3
+}
+todo -> event_bus: "publish" {
+  style.stroke: "#e67e22"
+  style.stroke-dash: 3
+}
+analytics -> event_bus: "publish" {
+  style.stroke: "#e67e22"
+  style.stroke-dash: 3
+}
