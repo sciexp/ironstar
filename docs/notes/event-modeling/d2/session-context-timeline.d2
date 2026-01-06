@@ -1,0 +1,124 @@
+# Session Context Event Timeline
+# Bounded Context: Session [Supporting]
+# Customer-Supplier: provides identity to other contexts
+
+direction: right
+
+title: "Session Context Timeline [Supporting]" {
+  near: top-center
+  style.font-size: 24
+  style.bold: true
+}
+
+anonymous: "Anonymous" {
+  style.fill: "#f5f5f5"
+  style.stroke: "#999"
+
+  login_options: "Login Options (Read Model)" {
+    style.fill: "#2ecc71"
+    style.font-color: "#fff"
+  }
+
+  initiate_oauth: "Initiate GitHub OAuth" {
+    style.fill: "#3498db"
+    style.font-color: "#fff"
+  }
+
+  oauth_initiated: "OAuth Login Initiated" {
+    style.fill: "#e67e22"
+    style.font-color: "#fff"
+  }
+
+  login_options -> initiate_oauth: "user clicks"
+  initiate_oauth -> oauth_initiated: "triggers"
+}
+
+github: "GitHub OAuth (External)" {
+  style.fill: "#9b59b6"
+  style.font-color: "#fff"
+
+  callback: "OAuth Callback" {
+    style.fill: "#9b59b6"
+    style.font-color: "#fff"
+  }
+}
+
+user: "User (Authenticated)" {
+  style.fill: "#e8f4fd"
+  style.stroke: "#3498db"
+
+  session_info: "Session Info (Read Model)" {
+    style.fill: "#2ecc71"
+    style.font-color: "#fff"
+  }
+
+  logout: "Logout" {
+    style.fill: "#3498db"
+    style.font-color: "#fff"
+  }
+
+  logged_out: "User Logged Out" {
+    style.fill: "#e67e22"
+    style.font-color: "#fff"
+  }
+
+  session_info -> logout: "user clicks"
+  logout -> logged_out: "triggers"
+}
+
+automation: "Automation" {
+  style.fill: "#f0f0f0"
+  style.stroke: "#666"
+
+  process_callback: "Process OAuth Callback" {
+    style.fill: "#3498db"
+    style.font-color: "#fff"
+  }
+
+  user_authenticated: "User Authenticated Via GitHub" {
+    style.fill: "#e67e22"
+    style.font-color: "#fff"
+  }
+
+  create_session: "Create Session" {
+    style.fill: "#3498db"
+    style.font-color: "#fff"
+  }
+
+  session_created: "Session Created" {
+    style.fill: "#e67e22"
+    style.font-color: "#fff"
+  }
+
+  check_expiry: "Check Session Expiry (Query)" {
+    style.fill: "#2ecc71"
+    style.font-color: "#fff"
+  }
+
+  expire_session: "Expire Session" {
+    style.fill: "#3498db"
+    style.font-color: "#fff"
+  }
+
+  session_expired: "Session Expired" {
+    style.fill: "#e67e22"
+    style.font-color: "#fff"
+  }
+
+  process_callback -> user_authenticated: "on valid code"
+  user_authenticated -> create_session: "triggers"
+  create_session -> session_created: "triggers"
+  check_expiry -> expire_session: "per expired"
+  expire_session -> session_expired: "triggers"
+}
+
+session_aggregate: "Session Aggregate (Decider)" {
+  style.fill: "#f1c40f"
+  style.stroke: "#d4ac0d"
+  style.stroke-width: 2
+}
+
+anonymous.oauth_initiated -> github.callback: "redirects to GitHub"
+github.callback -> automation.process_callback: "callback received"
+automation.session_created -> user.session_info: "enables access"
+user.logged_out -> automation.session_expired: "terminates"

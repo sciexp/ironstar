@@ -1,0 +1,158 @@
+# Analytics Context Event Timeline
+# Bounded Context: Analytics [Core]
+# Key differentiator: demonstrates CQRS projection patterns
+
+direction: right
+
+title: "Analytics Context Timeline [Core]" {
+  near: top-center
+  style.font-size: 24
+  style.bold: true
+}
+
+user: "User (Authenticated)" {
+  style.fill: "#fff3cd"
+  style.stroke: "#f1c40f"
+  style.stroke-width: 2
+
+  dataset_browser: "Dataset Browser (Read Model)" {
+    style.fill: "#2ecc71"
+    style.font-color: "#fff"
+  }
+
+  query_history: "Query History (Read Model)" {
+    style.fill: "#2ecc71"
+    style.font-color: "#fff"
+  }
+
+  start_query: "Start Query" {
+    style.fill: "#3498db"
+    style.font-color: "#fff"
+  }
+
+  query_started: "Query Started" {
+    style.fill: "#e67e22"
+    style.font-color: "#fff"
+  }
+
+  cancel_query: "Cancel Query" {
+    style.fill: "#3498db"
+    style.font-color: "#fff"
+  }
+
+  query_cancelled: "Query Cancelled" {
+    style.fill: "#e67e22"
+    style.font-color: "#fff"
+  }
+
+  query_results: "Query Results (Read Model)" {
+    style.fill: "#2ecc71"
+    style.font-color: "#fff"
+  }
+
+  chart_data: "Chart Data (Read Model)" {
+    style.fill: "#2ecc71"
+    style.font-color: "#fff"
+  }
+
+  reset_session: "Reset Session" {
+    style.fill: "#3498db"
+    style.font-color: "#fff"
+  }
+
+  session_reset: "Session Reset" {
+    style.fill: "#e67e22"
+    style.font-color: "#fff"
+  }
+
+  dataset_browser -> start_query: "compose query"
+  query_history -> start_query: "rerun"
+  start_query -> query_started
+  query_results -> cancel_query: "user cancels"
+  cancel_query -> query_cancelled
+  query_results -> reset_session: "clear state"
+  reset_session -> session_reset
+}
+
+automation: "Automation" {
+  style.fill: "#f0f0f0"
+  style.stroke: "#666"
+
+  duckdb_executor: "DuckDB Executor (External)" {
+    style.fill: "#9b59b6"
+    style.font-color: "#fff"
+  }
+
+  begin_execution: "Begin Execution" {
+    style.fill: "#3498db"
+    style.font-color: "#fff"
+  }
+
+  execution_began: "Execution Began" {
+    style.fill: "#e67e22"
+    style.font-color: "#fff"
+  }
+
+  complete_query: "Complete Query" {
+    style.fill: "#3498db"
+    style.font-color: "#fff"
+  }
+
+  query_completed: "Query Completed" {
+    style.fill: "#e67e22"
+    style.font-color: "#fff"
+  }
+
+  fail_query: "Fail Query" {
+    style.fill: "#3498db"
+    style.font-color: "#fff"
+  }
+
+  query_failed: "Query Failed" {
+    style.fill: "#e67e22"
+    style.font-color: "#fff"
+  }
+
+  cache_invalidator: "Cache Invalidator (Zenoh)" {
+    style.fill: "#2ecc71"
+    style.font-color: "#fff"
+  }
+
+  invalidate_cache: "Invalidate Cache" {
+    style.fill: "#3498db"
+    style.font-color: "#fff"
+  }
+
+  cache_invalidated: "Cache Invalidated" {
+    style.fill: "#e67e22"
+    style.font-color: "#fff"
+  }
+
+  chart_projected: "Chart Data Projected" {
+    style.fill: "#e67e22"
+    style.font-color: "#fff"
+  }
+
+  duckdb_executor -> begin_execution: "task starts"
+  begin_execution -> execution_began
+  duckdb_executor -> complete_query: "on success"
+  complete_query -> query_completed
+  duckdb_executor -> fail_query: "on error"
+  fail_query -> query_failed
+  cache_invalidator -> invalidate_cache: "on completion"
+  invalidate_cache -> cache_invalidated
+}
+
+query_session_aggregate: "QuerySession Aggregate (Decider)" {
+  style.fill: "#f1c40f"
+  style.stroke: "#d4ac0d"
+  style.stroke-width: 2
+}
+
+user.query_started -> automation.duckdb_executor: "spawn task"
+automation.execution_began -> user.query_results: "status: executing"
+automation.query_completed -> user.query_results: "results ready"
+automation.query_completed -> automation.cache_invalidator: "trigger"
+automation.query_failed -> user.query_results: "error displayed"
+automation.chart_projected -> user.chart_data: "SSE update"
+user.query_cancelled -> automation.duckdb_executor: "abort signal"

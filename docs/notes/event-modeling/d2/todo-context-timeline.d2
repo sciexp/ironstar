@@ -1,0 +1,119 @@
+# Todo Context Event Timeline
+# Bounded Context: Todo [Generic Example]
+# Partnership with Analytics: events flow to projections
+
+direction: right
+
+title: "Todo Context Timeline [Generic Example]" {
+  near: top-center
+  style.font-size: 24
+  style.bold: true
+}
+
+# Actor Swimlanes
+user: "User (Authenticated)" {
+  style.fill: "#e8f4fd"
+  style.stroke: "#3498db"
+
+  todo_list: "Todo List (Read Model)" {
+    style.fill: "#2ecc71"
+    style.font-color: "#fff"
+  }
+
+  create_todo: "Create Todo" {
+    style.fill: "#3498db"
+    style.font-color: "#fff"
+  }
+
+  todo_created: "Todo Created" {
+    style.fill: "#e67e22"
+    style.font-color: "#fff"
+  }
+
+  update_text: "Update Todo Text" {
+    style.fill: "#3498db"
+    style.font-color: "#fff"
+  }
+
+  text_updated: "Todo Text Updated" {
+    style.fill: "#e67e22"
+    style.font-color: "#fff"
+  }
+
+  complete_todo: "Complete Todo" {
+    style.fill: "#3498db"
+    style.font-color: "#fff"
+  }
+
+  todo_completed: "Todo Completed" {
+    style.fill: "#e67e22"
+    style.font-color: "#fff"
+  }
+
+  uncomplete_todo: "Uncomplete Todo" {
+    style.fill: "#3498db"
+    style.font-color: "#fff"
+  }
+
+  todo_uncompleted: "Todo Uncompleted" {
+    style.fill: "#e67e22"
+    style.font-color: "#fff"
+  }
+
+  delete_todo: "Delete Todo" {
+    style.fill: "#3498db"
+    style.font-color: "#fff"
+  }
+
+  todo_deleted: "Todo Deleted" {
+    style.fill: "#e67e22"
+    style.font-color: "#fff"
+  }
+
+  todo_list -> create_todo: "add new"
+  create_todo -> todo_created
+  todo_list -> update_text: "edit"
+  update_text -> text_updated
+  todo_list -> complete_todo: "check"
+  complete_todo -> todo_completed
+  todo_list -> uncomplete_todo: "uncheck"
+  uncomplete_todo -> todo_uncompleted
+  todo_list -> delete_todo: "remove"
+  delete_todo -> todo_deleted
+}
+
+automation: "Automation" {
+  style.fill: "#f0f0f0"
+  style.stroke: "#666"
+
+  events_stream: "Events Stream (Zenoh)" {
+    style.fill: "#2ecc71"
+    style.font-color: "#fff"
+  }
+
+  update_projection: "Update Projection" {
+    style.fill: "#3498db"
+    style.font-color: "#fff"
+  }
+
+  list_projected: "Todo List Projected" {
+    style.fill: "#e67e22"
+    style.font-color: "#fff"
+  }
+
+  events_stream -> update_projection: "on event"
+  update_projection -> list_projected
+}
+
+todo_aggregate: "Todo Aggregate (Decider)" {
+  style.fill: "#f1c40f"
+  style.stroke: "#d4ac0d"
+  style.stroke-width: 2
+}
+
+user.todo_created -> automation.events_stream: "Zenoh publish"
+user.text_updated -> automation.events_stream
+user.todo_completed -> automation.events_stream
+user.todo_uncompleted -> automation.events_stream
+user.todo_deleted -> automation.events_stream
+automation.list_projected -> user.todo_list: "SSE update"
