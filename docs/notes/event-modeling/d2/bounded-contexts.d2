@@ -138,12 +138,25 @@ analytics: "Analytics Context" {
     style.fill: "#f1c40f"
   }
 
+  catalog: "Catalog" {
+    label: "Catalog\n(Aggregate)"
+    style.fill: "#f1c40f"
+  }
+
   # Commands
   start_query: "StartQuery" {
     style.fill: "#3498db"
     style.font-color: "#fff"
   }
   cancel_query: "CancelQuery" {
+    style.fill: "#3498db"
+    style.font-color: "#fff"
+  }
+  select_catalog: "SelectCatalog" {
+    style.fill: "#3498db"
+    style.font-color: "#fff"
+  }
+  refresh_catalog: "RefreshCatalogMetadata" {
     style.fill: "#3498db"
     style.font-color: "#fff"
   }
@@ -158,6 +171,14 @@ analytics: "Analytics Context" {
     style.font-color: "#fff"
   }
   query_failed: "QueryFailed" {
+    style.fill: "#e67e22"
+    style.font-color: "#fff"
+  }
+  catalog_selected: "CatalogSelected" {
+    style.fill: "#e67e22"
+    style.font-color: "#fff"
+  }
+  catalog_refreshed: "CatalogMetadataRefreshed" {
     style.fill: "#e67e22"
     style.font-color: "#fff"
   }
@@ -181,6 +202,10 @@ analytics: "Analytics Context" {
   query_session -> query_failed
   query_completed -> query_results: "projects to"
   query_completed -> chart_data: "projects to"
+  select_catalog -> catalog
+  refresh_catalog -> catalog
+  catalog -> catalog_selected
+  catalog -> catalog_refreshed
 }
 
 # Workspace Context (Supporting - user personalization)
@@ -301,19 +326,6 @@ session -> analytics: "Customer-Supplier" {
   source-arrowhead: {
     shape: diamond
     style.filled: true
-  }
-  target-arrowhead: {
-    shape: arrow
-  }
-}
-
-# Todo → Analytics: Partnership (shared event schemas)
-todo -> analytics: "Partnership" {
-  style.stroke: "#27ae60"
-  style.stroke-width: 2
-  style.stroke-dash: 5
-  source-arrowhead: {
-    shape: arrow
   }
   target-arrowhead: {
     shape: arrow
