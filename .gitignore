@@ -60,3 +60,6 @@ coverage/
 
 # D2 rendered output (regenerated from source)
 docs/notes/event-modeling/rendered/
+
+# Idris2 build artifacts
+spec/build/
