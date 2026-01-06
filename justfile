@@ -3,6 +3,7 @@ default:
     @just --list
 
 # Contents
+## D2 Diagrams
 ## Workspace
 ## CI/CD
 ## Cloudflare
@@ -14,6 +15,19 @@ default:
 ## Slides
 ## Testing
 ## Template
+
+## D2 Diagrams
+
+# Render all D2 diagrams to SVG
+[group('d2')]
+d2-render:
+    @mkdir -p docs/notes/event-modeling/rendered
+    fd . docs/notes/event-modeling/d2 -e d2 -x d2 {} docs/notes/event-modeling/rendered/{/.}.svg
+
+# Watch D2 files and re-render on changes
+[group('d2')]
+d2-watch:
+    fd . docs/notes/event-modeling/d2 -e d2 | entr -c just d2-render
 
 ## Workspace
 
