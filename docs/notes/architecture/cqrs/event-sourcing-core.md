@@ -140,6 +140,10 @@ See `../core/design-principles.md` for the complete pure Decider pattern and `co
 
 ### Monotonic sequence invariant
 
+> **Note:** This section describes the NYP.35 hybrid schema design.
+> The fmodel-rust adoption (see `decisions/fmodel-rust-adoption-evaluation.md`) uses `previous_id` UUID chain for optimistic locking instead of `aggregate_sequence`.
+> Schema reconciliation is tracked in `ironstar-a9b.3`.
+
 Event sequence numbers must be strictly monotonically increasing with no gaps.
 The events table uses dual sequence tracking: `global_sequence` for SSE reconnection and `aggregate_sequence` for optimistic locking.
 
