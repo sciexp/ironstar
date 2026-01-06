@@ -133,6 +133,11 @@ analytics: "Analytics Context" {
     style.fill: "#f1c40f"
   }
 
+  chart_definition: "ChartDefinition" {
+    label: "ChartDefinition\n(Aggregate)"
+    style.fill: "#f1c40f"
+  }
+
   # Commands
   start_query: "StartQuery" {
     style.fill: "#3498db"
@@ -178,6 +183,83 @@ analytics: "Analytics Context" {
   query_completed -> chart_data: "projects to"
 }
 
+# Workspace Context (Supporting - user personalization)
+workspace: "Workspace Context" {
+  label: "Workspace Context\n[Supporting]"
+  style.fill: "#e8f4fd"
+  style.stroke: "#3498db"
+  style.stroke-width: 2
+
+  dashboard_aggregate: "Dashboard" {
+    label: "Dashboard\n(Aggregate)"
+    style.fill: "#f1c40f"
+  }
+
+  saved_query_aggregate: "SavedQuery" {
+    label: "SavedQuery\n(Aggregate)"
+    style.fill: "#f1c40f"
+  }
+
+  user_preferences_aggregate: "UserPreferences" {
+    label: "UserPreferences\n(Aggregate)"
+    style.fill: "#f1c40f"
+  }
+
+  # Commands
+  create_dashboard: "CreateDashboard" {
+    style.fill: "#3498db"
+    style.font-color: "#fff"
+  }
+  add_widget: "AddWidget" {
+    style.fill: "#3498db"
+    style.font-color: "#fff"
+  }
+  save_query: "SaveQuery" {
+    style.fill: "#3498db"
+    style.font-color: "#fff"
+  }
+  update_preferences: "UpdatePreferences" {
+    style.fill: "#3498db"
+    style.font-color: "#fff"
+  }
+
+  # Events
+  dashboard_created: "DashboardCreated" {
+    style.fill: "#e67e22"
+    style.font-color: "#fff"
+  }
+  widget_added: "WidgetAdded" {
+    style.fill: "#e67e22"
+    style.font-color: "#fff"
+  }
+  query_saved: "QuerySaved" {
+    style.fill: "#e67e22"
+    style.font-color: "#fff"
+  }
+  preferences_updated: "PreferencesUpdated" {
+    style.fill: "#e67e22"
+    style.font-color: "#fff"
+  }
+
+  # Read Models
+  dashboard_view: "DashboardView" {
+    label: "DashboardView\n(Read Model)"
+    style.fill: "#2ecc71"
+    style.font-color: "#fff"
+  }
+
+  create_dashboard -> dashboard_aggregate
+  add_widget -> dashboard_aggregate
+  save_query -> saved_query_aggregate
+  update_preferences -> user_preferences_aggregate
+  dashboard_aggregate -> dashboard_created
+  dashboard_aggregate -> widget_added
+  saved_query_aggregate -> query_saved
+  user_preferences_aggregate -> preferences_updated
+  dashboard_created -> dashboard_view: "projects to"
+  widget_added -> dashboard_view: "projects to"
+}
+
 # Event Bus (Zenoh)
 event_bus: "Event Bus (Zenoh)" {
   style.fill: "#ecf0f1"
@@ -190,6 +272,7 @@ event_bus: "Event Bus (Zenoh)" {
       events/session/{id}/**
       events/todo/{id}/**
       events/analytics/{id}/**
+      events/workspace/{id}/**
     |
     style.fill: "#fff"
     style.font-size: 12
@@ -237,6 +320,32 @@ todo -> analytics: "Partnership" {
   }
 }
 
+# Session → Workspace: Shared Kernel (user identity flows)
+session -> workspace: "Shared Kernel" {
+  style.stroke: "#e74c3c"
+  style.stroke-width: 2
+  style.stroke-dash: 5
+  source-arrowhead: {
+    shape: arrow
+  }
+  target-arrowhead: {
+    shape: arrow
+  }
+}
+
+# Analytics → Workspace: Customer-Supplier (Workspace consumes ChartDefinitions)
+analytics -> workspace: "Customer-Supplier" {
+  style.stroke: "#3498db"
+  style.stroke-width: 2
+  source-arrowhead: {
+    shape: diamond
+    style.filled: true
+  }
+  target-arrowhead: {
+    shape: arrow
+  }
+}
+
 # All contexts publish to event bus
 session -> event_bus: "publish" {
   style.stroke: "#e67e22"
@@ -247,6 +356,10 @@ todo -> event_bus: "publish" {
   style.stroke-dash: 3
 }
 analytics -> event_bus: "publish" {
+  style.stroke: "#e67e22"
+  style.stroke-dash: 3
+}
+workspace -> event_bus: "publish" {
   style.stroke: "#e67e22"
   style.stroke-dash: 3
 }
