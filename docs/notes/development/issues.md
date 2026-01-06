@@ -1,13 +1,13 @@
 # Beads Export
 
-*Generated: Tue, 06 Jan 2026 10:19:05 EST*
+*Generated: Tue, 06 Jan 2026 11:48:10 EST*
 
 ## Summary
 
 | Metric | Count |
 |--------|-------|
-| **Total** | 218 |
-| Open | 168 |
+| **Total** | 219 |
+| Open | 169 |
 | In Progress | 0 |
 | Blocked | 0 |
 | Closed | 32 |
@@ -17,11 +17,11 @@
 Ready-to-run commands for bulk operations:
 
 ```bash
-# Close open items (168 total, showing first 10)
+# Close open items (169 total, showing first 10)
 bd close ironstar-b43 ironstar-a9b.12 ironstar-a9b.9 ironstar-a9b.7 ironstar-a9b.4 ironstar-a9b.3 ironstar-a9b.2 ironstar-a9b.1 ironstar-nyp.34 ironstar-2nt.17
 
 # View high-priority items (P0/P1)
-bd show ironstar-b43 ironstar-a9b.12 ironstar-a9b.9 ironstar-a9b.7 ironstar-a9b.4 ironstar-a9b.3 ironstar-a9b.2 ironstar-a9b.1 ironstar-nyp.34 ironstar-2nt.17 ironstar-2nt.16 ironstar-r62.16 ironstar-2nt.13 ironstar-nyp.29 ironstar-2nt.12 ironstar-nyp.26 ironstar-753.6 ironstar-2nt.9 ironstar-961 ironstar-9b1 ironstar-3gd ironstar-753.5 ironstar-753.4 ironstar-c7z ironstar-09r ironstar-753 ironstar-r62.9 ironstar-r62.8 ironstar-r62.7 ironstar-r62.2 ironstar-r62.1 ironstar-r62 ironstar-nyp.12 ironstar-nyp.8 ironstar-nyp.6 ironstar-nyp.1 ironstar-nyp ironstar-ny3.13 ironstar-ny3.12 ironstar-ny3.11 ironstar-ny3.10 ironstar-ny3.9 ironstar-ny3.8 ironstar-ny3.7 ironstar-ny3.5 ironstar-ny3.4 ironstar-ny3.3 ironstar-ny3.2 ironstar-ny3.1 ironstar-ny3 ironstar-2nt.6 ironstar-2nt.5 ironstar-2nt ironstar-f8b.5 ironstar-f8b.4 ironstar-f8b.3 ironstar-f8b.2 ironstar-f8b.1 ironstar-f8b ironstar-b2l ironstar-58f ironstar-a9b.13 ironstar-a9b.11 ironstar-a9b.10 ironstar-a9b.8 ironstar-a9b.6 ironstar-a9b.5 ironstar-a9b ironstar-3gd.4 ironstar-nyp.36 ironstar-3gd.3 ironstar-jqv.12 ironstar-nyp.31 ironstar-nyp.30 ironstar-nyp.27 ironstar-nyp.25 ironstar-nyp.22 ironstar-ny3.17 ironstar-ny3.16 ironstar-nyp.21 ironstar-2nt.10 ironstar-nyp.19 ironstar-jqv.7 ironstar-nyp.15 ironstar-jqv ironstar-edx ironstar-0tk ironstar-amw ironstar-b9h ironstar-e6k.8 ironstar-e6k.7 ironstar-e6k.6 ironstar-e6k.5 ironstar-e6k.4 ironstar-e6k.3 ironstar-e6k.2 ironstar-r62.13 ironstar-r62.10 ironstar-r62.3 ironstar-nyp.11 ironstar-nyp.10 ironstar-nyp.9 ironstar-nyp.7 ironstar-nyp.4 ironstar-nyp.3 ironstar-ny3.14 ironstar-ny3.6 ironstar-2nt.8
+bd show ironstar-b43 ironstar-a9b.12 ironstar-a9b.9 ironstar-a9b.7 ironstar-a9b.4 ironstar-a9b.3 ironstar-a9b.2 ironstar-a9b.1 ironstar-nyp.34 ironstar-2nt.17 ironstar-2nt.16 ironstar-r62.16 ironstar-2nt.13 ironstar-nyp.29 ironstar-2nt.12 ironstar-nyp.26 ironstar-753.6 ironstar-2nt.9 ironstar-961 ironstar-9b1 ironstar-3gd ironstar-753.5 ironstar-753.4 ironstar-c7z ironstar-09r ironstar-753 ironstar-r62.9 ironstar-r62.8 ironstar-r62.7 ironstar-r62.2 ironstar-r62.1 ironstar-r62 ironstar-nyp.12 ironstar-nyp.8 ironstar-nyp.6 ironstar-nyp.1 ironstar-nyp ironstar-ny3.13 ironstar-ny3.12 ironstar-ny3.11 ironstar-ny3.10 ironstar-ny3.9 ironstar-ny3.8 ironstar-ny3.7 ironstar-ny3.5 ironstar-ny3.4 ironstar-ny3.3 ironstar-ny3.2 ironstar-ny3.1 ironstar-ny3 ironstar-2nt.6 ironstar-2nt.5 ironstar-2nt ironstar-f8b.5 ironstar-f8b.4 ironstar-f8b.3 ironstar-f8b.2 ironstar-f8b.1 ironstar-f8b ironstar-ny3.18 ironstar-b2l ironstar-58f ironstar-a9b.13 ironstar-a9b.11 ironstar-a9b.10 ironstar-a9b.8 ironstar-a9b.6 ironstar-a9b.5 ironstar-a9b ironstar-3gd.4 ironstar-nyp.36 ironstar-3gd.3 ironstar-jqv.12 ironstar-nyp.31 ironstar-nyp.30 ironstar-nyp.27 ironstar-nyp.25 ironstar-nyp.22 ironstar-ny3.17 ironstar-ny3.16 ironstar-nyp.21 ironstar-2nt.10 ironstar-nyp.19 ironstar-jqv.7 ironstar-nyp.15 ironstar-jqv ironstar-edx ironstar-0tk ironstar-amw ironstar-b9h ironstar-e6k.8 ironstar-e6k.7 ironstar-e6k.6 ironstar-e6k.5 ironstar-e6k.4 ironstar-e6k.3 ironstar-e6k.2 ironstar-r62.13 ironstar-r62.10 ironstar-r62.3 ironstar-nyp.11 ironstar-nyp.10 ironstar-nyp.9 ironstar-nyp.7 ironstar-nyp.4 ironstar-nyp.3 ironstar-ny3.14 ironstar-ny3.6 ironstar-2nt.8
 
 ```
 
@@ -86,6 +86,7 @@ bd show ironstar-b43 ironstar-a9b.12 ironstar-a9b.9 ironstar-a9b.7 ironstar-a9b.
 - [🟢 ironstar-f8b.2 Configure process-compose.yaml for dev services](#ironstar-f8b-2)
 - [🟢 ironstar-f8b.1 Integrate process-compose-flake patterns into devShell](#ironstar-f8b-1)
 - [🟢 ironstar-f8b Process compose integration](#ironstar-f8b)
+- [🟢 ironstar-ny3.18 Add CUBE CSS composition layer](#ironstar-ny3-18)
 - [🟢 ironstar-b2l Design Zenoh key expression schema for bounded context routing](#ironstar-b2l)
 - [🟢 ironstar-58f Implement ViewStateRepository for SQLite](#ironstar-58f)
 - [🟢 ironstar-a9b.13 Implement View specification tests](#ironstar-a9b-13)
@@ -529,6 +530,8 @@ graph TD
     class ironstar-ny316 open
     ironstar-ny317["ironstar-ny3.17<br/>Implement light-dark() theming with p..."]
     class ironstar-ny317 open
+    ironstar-ny318["ironstar-ny3.18<br/>Add CUBE CSS composition layer"]
+    class ironstar-ny318 open
     ironstar-ny32["ironstar-ny3.2<br/>Configure Rolldown bundler with conte..."]
     class ironstar-ny32 open
     ironstar-ny33["ironstar-ny3.3<br/>Setup PostCSS configuration for moder..."]
@@ -951,6 +954,8 @@ graph TD
     ironstar-ny315 -.-> ironstar-ny3
     ironstar-ny316 -.-> ironstar-ny3
     ironstar-ny317 -.-> ironstar-ny3
+    ironstar-ny318 -.-> ironstar-ny3
+    ironstar-ny318 ==> ironstar-ny35
     ironstar-ny32 -.-> ironstar-ny3
     ironstar-ny32 ==> ironstar-ny31
     ironstar-ny33 -.-> ironstar-ny3
@@ -1050,6 +1055,7 @@ graph TD
     ironstar-r62 ==> ironstar-ny3
     ironstar-r62 ==> ironstar-nyp
     ironstar-r621 -.-> ironstar-r62
+    ironstar-r6210 ==> ironstar-ny318
     ironstar-r6210 -.-> ironstar-r62
     ironstar-r6210 ==> ironstar-r629
     ironstar-r6211 -.-> ironstar-r62
@@ -3463,6 +3469,12 @@ Ref: docs/notes/architecture/frontend/css-architecture.md
 - 🔗 **parent-child**: `ironstar-ny3`
 - ⛔ **blocks**: `ironstar-ny3.4`
 
+### Comments
+
+> **crs58** (2026-01-06)
+>
+> Note: Layer structure will be updated from 6 to 7 layers to include compositions layer. See ironstar-ny3.18 for composition layer implementation.
+
 <details>
 <summary>📋 Commands</summary>
 
@@ -4138,6 +4150,82 @@ bd update ironstar-f8b -p 1
 
 # View full details
 bd show ironstar-f8b
+```
+
+</details>
+
+---
+
+## 📋 ironstar-ny3.18 Add CUBE CSS composition layer
+
+| Property | Value |
+|----------|-------|
+| **Type** | 📋 task |
+| **Priority** | ⚡ High (P1) |
+| **Status** | 🟢 open |
+| **Created** | 2026-01-06 11:12 |
+| **Updated** | 2026-01-06 11:12 |
+
+### Description
+
+Implement CUBE CSS composition primitives as a dedicated CSS layer.
+
+## Rationale
+
+The current CSS architecture has Open Props tokens and UI components but lacks explicit layout composition primitives.
+CUBE CSS methodology's Composition layer fills this gap, enabling:
+- Semantic layout classes in server-rendered HTML
+- Algebraic composition (primitives form a semiring over layout space)
+- Local reasoning in hypertext templates
+- Reduced ad-hoc CSS in components
+
+## Implementation
+
+Add `compositions` layer between `theme` and `components`:
+```css
+@layer openprops, normalize, theme, compositions, components, utilities, app;
+```
+
+Create 8 composition primitives in `web-components/styles/compositions/`:
+- stack.css, box.css, center.css, cluster.css
+- sidebar.css, switcher.css, cover.css, grid.css
+
+Each primitive:
+- Uses Open Props tokens exclusively
+- Exposes CSS custom properties for customization
+- Works with Light DOM inheritance
+
+## References
+
+- Architecture doc: docs/notes/architecture/frontend/css-architecture.md (updated with composition layer section)
+- CUBE patterns: ~/.claude/commands/preferences/hypermedia-development/04-css-architecture.md
+
+### Dependencies
+
+- 🔗 **parent-child**: `ironstar-ny3`
+- ⛔ **blocks**: `ironstar-ny3.5`
+
+### Comments
+
+> **crs58** (2026-01-06)
+>
+> Implementation deferred until ny3.5 (CSS cascade layers) is closed. Documentation and architecture spec complete in docs/notes/architecture/frontend/css-architecture.md. CSS patterns available in ~/.claude/commands/preferences/hypermedia-development/04-css-architecture.md.
+
+<details>
+<summary>📋 Commands</summary>
+
+```bash
+# Start working on this issue
+bd update ironstar-ny3.18 -s in_progress
+
+# Add a comment
+bd comment ironstar-ny3.18 'Your comment here'
+
+# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
+bd update ironstar-ny3.18 -p 1
+
+# View full details
+bd show ironstar-ny3.18
 ```
 
 </details>
@@ -6087,6 +6175,13 @@ Local refs: ~/projects/rust-workspace/hypertext
 
 - 🔗 **parent-child**: `ironstar-r62`
 - ⛔ **blocks**: `ironstar-r62.9`
+- ⛔ **blocks**: `ironstar-ny3.18`
+
+### Comments
+
+> **crs58** (2026-01-06)
+>
+> Note: Templates should use CUBE CSS composition classes (.stack, .cluster, .center, .sidebar, .switcher, .box, .cover, .grid) for layout. See ironstar-ny3.18 for composition layer implementation and docs/notes/architecture/frontend/css-architecture.md for usage patterns.
 
 <details>
 <summary>📋 Commands</summary>
