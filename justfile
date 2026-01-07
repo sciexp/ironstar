@@ -10,6 +10,7 @@ default:
 ## Docs
 ## Nix
 ## Rust
+## Spec (Idris2)
 ## Release
 ## Secrets
 ## Slides
@@ -763,6 +764,32 @@ rust-check: rust-fmt-check rust-clippy rust-test
 [group('rust')]
 rust-nix-build:
   nix build .#ironstar
+
+## Spec (Idris2)
+
+# Typecheck the Idris2 specification
+[group('spec')]
+spec-check:
+  idris2 --typecheck spec/ironstar.ipkg
+
+# Typecheck with timing (level 1: per-module, 2: phases, 3: per-definition)
+[group('spec')]
+spec-check-timing level="1": spec-clean
+  idris2 --typecheck spec/ironstar.ipkg --timing {{ level }}
+
+# Clean Idris2 build artifacts (rm -r because idris2 --clean doesn't remove TTC cache)
+[group('spec')]
+spec-clean:
+  rm -rf spec/build/ttc
+
+# Force full rebuild (clean + check)
+[group('spec')]
+spec-rebuild: spec-clean spec-check
+
+# List modules in the spec package
+[group('spec')]
+spec-modules:
+  @grep -E '^\s+\w+\.' spec/ironstar.ipkg | tr -d ' ,'
 
 # List crates in JSON format for CI matrix
 [group('CI/CD')]
