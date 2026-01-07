@@ -27,40 +27,6 @@ import Core.Event
 %default total
 
 ------------------------------------------------------------------------
--- Combined Analytics command type
-------------------------------------------------------------------------
-
-||| Sum type for all Analytics commands
-||| Enables routing commands to appropriate aggregates
-public export
-data AnalyticsCommand
-  = CatalogCmd CatalogCommand
-  | QueryCmd QueryCommand
-
-------------------------------------------------------------------------
--- Combined Analytics event type
-------------------------------------------------------------------------
-
-||| Sum type for all Analytics events
-||| Enables event stream filtering and projection
-public export
-data AnalyticsEvent
-  = CatalogEvt CatalogEvent
-  | QueryEvt QueryEvent
-
-------------------------------------------------------------------------
--- Combined Analytics state
-------------------------------------------------------------------------
-
-||| Product type of all Analytics aggregate states
-||| Both aggregates evolve independently but share event stream
-public export
-record AnalyticsState where
-  constructor MkAnalyticsState
-  catalogState : CatalogState
-  queryState : QueryState
-
-------------------------------------------------------------------------
 -- Combined Decider
 ------------------------------------------------------------------------
 
@@ -70,6 +36,10 @@ record AnalyticsState where
 ||| while maintaining aggregate independence (each has its own state).
 |||
 ||| Uses Core.Decider.combine to compose independent deciders.
+|||
+||| Command type: Sum CatalogCommand QueryCommand
+||| State type: (CatalogState, QueryState)
+||| Event type: Sum CatalogEvent QueryEvent
 public export
 analyticsDecider : Decider (Sum CatalogCommand QueryCommand) (CatalogState, QueryState) (Sum CatalogEvent QueryEvent) String
 analyticsDecider = combine catalogDecider queryDecider
