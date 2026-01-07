@@ -107,6 +107,10 @@
             act
             cachix
 
+            # Specification and diagrams
+            idris2
+            d2
+
             # E2E testing browsers from playwright-web-flake (pinned to 1.56.1)
 
             # Git environment setup
