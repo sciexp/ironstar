@@ -4,8 +4,8 @@ test.describe("EventCatalog Homepage", () => {
 	test("loads successfully", async ({ page }) => {
 		await page.goto("/");
 
-		// Verify the page has loaded (EventCatalog shows catalog title)
-		await expect(page).toHaveTitle(/Ironstar/i);
+		// Verify the page has loaded (EventCatalog shows "EventCatalog" in title)
+		await expect(page).toHaveTitle(/EventCatalog/i);
 	});
 
 	test("displays catalog content", async ({ page }) => {
