@@ -19,16 +19,77 @@ default:
 
 ## D2 Diagrams
 
+# Directory containing D2 source files
+d2_src := "docs/notes/event-modeling/d2"
+# Directory for rendered output (SVG and PNG, gitignored)
+d2_out := "docs/notes/event-modeling/rendered"
+
 # Render all D2 diagrams to SVG using ELK layout
 [group('d2')]
 d2-render:
-    @mkdir -p docs/notes/event-modeling/rendered
-    fd . docs/notes/event-modeling/d2 -e d2 -x d2 --layout=elk {} docs/notes/event-modeling/rendered/{/.}.svg
+    @mkdir -p {{ d2_out }}
+    fd . {{ d2_src }} -e d2 -x d2 --layout=elk {} {{ d2_out }}/{/.}.svg
 
 # Watch D2 files and re-render on changes
 [group('d2')]
 d2-watch:
-    fd . docs/notes/event-modeling/d2 -e d2 | entr -c just d2-render
+    fd . {{ d2_src }} -e d2 | entr -c just d2-render
+
+# Render all D2 diagrams to PNG (d2 → svg → png pipeline)
+[group('d2')]
+d2-render-png zoom="2": d2-render
+    just svg-to-png-dir {{ d2_out }} {{ zoom }}
+
+# Watch D2 files and re-render to PNG on changes
+[group('d2')]
+d2-watch-png zoom="2":
+    fd . {{ d2_src }} -e d2 | entr -c just d2-render-png {{ zoom }}
+
+## SVG/PNG Conversion
+
+# Convert single SVG to lossless optimized PNG
+# Usage: just svg-to-png input.svg [zoom] [output.png]
+# If output is omitted, PNG is placed alongside the SVG
+[group('d2')]
+svg-to-png input zoom="1" output="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    input="{{ input }}"
+    zoom="{{ zoom }}"
+    output="{{ output }}"
+
+    if [[ -z "$output" ]]; then
+        output="${input%.svg}.png"
+    fi
+
+    echo "Converting: $input → $output (zoom: ${zoom}x)"
+    resvg -z "$zoom" "$input" "$output"
+    oxipng -o max --zopfli --alpha -s "$output"
+
+    # Report sizes
+    svg_size=$(stat -f%z "$input" 2>/dev/null || stat -c%s "$input")
+    png_size=$(stat -f%z "$output" 2>/dev/null || stat -c%s "$output")
+    echo "  SVG: $(numfmt --to=iec $svg_size 2>/dev/null || echo "${svg_size}B")"
+    echo "  PNG: $(numfmt --to=iec $png_size 2>/dev/null || echo "${png_size}B")"
+
+# Convert all SVGs in a directory to lossless optimized PNGs
+# Usage: just svg-to-png-dir path/to/svgs [zoom]
+[group('d2')]
+svg-to-png-dir dir zoom="1":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    dir="{{ dir }}"
+    zoom="{{ zoom }}"
+
+    svg_count=$(fd -e svg . "$dir" | wc -l | tr -d ' ')
+    if [[ "$svg_count" -eq 0 ]]; then
+        echo "No SVG files found in $dir"
+        exit 0
+    fi
+
+    echo "Converting $svg_count SVG files to PNG (zoom: ${zoom}x)..."
+    fd -e svg . "$dir" -x just svg-to-png {} "$zoom"
+    echo "Done. $svg_count PNG files generated."
 
 ## Workspace
 
