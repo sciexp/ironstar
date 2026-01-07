@@ -1,27 +1,27 @@
 # Beads Export
 
-*Generated: Tue, 06 Jan 2026 11:48:10 EST*
+*Generated: Tue, 06 Jan 2026 22:26:46 EST*
 
 ## Summary
 
 | Metric | Count |
 |--------|-------|
-| **Total** | 219 |
-| Open | 169 |
+| **Total** | 242 |
+| Open | 178 |
 | In Progress | 0 |
 | Blocked | 0 |
-| Closed | 32 |
+| Closed | 46 |
 
 ## Quick Actions
 
 Ready-to-run commands for bulk operations:
 
 ```bash
-# Close open items (169 total, showing first 10)
+# Close open items (178 total, showing first 10)
 bd close ironstar-b43 ironstar-a9b.12 ironstar-a9b.9 ironstar-a9b.7 ironstar-a9b.4 ironstar-a9b.3 ironstar-a9b.2 ironstar-a9b.1 ironstar-nyp.34 ironstar-2nt.17
 
 # View high-priority items (P0/P1)
-bd show ironstar-b43 ironstar-a9b.12 ironstar-a9b.9 ironstar-a9b.7 ironstar-a9b.4 ironstar-a9b.3 ironstar-a9b.2 ironstar-a9b.1 ironstar-nyp.34 ironstar-2nt.17 ironstar-2nt.16 ironstar-r62.16 ironstar-2nt.13 ironstar-nyp.29 ironstar-2nt.12 ironstar-nyp.26 ironstar-753.6 ironstar-2nt.9 ironstar-961 ironstar-9b1 ironstar-3gd ironstar-753.5 ironstar-753.4 ironstar-c7z ironstar-09r ironstar-753 ironstar-r62.9 ironstar-r62.8 ironstar-r62.7 ironstar-r62.2 ironstar-r62.1 ironstar-r62 ironstar-nyp.12 ironstar-nyp.8 ironstar-nyp.6 ironstar-nyp.1 ironstar-nyp ironstar-ny3.13 ironstar-ny3.12 ironstar-ny3.11 ironstar-ny3.10 ironstar-ny3.9 ironstar-ny3.8 ironstar-ny3.7 ironstar-ny3.5 ironstar-ny3.4 ironstar-ny3.3 ironstar-ny3.2 ironstar-ny3.1 ironstar-ny3 ironstar-2nt.6 ironstar-2nt.5 ironstar-2nt ironstar-f8b.5 ironstar-f8b.4 ironstar-f8b.3 ironstar-f8b.2 ironstar-f8b.1 ironstar-f8b ironstar-ny3.18 ironstar-b2l ironstar-58f ironstar-a9b.13 ironstar-a9b.11 ironstar-a9b.10 ironstar-a9b.8 ironstar-a9b.6 ironstar-a9b.5 ironstar-a9b ironstar-3gd.4 ironstar-nyp.36 ironstar-3gd.3 ironstar-jqv.12 ironstar-nyp.31 ironstar-nyp.30 ironstar-nyp.27 ironstar-nyp.25 ironstar-nyp.22 ironstar-ny3.17 ironstar-ny3.16 ironstar-nyp.21 ironstar-2nt.10 ironstar-nyp.19 ironstar-jqv.7 ironstar-nyp.15 ironstar-jqv ironstar-edx ironstar-0tk ironstar-amw ironstar-b9h ironstar-e6k.8 ironstar-e6k.7 ironstar-e6k.6 ironstar-e6k.5 ironstar-e6k.4 ironstar-e6k.3 ironstar-e6k.2 ironstar-r62.13 ironstar-r62.10 ironstar-r62.3 ironstar-nyp.11 ironstar-nyp.10 ironstar-nyp.9 ironstar-nyp.7 ironstar-nyp.4 ironstar-nyp.3 ironstar-ny3.14 ironstar-ny3.6 ironstar-2nt.8
+bd show ironstar-b43 ironstar-a9b.12 ironstar-a9b.9 ironstar-a9b.7 ironstar-a9b.4 ironstar-a9b.3 ironstar-a9b.2 ironstar-a9b.1 ironstar-nyp.34 ironstar-2nt.17 ironstar-2nt.16 ironstar-r62.16 ironstar-2nt.13 ironstar-nyp.29 ironstar-2nt.12 ironstar-nyp.26 ironstar-753.6 ironstar-2nt.9 ironstar-961 ironstar-9b1 ironstar-3gd ironstar-753.5 ironstar-753.4 ironstar-c7z ironstar-09r ironstar-753 ironstar-r62.9 ironstar-r62.8 ironstar-r62.7 ironstar-r62.2 ironstar-r62.1 ironstar-r62 ironstar-nyp.12 ironstar-nyp.8 ironstar-nyp ironstar-ny3.13 ironstar-ny3.12 ironstar-ny3.11 ironstar-ny3.10 ironstar-ny3.9 ironstar-ny3.8 ironstar-ny3.7 ironstar-ny3.5 ironstar-ny3.4 ironstar-ny3.3 ironstar-ny3.2 ironstar-ny3.1 ironstar-ny3 ironstar-2nt.6 ironstar-2nt.5 ironstar-2nt ironstar-f8b.5 ironstar-f8b.4 ironstar-f8b.3 ironstar-f8b.2 ironstar-f8b.1 ironstar-f8b ironstar-2it.11 ironstar-2it.10 ironstar-2it.9 ironstar-2it.8 ironstar-2it.7 ironstar-2it.6 ironstar-2it.5 ironstar-2it.4 ironstar-2it.3 ironstar-2it.2 ironstar-2it.1 ironstar-2it ironstar-ny3.18 ironstar-b2l ironstar-58f ironstar-a9b.13 ironstar-a9b.11 ironstar-a9b.10 ironstar-a9b.8 ironstar-a9b.6 ironstar-a9b.5 ironstar-a9b ironstar-3gd.4 ironstar-nyp.36 ironstar-3gd.3 ironstar-jqv.12 ironstar-nyp.31 ironstar-nyp.30 ironstar-nyp.27 ironstar-nyp.25 ironstar-nyp.22 ironstar-ny3.17 ironstar-ny3.16 ironstar-nyp.21 ironstar-2nt.10 ironstar-nyp.19 ironstar-jqv.7 ironstar-nyp.15 ironstar-jqv ironstar-edx ironstar-0tk ironstar-amw ironstar-b9h ironstar-e6k.8 ironstar-e6k.7 ironstar-e6k.6 ironstar-e6k.5 ironstar-e6k.4 ironstar-e6k.3 ironstar-e6k.2 ironstar-r62.13 ironstar-r62.10 ironstar-r62.3 ironstar-nyp.11 ironstar-nyp.10 ironstar-nyp.9 ironstar-nyp.4 ironstar-ny3.14 ironstar-ny3.6 ironstar-2nt.8
 
 ```
 
@@ -61,8 +61,6 @@ bd show ironstar-b43 ironstar-a9b.12 ironstar-a9b.9 ironstar-a9b.7 ironstar-a9b.
 - [🟢 ironstar-r62 Presentation layer](#ironstar-r62)
 - [🟢 ironstar-nyp.12 Implement DuckDB analytics service](#ironstar-nyp-12)
 - [🟢 ironstar-nyp.8 Implement SSE 15-second keep-alive comment stream](#ironstar-nyp-8)
-- [🟢 ironstar-nyp.6 Create Projection trait for read models](#ironstar-nyp-6)
-- [🟢 ironstar-nyp.1 Create database migrations/ directory with schema.sql](#ironstar-nyp-1)
 - [🟢 ironstar-nyp Event sourcing infrastructure](#ironstar-nyp)
 - [🟢 ironstar-ny3.13 Implement rust-embed conditional asset serving](#ironstar-ny3-13)
 - [🟢 ironstar-ny3.12 Implement manifest.json parser for hashed filename resolution](#ironstar-ny3-12)
@@ -86,6 +84,18 @@ bd show ironstar-b43 ironstar-a9b.12 ironstar-a9b.9 ironstar-a9b.7 ironstar-a9b.
 - [🟢 ironstar-f8b.2 Configure process-compose.yaml for dev services](#ironstar-f8b-2)
 - [🟢 ironstar-f8b.1 Integrate process-compose-flake patterns into devShell](#ironstar-f8b-1)
 - [🟢 ironstar-f8b Process compose integration](#ironstar-f8b)
+- [🟢 ironstar-2it.11 Cross-reference and validate EventCatalog artifacts (Phase 9)](#ironstar-2it-11)
+- [🟢 ironstar-2it.10 Transform Qlerify JSON to EventCatalog MDX (Phase 3: Entities and Flows)](#ironstar-2it-10)
+- [🟢 ironstar-2it.9 Transform Qlerify JSON to EventCatalog MDX (Phase 2: Events, Commands, Queries)](#ironstar-2it-9)
+- [🟢 ironstar-2it.8 Transform Qlerify JSON to EventCatalog MDX (Phase 1: Domain and Services)](#ironstar-2it-8)
+- [🟢 ironstar-2it.7 Instantiate EventCatalog infrastructure](#ironstar-2it-7)
+- [🟢 ironstar-2it.6 Refine D2 diagrams to match Qlerify exports](#ironstar-2it-6)
+- [🟢 ironstar-2it.5 Export Qlerify JSON and validate structure](#ironstar-2it-5)
+- [🟢 ironstar-2it.4 Elaborate GWT scenarios and prioritize releases (Step 7)](#ironstar-2it-4)
+- [🟢 ironstar-2it.3 Apply Conway's Law and assign bounded contexts (Step 6)](#ironstar-2it-3)
+- [🟢 ironstar-2it.2 Execute Qlerify sessions and refine generated models](#ironstar-2it-2)
+- [🟢 ironstar-2it.1 Generate Qlerify prompts for all bounded contexts](#ironstar-2it-1)
+- [🟢 ironstar-2it Complete Event Modeling and EventCatalog documentation](#ironstar-2it)
 - [🟢 ironstar-ny3.18 Add CUBE CSS composition layer](#ironstar-ny3-18)
 - [🟢 ironstar-b2l Design Zenoh key expression schema for bounded context routing](#ironstar-b2l)
 - [🟢 ironstar-58f Implement ViewStateRepository for SQLite](#ironstar-58f)
@@ -130,12 +140,11 @@ bd show ironstar-b43 ironstar-a9b.12 ironstar-a9b.9 ironstar-a9b.7 ironstar-a9b.
 - [🟢 ironstar-nyp.11 Create Session axum extractor](#ironstar-nyp-11)
 - [🟢 ironstar-nyp.10 Add session TTL cleanup background task](#ironstar-nyp-10)
 - [🟢 ironstar-nyp.9 Implement SQLite session store with SessionStore trait](#ironstar-nyp-9)
-- [🟢 ironstar-nyp.7 Implement ProjectionManager with in-memory state](#ironstar-nyp-7)
 - [🟢 ironstar-nyp.4 Implement SQLite connection pooling and configuration](#ironstar-nyp-4)
-- [🟢 ironstar-nyp.3 Implement SQLite EventRepository with sqlx](#ironstar-nyp-3)
 - [🟢 ironstar-ny3.14 Create web-components/components/ directory for vanilla web components](#ironstar-ny3-14)
 - [🟢 ironstar-ny3.6 Copy Open Props UI component CSS files](#ironstar-ny3-6)
 - [🟢 ironstar-2nt.8 Define application error types](#ironstar-2nt-8)
+- [🟢 ironstar-2it.12 Document fmodel-rust Decider mapping in EventCatalog](#ironstar-2it-12)
 - [🟢 ironstar-9dh Reference: Bounded context patterns](#ironstar-9dh)
 - [🟢 ironstar-k94 Reference: Strategic domain classification](#ironstar-k94)
 - [🟢 ironstar-53t Reference: Hoffman's Laws compliance mapping](#ironstar-53t)
@@ -219,7 +228,9 @@ bd show ironstar-b43 ironstar-a9b.12 ironstar-a9b.9 ironstar-a9b.7 ironstar-a9b.
 - [⚫ ironstar-2nt.14 Define QuerySession aggregate with typed holes](#ironstar-2nt-14)
 - [⚫ ironstar-jdk Migrate from cargoTest to cargoNextest with dual devshell/CI support](#ironstar-jdk)
 - [⚫ ironstar-2nt.11 Add version(&self) -> u64 to Aggregate trait](#ironstar-2nt-11)
+- [⚫ ironstar-nyp.6 Create Projection trait for read models](#ironstar-nyp-6)
 - [⚫ ironstar-nyp.2 Create EventStore trait abstraction](#ironstar-nyp-2)
+- [⚫ ironstar-nyp.1 Create database migrations/ directory with schema.sql](#ironstar-nyp-1)
 - [⚫ ironstar-2nt.7 Implement command validation pattern with Result types](#ironstar-2nt-7)
 - [⚫ ironstar-2nt.4 Design aggregate root state machines](#ironstar-2nt-4)
 - [⚫ ironstar-2nt.3 Implement value objects and smart constructors](#ironstar-2nt-3)
@@ -239,12 +250,24 @@ bd show ironstar-b43 ironstar-a9b.12 ironstar-a9b.9 ironstar-a9b.7 ironstar-a9b.
 - [⚫ ironstar-cxe.2 Configure secrets management and string replacement](#ironstar-cxe-2)
 - [⚫ ironstar-cxe.1 Run om init with typescript-nix-template parameters](#ironstar-cxe-1)
 - [⚫ ironstar-cxe Template instantiation](#ironstar-cxe)
+- [⚫ ironstar-2it.21 Integrate Idris2 spec modules and verify type-checking](#ironstar-2it-21)
+- [⚫ ironstar-2it.18 Formalize Analytics bounded context in Idris2 (Core domain)](#ironstar-2it-18)
+- [⚫ ironstar-2it.17 Create Idris2 spec infrastructure and core abstractions](#ironstar-2it-17)
+- [⚫ ironstar-2it.16 Co-refine D2 diagrams and Idris2 spec (iterative)](#ironstar-2it-16)
+- [⚫ ironstar-2it.15 Cross-reference fmodel-rust patterns for Decider implementation](#ironstar-2it-15)
+- [⚫ ironstar-2it.14 Cross-reference northstar patterns for Datastar SSE architecture](#ironstar-2it-14)
+- [⚫ ironstar-2it.13 Review bounded context definitions against architecture docs](#ironstar-2it-13)
 - [⚫ ironstar-e6k.1 Define Todo domain model (aggregate, events, commands)](#ironstar-e6k-1)
+- [⚫ ironstar-nyp.7 Implement ProjectionManager with in-memory state](#ironstar-nyp-7)
+- [⚫ ironstar-nyp.3 Implement SQLite EventRepository with sqlx](#ironstar-nyp-3)
+- [⚫ ironstar-2it.22 Formalize Workspace bounded context in Idris2 (Supporting domain)](#ironstar-2it-22)
+- [⚫ ironstar-2it.19 Formalize Session bounded context in Idris2 (Supporting domain)](#ironstar-2it-19)
 - [⚫ ironstar-e8d Refactor domain module into aggregate-based subdirectories](#ironstar-e8d)
 - [⚫ ironstar-nyp.33 Implement session cleanup background task](#ironstar-nyp-33)
 - [⚫ ironstar-6lq.9 Add workspace lint configuration to Cargo.toml](#ironstar-6lq-9)
 - [⚫ ironstar-9oj Implement cache invalidation for analytics queries](#ironstar-9oj)
 - [⚫ ironstar-6lq.8 Create reusable Rust CI workflow with workflow_call dispatch](#ironstar-6lq-8)
+- [⚫ ironstar-2it.20 Formalize Todo bounded context in Idris2 (Generic Example)](#ironstar-2it-20)
 - [⚫ ironstar-nyp.16 Implement DualEventBus for tokio::broadcast to Zenoh migration](#ironstar-nyp-16)
 
 ---
@@ -264,6 +287,52 @@ graph TD
     class ironstar-0ha open
     ironstar-0tk["ironstar-0tk<br/>Omicslake presentation slide deck"]
     class ironstar-0tk 
+    ironstar-2it["ironstar-2it<br/>Complete Event Modeling and EventCata..."]
+    class ironstar-2it open
+    ironstar-2it1["ironstar-2it.1<br/>Generate Qlerify prompts for all boun..."]
+    class ironstar-2it1 open
+    ironstar-2it10["ironstar-2it.10<br/>Transform Qlerify JSON to EventCatalo..."]
+    class ironstar-2it10 open
+    ironstar-2it11["ironstar-2it.11<br/>Cross-reference and validate EventCat..."]
+    class ironstar-2it11 open
+    ironstar-2it12["ironstar-2it.12<br/>Document fmodel-rust Decider mapping ..."]
+    class ironstar-2it12 open
+    ironstar-2it13["ironstar-2it.13<br/>Review bounded context definitions ag..."]
+    class ironstar-2it13 closed
+    ironstar-2it14["ironstar-2it.14<br/>Cross-reference northstar patterns fo..."]
+    class ironstar-2it14 closed
+    ironstar-2it15["ironstar-2it.15<br/>Cross-reference fmodel-rust patterns ..."]
+    class ironstar-2it15 closed
+    ironstar-2it16["ironstar-2it.16<br/>Co-refine D2 diagrams and Idris2 spec..."]
+    class ironstar-2it16 closed
+    ironstar-2it17["ironstar-2it.17<br/>Create Idris2 spec infrastructure and..."]
+    class ironstar-2it17 closed
+    ironstar-2it18["ironstar-2it.18<br/>Formalize Analytics bounded context i..."]
+    class ironstar-2it18 closed
+    ironstar-2it19["ironstar-2it.19<br/>Formalize Session bounded context in ..."]
+    class ironstar-2it19 closed
+    ironstar-2it2["ironstar-2it.2<br/>Execute Qlerify sessions and refine g..."]
+    class ironstar-2it2 open
+    ironstar-2it20["ironstar-2it.20<br/>Formalize Todo bounded context in Idr..."]
+    class ironstar-2it20 closed
+    ironstar-2it21["ironstar-2it.21<br/>Integrate Idris2 spec modules and ver..."]
+    class ironstar-2it21 closed
+    ironstar-2it22["ironstar-2it.22<br/>Formalize Workspace bounded context i..."]
+    class ironstar-2it22 closed
+    ironstar-2it3["ironstar-2it.3<br/>Apply Conway's Law and assign bounded..."]
+    class ironstar-2it3 open
+    ironstar-2it4["ironstar-2it.4<br/>Elaborate GWT scenarios and prioritiz..."]
+    class ironstar-2it4 open
+    ironstar-2it5["ironstar-2it.5<br/>Export Qlerify JSON and validate stru..."]
+    class ironstar-2it5 open
+    ironstar-2it6["ironstar-2it.6<br/>Refine D2 diagrams to match Qlerify e..."]
+    class ironstar-2it6 open
+    ironstar-2it7["ironstar-2it.7<br/>Instantiate EventCatalog infrastructure"]
+    class ironstar-2it7 open
+    ironstar-2it8["ironstar-2it.8<br/>Transform Qlerify JSON to EventCatalo..."]
+    class ironstar-2it8 open
+    ironstar-2it9["ironstar-2it.9<br/>Transform Qlerify JSON to EventCatalo..."]
+    class ironstar-2it9 open
     ironstar-2nt["ironstar-2nt<br/>Domain layer"]
     class ironstar-2nt open
     ironstar-2nt1["ironstar-2nt.1<br/>Initialize src/ directory structure w..."]
@@ -551,7 +620,7 @@ graph TD
     ironstar-nyp["ironstar-nyp<br/>Event sourcing infrastructure"]
     class ironstar-nyp open
     ironstar-nyp1["ironstar-nyp.1<br/>Create database migrations/ directory..."]
-    class ironstar-nyp1 open
+    class ironstar-nyp1 closed
     ironstar-nyp10["ironstar-nyp.10<br/>Add session TTL cleanup background task"]
     class ironstar-nyp10 open
     ironstar-nyp11["ironstar-nyp.11<br/>Create Session axum extractor"]
@@ -595,7 +664,7 @@ graph TD
     ironstar-nyp29["ironstar-nyp.29<br/>Implement error propagation pattern t..."]
     class ironstar-nyp29 open
     ironstar-nyp3["ironstar-nyp.3<br/>Implement SQLite EventRepository with..."]
-    class ironstar-nyp3 open
+    class ironstar-nyp3 closed
     ironstar-nyp30["ironstar-nyp.30<br/>Implement observability initializatio..."]
     class ironstar-nyp30 open
     ironstar-nyp31["ironstar-nyp.31<br/>Implement health check endpoints (/he..."]
@@ -623,9 +692,9 @@ graph TD
     ironstar-nyp5["ironstar-nyp.5<br/>Implement tokio broadcast event bus"]
     class ironstar-nyp5 open
     ironstar-nyp6["ironstar-nyp.6<br/>Create Projection trait for read models"]
-    class ironstar-nyp6 open
+    class ironstar-nyp6 closed
     ironstar-nyp7["ironstar-nyp.7<br/>Implement ProjectionManager with in-m..."]
-    class ironstar-nyp7 open
+    class ironstar-nyp7 closed
     ironstar-nyp8["ironstar-nyp.8<br/>Implement SSE 15-second keep-alive co..."]
     class ironstar-nyp8 open
     ironstar-nyp9["ironstar-nyp.9<br/>Implement SQLite session store with S..."]
@@ -704,6 +773,52 @@ graph TD
     ironstar-09r ==> ironstar-r6210
     ironstar-09r ==> ironstar-r625
     ironstar-0ha -.-> ironstar-r62
+    ironstar-2it1 -.-> ironstar-2it
+    ironstar-2it1 ==> ironstar-2it16
+    ironstar-2it10 -.-> ironstar-2it
+    ironstar-2it10 ==> ironstar-2it9
+    ironstar-2it11 -.-> ironstar-2it
+    ironstar-2it11 ==> ironstar-2it10
+    ironstar-2it12 -.-> ironstar-2it
+    ironstar-2it12 ==> ironstar-2it11
+    ironstar-2it13 -.-> ironstar-2it
+    ironstar-2it14 -.-> ironstar-2it
+    ironstar-2it15 -.-> ironstar-2it
+    ironstar-2it16 -.-> ironstar-2it
+    ironstar-2it16 ==> ironstar-2it21
+    ironstar-2it17 -.-> ironstar-2it
+    ironstar-2it17 ==> ironstar-2it13
+    ironstar-2it17 ==> ironstar-2it14
+    ironstar-2it17 ==> ironstar-2it15
+    ironstar-2it18 -.-> ironstar-2it
+    ironstar-2it18 ==> ironstar-2it17
+    ironstar-2it19 -.-> ironstar-2it
+    ironstar-2it19 ==> ironstar-2it17
+    ironstar-2it2 -.-> ironstar-2it
+    ironstar-2it2 ==> ironstar-2it1
+    ironstar-2it20 -.-> ironstar-2it
+    ironstar-2it20 ==> ironstar-2it17
+    ironstar-2it21 -.-> ironstar-2it
+    ironstar-2it21 ==> ironstar-2it18
+    ironstar-2it21 ==> ironstar-2it19
+    ironstar-2it21 ==> ironstar-2it20
+    ironstar-2it21 ==> ironstar-2it22
+    ironstar-2it22 -.-> ironstar-2it
+    ironstar-2it22 ==> ironstar-2it17
+    ironstar-2it3 -.-> ironstar-2it
+    ironstar-2it3 ==> ironstar-2it2
+    ironstar-2it4 -.-> ironstar-2it
+    ironstar-2it4 ==> ironstar-2it3
+    ironstar-2it5 -.-> ironstar-2it
+    ironstar-2it5 ==> ironstar-2it4
+    ironstar-2it6 -.-> ironstar-2it
+    ironstar-2it6 ==> ironstar-2it5
+    ironstar-2it7 -.-> ironstar-2it
+    ironstar-2it7 ==> ironstar-2it5
+    ironstar-2it8 -.-> ironstar-2it
+    ironstar-2it8 ==> ironstar-2it7
+    ironstar-2it9 -.-> ironstar-2it
+    ironstar-2it9 ==> ironstar-2it8
     ironstar-2nt ==> ironstar-6lq5
     ironstar-2nt1 -.-> ironstar-2nt
     ironstar-2nt10 -.-> ironstar-2nt
@@ -800,6 +915,7 @@ graph TD
     ironstar-a15 -.-> ironstar-0tk
     ironstar-a15 ==> ironstar-edx
     ironstar-a1s -.-> ironstar-zuv
+    ironstar-a9b -.-> ironstar-2it
     ironstar-a9b1 -.-> ironstar-a9b
     ironstar-a9b1 ==> ironstar-a9b2
     ironstar-a9b1 ==> ironstar-a9b3
@@ -830,9 +946,9 @@ graph TD
     ironstar-a9b8 ==> ironstar-a9b5
     ironstar-a9b9 -.-> ironstar-a9b
     ironstar-a9b9 ==> ironstar-a9b7
+    ironstar-amw ==> ironstar-a9b1
     ironstar-amw -.-> ironstar-nyp
     ironstar-amw -.-> ironstar-nyp
-    ironstar-amw ==> ironstar-nyp3
     ironstar-apx ==> ironstar-rjs
     ironstar-apx ==> ironstar-zuv
     ironstar-apx1 -.-> ironstar-apx
@@ -841,8 +957,8 @@ graph TD
     ironstar-apx2 -.-> ironstar-apx
     ironstar-apx3 -.-> ironstar-apx
     ironstar-apx3 ==> ironstar-apx2
+    ironstar-apx4 ==> ironstar-a9b1
     ironstar-apx4 -.-> ironstar-apx
-    ironstar-apx4 ==> ironstar-nyp3
     ironstar-apx5 -.-> ironstar-apx
     ironstar-apx5 ==> ironstar-r6213
     ironstar-avp -.-> ironstar-0tk
@@ -869,9 +985,9 @@ graph TD
     ironstar-e6k1 ==> ironstar-2nt2
     ironstar-e6k1 ==> ironstar-2nt4
     ironstar-e6k1 -.-> ironstar-e6k
+    ironstar-e6k2 ==> ironstar-a9b8
     ironstar-e6k2 -.-> ironstar-e6k
     ironstar-e6k2 ==> ironstar-e6k1
-    ironstar-e6k2 ==> ironstar-nyp7
     ironstar-e6k3 -.-> ironstar-e6k
     ironstar-e6k3 ==> ironstar-e6k2
     ironstar-e6k3 ==> ironstar-r626
@@ -1027,14 +1143,14 @@ graph TD
     ironstar-nyp34 -.-> ironstar-nyp3
     ironstar-nyp35 -.-> ironstar-nyp
     ironstar-nyp36 -.-> ironstar-nyp
+    ironstar-nyp37 ==> ironstar-a9b5
     ironstar-nyp37 -.-> ironstar-nyp
-    ironstar-nyp37 -.-> ironstar-nyp6
+    ironstar-nyp38 ==> ironstar-a9b5
     ironstar-nyp38 -.-> ironstar-nyp
-    ironstar-nyp38 -.-> ironstar-nyp6
     ironstar-nyp39 -.-> ironstar-nyp
     ironstar-nyp39 -.-> ironstar-nyp35
+    ironstar-nyp4 ==> ironstar-a9b1
     ironstar-nyp4 -.-> ironstar-nyp
-    ironstar-nyp4 ==> ironstar-nyp3
     ironstar-nyp40 -.-> ironstar-nyp
     ironstar-nyp40 -.-> ironstar-nyp2
     ironstar-nyp5 ==> ironstar-2nt2
@@ -1090,7 +1206,7 @@ graph TD
     ironstar-r626 ==> ironstar-2nt4
     ironstar-r626 -.-> ironstar-r62
     ironstar-r626 ==> ironstar-r624
-    ironstar-r627 ==> ironstar-nyp7
+    ironstar-r627 ==> ironstar-a9b8
     ironstar-r627 -.-> ironstar-r62
     ironstar-r627 ==> ironstar-r624
     ironstar-r628 -.-> ironstar-r62
@@ -1106,9 +1222,9 @@ graph TD
     ironstar-z4s -.-> ironstar-0tk
     ironstar-z4s ==> ironstar-edx
     ironstar-zuv ==> ironstar-e6k
-    ironstar-zuv1 ==> ironstar-nyp3
+    ironstar-zuv1 ==> ironstar-a9b1
     ironstar-zuv1 -.-> ironstar-zuv
-    ironstar-zuv2 ==> ironstar-nyp7
+    ironstar-zuv2 ==> ironstar-a9b8
     ironstar-zuv2 -.-> ironstar-zuv
     ironstar-zuv2 ==> ironstar-zuv1
     ironstar-zuv3 ==> ironstar-r6213
@@ -2687,7 +2803,7 @@ Local refs: ~/projects/rust-workspace/axum, ~/projects/rust-workspace/hypertext
 
 - 🔗 **parent-child**: `ironstar-r62`
 - ⛔ **blocks**: `ironstar-r62.4`
-- ⛔ **blocks**: `ironstar-nyp.7`
+- ⛔ **blocks**: `ironstar-a9b.8`
 
 <details>
 <summary>📋 Commands</summary>
@@ -2914,103 +3030,6 @@ bd update ironstar-nyp.8 -p 1
 
 # View full details
 bd show ironstar-nyp.8
-```
-
-</details>
-
----
-
-## 📋 ironstar-nyp.6 Create Projection trait for read models
-
-| Property | Value |
-|----------|-------|
-| **Type** | 📋 task |
-| **Priority** | 🔥 Critical (P0) |
-| **Status** | 🟢 open |
-| **Created** | 2025-12-18 09:36 |
-| **Updated** | 2025-12-29 17:56 |
-
-### Description
-
-Create Projection trait for read models implementing the Galois connection abstract/concrete pair and quotient monoid structure.
-
-The trait defines the catamorphism algebra for state reconstruction:
-- apply(&mut self, event: &Event): the fold step (catamorphism algebra)
-- rebuild(): reconstruct from events (unique fold from initiality)
-
-Projections form a Galois connection with the event log:
-- abstract: EventLog → ReadModel (lossy, many-to-one)
-- concrete: ReadModel → EventLog (partial reconstruction)
-
-Reference: denotational-semantics.md sections on Galois connection and quotients.
-
-### Dependencies
-
-- 🔗 **parent-child**: `ironstar-nyp`
-- ⛔ **blocks**: `ironstar-2nt.2`
-
-<details>
-<summary>📋 Commands</summary>
-
-```bash
-# Start working on this issue
-bd update ironstar-nyp.6 -s in_progress
-
-# Add a comment
-bd comment ironstar-nyp.6 'Your comment here'
-
-# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-nyp.6 -p 1
-
-# View full details
-bd show ironstar-nyp.6
-```
-
-</details>
-
----
-
-## 📋 ironstar-nyp.1 Create database migrations/ directory with schema.sql
-
-| Property | Value |
-|----------|-------|
-| **Type** | 📋 task |
-| **Priority** | 🔥 Critical (P0) |
-| **Status** | 🟢 open |
-| **Created** | 2025-12-18 09:36 |
-| **Updated** | 2025-12-27 14:20 |
-
-### Description
-
-Create database migrations/ directory with schema.sql
-
-Include both:
-- global_sequence (PRIMARY KEY AUTOINCREMENT) for SSE Last-Event-ID
-- aggregate_sequence (UNIQUE per aggregate_type, aggregate_id) for optimistic locking
-
-See event-sourcing-core.md hybrid schema section.
-
-### Dependencies
-
-- 🔗 **parent-child**: `ironstar-nyp`
-- ⛔ **blocks**: `ironstar-2nt.11`
-- ⛔ **blocks**: `ironstar-nyp.35`
-
-<details>
-<summary>📋 Commands</summary>
-
-```bash
-# Start working on this issue
-bd update ironstar-nyp.1 -s in_progress
-
-# Add a comment
-bd comment ironstar-nyp.1 'Your comment here'
-
-# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-nyp.1 -p 1
-
-# View full details
-bd show ironstar-nyp.1
 ```
 
 </details>
@@ -4156,6 +4175,1098 @@ bd show ironstar-f8b
 
 ---
 
+## 📋 ironstar-2it.11 Cross-reference and validate EventCatalog artifacts (Phase 9)
+
+| Property | Value |
+|----------|-------|
+| **Type** | 📋 task |
+| **Priority** | ⚡ High (P1) |
+| **Status** | 🟢 open |
+| **Created** | 2026-01-06 13:19 |
+| **Updated** | 2026-01-06 13:19 |
+
+### Description
+
+Execute Phase 9 of the transformation workflow: link all artifacts through cross-references and validate output quality.
+
+## Prerequisites
+
+- All MDX artifacts generated (ironstar-2it.10)
+
+## Cross-referencing
+
+### Update service sends/receives
+
+For each service:
+- `sends`: events where domainEvent.laneId matches service's lane
+- `receives`: commands/events consumed by this service
+- `entities`: aggregates owned by this service
+
+### Update event consumers
+
+For each event:
+- `consumers`: services whose lanes contain domainEvents listing this event in parents[]
+
+### Update command producers
+
+For each command:
+- `producers`: services/actors that trigger this command
+
+## Validation checklist
+
+Per event-catalog-qlerify.md:
+- [ ] All schema.json files are valid JSON Schema draft-07
+- [ ] All service cross-references point to existing artifacts
+- [ ] All flow steps reference valid messages and services
+- [ ] All inferred types have confidence notes
+- [ ] All enum fields have populated enum arrays
+- [ ] All aggregate roots have aggregateRoot: true and identifier
+
+## Structural validation commands
+
+```bash
+# Verify schema files
+fd -e json -x jaq '.""' {} \;
+
+# Count artifacts by type
+echo "Services: $(fd -t d . domains/*/services | wc -l)"
+echo "Events: $(fd index.mdx domains/*/services/*/events | wc -l)"
+echo "Commands: $(fd index.mdx domains/*/services/*/commands | wc -l)"
+echo "Entities: $(fd index.mdx domains/*/entities | wc -l)"
+echo "Flows: $(fd index.mdx domains/*/flows | wc -l)"
+```
+
+## Output
+
+- Fully cross-referenced EventCatalog
+- Validation report
+- No orphan artifacts (all linked bidirectionally)
+
+### Dependencies
+
+- 🔗 **parent-child**: `ironstar-2it`
+- ⛔ **blocks**: `ironstar-2it.10`
+
+<details>
+<summary>📋 Commands</summary>
+
+```bash
+# Start working on this issue
+bd update ironstar-2it.11 -s in_progress
+
+# Add a comment
+bd comment ironstar-2it.11 'Your comment here'
+
+# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
+bd update ironstar-2it.11 -p 1
+
+# View full details
+bd show ironstar-2it.11
+```
+
+</details>
+
+---
+
+## 📋 ironstar-2it.10 Transform Qlerify JSON to EventCatalog MDX (Phase 3: Entities and Flows)
+
+| Property | Value |
+|----------|-------|
+| **Type** | 📋 task |
+| **Priority** | ⚡ High (P1) |
+| **Status** | 🟢 open |
+| **Created** | 2026-01-06 13:19 |
+| **Updated** | 2026-01-06 13:19 |
+
+### Description
+
+Execute Phase 7-8 of the transformation workflow from event-catalog-qlerify.md.
+
+## Prerequisites
+
+- Events, commands, queries created (ironstar-2it.9)
+
+## Phase 7: Extract entities from AggregateRoot cards
+
+For each Entity schema (type=Entity), generate entity MDX:
+
+`domains/ironstar/entities/Session/index.mdx`:
+```yaml
+---
+id: Session
+name: Session
+version: 0.0.1
+summary: User session aggregate root
+owners: []
+aggregateRoot: true
+identifier: sessionId
+properties:
+  - name: sessionId
+    type: string
+    required: true
+    summary: Unique session identifier (UUID)
+  - name: userId
+    type: string
+    required: true
+    summary: Associated user identity
+  - name: expiresAt
+    type: string
+    required: true
+    summary: Session expiration timestamp (ISO 8601)
+---
+```
+
+### Decider pattern documentation
+
+Entity MDX should document:
+- `decide` function: command → state → events
+- `evolve` function: state → event → state
+- Link to fmodel-rust implementation
+
+## Phase 8: Generate flow from parent-child chains
+
+Reconstruct temporal flow from domainEvent.parents[]:
+
+`domains/ironstar/flows/session-lifecycle/index.mdx`:
+```yaml
+---
+id: session-lifecycle
+name: Session Lifecycle Flow
+version: 0.0.1
+summary: OAuth login through session expiration
+steps:
+  - id: step-1
+    title: OAuth Callback Received
+    actor:
+      name: Guest
+    message:
+      id: OAuthCallback
+      version: "0.0.1"
+    service:
+      id: SessionService
+    next_step:
+      id: step-2
+      label: "on success"
+  - id: step-2
+    title: Session Created
+    message:
+      id: SessionCreated
+    service:
+      id: SessionService
+---
+```
+
+## Output
+
+- Entity MDX for all aggregates (Session, Todo, QuerySession)
+- Flow MDX for primary workflows:
+  - session-lifecycle
+  - todo-crud
+  - analytics-query-execution
+
+### Dependencies
+
+- 🔗 **parent-child**: `ironstar-2it`
+- ⛔ **blocks**: `ironstar-2it.9`
+
+<details>
+<summary>📋 Commands</summary>
+
+```bash
+# Start working on this issue
+bd update ironstar-2it.10 -s in_progress
+
+# Add a comment
+bd comment ironstar-2it.10 'Your comment here'
+
+# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
+bd update ironstar-2it.10 -p 1
+
+# View full details
+bd show ironstar-2it.10
+```
+
+</details>
+
+---
+
+## 📋 ironstar-2it.9 Transform Qlerify JSON to EventCatalog MDX (Phase 2: Events, Commands, Queries)
+
+| Property | Value |
+|----------|-------|
+| **Type** | 📋 task |
+| **Priority** | ⚡ High (P1) |
+| **Status** | 🟢 open |
+| **Created** | 2026-01-06 13:18 |
+| **Updated** | 2026-01-06 13:18 |
+
+### Description
+
+Execute Phase 4-6 of the transformation workflow from event-catalog-qlerify.md.
+
+## Prerequisites
+
+- Domain and services created (ironstar-2it.8)
+
+## Phase 4: Extract events from domainEvents
+
+For each domainEvent, generate event MDX + schema.json:
+
+`services/SessionService/events/SessionCreated/index.mdx`:
+```yaml
+---
+id: SessionCreated
+name: Session Created
+version: 0.0.1
+summary: User session successfully established
+producers:
+  - SessionService
+consumers: []
+schemaPath: schema.json
+---
+```
+
+`services/SessionService/events/SessionCreated/schema.json`:
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SessionCreated",
+  "type": "object",
+  "properties": {
+    "sessionId": { "type": "string", "format": "uuid" },
+    "userId": { "type": "string", "format": "uuid" },
+    "timestamp": { "type": "string", "format": "date-time" }
+  },
+  "required": ["sessionId", "userId", "timestamp"]
+}
+```
+
+## Phase 5: Extract commands
+
+Generate command MDX + schema.json following same pattern.
+
+## Phase 6: Extract queries (read models)
+
+Generate query MDX + schema.json for each ReadModel card.
+
+## Schema translation rules
+
+Per event-catalog-qlerify.md:
+- uuid → string + format: uuid
+- timestamp → string + format: date-time
+- int → integer
+- enum → string + enum array from exampleData
+- null → infer from field name patterns
+
+## Output
+
+- Event MDX + schema.json for all events
+- Command MDX + schema.json for all commands
+- Query MDX + schema.json for all read models
+
+### Dependencies
+
+- 🔗 **parent-child**: `ironstar-2it`
+- ⛔ **blocks**: `ironstar-2it.8`
+
+<details>
+<summary>📋 Commands</summary>
+
+```bash
+# Start working on this issue
+bd update ironstar-2it.9 -s in_progress
+
+# Add a comment
+bd comment ironstar-2it.9 'Your comment here'
+
+# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
+bd update ironstar-2it.9 -p 1
+
+# View full details
+bd show ironstar-2it.9
+```
+
+</details>
+
+---
+
+## 📋 ironstar-2it.8 Transform Qlerify JSON to EventCatalog MDX (Phase 1: Domain and Services)
+
+| Property | Value |
+|----------|-------|
+| **Type** | 📋 task |
+| **Priority** | ⚡ High (P1) |
+| **Status** | 🟢 open |
+| **Created** | 2026-01-06 13:18 |
+| **Updated** | 2026-01-06 13:18 |
+
+### Description
+
+Execute Phase 1-3 of the transformation workflow from event-catalog-qlerify.md.
+
+## Prerequisites
+
+- EventCatalog infrastructure ready (ironstar-2it.7)
+- Qlerify JSON exports validated (ironstar-2it.5)
+
+## Phase 1: Discover structure
+
+Run discovery queries:
+```bash
+# Schema types and counts
+duckdb -c "SELECT s.type, COUNT(*) FROM read_json_auto('export.json') AS r, unnest(r.schemas) AS s GROUP BY s.type"
+
+# Lane distribution
+jaq '.lanes | map(.name)' export.json
+```
+
+## Phase 2: Extract domain
+
+Generate `domains/ironstar/index.mdx`:
+```yaml
+---
+id: ironstar
+name: Ironstar
+version: 1.0.0
+summary: Event-driven reactive web application template
+owners: []
+---
+```
+
+## Phase 3: Extract services from lanes
+
+For each Qlerify lane, generate service:
+
+`domains/ironstar/services/SessionService/index.mdx`
+`domains/ironstar/services/TodoService/index.mdx`
+`domains/ironstar/services/AnalyticsService/index.mdx`
+
+Service template:
+```yaml
+---
+id: SessionService
+name: Session Service
+version: 0.0.1
+summary: Session and authentication management
+owners: []
+sends: []
+receives: []
+entities: []
+---
+```
+
+## Output
+
+- Domain MDX file
+- Service MDX files for all bounded contexts
+- sends/receives arrays populated in Phase 9
+
+### Dependencies
+
+- 🔗 **parent-child**: `ironstar-2it`
+- ⛔ **blocks**: `ironstar-2it.7`
+
+<details>
+<summary>📋 Commands</summary>
+
+```bash
+# Start working on this issue
+bd update ironstar-2it.8 -s in_progress
+
+# Add a comment
+bd comment ironstar-2it.8 'Your comment here'
+
+# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
+bd update ironstar-2it.8 -p 1
+
+# View full details
+bd show ironstar-2it.8
+```
+
+</details>
+
+---
+
+## 📋 ironstar-2it.7 Instantiate EventCatalog infrastructure
+
+| Property | Value |
+|----------|-------|
+| **Type** | 📋 task |
+| **Priority** | ⚡ High (P1) |
+| **Status** | 🟢 open |
+| **Created** | 2026-01-06 13:18 |
+| **Updated** | 2026-01-06 13:18 |
+
+### Description
+
+Set up EventCatalog instance for ironstar documentation.
+
+## Prerequisites
+
+- Validated Qlerify JSON exports (ironstar-2it.5)
+
+## Setup
+
+### Create EventCatalog project
+
+Using create-eventcatalog (see ~/projects/lakescope-workspace/create-eventcatalog):
+```bash
+cd packages/docs
+npx @eventcatalog/create-eventcatalog@latest eventcatalog
+```
+
+Or integrate into existing Astro Starlight docs structure.
+
+### Directory structure
+
+```
+packages/docs/src/content/eventcatalog/
+├── domains/
+│   └── ironstar/
+│       ├── index.mdx
+│       ├── services/
+│       ├── entities/
+│       └── flows/
+├── eventcatalog.config.js
+└── catalog-info.yaml
+```
+
+### Configuration
+
+eventcatalog.config.js:
+```javascript
+module.exports = {
+  title: 'Ironstar Event Catalog',
+  tagline: 'Event-driven architecture documentation',
+  editUrl: 'https://github.com/user/ironstar/edit/main',
+  trailingSlash: false,
+  logo: { alt: 'Ironstar', src: '/logo.png' },
+};
+```
+
+## Integration with Starlight
+
+Options:
+1. Separate EventCatalog site at /eventcatalog/
+2. Integrated into Starlight docs as reference section
+3. Symlinks from docs/reference/eventcatalog/
+
+## Output
+
+- Working EventCatalog instance
+- Domain structure matching bounded contexts
+- Build integrated with nix flake
+
+### Dependencies
+
+- 🔗 **parent-child**: `ironstar-2it`
+- ⛔ **blocks**: `ironstar-2it.5`
+
+<details>
+<summary>📋 Commands</summary>
+
+```bash
+# Start working on this issue
+bd update ironstar-2it.7 -s in_progress
+
+# Add a comment
+bd comment ironstar-2it.7 'Your comment here'
+
+# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
+bd update ironstar-2it.7 -p 1
+
+# View full details
+bd show ironstar-2it.7
+```
+
+</details>
+
+---
+
+## 📋 ironstar-2it.6 Refine D2 diagrams to match Qlerify exports
+
+| Property | Value |
+|----------|-------|
+| **Type** | 📋 task |
+| **Priority** | ⚡ High (P1) |
+| **Status** | 🟢 open |
+| **Created** | 2026-01-06 13:18 |
+| **Updated** | 2026-01-06 13:18 |
+
+### Description
+
+Update existing D2 diagrams to align with refined Qlerify Event Models, ensuring consistency between visual artifacts.
+
+## Prerequisites
+
+- Qlerify JSON exports available (ironstar-2it.5)
+
+## Existing D2 files
+
+`docs/notes/event-modeling/d2/`:
+- bounded-contexts.d2 (context map with integration patterns)
+- analytics-context-timeline.d2
+- session-context-timeline.d2
+- todo-context-timeline.d2
+
+## Alignment work
+
+### Cross-validate structure
+- D2 swimlane names match Qlerify lane names
+- D2 event nodes match Qlerify domainEvent descriptions
+- D2 command nodes match Qlerify Command schema names
+- Cross-container arrows match parent-child relationships
+
+### Color conventions (per event-modeling.md)
+- Commands: #3498db (blue)
+- Events: #e67e22 (orange)
+- Read Models: #2ecc71 (green)
+- Aggregates: #f1c40f (yellow)
+- External Systems: #9b59b6 (purple)
+
+### Updates needed
+
+For each timeline diagram:
+- Add/remove events to match Qlerify exports
+- Update command names to match imperative mood
+- Add read model nodes if missing
+- Verify temporal ordering matches parent-child chains
+
+## Output
+
+- Updated D2 files matching Qlerify exports
+- Rendered diagrams in `docs/notes/event-modeling/rendered/`
+
+## Rendering command
+
+```bash
+d2 --layout elk bounded-contexts.d2 bounded-contexts.svg
+```
+
+### Dependencies
+
+- 🔗 **parent-child**: `ironstar-2it`
+- ⛔ **blocks**: `ironstar-2it.5`
+
+<details>
+<summary>📋 Commands</summary>
+
+```bash
+# Start working on this issue
+bd update ironstar-2it.6 -s in_progress
+
+# Add a comment
+bd comment ironstar-2it.6 'Your comment here'
+
+# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
+bd update ironstar-2it.6 -p 1
+
+# View full details
+bd show ironstar-2it.6
+```
+
+</details>
+
+---
+
+## 📋 ironstar-2it.5 Export Qlerify JSON and validate structure
+
+| Property | Value |
+|----------|-------|
+| **Type** | 📋 task |
+| **Priority** | ⚡ High (P1) |
+| **Status** | 🟢 open |
+| **Created** | 2026-01-06 13:18 |
+| **Updated** | 2026-01-06 13:18 |
+
+### Description
+
+Export completed Event Modeling workflows from Qlerify as JSON and validate against expected structure.
+
+## Prerequisites
+
+- GWT scenarios complete (ironstar-2it.4)
+
+## Export process
+
+1. In Qlerify: Export workflow as JSON
+2. Save to `docs/notes/event-modeling/qlerify/exports/`:
+   - session-context.json
+   - todo-context.json
+   - analytics-context.json
+
+## Validation queries
+
+Run discovery queries from event-catalog-qlerify.md:
+
+### duckdb exploration
+```sql
+-- Count entities by type
+SELECT s.type, COUNT(*) as count
+FROM read_json_auto('export.json') AS root,
+    unnest(root.schemas) AS s
+GROUP BY s.type;
+
+-- Lane distribution
+SELECT l.name, COUNT(e.id) as event_count
+FROM read_json_auto('export.json') AS root,
+    unnest(root.lanes) AS l
+LEFT JOIN unnest(root.domainEvents) AS e ON e.laneId = l.id
+GROUP BY l.name;
+```
+
+### jaq exploration
+```bash
+# Card type distribution
+jaq '[.domainEvents[].cards[].cardType.domainModelRole] |
+     group_by(.) | map({role: .[0], count: length})' export.json
+
+# Events with no parents (flow entry points)
+jaq '[.domainEvents[] | select(.parents | length == 0) | .description]' export.json
+```
+
+## Expected structure
+
+Per event-catalog-qlerify.md:
+- domainEvents[] with cards[]
+- schemas[] with Command/Query/Entity types
+- lanes[] for service boundaries
+- parent-child relationships for flow
+
+## Output
+
+- Validated JSON exports in `docs/notes/event-modeling/qlerify/exports/`
+- Validation report documenting counts and structure
+
+### Dependencies
+
+- 🔗 **parent-child**: `ironstar-2it`
+- ⛔ **blocks**: `ironstar-2it.4`
+
+<details>
+<summary>📋 Commands</summary>
+
+```bash
+# Start working on this issue
+bd update ironstar-2it.5 -s in_progress
+
+# Add a comment
+bd comment ironstar-2it.5 'Your comment here'
+
+# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
+bd update ironstar-2it.5 -p 1
+
+# View full details
+bd show ironstar-2it.5
+```
+
+</details>
+
+---
+
+## 📋 ironstar-2it.4 Elaborate GWT scenarios and prioritize releases (Step 7)
+
+| Property | Value |
+|----------|-------|
+| **Type** | 📋 task |
+| **Priority** | ⚡ High (P1) |
+| **Status** | 🟢 open |
+| **Created** | 2026-01-06 13:18 |
+| **Updated** | 2026-01-06 13:18 |
+
+### Description
+
+Complete Event Modeling Step 7: write Given-When-Then scenarios, prioritize into releases, and validate end-to-end flow.
+
+## Prerequisites
+
+- Bounded contexts assigned (ironstar-2it.3)
+
+## GWT scenario types
+
+### Regular patterns (validation rules)
+Example: CreateTodo
+```
+Given: User has valid session
+And: Todo text is non-empty
+When: User submits CreateTodo
+Then: TodoCreated event emitted
+Then: SSE patch sent to subscribers
+```
+
+### Translation patterns (conditional logic)
+Example: OAuth callback interpretation
+```
+Given: OAuth provider returns authorization code
+When: Code exchange succeeds
+Then: SessionCreated event emitted
+```
+
+### Automation patterns (eligibility criteria)
+Example: Cache invalidation
+```
+Given: QueryCompleted event received
+And: Cache entry exists for query hash
+When: Invalidation policy runs
+Then: Cache entry evicted
+```
+
+## Release prioritization
+
+### Release 1 (MVP)
+- Session: Login, logout, session validation
+- Todo: Create, complete, delete, list
+- Basic SSE streaming
+
+### Release 2
+- Analytics: Query execution, chart rendering
+- Cache management
+
+### Release 3
+- Advanced analytics: HuggingFace datasets, DuckLake integration
+- Performance optimizations
+
+## Output
+
+- GWT scenarios attached to all events in Qlerify
+- User Story Map tab organized by release
+- Release-filtered views validating end-to-end coherence
+
+### Dependencies
+
+- 🔗 **parent-child**: `ironstar-2it`
+- ⛔ **blocks**: `ironstar-2it.3`
+
+<details>
+<summary>📋 Commands</summary>
+
+```bash
+# Start working on this issue
+bd update ironstar-2it.4 -s in_progress
+
+# Add a comment
+bd comment ironstar-2it.4 'Your comment here'
+
+# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
+bd update ironstar-2it.4 -p 1
+
+# View full details
+bd show ironstar-2it.4
+```
+
+</details>
+
+---
+
+## 📋 ironstar-2it.3 Apply Conway's Law and assign bounded contexts (Step 6)
+
+| Property | Value |
+|----------|-------|
+| **Type** | 📋 task |
+| **Priority** | ⚡ High (P1) |
+| **Status** | 🟢 open |
+| **Created** | 2026-01-06 13:17 |
+| **Updated** | 2026-01-06 13:17 |
+
+### Description
+
+Complete Event Modeling Step 6: assign bounded contexts to aggregate roots, establishing autonomous component boundaries.
+
+## Prerequisites
+
+- Qlerify sessions refined (ironstar-2it.2)
+
+## Work
+
+### Domain Model tab
+
+For each aggregate root (yellow box):
+- Assign bounded context
+- Group related aggregates into same context
+
+### Bounded context assignments
+
+Based on existing D2 diagram:
+- **Session Context**: Session aggregate
+- **Todo Context**: Todo aggregate  
+- **Analytics Context**: QuerySession aggregate
+
+### Validate Conway's Law alignment
+
+Each context should represent:
+- Independently deployable component
+- Clear team ownership boundary (even if single developer for template)
+- Minimal coordination with other contexts
+
+## Context map patterns
+
+Document integration patterns between contexts:
+- Session → Todo: Customer-Supplier
+- Session → Analytics: Customer-Supplier
+- Todo ↔ Analytics: Partnership (shared Zenoh event schemas)
+
+## Output
+
+Updated Qlerify models with bounded context assignments that map directly to EventCatalog service organization.
+
+### Dependencies
+
+- 🔗 **parent-child**: `ironstar-2it`
+- ⛔ **blocks**: `ironstar-2it.2`
+
+<details>
+<summary>📋 Commands</summary>
+
+```bash
+# Start working on this issue
+bd update ironstar-2it.3 -s in_progress
+
+# Add a comment
+bd comment ironstar-2it.3 'Your comment here'
+
+# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
+bd update ironstar-2it.3 -p 1
+
+# View full details
+bd show ironstar-2it.3
+```
+
+</details>
+
+---
+
+## 📋 ironstar-2it.2 Execute Qlerify sessions and refine generated models
+
+| Property | Value |
+|----------|-------|
+| **Type** | 📋 task |
+| **Priority** | ⚡ High (P1) |
+| **Status** | 🟢 open |
+| **Created** | 2026-01-06 13:17 |
+| **Updated** | 2026-01-06 13:17 |
+
+### Description
+
+Execute the generated prompts in Qlerify, review AI output, and apply Steps 2-5 of the Event Modeling methodology.
+
+## Prerequisites
+
+- Qlerify prompts generated (ironstar-2it.1)
+- User logged into Qlerify app
+
+## Steps per bounded context
+
+### Step 2: The Plot
+- Review generated swimlanes
+- Reorganize from systems to actors (Guest, Manager, Automation)
+- Validate temporal ordering tells coherent narrative
+
+### Step 3: The Storyboard
+- Design UI mockups via command field ordering
+- Add/update/remove fields for natural form flow
+- For automation events: imagine robot filling form
+
+### Step 4: Identify Inputs
+- Validate command names match domain language
+- Ensure imperative mood (CreateTodo not TodoCreation)
+
+### Step 5: Identify Outputs
+- Define read models representing data needed before commands
+- Actor-centric: what does actor need to see before acting?
+
+## Output
+
+Refined Qlerify workflows for:
+- Session Context
+- Todo Context  
+- Analytics Context
+
+## Patterns to apply
+
+Per event-modeling.md:
+- Regular input form pattern (human actor fills form)
+- External event pattern (OAuth callbacks)
+- Translation pattern (GPS-style conditional logic if applicable)
+- Automation pattern (scheduled cache invalidation)
+
+### Dependencies
+
+- 🔗 **parent-child**: `ironstar-2it`
+- ⛔ **blocks**: `ironstar-2it.1`
+
+<details>
+<summary>📋 Commands</summary>
+
+```bash
+# Start working on this issue
+bd update ironstar-2it.2 -s in_progress
+
+# Add a comment
+bd comment ironstar-2it.2 'Your comment here'
+
+# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
+bd update ironstar-2it.2 -p 1
+
+# View full details
+bd show ironstar-2it.2
+```
+
+</details>
+
+---
+
+## 📋 ironstar-2it.1 Generate Qlerify prompts for all bounded contexts
+
+| Property | Value |
+|----------|-------|
+| **Type** | 📋 task |
+| **Priority** | ⚡ High (P1) |
+| **Status** | 🟢 open |
+| **Created** | 2026-01-06 13:17 |
+| **Updated** | 2026-01-06 13:17 |
+
+### Description
+
+Create natural language workflow prompts for Qlerify AI generation following the Event Modeling Step 1 (Brainstorming) methodology.
+
+## Bounded contexts to model
+
+Based on `docs/notes/event-modeling/d2/bounded-contexts.d2`:
+
+1. **Session Context** (Supporting) - OAuth authentication, session lifecycle
+2. **Todo Context** (Generic Example) - CRUD operations for demonstration
+3. **Analytics Context** (Core) - Query execution, chart rendering, cache management
+
+## Prompt structure per context
+
+Each prompt should include (per event-modeling.md):
+- Primary actors and roles
+- Key state-changing events in chronological order
+- External systems involved (OAuth providers, DuckDB, Zenoh)
+- Success and failure scenarios
+
+## Output
+
+`docs/notes/event-modeling/qlerify/prompts/`:
+- session-context-prompt.md
+- todo-context-prompt.md
+- analytics-context-prompt.md
+
+Prompts should reference existing architecture docs:
+- docs/notes/architecture/core/design-principles.md
+- docs/notes/architecture/core/bounded-contexts.md
+- docs/notes/architecture/cqrs/event-sourcing-core.md
+
+## Alignment with fmodel-rust
+
+Prompts should anticipate fmodel-rust Decider pattern:
+- Commands as inputs to `decide` function
+- Events as outputs of `decide` function
+- State transitions via `evolve` function
+
+### Dependencies
+
+- 🔗 **parent-child**: `ironstar-2it`
+- ⛔ **blocks**: `ironstar-2it.16`
+
+<details>
+<summary>📋 Commands</summary>
+
+```bash
+# Start working on this issue
+bd update ironstar-2it.1 -s in_progress
+
+# Add a comment
+bd comment ironstar-2it.1 'Your comment here'
+
+# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
+bd update ironstar-2it.1 -p 1
+
+# View full details
+bd show ironstar-2it.1
+```
+
+</details>
+
+---
+
+## 🚀 ironstar-2it Complete Event Modeling and EventCatalog documentation
+
+| Property | Value |
+|----------|-------|
+| **Type** | 🚀 epic |
+| **Priority** | ⚡ High (P1) |
+| **Status** | 🟢 open |
+| **Created** | 2026-01-06 13:17 |
+| **Updated** | 2026-01-06 13:17 |
+
+### Description
+
+Complete the Event Modeling workflow to produce implementation-ready specifications and populate EventCatalog with discoverable documentation for ironstar's architecture.
+
+## Context
+
+Ironstar's architecture is documented in `docs/notes/architecture/` but lacks formal Event Modeling artifacts that trace domain discoveries to implementation specifications. This epic bridges collaborative domain discovery to formal EventCatalog documentation following the workflows in:
+
+- `~/.claude/commands/preferences/event-modeling.md` (7-step methodology)
+- `~/.claude/commands/preferences/event-catalog-qlerify.md` (transformation workflow)
+- `~/.claude/commands/preferences/event-catalog-tooling.md` (algebraic foundations)
+
+## Current state
+
+- D2 diagrams exist in `docs/notes/event-modeling/d2/` (4 files: bounded-contexts, analytics-context-timeline, session-context-timeline, todo-context-timeline)
+- Empty `qlerify/` directory awaits JSON exports
+- No EventCatalog infrastructure exists yet
+- Architecture documentation describes intended design but lacks formal event/command/aggregate schemas
+
+## Deliverables
+
+1. Completed Event Modeling sessions for all bounded contexts
+2. Refined D2 diagrams following Event Modeling color conventions
+3. Qlerify JSON exports with field-level schemas
+4. EventCatalog instance with MDX artifacts:
+   - Domain, Service, Event, Command, Query, Entity, Flow definitions
+   - JSON Schema for all artifacts
+   - Producer/consumer relationships
+5. Integration with fmodel-rust Decider pattern implementation
+
+## Strategic alignment
+
+This work supports ironstar-a9b (fmodel-rust event sourcing foundation) by providing formal specifications that map directly to Decider implementations. The Event Modeling artifacts trace to:
+
+- Events → `Event` type parameter in Decider
+- Commands → `Command` type parameter in Decider  
+- Aggregates → `State` type and `evolve` function
+- Read Models → View projections
+
+## References
+
+- docs/notes/architecture/core/discovery-and-specification.md
+- docs/notes/architecture/decisions/fmodel-rust-adoption-evaluation.md
+- ~/projects/lakescope-workspace/eventcatalog (EventCatalog source)
+- ~/projects/rust-workspace/fmodel-rust (Decider pattern implementation)
+
+<details>
+<summary>📋 Commands</summary>
+
+```bash
+# Start working on this issue
+bd update ironstar-2it -s in_progress
+
+# Add a comment
+bd comment ironstar-2it 'Your comment here'
+
+# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
+bd update ironstar-2it -p 1
+
+# View full details
+bd show ironstar-2it
+```
+
+</details>
+
+---
+
 ## 📋 ironstar-ny3.18 Add CUBE CSS composition layer
 
 | Property | Value |
@@ -4807,6 +5918,10 @@ Implement fmodel-rust as ironstar's event sourcing foundation, replacing the pre
 - fmodel-rust: ~/projects/rust-workspace/fmodel-rust/
 - fmodel-rust-demo: ~/projects/rust-workspace/fmodel-rust-demo/
 - fmodel-rust-postgres: ~/projects/rust-workspace/fmodel-rust-postgres/
+
+### Dependencies
+
+- 🔗 **informs**: `ironstar-2it`
 
 <details>
 <summary>📋 Commands</summary>
@@ -5701,9 +6816,9 @@ Local refs: ~/projects/rust-workspace/sqlx
 
 ### Dependencies
 
-- ⛔ **blocks**: `ironstar-nyp.3`
 - 🔗 **parent-child**: `ironstar-nyp`
 - 🔗 **child**: `ironstar-nyp`
+- ⛔ **blocks**: `ironstar-a9b.1`
 
 <details>
 <summary>📋 Commands</summary>
@@ -6059,7 +7174,7 @@ Local refs: ~/projects/rust-workspace/datastar-rust-lince
 
 - 🔗 **parent-child**: `ironstar-e6k`
 - ⛔ **blocks**: `ironstar-e6k.1`
-- ⛔ **blocks**: `ironstar-nyp.7`
+- ⛔ **blocks**: `ironstar-a9b.8`
 
 <details>
 <summary>📋 Commands</summary>
@@ -6374,80 +7489,6 @@ bd show ironstar-nyp.9
 
 ---
 
-## 📋 ironstar-nyp.7 Implement ProjectionManager with in-memory state
-
-| Property | Value |
-|----------|-------|
-| **Type** | 📋 task |
-| **Priority** | ⚡ High (P1) |
-| **Status** | 🟢 open |
-| **Created** | 2025-12-18 09:36 |
-| **Updated** | 2026-01-05 11:12 |
-
-### Description
-
-Create ProjectionManager using fmodel-rust's MaterializedView pattern:
-
-```rust
-struct ProjectionManager<V: View> {
-    materialized_view: MaterializedView<V, ViewStateRepository>,
-    zenoh_session: Arc<Session>,
-}
-
-impl<V: View> ProjectionManager<V> {
-    async fn init(
-        event_repo: Arc<dyn EventRepository>,
-        view_repo: Arc<dyn ViewStateRepository>,
-        zenoh: Arc<Session>,
-    ) -> Self {
-        // Subscribe to Zenoh key expressions for incremental updates
-        let subscriber = zenoh.subscribe("events/**").await;
-        // MaterializedView handles state persistence
-    }
-    
-    async fn query<Q>(&self, query: Q) -> V::State {
-        self.materialized_view.fetch_state(&query).await
-    }
-}
-```
-
-Replays events via EventRepository to build initial state, then subscribes to Zenoh for incremental updates.
-Uses MaterializedView + ViewStateRepository from fmodel-rust.
-
-Note: Consider if this duplicates ironstar-a9b.8 (Wire Todo MaterializedView) - may need consolidation.
-
-Local refs: ~/projects/rust-workspace/tokio, ~/projects/rust-workspace/fmodel-rust
-
-
-### Dependencies
-
-- 🔗 **parent-child**: `ironstar-nyp`
-- ⛔ **blocks**: `ironstar-nyp.6`
-- ⛔ **blocks**: `ironstar-nyp.5`
-- ⛔ **blocks**: `ironstar-nyp.3`
-- ⛔ **blocks**: `ironstar-nyp.27`
-
-<details>
-<summary>📋 Commands</summary>
-
-```bash
-# Start working on this issue
-bd update ironstar-nyp.7 -s in_progress
-
-# Add a comment
-bd comment ironstar-nyp.7 'Your comment here'
-
-# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-nyp.7 -p 1
-
-# View full details
-bd show ironstar-nyp.7
-```
-
-</details>
-
----
-
 ## 📋 ironstar-nyp.4 Implement SQLite connection pooling and configuration
 
 | Property | Value |
@@ -6466,7 +7507,7 @@ Local refs: ~/projects/rust-workspace/sqlx
 ### Dependencies
 
 - 🔗 **parent-child**: `ironstar-nyp`
-- ⛔ **blocks**: `ironstar-nyp.3`
+- ⛔ **blocks**: `ironstar-a9b.1`
 
 <details>
 <summary>📋 Commands</summary>
@@ -6483,71 +7524,6 @@ bd update ironstar-nyp.4 -p 1
 
 # View full details
 bd show ironstar-nyp.4
-```
-
-</details>
-
----
-
-## 📋 ironstar-nyp.3 Implement SQLite EventRepository with sqlx
-
-| Property | Value |
-|----------|-------|
-| **Type** | 📋 task |
-| **Priority** | ⚡ High (P1) |
-| **Status** | 🟢 open |
-| **Created** | 2025-12-18 09:36 |
-| **Updated** | 2026-01-05 11:12 |
-
-### Description
-
-Create SqliteEventRepository struct implementing fmodel-rust's EventRepository trait:
-
-```rust
-impl<C, E> EventRepository<C, E, Uuid, EventStoreError> for SqliteEventRepository
-where
-    C: Identifier + DeciderType + Sync,
-    E: Identifier + EventType + DeciderType + IsFinal + Serialize + DeserializeOwned + Clone + Sync,
-{
-    fn fetch_events(&self, command: &C) -> impl Future<Output = Result<Vec<(E, Uuid)>, Error>>;
-    fn save(&self, events: &[E]) -> impl Future<Output = Result<Vec<(E, Uuid)>, Error>>;
-    fn version_provider(&self, event: &E) -> impl Future<Output = Result<Option<Uuid>, Error>>;
-}
-```
-
-Extension methods for SSE Last-Event-ID support:
-- query_since_sequence(offset: i64) -> Vec<StoredEvent>
-- earliest_sequence() -> Option<i64>
-- latest_sequence() -> Option<i64>
-- query_all() -> Vec<StoredEvent>
-
-Use sqlx compile-time query validation with query!() macro.
-This is a wrapper/extension of ironstar-a9b.1 for projection support.
-
-Local refs: ~/projects/rust-workspace/sqlx
-
-
-### Dependencies
-
-- 🔗 **parent-child**: `ironstar-nyp`
-- ⛔ **blocks**: `ironstar-nyp.1`
-- ⛔ **blocks**: `ironstar-a9b.1`
-
-<details>
-<summary>📋 Commands</summary>
-
-```bash
-# Start working on this issue
-bd update ironstar-nyp.3 -s in_progress
-
-# Add a comment
-bd comment ironstar-nyp.3 'Your comment here'
-
-# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
-bd update ironstar-nyp.3 -p 1
-
-# View full details
-bd show ironstar-nyp.3
 ```
 
 </details>
@@ -6678,6 +7654,102 @@ bd update ironstar-2nt.8 -p 1
 
 # View full details
 bd show ironstar-2nt.8
+```
+
+</details>
+
+---
+
+## 📋 ironstar-2it.12 Document fmodel-rust Decider mapping in EventCatalog
+
+| Property | Value |
+|----------|-------|
+| **Type** | 📋 task |
+| **Priority** | 🔹 Medium (P2) |
+| **Status** | 🟢 open |
+| **Created** | 2026-01-06 13:19 |
+| **Updated** | 2026-01-06 13:19 |
+
+### Description
+
+Enhance EventCatalog documentation to explicitly show mapping between Event Modeling artifacts and fmodel-rust Decider pattern.
+
+## Prerequisites
+
+- Cross-referenced EventCatalog complete (ironstar-2it.11)
+
+## Decider pattern mapping
+
+For each aggregate entity, document:
+
+### decide function
+```rust
+fn decide(command: Command, state: &State) -> Result<Vec<Event>, Error>
+```
+
+Map EventCatalog commands to decide inputs, events to decide outputs.
+
+### evolve function
+```rust
+fn evolve(state: State, event: Event) -> State
+```
+
+Document state transitions per event type.
+
+### initial_state
+```rust
+fn initial_state() -> State
+```
+
+Document initial aggregate state.
+
+## Entity MDX enhancements
+
+Add to each entity:
+```markdown
+## fmodel-rust implementation
+
+This aggregate implements the Decider pattern from fmodel-rust:
+
+- **decide**: Validates commands and produces events
+- **evolve**: Applies events to update state
+- **initial_state**: Returns empty/default state
+
+See `crates/ironstar/src/domain/{aggregate}/decider.rs`
+```
+
+## References section
+
+Link each entity to:
+- fmodel-rust source: ~/projects/rust-workspace/fmodel-rust
+- fmodel-rust-demo patterns: ~/projects/rust-workspace/fmodel-rust-demo
+- ironstar evaluation: docs/notes/architecture/decisions/fmodel-rust-adoption-evaluation.md
+
+## Output
+
+- Enhanced entity MDX with Decider documentation
+- Clear traceability from EventCatalog to implementation
+
+### Dependencies
+
+- 🔗 **parent-child**: `ironstar-2it`
+- ⛔ **blocks**: `ironstar-2it.11`
+
+<details>
+<summary>📋 Commands</summary>
+
+```bash
+# Start working on this issue
+bd update ironstar-2it.12 -s in_progress
+
+# Add a comment
+bd comment ironstar-2it.12 'Your comment here'
+
+# Change priority (0=Critical, 1=High, 2=Medium, 3=Low)
+bd update ironstar-2it.12 -p 1
+
+# View full details
+bd show ironstar-2it.12
 ```
 
 </details>
@@ -7240,7 +8312,7 @@ Reference: semantic-model.md 'Read models as quotients' section
 ### Dependencies
 
 - 🔗 **parent-child**: `ironstar-nyp`
-- 🔗 **implements**: `ironstar-nyp.6`
+- ⛔ **blocks**: `ironstar-a9b.5`
 
 <details>
 <summary>📋 Commands</summary>
@@ -7293,7 +8365,7 @@ Document Galois connection properties in Projection trait
 ### Dependencies
 
 - 🔗 **parent-child**: `ironstar-nyp`
-- 🔗 **implements**: `ironstar-nyp.6`
+- ⛔ **blocks**: `ironstar-a9b.5`
 
 <details>
 <summary>📋 Commands</summary>
@@ -8820,7 +9892,7 @@ Create template .env.development with DATABASE_URL=dev.db, LOG_LEVEL=debug, SERV
 ### Dependencies
 
 - 🔗 **parent-child**: `ironstar-apx`
-- ⛔ **blocks**: `ironstar-nyp.3`
+- ⛔ **blocks**: `ironstar-a9b.1`
 
 <details>
 <summary>📋 Commands</summary>
@@ -9017,8 +10089,8 @@ No database required - pure function testing.
 ### Dependencies
 
 - 🔗 **parent-child**: `ironstar-zuv`
-- ⛔ **blocks**: `ironstar-nyp.7`
 - ⛔ **blocks**: `ironstar-zuv.1`
+- ⛔ **blocks**: `ironstar-a9b.8`
 
 <details>
 <summary>📋 Commands</summary>
@@ -9083,7 +10155,7 @@ Local refs: ~/projects/rust-workspace/fmodel-rust-demo/tests/
 ### Dependencies
 
 - 🔗 **parent-child**: `ironstar-zuv`
-- ⛔ **blocks**: `ironstar-nyp.3`
+- ⛔ **blocks**: `ironstar-a9b.1`
 
 <details>
 <summary>📋 Commands</summary>
@@ -10354,6 +11426,38 @@ Ref: docs/notes/architecture/cqrs/event-sourcing-core.md § Optimistic Locking
 
 ---
 
+## 📋 ironstar-nyp.6 Create Projection trait for read models
+
+| Property | Value |
+|----------|-------|
+| **Type** | 📋 task |
+| **Priority** | 🔥 Critical (P0) |
+| **Status** | ⚫ closed |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2026-01-06 13:46 |
+| **Closed** | 2026-01-06 13:46 |
+
+### Description
+
+Create Projection trait for read models implementing the Galois connection abstract/concrete pair and quotient monoid structure.
+
+The trait defines the catamorphism algebra for state reconstruction:
+- apply(&mut self, event: &Event): the fold step (catamorphism algebra)
+- rebuild(): reconstruct from events (unique fold from initiality)
+
+Projections form a Galois connection with the event log:
+- abstract: EventLog → ReadModel (lossy, many-to-one)
+- concrete: ReadModel → EventLog (partial reconstruction)
+
+Reference: denotational-semantics.md sections on Galois connection and quotients.
+
+### Dependencies
+
+- 🔗 **parent-child**: `ironstar-nyp`
+- ⛔ **blocks**: `ironstar-2nt.2`
+
+---
+
 ## 📋 ironstar-nyp.2 Create EventStore trait abstraction
 
 | Property | Value |
@@ -10388,6 +11492,35 @@ Ref: docs/notes/architecture/cqrs/event-replay-consistency.md
 - 🔗 **parent-child**: `ironstar-nyp`
 - ⛔ **blocks**: `ironstar-2nt.2`
 - ⛔ **blocks**: `ironstar-2nt.11`
+
+---
+
+## 📋 ironstar-nyp.1 Create database migrations/ directory with schema.sql
+
+| Property | Value |
+|----------|-------|
+| **Type** | 📋 task |
+| **Priority** | 🔥 Critical (P0) |
+| **Status** | ⚫ closed |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2026-01-06 13:46 |
+| **Closed** | 2026-01-06 13:46 |
+
+### Description
+
+Create database migrations/ directory with schema.sql
+
+Include both:
+- global_sequence (PRIMARY KEY AUTOINCREMENT) for SSE Last-Event-ID
+- aggregate_sequence (UNIQUE per aggregate_type, aggregate_id) for optimistic locking
+
+See event-sourcing-core.md hybrid schema section.
+
+### Dependencies
+
+- 🔗 **parent-child**: `ironstar-nyp`
+- ⛔ **blocks**: `ironstar-2nt.11`
+- ⛔ **blocks**: `ironstar-nyp.35`
 
 ---
 
@@ -10952,6 +12085,806 @@ Bootstrap the ironstar project from typescript-nix-template using omnix om CLI. 
 
 ---
 
+## 📋 ironstar-2it.21 Integrate Idris2 spec modules and verify type-checking
+
+| Property | Value |
+|----------|-------|
+| **Type** | 📋 task |
+| **Priority** | ⚡ High (P1) |
+| **Status** | ⚫ closed |
+| **Created** | 2026-01-06 15:01 |
+| **Updated** | 2026-01-06 20:44 |
+| **Closed** | 2026-01-06 20:44 |
+
+### Description
+
+Create top-level IronstarSpec.idr module, verify all modules type-check, and perform initial D2 cross-reference.
+
+## Module: spec/src/IronstarSpec.idr
+
+```idris
+module IronstarSpec
+
+import public Decider
+import public Repository
+import public Domain.Analytics.Catalog
+import public Domain.Analytics.QuerySession
+import public Domain.Analytics.Chart
+import public Domain.Session
+import public Domain.Todo
+```
+
+## Type-checking verification
+
+```bash
+cd spec && idris2 --check ironstar.ipkg
+```
+
+All modules must compile without errors.
+
+## Initial D2 cross-reference
+
+Before detailed co-refinement (.16 modified), perform quick consistency check:
+
+### D2 diagrams to compare
+- docs/notes/event-modeling/d2/bounded-contexts.d2
+- docs/notes/event-modeling/d2/analytics-context-timeline.d2
+- docs/notes/event-modeling/d2/session-context-timeline.d2
+- docs/notes/event-modeling/d2/todo-context-timeline.d2
+
+### Consistency checks
+- [ ] Every aggregate in D2 has corresponding Idris2 module
+- [ ] Every event (orange) in D2 has corresponding Idris2 constructor
+- [ ] Every command (blue) in D2 has corresponding Idris2 constructor
+- [ ] Every read model (green) in D2 has corresponding Idris2 type
+
+### Document gaps
+List any mismatches found for resolution in .16 co-refinement task.
+
+## Deliverables
+
+- [ ] spec/src/IronstarSpec.idr created
+- [ ] `idris2 --check ironstar.ipkg` passes
+- [ ] Initial D2 cross-reference documented
+- [ ] Gap list for .16 co-refinement
+
+### Dependencies
+
+- 🔗 **parent-child**: `ironstar-2it`
+- ⛔ **blocks**: `ironstar-2it.18`
+- ⛔ **blocks**: `ironstar-2it.19`
+- ⛔ **blocks**: `ironstar-2it.20`
+- ⛔ **blocks**: `ironstar-2it.22`
+
+---
+
+## 📋 ironstar-2it.18 Formalize Analytics bounded context in Idris2 (Core domain)
+
+| Property | Value |
+|----------|-------|
+| **Type** | 📋 task |
+| **Priority** | ⚡ High (P1) |
+| **Status** | ⚫ closed |
+| **Created** | 2026-01-06 15:00 |
+| **Updated** | 2026-01-06 19:48 |
+| **Closed** | 2026-01-06 19:48 |
+
+### Description
+
+Define the Analytics bounded context as Idris2 modules with dependent types. This is the Core domain (primary differentiator) warranting highest specification rigor.
+
+## Business context
+
+Scientific data analysis dashboard using DuckDB/DuckLake + ECharts. The Analytics context handles:
+1. **Catalog selection** - Choose which DuckLake catalog to query (outside QuerySession)
+2. **Query execution** - Run SQL queries within selected catalog context
+3. **Chart rendering** - Transform query results to ECharts visualizations
+
+## Module structure
+
+```
+spec/src/Domain/Analytics/
+├── Catalog.idr        # DuckLake catalog selection (aggregate)
+├── QuerySession.idr   # Query execution within catalog (aggregate)
+└── Chart.idr          # Visualization types (value objects)
+```
+
+## Catalog.idr (Aggregate)
+
+Manages DuckLake catalog selection. A catalog contains multiple datasets.
+
+```idris
+-- Commands
+data CatalogCommand
+  = SelectCatalog CatalogRef
+  | RefreshCatalogMetadata
+
+-- Events  
+data CatalogEvent
+  = CatalogSelected CatalogRef Timestamp
+  | CatalogMetadataRefreshed CatalogMetadata Timestamp
+
+-- State
+data CatalogState
+  = NoCatalogSelected
+  | CatalogActive CatalogRef CatalogMetadata
+
+-- Value objects
+record CatalogRef where
+  constructor MkCatalogRef
+  uri : String  -- e.g., "ducklake://hf/sciexp/fixtures"
+  
+record CatalogMetadata where
+  constructor MkCatalogMetadata
+  datasets : List DatasetInfo
+  lastRefreshed : Timestamp
+```
+
+## QuerySession.idr (Aggregate)
+
+Query execution within a selected catalog context.
+
+```idris
+-- Precondition: CatalogState must be CatalogActive
+-- This is where dependent types shine
+
+-- Commands
+data QueryCommand
+  = StartQuery DatasetRef SqlQuery (Maybe ChartConfig)
+  | CancelQuery QueryId
+
+-- Events
+data QueryEvent
+  = QueryStarted QueryId DatasetRef SqlQuery (Maybe ChartConfig) Timestamp
+  | QueryCompleted QueryId QueryResults Duration Timestamp
+  | QueryFailed QueryId ErrorMessage Timestamp
+
+-- State (state machine)
+data QueryState
+  = Idle
+  | Running QueryId DatasetRef SqlQuery
+  | Completed QueryId QueryResults
+  | Failed QueryId ErrorMessage
+
+-- Invariant: Only one active query per session
+-- Dependent type can encode this
+```
+
+## Chart.idr (Value Objects)
+
+ECharts configuration and data types.
+
+```idris
+record ChartConfig where
+  constructor MkChartConfig
+  chartType : ChartType
+  options : ChartOptions
+
+data ChartType = Line | Bar | Scatter | Pie | Heatmap
+
+record ChartData where
+  constructor MkChartData
+  series : List Series
+  xAxis : Maybe AxisData
+  yAxis : Maybe AxisData
+```
+
+## Reference materials
+
+### D2 diagram
+- docs/notes/event-modeling/d2/analytics-context-timeline.d2
+
+### Architecture docs
+- docs/notes/architecture/frontend/ds-echarts-integration-guide.md
+- docs/notes/architecture/application/chart-transformer-pattern.md
+- docs/notes/architecture/infrastructure/analytics-cache-architecture.md
+
+### Domain modeling methodology
+- Wlaschin: ~/projects/functional-programming-workspace/domain-modeling-made-functional
+- Ghosh: ~/projects/functional-programming-workspace/functional-and-reactive-domain-modeling
+
+### Idris2 reference
+- ~/projects/functional-programming-workspace/Idris2/docs/
+
+## Dependent type opportunities
+
+1. **Catalog precondition**: QuerySession commands require CatalogActive state
+2. **Query state machine**: Transitions only valid from certain states
+3. **Dataset existence**: DatasetRef must exist in CatalogMetadata.datasets
+
+## Deliverables
+
+- [ ] spec/src/Domain/Analytics/Catalog.idr
+- [ ] spec/src/Domain/Analytics/QuerySession.idr
+- [ ] spec/src/Domain/Analytics/Chart.idr
+- [ ] All modules type-check
+- [ ] Cross-reference with D2 diagram for consistency
+
+### Dependencies
+
+- 🔗 **parent-child**: `ironstar-2it`
+- ⛔ **blocks**: `ironstar-2it.17`
+
+---
+
+## 📋 ironstar-2it.17 Create Idris2 spec infrastructure and core abstractions
+
+| Property | Value |
+|----------|-------|
+| **Type** | 📋 task |
+| **Priority** | ⚡ High (P1) |
+| **Status** | ⚫ closed |
+| **Created** | 2026-01-06 15:00 |
+| **Updated** | 2026-01-06 16:50 |
+| **Closed** | 2026-01-06 16:50 |
+
+### Description
+
+Set up the spec/ directory structure and implement core Decider + Repository abstractions in Idris2.
+
+## Business context
+
+Idris2 formal specification serves as machine-checkable source of truth for ironstar's event-sourced domain model. The spec enables type-driven discovery during Event Modeling, catching inconsistencies early through dependent types.
+
+## Directory structure
+
+```
+spec/
+├── ironstar.ipkg              # Idris2 package definition
+├── README.md                  # Purpose, type-checking instructions, methodology
+└── src/
+    ├── Decider.idr            # Core Decider pattern with dependent types
+    ├── Repository.idr         # EventRepository interface (fstore-sql pattern)
+    ├── Domain/                # Bounded context modules (separate tasks)
+    └── IronstarSpec.idr       # Top-level re-export (separate task)
+```
+
+## Decider.idr specification
+
+Translate fmodel-rust's Decider pattern to Idris2 with dependent types:
+
+```idris
+record Decider (command : Type) (state : Type) (event : Type) where
+  constructor MkDecider
+  decide : command -> state -> List event
+  evolve : state -> event -> state
+  initialState : state
+  -- Dependent type: evolve preserves state validity
+  -- evolvePreservesValidity : ValidState s -> (e : event) -> ValidState (evolve s e)
+```
+
+## Repository.idr specification
+
+Translate fstore-sql EventRepository pattern:
+
+```idris
+interface EventRepository (m : Type -> Type) (event : Type) where
+  append : event -> m ()
+  loadEvents : AggregateId -> m (List event)
+  -- Dependent type: events are monotonically ordered by sequence
+```
+
+## Reference materials
+
+### fmodel-rust (Decider pattern)
+- Source: ~/projects/rust-workspace/fmodel-rust
+- Key files: src/decider.rs, src/aggregate.rs
+
+### fstore-sql (EventRepository pattern)
+- Source: ~/projects/rust-workspace/fstore-sql
+- Key file: schema.sql (events table with previous_id chain)
+
+### Idris2 reference
+- Source: ~/projects/functional-programming-workspace/Idris2
+- Docs: ~/projects/functional-programming-workspace/Idris2/docs/
+
+### Domain modeling methodology
+- Wlaschin: ~/projects/functional-programming-workspace/domain-modeling-made-functional
+- Ghosh: ~/projects/functional-programming-workspace/functional-and-reactive-domain-modeling
+
+## Deliverables
+
+- [ ] spec/ directory created
+- [ ] spec/ironstar.ipkg with package definition
+- [ ] spec/README.md with methodology explanation
+- [ ] spec/src/Decider.idr with dependent-typed Decider record
+- [ ] spec/src/Repository.idr with EventRepository interface
+- [ ] Type-checking passes: `cd spec && idris2 --check ironstar.ipkg`
+
+## Acceptance criteria
+
+- Decider pattern matches fmodel-rust semantics
+- Repository interface matches fstore-sql pattern
+- Dependent types encode key invariants (state validity, event ordering)
+- README explains the spec's role in type-driven Event Modeling workflow
+
+### Dependencies
+
+- 🔗 **parent-child**: `ironstar-2it`
+- ⛔ **blocks**: `ironstar-2it.13`
+- ⛔ **blocks**: `ironstar-2it.14`
+- ⛔ **blocks**: `ironstar-2it.15`
+
+### Comments
+
+> **crs58** (2026-01-06)
+>
+> ## Implementation Complete
+> 
+> Created Idris2 formal specification infrastructure at spec/.
+> 
+> ### Deliverables
+> 
+> **Package:** spec/ironstar.ipkg
+> - Version 0.1.0 with base dependency
+> - All 9 modules typecheck with idris2 --typecheck
+> 
+> **Core Modules:**
+> 
+> 1. **Core/Decider.idr** - Minimal algebraic interface for event-sourced aggregates
+>    - `Decider c s e err` record with decide, evolve, initialState
+>    - `Sum` and `Sum3` types for combining independent command/event types
+>    - `combine`, `combine3` composition operators
+>    - Derived computations: `reconstruct`, `computeNewEvents`, `computeNewState`
+>    - Laws as reflexivity proofs (purity, determinism, replay)
+>    - `foldlAssociative` lemma for snapshot support
+> 
+> 2. **Core/View.idr** - Read-side projections
+>    - `View s e` record for event projection to read models
+>    - `merge` composition for same-event-type projections
+>    - `viewFromDecider` extraction function
+>    - `mapState`, `contramapEvent` transformations
+> 
+> 3. **Core/Saga.idr** - Process managers
+>    - `Saga ar a` record (action result → list of actions)
+>    - `merge` composition for multi-workflow coordination
+>    - `chain` (>=>) for sequential pipelines
+>    - `identity`, `empty` as composition units
+>    - `filter`, `fromMaybe` conditional constructors
+> 
+> 4. **Core/Effect.idr** - IO boundaries
+>    - Identification types: EventId, AggregateId, Version, SessionId
+>    - `EventRepository` interface with fetch, append, fetchSince
+>    - `EventSourcedAggregate` record with `handleWith` function
+>    - `ViewRepository`, `EventNotifier`, `EventSubscriber` interfaces
+>    - `sessionKeyExpr` for Zenoh key pattern generation
+> 
+> 5. **Core/Event.idr** - Event algebra
+>    - `Timestamp` for bitemporal events
+>    - `EventEnvelope` wrapper with full metadata
+>    - `EventIdLT`, `MonotonicIds` for ordering proofs
+>    - Replay operations: `replayAfter`, `asOfEventTime`, `asOfRecordedTime`
+>    - Free monoid laws (identity, associativity)
+>    - `FailureEventPreservesState` interface (Hoffman's Law 6)
+> 
+> **Stub Modules:**
+> - Analytics.Stub, Session.Stub, Workspace.Stub, Todo.Stub
+> - Each documents intended abstractions for .18/.19/.20/.22
+> 
+> ### Key Design Decisions
+> 
+> 1. **Effect boundaries:** Pure Decider/View/Saga, effectful EventRepository via IO monad
+> 2. **Laws as reflexivity:** Started with trivial proofs (x = x), upgrade to proper proofs incrementally
+> 3. **DPair over records:** For dependent fields like MonotonicSequence
+> 4. **Explicit function parameters:** handleWith takes fetch/append functions instead of interface constraints for simpler types
+> 
+> ### Commits
+> - d65962f feat(spec): add Idris2 formal specification package definition
+> - eacef1d feat(spec): add Core.Decider with fmodel-rust pattern
+> - 5479262 feat(spec): add Core.View for read-side projections
+> - 0b5759e feat(spec): add Core.Saga for process managers
+> - a9db2ce feat(spec): add Core.Effect for IO boundaries
+> - 07c7f53 feat(spec): add Core.Event for event algebra
+> - 0510c7e feat(spec): add stub modules for bounded contexts
+> 
+> ### Typecheck verification
+> ```bash
+> cd spec && idris2 --typecheck ironstar.ipkg
+> # All 9 modules build successfully
+> ```
+> 
+> Unblocks: .18 (Analytics), .19 (Session), .20 (Todo), .22 (Workspace)
+
+---
+
+## 📋 ironstar-2it.16 Co-refine D2 diagrams and Idris2 spec (iterative)
+
+| Property | Value |
+|----------|-------|
+| **Type** | 📋 task |
+| **Priority** | ⚡ High (P1) |
+| **Status** | ⚫ closed |
+| **Created** | 2026-01-06 13:41 |
+| **Updated** | 2026-01-06 20:52 |
+| **Closed** | 2026-01-06 20:52 |
+
+### Description
+
+Iterate between D2 visual representation and Idris2 algebraic specification until both are consistent. This is the synthesis step that produces implementation-ready artifacts.
+
+## Methodology
+
+Type-driven Event Modeling uses two complementary views:
+- **D2 diagrams**: Visual topology (what connects to what, temporal flow)
+- **Idris2 spec**: Algebraic structure (what operations are valid, type invariants)
+
+Iterate until both views represent the same domain model:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                                                         │
+│   Idris2 spec ←────────────→ D2 diagrams               │
+│        ↑                           ↑                    │
+│        │     iterate until         │                    │
+│        │     consistent            │                    │
+│        ↓                           ↓                    │
+│   Type errors reveal      Visual gaps reveal            │
+│   missing concepts        missing transitions           │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+## Input artifacts
+
+### Idris2 spec (from .17-.21)
+- spec/src/Decider.idr
+- spec/src/Repository.idr
+- spec/src/Domain/Analytics/*.idr
+- spec/src/Domain/Session.idr
+- spec/src/Domain/Todo.idr
+
+### D2 diagrams
+- docs/notes/event-modeling/d2/bounded-contexts.d2
+- docs/notes/event-modeling/d2/analytics-context-timeline.d2
+- docs/notes/event-modeling/d2/session-context-timeline.d2
+- docs/notes/event-modeling/d2/todo-context-timeline.d2
+
+## Refinement checklist
+
+### Structural alignment
+- [ ] Every Idris2 aggregate has a D2 yellow box
+- [ ] Every Idris2 event constructor has a D2 orange node
+- [ ] Every Idris2 command constructor has a D2 blue node
+- [ ] Every Idris2 state has representation in D2 swimlanes
+
+### Semantic alignment
+- [ ] D2 transition arrows match valid Idris2 state machine transitions
+- [ ] D2 read models (green) match Idris2 query return types
+- [ ] D2 external systems (purple) match Idris2 Repository/effect interfaces
+
+### Dependent type validation
+- [ ] Idris2 preconditions (e.g., CatalogActive required for QuerySession) reflected in D2 flow
+- [ ] Idris2 state machine constraints match D2 allowed transitions
+- [ ] No D2 path that violates Idris2 type constraints
+
+## Resolution process
+
+When mismatch found:
+1. Determine which artifact is "correct" (consult architecture docs)
+2. Update the other artifact
+3. Re-verify type-checking (Idris2) or render (D2)
+4. Document the decision
+
+## Output
+
+- [ ] Consistent D2 diagrams matching Idris2 spec
+- [ ] Consistent Idris2 spec matching D2 diagrams
+- [ ] Resolution log documenting decisions made
+- [ ] Ready for Qlerify prompt generation (.1)
+
+## Reference materials
+
+### Domain modeling methodology
+- Wlaschin: ~/projects/functional-programming-workspace/domain-modeling-made-functional
+- Ghosh: ~/projects/functional-programming-workspace/functional-and-reactive-domain-modeling
+
+### Idris2 reference
+- ~/projects/functional-programming-workspace/Idris2/docs/
+
+### Dependencies
+
+- 🔗 **parent-child**: `ironstar-2it`
+- ⛔ **blocks**: `ironstar-2it.21`
+
+---
+
+## 📋 ironstar-2it.15 Cross-reference fmodel-rust patterns for Decider implementation
+
+| Property | Value |
+|----------|-------|
+| **Type** | 📋 task |
+| **Priority** | ⚡ High (P1) |
+| **Status** | ⚫ closed |
+| **Created** | 2026-01-06 13:41 |
+| **Updated** | 2026-01-06 22:18 |
+| **Closed** | 2026-01-06 22:18 |
+
+### Description
+
+Review fmodel-rust and fmodel-rust-demo patterns to ensure Event Modeling artifacts will map correctly to Decider implementations.
+
+## Source repositories
+
+- `~/projects/rust-workspace/fmodel-rust` — Core library
+- `~/projects/rust-workspace/fmodel-rust-demo` — Working example (Order + Restaurant domains)
+- `~/projects/rust-workspace/fmodel-rust-postgres` — PostgreSQL EventRepository
+- `~/projects/rust-workspace/fstore-sql` — Canonical event store schema
+
+## Patterns to validate
+
+### Decider trait mapping
+```rust
+pub trait Decider<C, S, E> {
+    fn decide(&self, command: &C, state: &S) -> Vec<E>;
+    fn evolve(&self, state: &S, event: &E) -> S;
+    fn initial_state(&self) -> S;
+}
+```
+
+Ensure D2 diagrams capture:
+- Commands (blue) → C type parameter
+- Events (orange) → E type parameter
+- Aggregate state → S type parameter
+
+### Identifier traits
+From fmodel-rust:
+- `Identifier` — aggregate identity
+- `EventType` — event type discriminator
+- `DeciderType` — decider type discriminator
+- `IsFinal` — terminal event marker
+
+Ensure Event Modeling artifacts include these concepts.
+
+### EventRepository pattern
+From fmodel-rust-demo and fstore-sql:
+- `previous_id` UUID chain for optimistic locking
+- `offset BIGSERIAL` for global monotonic ordering
+- Partition locking for concurrent consumers
+
+### View/Projection pattern
+```rust
+pub trait View<S, E> {
+    fn evolve(&self, state: &S, event: &E) -> S;
+    fn initial_state(&self) -> S;
+}
+```
+
+Ensure read models in D2 map to View implementations.
+
+## Validation against ironstar docs
+
+- `docs/notes/architecture/decisions/fmodel-rust-adoption-evaluation.md`
+- `docs/notes/architecture/cqrs/event-sourcing-core.md`
+- `docs/notes/architecture/core/discovery-and-specification.md`
+
+## Output
+
+- Validation that D2 artifacts align with fmodel-rust expectations
+- Document any gaps in current Event Modeling artifacts
+- Update D2 diagrams if fmodel-rust patterns reveal missing elements
+
+### Dependencies
+
+- 🔗 **parent-child**: `ironstar-2it`
+
+### Comments
+
+> **crs58** (2026-01-06)
+>
+> ## Task .15 Complete
+> 
+> Extracted fmodel-rust Decider patterns to: `docs/notes/architecture/decisions/fmodel-rust-decider-signatures.md`
+> 
+> **Key findings:**
+> - Exact Decider<C, S, E, Error> signatures with Rust→Idris2 type mapping
+> - Laws identified: decide purity, evolve totality, state reconstruction via fold
+> - Effect boundary: Decider (pure) vs EventSourcedAggregate (effectful handle())
+> - Composition: combine() for independent Deciders, merge() for shared event streams
+> 
+> **Idris2 questions for .17:**
+> - Trait bound encoding (implicit auto vs explicit constraints)
+> - Effect type (IO vs Eff vs Free monad)
+> - Proof obligations (postulate vs proof-carrying Decider)
+> 
+> Commit: 9aa10e9
+
+---
+
+## 📋 ironstar-2it.14 Cross-reference northstar patterns for Datastar SSE architecture
+
+| Property | Value |
+|----------|-------|
+| **Type** | 📋 task |
+| **Priority** | ⚡ High (P1) |
+| **Status** | ⚫ closed |
+| **Created** | 2026-01-06 13:41 |
+| **Updated** | 2026-01-06 22:18 |
+| **Closed** | 2026-01-06 22:18 |
+
+### Description
+
+Review northstar (Go template) patterns to ensure ironstar correctly adapts Datastar SSE streaming architecture.
+
+## Source repository
+
+`~/projects/lakescope-workspace/datastar-go-nats-template-northstar`
+
+## Patterns to validate
+
+### SSE streaming architecture
+- How northstar structures SSE endpoints
+- Signal merging patterns (MergeFragments, MergeSignals)
+- Last-Event-ID reconnection handling
+- Keep-alive comment streams
+
+### Web component integration
+- ds-echarts Lit component pattern
+- Light DOM requirement for Open Props token inheritance
+- Build pipeline (esbuild in northstar → Rolldown in ironstar)
+
+### Event bus patterns
+- NATS in northstar → Zenoh in ironstar
+- Key expression filtering equivalents
+- Per-session subscription patterns
+
+### Asset embedding
+- hashfs pattern in Go → rust-embed in Rust
+- Content-hashed URLs
+- Dev/prod mode separation
+
+## Validation against ironstar docs
+
+Cross-reference findings with:
+- `docs/notes/architecture/frontend/ds-echarts-integration-guide.md`
+- `docs/notes/architecture/infrastructure/zenoh-event-bus.md`
+- `docs/notes/architecture/cqrs/sse-connection-lifecycle.md`
+- `docs/notes/architecture/frontend/frontend-build-pipeline.md`
+
+## Output
+
+- Document any pattern gaps or adaptations needed
+- Update architecture docs if northstar reveals missing patterns
+- Note any patterns that don't translate directly to Rust
+
+## Key files to review in northstar
+
+- `internal/sse/` — SSE streaming implementation
+- `internal/web/` — Web component integration
+- `web/components/ds-echarts/` — ECharts Lit component
+- `cmd/server/main.go` — Application wiring
+
+### Dependencies
+
+- 🔗 **parent-child**: `ironstar-2it`
+
+### Comments
+
+> **crs58** (2026-01-06)
+>
+> ## Task .14 Complete
+> 
+> Extracted northstar SSE patterns to: `docs/notes/architecture/decisions/northstar-sse-patterns-for-idris2.md`
+> 
+> **Key findings:**
+> - Effect boundaries mapped: pure core (Decider) vs effects at edges (Subscribe, Append, SSE Write)
+> - Invariants identified: monotonicity, replay idempotence, session isolation
+> - 6 ironstar doc gaps found requiring updates
+> - 3 northstar anti-patterns to avoid
+> 
+> **Idris2 questions for .17:**
+> - Dependent pairs for replay consistency proofs
+> - Effect placement for subscribe-then-replay ordering
+> - Algebraic properties: SSE projection totality, replay idempotence
+> 
+> Commit: def6a6d
+
+---
+
+## 📋 ironstar-2it.13 Review bounded context definitions against architecture docs
+
+| Property | Value |
+|----------|-------|
+| **Type** | 📋 task |
+| **Priority** | ⚡ High (P1) |
+| **Status** | ⚫ closed |
+| **Created** | 2026-01-06 13:40 |
+| **Updated** | 2026-01-06 22:18 |
+| **Closed** | 2026-01-06 22:18 |
+
+### Description
+
+Validate that D2 bounded-contexts.d2 accurately reflects the architecture documented in docs/notes/architecture/, with special attention to the scientific data analysis business context.
+
+## Business context
+
+Ironstar's primary purpose is a **DuckDB/DuckLake query and Lit ECharts web component data analysis dashboard for scientific data analysis**. This context must drive the Event Modeling artifacts:
+
+- Analytics Context is Core (primary differentiator)
+- Todo Context is Generic Example (demonstration only)
+- Session Context is Supporting (authentication infrastructure)
+
+## Artifacts to cross-reference
+
+### D2 diagram
+`docs/notes/event-modeling/d2/bounded-contexts.d2`
+
+Current contexts:
+- Session Context (Supporting) — Session aggregate
+- Todo Context (Generic Example) — Todo aggregate
+- Analytics Context (Core) — QuerySession aggregate
+
+### Architecture docs to validate against
+
+- `docs/notes/architecture/core/bounded-contexts.md` (if exists)
+- `docs/notes/architecture/core/architecture-decisions.md` § bounded context decisions
+- `docs/notes/architecture/core/design-principles.md` § strategic classification
+- `docs/notes/architecture/decisions/fmodel-rust-adoption-evaluation.md` § aggregate mapping
+- `docs/notes/architecture/frontend/ds-echarts-integration-guide.md`
+- `docs/notes/architecture/application/chart-transformer-pattern.md`
+
+### Scientific data integration references
+
+- `ironstar-3gd` epic children (Scientific Data Integration)
+- HuggingFace Hub integration patterns (`hf://` protocol)
+- DuckLake catalog versioning
+- `~/projects/rust-workspace/rust-duckdb-huggingface-ducklake-query`
+
+## Validation checklist
+
+- [ ] All aggregates in D2 are documented in architecture docs
+- [ ] Strategic classification (Core/Supporting/Generic) is consistent
+- [ ] Integration patterns (Customer-Supplier, Partnership) match architecture intent
+- [ ] Event bus (Zenoh) key expression schema matches both artifacts
+- [ ] No orphan concepts (in D2 but not in docs, or vice versa)
+- [ ] Analytics Context adequately captures scientific data analysis workflows
+- [ ] Dataset management (DuckLake, HuggingFace) is represented or planned
+
+## Questions to resolve
+
+- Is QuerySession the right aggregate name? (vs AnalyticsSession, DatasetQuery)
+- Should there be a separate Dataset aggregate for dataset catalog management?
+- Should Dashboard composition (multiple charts) be a separate aggregate or part of QuerySession?
+- Are chart configuration persistence and query history adequately modeled?
+
+## Output
+
+- Updated D2 if discrepancies found
+- Updated architecture docs if D2 reveals gaps
+- Validation notes documenting any decisions made
+- Clear articulation of scientific data analysis event flows
+
+### Dependencies
+
+- 🔗 **parent-child**: `ironstar-2it`
+
+### Comments
+
+> **crs58** (2026-01-06)
+>
+> ## Validation Complete
+> 
+> **Discrepancies found and resolved:**
+> 
+> 1. **Missing Catalog aggregate** in D2 → Added with SelectCatalog/RefreshCatalogMetadata commands and CatalogSelected/CatalogMetadataRefreshed events
+> 
+> 2. **Todo-Analytics Partnership** in D2 conflicted with "Standalone" documentation → Removed Partnership edge; Todo is intentionally isolated
+> 
+> 3. **Todo framing** updated from "Generic Example" to "Generality Canary" — emphasizes its role as template validation rather than demonstration
+> 
+> **Commits:**
+> - fcdd92b: docs(event-modeling): add Catalog aggregate, remove Todo-Analytics partnership
+> - e83c3a9: docs(architecture): reframe Todo as generality canary
+> 
+> **Alignment verified:**
+> - 4 bounded contexts: Analytics (Core), Session (Supporting), Workspace (Supporting), Todo (Generality Canary)
+> - Analytics now has 3 aggregates: QuerySession, ChartDefinition, Catalog
+> - Integration patterns: Customer-Supplier (Session→*, Analytics→Workspace), Shared Kernel (Session→Workspace)
+> - Zenoh key expressions correctly namespace all 4 contexts
+> 
+> Ready for .14/.15 upstream pattern validation.
+
+---
+
 ## 📋 ironstar-e6k.1 Define Todo domain model (aggregate, events, commands)
 
 | Property | Value |
@@ -10977,6 +12910,304 @@ Local refs: ~/projects/lakescope-workspace/datastar-go-nats-template-northstar
 - 🔗 **parent-child**: `ironstar-e6k`
 - ⛔ **blocks**: `ironstar-2nt.2`
 - ⛔ **blocks**: `ironstar-2nt.4`
+
+---
+
+## 📋 ironstar-nyp.7 Implement ProjectionManager with in-memory state
+
+| Property | Value |
+|----------|-------|
+| **Type** | 📋 task |
+| **Priority** | ⚡ High (P1) |
+| **Status** | ⚫ closed |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2026-01-06 13:46 |
+| **Closed** | 2026-01-06 13:46 |
+
+### Description
+
+Create ProjectionManager using fmodel-rust's MaterializedView pattern:
+
+```rust
+struct ProjectionManager<V: View> {
+    materialized_view: MaterializedView<V, ViewStateRepository>,
+    zenoh_session: Arc<Session>,
+}
+
+impl<V: View> ProjectionManager<V> {
+    async fn init(
+        event_repo: Arc<dyn EventRepository>,
+        view_repo: Arc<dyn ViewStateRepository>,
+        zenoh: Arc<Session>,
+    ) -> Self {
+        // Subscribe to Zenoh key expressions for incremental updates
+        let subscriber = zenoh.subscribe("events/**").await;
+        // MaterializedView handles state persistence
+    }
+    
+    async fn query<Q>(&self, query: Q) -> V::State {
+        self.materialized_view.fetch_state(&query).await
+    }
+}
+```
+
+Replays events via EventRepository to build initial state, then subscribes to Zenoh for incremental updates.
+Uses MaterializedView + ViewStateRepository from fmodel-rust.
+
+Note: Consider if this duplicates ironstar-a9b.8 (Wire Todo MaterializedView) - may need consolidation.
+
+Local refs: ~/projects/rust-workspace/tokio, ~/projects/rust-workspace/fmodel-rust
+
+
+### Dependencies
+
+- 🔗 **parent-child**: `ironstar-nyp`
+- ⛔ **blocks**: `ironstar-nyp.6`
+- ⛔ **blocks**: `ironstar-nyp.5`
+- ⛔ **blocks**: `ironstar-nyp.3`
+- ⛔ **blocks**: `ironstar-nyp.27`
+
+---
+
+## 📋 ironstar-nyp.3 Implement SQLite EventRepository with sqlx
+
+| Property | Value |
+|----------|-------|
+| **Type** | 📋 task |
+| **Priority** | ⚡ High (P1) |
+| **Status** | ⚫ closed |
+| **Created** | 2025-12-18 09:36 |
+| **Updated** | 2026-01-06 13:46 |
+| **Closed** | 2026-01-06 13:46 |
+
+### Description
+
+Create SqliteEventRepository struct implementing fmodel-rust's EventRepository trait:
+
+```rust
+impl<C, E> EventRepository<C, E, Uuid, EventStoreError> for SqliteEventRepository
+where
+    C: Identifier + DeciderType + Sync,
+    E: Identifier + EventType + DeciderType + IsFinal + Serialize + DeserializeOwned + Clone + Sync,
+{
+    fn fetch_events(&self, command: &C) -> impl Future<Output = Result<Vec<(E, Uuid)>, Error>>;
+    fn save(&self, events: &[E]) -> impl Future<Output = Result<Vec<(E, Uuid)>, Error>>;
+    fn version_provider(&self, event: &E) -> impl Future<Output = Result<Option<Uuid>, Error>>;
+}
+```
+
+Extension methods for SSE Last-Event-ID support:
+- query_since_sequence(offset: i64) -> Vec<StoredEvent>
+- earliest_sequence() -> Option<i64>
+- latest_sequence() -> Option<i64>
+- query_all() -> Vec<StoredEvent>
+
+Use sqlx compile-time query validation with query!() macro.
+This is a wrapper/extension of ironstar-a9b.1 for projection support.
+
+Local refs: ~/projects/rust-workspace/sqlx
+
+
+### Dependencies
+
+- 🔗 **parent-child**: `ironstar-nyp`
+- ⛔ **blocks**: `ironstar-nyp.1`
+- ⛔ **blocks**: `ironstar-a9b.1`
+
+---
+
+## 📋 ironstar-2it.22 Formalize Workspace bounded context in Idris2 (Supporting domain)
+
+| Property | Value |
+|----------|-------|
+| **Type** | 📋 task |
+| **Priority** | 🔹 Medium (P2) |
+| **Status** | ⚫ closed |
+| **Created** | 2026-01-06 15:47 |
+| **Updated** | 2026-01-06 19:48 |
+| **Closed** | 2026-01-06 19:48 |
+
+### Description
+
+Define the Workspace bounded context as Idris2 module. This is a Supporting domain for user's persistent saved state.
+
+## Business context
+
+Workspace manages user's persistent configuration that survives across session boundaries:
+- Dashboards (layouts, tabs, chart placements)
+- Saved queries
+- User preferences
+
+## Relationship to other contexts
+
+- **Consumes Analytics**: References ChartDefinitions (Customer-Supplier relationship)
+- **Requires Session**: User identity from authenticated session (Shared Kernel)
+- **Persists across sessions**: Unlike Session state, Workspace state is durable
+
+## Module: spec/src/Domain/Workspace.idr
+
+```idris
+-- Dashboard aggregate
+data DashboardCommand
+  = CreateDashboard DashboardName
+  | AddChartToDashboard DashboardId ChartPlacement
+  | RemoveChart DashboardId ChartId
+  | UpdateLayout DashboardId Layout
+  | AddTab DashboardId TabName
+  | MoveChartToTab DashboardId ChartId TabId
+
+data DashboardEvent
+  = DashboardCreated DashboardId DashboardName UserId Timestamp
+  | ChartAdded DashboardId ChartId ChartPlacement Timestamp
+  | ChartRemoved DashboardId ChartId Timestamp
+  | LayoutUpdated DashboardId Layout Timestamp
+  | TabAdded DashboardId TabId TabName Timestamp
+  | ChartMovedToTab DashboardId ChartId TabId Timestamp
+
+-- ChartPlacement references Analytics ChartDefinition
+record ChartPlacement where
+  constructor MkChartPlacement
+  chartDefinitionRef : ChartDefinitionRef  -- from Analytics context
+  position : GridPosition
+  size : GridSize
+  tabId : Maybe TabId
+
+record Layout where
+  constructor MkLayout
+  columns : Nat
+  rows : Nat
+  placements : List ChartPlacement
+
+-- SavedQuery aggregate  
+data SavedQueryCommand
+  = SaveQuery QueryName SqlQuery DatasetRef
+  | DeleteSavedQuery SavedQueryId
+  | RenameQuery SavedQueryId QueryName
+
+data SavedQueryEvent
+  = QuerySaved SavedQueryId QueryName SqlQuery DatasetRef UserId Timestamp
+  | QueryDeleted SavedQueryId Timestamp
+  | QueryRenamed SavedQueryId QueryName Timestamp
+```
+
+## Dependent type opportunities
+
+1. **Layout validity**: Placements must not overlap within grid
+2. **Tab references**: ChartMovedToTab requires tab exists in dashboard
+3. **User ownership**: Commands require UserId matches dashboard owner
+
+## Reference materials
+
+### Architecture docs
+- docs/notes/architecture/core/bounded-contexts.md (newly created)
+
+### Domain modeling methodology
+- Wlaschin: ~/projects/functional-programming-workspace/domain-modeling-made-functional
+- Ghosh: ~/projects/functional-programming-workspace/functional-and-reactive-domain-modeling
+
+### Idris2 reference
+- ~/projects/functional-programming-workspace/Idris2/docs/
+
+## Deliverables
+
+- [ ] spec/src/Domain/Workspace.idr (or Workspace/ directory if multiple modules)
+- [ ] Module type-checks
+- [ ] Cross-reference with bounded-contexts.md
+
+### Dependencies
+
+- 🔗 **parent-child**: `ironstar-2it`
+- ⛔ **blocks**: `ironstar-2it.17`
+
+---
+
+## 📋 ironstar-2it.19 Formalize Session bounded context in Idris2 (Supporting domain)
+
+| Property | Value |
+|----------|-------|
+| **Type** | 📋 task |
+| **Priority** | 🔹 Medium (P2) |
+| **Status** | ⚫ closed |
+| **Created** | 2026-01-06 15:01 |
+| **Updated** | 2026-01-06 19:48 |
+| **Closed** | 2026-01-06 19:48 |
+
+### Description
+
+Define the Session bounded context as Idris2 module. This is a Supporting domain (authentication infrastructure).
+
+## Business context
+
+Session management for authenticated access. OAuth-based authentication with session lifecycle.
+
+## Module: spec/src/Domain/Session.idr
+
+```idris
+-- Commands
+data SessionCommand
+  = CreateSession UserId OAuthProvider
+  | RefreshSession SessionId
+  | InvalidateSession SessionId
+
+-- Events
+data SessionEvent
+  = SessionCreated SessionId UserId OAuthProvider Timestamp ExpiresAt
+  | SessionRefreshed SessionId NewExpiresAt Timestamp
+  | SessionInvalidated SessionId Timestamp
+  | SessionExpired SessionId Timestamp
+
+-- State
+data SessionState
+  = NoSession
+  | Active SessionId UserId ExpiresAt
+  | Expired SessionId
+
+-- Value objects
+record SessionId where
+  constructor MkSessionId
+  value : UUID
+
+data OAuthProvider = GitHub | Google
+
+record UserId where
+  constructor MkUserId
+  provider : OAuthProvider
+  externalId : String
+```
+
+## Dependent type opportunities
+
+1. **Session expiration**: Active state requires ExpiresAt > now
+2. **State transitions**: Cannot refresh an Expired session
+3. **Provider consistency**: UserId.provider matches session's OAuthProvider
+
+## Reference materials
+
+### D2 diagram
+- docs/notes/event-modeling/d2/session-context-timeline.d2
+
+### Architecture docs
+- docs/notes/architecture/infrastructure/session-management.md
+- docs/notes/architecture/infrastructure/session-security.md
+- docs/notes/architecture/decisions/oauth-authentication.md
+
+### Domain modeling methodology
+- Wlaschin: ~/projects/functional-programming-workspace/domain-modeling-made-functional
+- Ghosh: ~/projects/functional-programming-workspace/functional-and-reactive-domain-modeling
+
+### Idris2 reference
+- ~/projects/functional-programming-workspace/Idris2/docs/
+
+## Deliverables
+
+- [ ] spec/src/Domain/Session.idr
+- [ ] Module type-checks
+- [ ] Cross-reference with D2 diagram
+
+### Dependencies
+
+- 🔗 **parent-child**: `ironstar-2it`
+- ⛔ **blocks**: `ironstar-2it.17`
 
 ---
 
@@ -11145,6 +13376,90 @@ Local refs: typescript-nix-template/.github/workflows/package-test.yaml
 ### Dependencies
 
 - 🔗 **parent-child**: `ironstar-6lq`
+
+---
+
+## 📋 ironstar-2it.20 Formalize Todo bounded context in Idris2 (Generic Example)
+
+| Property | Value |
+|----------|-------|
+| **Type** | 📋 task |
+| **Priority** | ☕ Low (P3) |
+| **Status** | ⚫ closed |
+| **Created** | 2026-01-06 15:01 |
+| **Updated** | 2026-01-06 19:48 |
+| **Closed** | 2026-01-06 19:48 |
+
+### Description
+
+Define the Todo bounded context as Idris2 module. This is a Generic Example domain for template demonstration.
+
+## Business context
+
+Simple Todo list for demonstrating event sourcing patterns. Minimal complexity, clear state machine.
+
+## Module: spec/src/Domain/Todo.idr
+
+```idris
+-- Commands
+data TodoCommand
+  = CreateTodo Text
+  | CompleteTodo TodoId
+  | UndoComplete TodoId
+  | DeleteTodo TodoId
+
+-- Events
+data TodoEvent
+  = TodoCreated TodoId Text Timestamp
+  | TodoCompleted TodoId Timestamp
+  | TodoUncompleted TodoId Timestamp
+  | TodoDeleted TodoId Timestamp
+
+-- State (per Todo item)
+data TodoItemState
+  = Active TodoId Text
+  | Completed TodoId Text
+  | Deleted TodoId
+
+-- Aggregate state (list of items)
+record TodoListState where
+  constructor MkTodoListState
+  items : List TodoItemState
+  
+-- Value objects
+record TodoId where
+  constructor MkTodoId
+  value : UUID
+```
+
+## Dependent type opportunities
+
+1. **State transitions**: Cannot complete a Deleted todo
+2. **Idempotency**: Completing an already-completed todo is no-op
+3. **Existence**: CompleteTodo requires TodoId exists in items
+
+## Reference materials
+
+### D2 diagram
+- docs/notes/event-modeling/d2/todo-context-timeline.d2
+
+### Domain modeling methodology
+- Wlaschin: ~/projects/functional-programming-workspace/domain-modeling-made-functional
+- Ghosh: ~/projects/functional-programming-workspace/functional-and-reactive-domain-modeling
+
+### Idris2 reference
+- ~/projects/functional-programming-workspace/Idris2/docs/
+
+## Deliverables
+
+- [ ] spec/src/Domain/Todo.idr
+- [ ] Module type-checks
+- [ ] Cross-reference with D2 diagram
+
+### Dependencies
+
+- 🔗 **parent-child**: `ironstar-2it`
+- ⛔ **blocks**: `ironstar-2it.17`
 
 ---
 
