@@ -19,11 +19,11 @@ default:
 
 ## D2 Diagrams
 
-# Render all D2 diagrams to SVG
+# Render all D2 diagrams to SVG using ELK layout
 [group('d2')]
 d2-render:
     @mkdir -p docs/notes/event-modeling/rendered
-    fd . docs/notes/event-modeling/d2 -e d2 -x d2 {} docs/notes/event-modeling/rendered/{/.}.svg
+    fd . docs/notes/event-modeling/d2 -e d2 -x d2 --layout=elk {} docs/notes/event-modeling/rendered/{/.}.svg
 
 # Watch D2 files and re-render on changes
 [group('d2')]
