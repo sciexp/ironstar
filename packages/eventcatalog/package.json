@@ -13,8 +13,10 @@
 		"dev": "eventcatalog dev",
 		"start": "eventcatalog dev",
 		"build": "eventcatalog build",
-		"preview": "eventcatalog preview",
+		"preview": "eventcatalog build && wrangler dev",
+		"deploy": "eventcatalog build && wrangler deploy",
 		"generate": "eventcatalog generate",
+		"cf-typegen": "wrangler types",
 		"format": "biome format --write",
 		"lint": "biome lint",
 		"check": "biome check",
@@ -44,7 +46,8 @@
 		"semantic-release": "^25.0.1",
 		"semantic-release-major-tag": "^0.3.2",
 		"semantic-release-monorepo": "^8.0.2",
-		"vitest": "^4.0.3"
+		"vitest": "^4.0.3",
+		"wrangler": "^4.45.0"
 	},
 	"release": {
 		"extends": "semantic-release-monorepo",
