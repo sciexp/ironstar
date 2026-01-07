@@ -35,6 +35,9 @@ legend: {
 }
 
 # Session Context (Supporting - upstream identity provider)
+# Note: OAuth flow (InitiateOAuth, ProcessOAuthCallback, etc.) is infrastructure
+# handled by oauth2 crate at axum boundary. Session aggregate manages session
+# lifecycle AFTER successful OAuth authentication. This is intentional.
 session: "Session Context" {
   label: "Session Context\n[Supporting]"
   style.fill: "#e8f4fd"
@@ -47,12 +50,15 @@ session: "Session Context" {
   }
 
   user_identity: "UserIdentity" {
-    label: "UserIdentity\n(Value Object)"
+    label: "UserIdentity\n(Value Object)\n[Shared Kernel]"
     style.fill: "#ffeaa7"
   }
 
-  # Inbound: OAuth callbacks
+  # OAuth is infrastructure boundary (purple = external system)
+  # Session commands (CreateSession, RefreshSession, InvalidateSession)
+  # are issued by boundary layer after OAuth callback completes
   oauth_callback: "OAuth Callback" {
+    label: "OAuth Callback\n(Infrastructure)"
     style.fill: "#9b59b6"
     style.font-color: "#fff"
   }
@@ -133,9 +139,11 @@ analytics: "Analytics Context" {
     style.fill: "#f1c40f"
   }
 
-  chart_definition: "ChartDefinition" {
-    label: "ChartDefinition\n(Aggregate)"
-    style.fill: "#f1c40f"
+  # Chart is Shared Kernel value objects (ChartType, ChartConfig, ChartData)
+  # consumed by Workspace. Not an aggregate - no commands or events.
+  chart: "Chart" {
+    label: "Chart\n(Shared Kernel VO)"
+    style.fill: "#ffeaa7"
   }
 
   catalog: "Catalog" {
@@ -230,37 +238,69 @@ workspace: "Workspace Context" {
     style.fill: "#f1c40f"
   }
 
-  # Commands
+  # Commands (Dashboard)
   create_dashboard: "CreateDashboard" {
     style.fill: "#3498db"
     style.font-color: "#fff"
   }
-  add_widget: "AddWidget" {
+  add_chart: "AddChart" {
     style.fill: "#3498db"
     style.font-color: "#fff"
   }
+  remove_chart: "RemoveChart" {
+    style.fill: "#3498db"
+    style.font-color: "#fff"
+  }
+  add_tab: "AddTab" {
+    style.fill: "#3498db"
+    style.font-color: "#fff"
+  }
+  move_chart_to_tab: "MoveChartToTab" {
+    style.fill: "#3498db"
+    style.font-color: "#fff"
+  }
+
+  # Commands (SavedQuery)
   save_query: "SaveQuery" {
     style.fill: "#3498db"
     style.font-color: "#fff"
   }
+
+  # Commands (Preferences)
   update_preferences: "UpdatePreferences" {
     style.fill: "#3498db"
     style.font-color: "#fff"
   }
 
-  # Events
+  # Events (Dashboard)
   dashboard_created: "DashboardCreated" {
     style.fill: "#e67e22"
     style.font-color: "#fff"
   }
-  widget_added: "WidgetAdded" {
+  chart_added: "ChartAdded" {
     style.fill: "#e67e22"
     style.font-color: "#fff"
   }
+  chart_removed: "ChartRemoved" {
+    style.fill: "#e67e22"
+    style.font-color: "#fff"
+  }
+  tab_added: "TabAdded" {
+    style.fill: "#e67e22"
+    style.font-color: "#fff"
+  }
+  chart_moved_to_tab: "ChartMovedToTab" {
+    style.fill: "#e67e22"
+    style.font-color: "#fff"
+  }
+
+  # Events (SavedQuery)
   query_saved: "QuerySaved" {
     style.fill: "#e67e22"
     style.font-color: "#fff"
   }
+
+  # Events (Preferences)
   preferences_updated: "PreferencesUpdated" {
     style.fill: "#e67e22"
     style.font-color: "#fff"
@@ -273,16 +313,30 @@ workspace: "Workspace Context" {
     style.font-color: "#fff"
   }
 
+  # Command → Aggregate edges
   create_dashboard -> dashboard_aggregate
-  add_widget -> dashboard_aggregate
+  add_chart -> dashboard_aggregate
+  remove_chart -> dashboard_aggregate
+  add_tab -> dashboard_aggregate
+  move_chart_to_tab -> dashboard_aggregate
   save_query -> saved_query_aggregate
   update_preferences -> user_preferences_aggregate
+
+  # Aggregate → Event edges
   dashboard_aggregate -> dashboard_created
-  dashboard_aggregate -> widget_added
+  dashboard_aggregate -> chart_added
+  dashboard_aggregate -> chart_removed
+  dashboard_aggregate -> tab_added
+  dashboard_aggregate -> chart_moved_to_tab
   saved_query_aggregate -> query_saved
   user_preferences_aggregate -> preferences_updated
+
+  # Event → Read Model projections
   dashboard_created -> dashboard_view: "projects to"
-  widget_added -> dashboard_view: "projects to"
+  chart_added -> dashboard_view: "projects to"
+  chart_removed -> dashboard_view: "projects to"
+  tab_added -> dashboard_view: "projects to"
+  chart_moved_to_tab -> dashboard_view: "projects to"
 }
 
 # Event Bus (Zenoh)
