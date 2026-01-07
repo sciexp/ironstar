@@ -36,26 +36,28 @@ d2-watch:
     fd . {{ d2_src }} -e d2 | entr -c just d2-render
 
 # Render all D2 diagrams to PNG (d2 → svg → png pipeline)
+# Set optimize="true" for slow but optimal compression
 [group('d2')]
-d2-render-png zoom="2": d2-render
-    just svg-to-png-dir {{ d2_out }} {{ zoom }}
+d2-render-png zoom="1" optimize="false": d2-render
+    just svg-to-png-dir {{ d2_out }} {{ zoom }} {{ optimize }}
 
 # Watch D2 files and re-render to PNG on changes
 [group('d2')]
-d2-watch-png zoom="2":
-    fd . {{ d2_src }} -e d2 | entr -c just d2-render-png {{ zoom }}
+d2-watch-png zoom="1" optimize="false":
+    fd . {{ d2_src }} -e d2 | entr -c just d2-render-png {{ zoom }} {{ optimize }}
 
 ## SVG/PNG Conversion
 
-# Convert single SVG to lossless optimized PNG
-# Usage: just svg-to-png input.svg [zoom] [output.png]
-# If output is omitted, PNG is placed alongside the SVG
+# Convert single SVG to PNG
+# Usage: just svg-to-png input.svg [zoom] [optimize] [output.png]
+# Set optimize="true" for slow zopfli compression (default: fast)
 [group('d2')]
-svg-to-png input zoom="1" output="":
+svg-to-png input zoom="1" optimize="false" output="":
     #!/usr/bin/env bash
     set -euo pipefail
     input="{{ input }}"
     zoom="{{ zoom }}"
+    optimize="{{ optimize }}"
     output="{{ output }}"
 
     if [[ -z "$output" ]]; then
@@ -64,7 +66,11 @@ svg-to-png input zoom="1" output="":
 
     echo "Converting: $input → $output (zoom: ${zoom}x)"
     resvg -z "$zoom" "$input" "$output"
-    oxipng -o max --zopfli --alpha -s "$output"
+
+    if [[ "$optimize" == "true" ]]; then
+        echo "  Optimizing with zopfli (slow)..."
+        oxipng -o max --zopfli --alpha -s "$output"
+    fi
 
     # Report sizes
     svg_size=$(stat -f%z "$input" 2>/dev/null || stat -c%s "$input")
@@ -72,14 +78,15 @@ svg-to-png input zoom="1" output="":
     echo "  SVG: $(numfmt --to=iec $svg_size 2>/dev/null || echo "${svg_size}B")"
     echo "  PNG: $(numfmt --to=iec $png_size 2>/dev/null || echo "${png_size}B")"
 
-# Convert all SVGs in a directory to lossless optimized PNGs
-# Usage: just svg-to-png-dir path/to/svgs [zoom]
+# Convert all SVGs in a directory to PNG
+# Usage: just svg-to-png-dir path/to/svgs [zoom] [optimize]
 [group('d2')]
-svg-to-png-dir dir zoom="1":
+svg-to-png-dir dir zoom="1" optimize="false":
     #!/usr/bin/env bash
     set -euo pipefail
     dir="{{ dir }}"
     zoom="{{ zoom }}"
+    optimize="{{ optimize }}"
 
     svg_count=$(fd -e svg . "$dir" | wc -l | tr -d ' ')
     if [[ "$svg_count" -eq 0 ]]; then
@@ -87,8 +94,12 @@ svg-to-png-dir dir zoom="1":
         exit 0
     fi
 
-    echo "Converting $svg_count SVG files to PNG (zoom: ${zoom}x)..."
-    fd -e svg . "$dir" -x just svg-to-png {} "$zoom"
+    if [[ "$optimize" == "true" ]]; then
+        echo "Converting $svg_count SVG files to PNG (zoom: ${zoom}x, optimized)..."
+    else
+        echo "Converting $svg_count SVG files to PNG (zoom: ${zoom}x)..."
+    fi
+    fd -e svg . "$dir" -x just svg-to-png {} "$zoom" "$optimize"
     echo "Done. $svg_count PNG files generated."
 
 ## Workspace
