@@ -14,7 +14,9 @@ Ironstar has four bounded contexts with distinct responsibilities:
 **Aggregates:**
 - `Catalog`: DuckLake catalog selection and versioning
 - `QuerySession`: Query execution context and result caching
-- `ChartDefinition`: Visualization type specifications (ECharts/Vega-Lite schemas)
+
+**Shared Kernel (value objects):**
+- `Chart`: Value objects for visualization specifications (ChartConfig, ChartType, ChartData) — shared with Workspace via Customer-Supplier pattern; Analytics defines them, Workspace consumes them
 
 **Concern**: Scientific data analysis — what data to query, how to transform it
 
@@ -26,7 +28,7 @@ Ironstar has four bounded contexts with distinct responsibilities:
 
 **Ubiquitous language**: Query, Dataset, Result, Chart, Projection, Catalog, Transformation
 
-**Integration**: Publishes `ChartDefinition` updates consumed by Workspace bounded context via Customer-Supplier relationship; no coupling to Generality Canary (Todo)
+**Integration**: Publishes Chart value object schemas consumed by Workspace bounded context via Customer-Supplier relationship; no coupling to Generality Canary (Todo)
 
 ### Session (Supporting)
 
@@ -73,11 +75,11 @@ Ironstar has four bounded contexts with distinct responsibilities:
 **Relationship:**
 - Requires authenticated User (from Session)
 - Persists across session boundaries
-- Customer-Supplier relationship with Analytics (consumes ChartDefinitions)
+- Customer-Supplier relationship with Analytics (imports Chart value objects from Analytics.Chart)
 
 **Integration:**
-- Customer-Supplier with Analytics: Consumes `ChartDefinition` schemas to position charts on dashboards
-- Requires authenticated `User` from Session: Workspace operations only valid within authenticated context
+- Customer-Supplier with Analytics: Imports Chart value objects (ChartConfig, ChartType, ChartData) from Analytics.Chart to position charts on dashboards
+- Shared Kernel with Session: Requires authenticated `User` from Session; Workspace operations only valid within authenticated context
 
 ### Todo (Generality Canary)
 
@@ -106,7 +108,7 @@ Arrows indicate dependency direction.
 ```
 Session (Supporting) ────[Shared Kernel: User identity]────> Workspace (Supporting)
                                                                       │
-Analytics (Core) ──────────────[Customer-Supplier: ChartDefinition]───┘
+Analytics (Core) ──────[Customer-Supplier: Chart value objects]──────┘
 
 Todo (Generality Canary) ──────[Isolated for template generality validation]
 ```
@@ -114,7 +116,7 @@ Todo (Generality Canary) ──────[Isolated for template generality val
 **Relationship patterns:**
 
 - **Shared Kernel** (Session → Workspace): User identity is shared concept; both contexts must agree on User structure
-- **Customer-Supplier** (Analytics → Workspace): Analytics publishes ChartDefinition schemas; Workspace consumes them for dashboard layout
+- **Customer-Supplier** (Analytics → Workspace): Analytics defines Chart value objects (ChartConfig, ChartType, ChartData); Workspace consumes them for dashboard layout; Analytics owns the schema, Workspace uses them
 - **Isolated** (Todo): No domain coupling with other contexts; validates template generality by proving CQRS/ES infrastructure works for any domain without coupling to Analytics-specific concerns
 
 ## Design decision rationale
@@ -145,15 +147,16 @@ Workspace explicitly owns persistent state, making the domain model clearer.
 
 ### Why separate Workspace from Analytics?
 
-Workspace was separated from Analytics because they use the same term "Chart" but mean entirely different things, have different concerns, and serve different strategic purposes.
-
-**Different language:**
-- Analytics: "Chart" = data transformation specification (SQL query + ECharts/Vega-Lite schema)
-- Workspace: "Chart" = positioned UI element (x/y coordinates, width/height, tab placement)
+Workspace was separated from Analytics because they have fundamentally different concerns and strategic purposes.
+The two contexts share Chart value objects via a Customer-Supplier pattern: Analytics defines them, Workspace consumes them for dashboard layout.
 
 **Different concerns:**
-- Analytics: Data correctness, transformation validity, catalog versioning
-- Workspace: Visual arrangement, layout persistence, user customization
+- Analytics: Data correctness, transformation validity, catalog versioning — "what queries to execute and how to transform results"
+- Workspace: Visual arrangement, layout persistence, user customization — "where to position charts on the dashboard"
+
+**Different language (despite shared Chart value object):**
+- Analytics: ChartConfig/ChartType/ChartData = specification for rendering query results (ECharts/Vega-Lite schemas)
+- Workspace: ChartPlacement = metadata about where a chart appears (x/y coordinates, width/height, tab assignment)
 
 **Different change drivers:**
 - Analytics: Data source changes, new transformation types, query optimization
@@ -163,9 +166,9 @@ Workspace was separated from Analytics because they use the same term "Chart" bu
 - Analytics: Core domain (competitive differentiator via scientific analysis)
 - Workspace: Supporting domain (necessary for usability but not differentiating)
 
-**Avoid coupling:**
+**Avoid coupling via Customer-Supplier:**
 Mixing these concerns would tangle unrelated invariants: Analytics validating chart schema correctness would be coupled with Workspace validating grid positions.
-The Customer-Supplier relationship keeps them decoupled: Analytics evolves ChartDefinition schemas independently; Workspace consumes them as stable contracts.
+The Customer-Supplier relationship keeps them decoupled: Analytics owns and evolves Chart value object schemas independently; Workspace consumes them as stable contracts for positioning charts.
 
 ## Strategic classification
 
@@ -202,8 +205,8 @@ Zenoh key expressions enforce context isolation:
 - `events/Todo/**`
 
 Cross-context integration happens via:
-1. **Shared Kernel**: Workspace imports `Session::User` type
-2. **Customer-Supplier**: Workspace subscribes to `events/Analytics/ChartDefinition/**` keys
+1. **Shared Kernel**: Workspace imports `Session::User` type and `Analytics::Chart` value objects (ChartConfig, ChartType, ChartData)
+2. **Customer-Supplier**: Workspace subscribes to `events/Analytics/Chart/**` keys for chart definition updates
 3. **Process Managers**: Coordinate multi-context workflows (e.g., Dashboard creation after first login)
 
 ## Context relationship patterns
@@ -231,12 +234,12 @@ Downstream influences upstream priorities.
 
 **When to use**: Clear producer-consumer relationship with negotiation.
 
-**Ironstar example**: Analytics (upstream) serves Workspace (downstream) with ChartDefinition schemas.
+**Ironstar example**: Analytics (upstream) serves Workspace (downstream) with Chart value object schemas (ChartConfig, ChartType, ChartData).
 
 **Implementation**:
-- Downstream requests features via issues
-- Upstream provides SLA for interface stability
-- Breaking changes require migration path
+- Downstream (Workspace) requests chart type extensions via issues
+- Upstream (Analytics) provides SLA for interface stability of Chart value objects
+- Breaking changes to Chart schema require migration path (e.g., upcasters for stored ChartPlacement references)
 
 ### Conformist
 
@@ -360,12 +363,13 @@ For each bounded context, document using the Context Canvas pattern from DDD.
 | Aspect | Description |
 |--------|-------------|
 | **Name** | Analytics Context |
-| **Purpose** | Execute analytical queries against remote datasets |
+| **Purpose** | Execute analytical queries against remote datasets and define visualization specifications |
 | **Strategic classification** | Core |
 | **Ubiquitous language** | Query, Dataset, Result, Chart, Projection, Catalog, Transformation |
 | **Business decisions** | Query timeout (30s), SQL safety rules (read-only), caching policy (5min TTL) |
 | **Inbound communication** | Query commands via HTTP, invalidation events via Zenoh |
-| **Outbound communication** | Query events, SSE result streaming, cached projections, ChartDefinition updates |
+| **Outbound communication** | Query events, SSE result streaming, cached projections, Chart value object updates |
+| **Published Types** | Chart value objects (ChartConfig, ChartType, ChartData) consumed by Workspace via Customer-Supplier |
 | **Dependencies** | DuckDB, remote data sources (HuggingFace, S3 via httpfs), Session context, moka cache, Zenoh event bus |
 
 ### Session context canvas
@@ -390,9 +394,10 @@ For each bounded context, document using the Context Canvas pattern from DDD.
 | **Strategic classification** | Supporting |
 | **Ubiquitous language** | Dashboard, Layout, SavedQuery, UserPreferences, Tab, ChartPlacement, Grid |
 | **Business decisions** | Layout grid system (12-column), max tabs per dashboard (20), saved query retention (indefinite) |
-| **Inbound communication** | Layout commands via HTTP, ChartDefinition updates via Zenoh, User identity from Session |
+| **Inbound communication** | Layout commands via HTTP, Chart value object updates via Zenoh, User identity from Session |
 | **Outbound communication** | Workspace events, SSE layout updates, saved query results |
-| **Dependencies** | Session context (User identity), Analytics context (ChartDefinition schemas), SQLite workspace store, Zenoh event bus |
+| **Consumed Types** | Chart value objects (ChartConfig, ChartType, ChartData) from Analytics.Chart for dashboard positioning |
+| **Dependencies** | Session context (User identity), Analytics context (Chart value objects), SQLite workspace store, Zenoh event bus |
 
 ### Todo context canvas
 
