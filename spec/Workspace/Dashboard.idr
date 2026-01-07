@@ -12,6 +12,7 @@
 ||| Customer-Supplier relationship: Consumes ChartDefinition IDs from Analytics
 module Workspace.Dashboard
 
+import Analytics.Chart
 import Core.Decider
 import Core.Event
 import Data.List
@@ -55,14 +56,20 @@ Eq ChartId where
 
 ||| Reference to Analytics ChartDefinition (Customer-Supplier relationship)
 ||| The dashboard does not own the chart definition, only references it.
+||| The actual ChartConfig is resolved at query time via Analytics context.
+|||
+||| @refId The unique identifier for the ChartDefinition in Analytics context
+||| @chartTypeHint Optional cached chart type for UI hints (may be stale)
 public export
 record ChartDefinitionRef where
   constructor MkChartDefinitionRef
   refId : String
+  chartTypeHint : Maybe ChartType
 
 public export
 Eq ChartDefinitionRef where
-  (MkChartDefinitionRef x) == (MkChartDefinitionRef y) = x == y
+  (MkChartDefinitionRef x xHint) == (MkChartDefinitionRef y yHint) =
+    x == y && xHint == yHint
 
 ||| Position in grid layout (0-indexed)
 public export
