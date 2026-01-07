@@ -221,19 +221,20 @@ Not yet formalized in Session, Workspace, Todo.
 
 ## Gap summary for .16 co-refinement
 
-### High priority (structural alignment)
+### High priority (structural alignment) - RESOLVED
 
-1. **Session OAuth lifecycle**: Decide if D2 should simplify or Idris2 should expand
-2. **Workspace D2 update**: Add tab management, chart removal to D2 diagrams
-3. **DashboardView**: Add View type to Workspace.Dashboard
+1. **Session OAuth lifecycle**: RESOLVED - D2 updated with comments clarifying OAuth as infrastructure boundary
+2. **Workspace D2 update**: RESOLVED - D2 now includes AddTab, MoveChartToTab, RemoveChart commands and events
+3. **DashboardView**: RESOLVED - Added DashboardLayoutView to Workspace.Dashboard.idr
+4. **ChartDefinition classification**: RESOLVED - D2 updated from "Aggregate" to "Shared Kernel VO"
 
-### Medium priority (completeness)
+### Medium priority (completeness) - DEFERRED
 
-4. **DatasetBrowser view**: Consider adding CatalogView to Analytics
-5. **Todo UpdateTodoText**: Consider adding text update command/event
-6. **Zenoh key patterns**: Formalize in all context modules
+5. **DatasetBrowser view**: Consider adding CatalogView to Analytics (deferred)
+6. **Todo UpdateTodoText**: Consider adding text update command/event (deferred - Todo is intentionally minimal)
+7. **Zenoh key patterns**: Formalize in all context modules (deferred)
 
-### Low priority (documentation)
+### Low priority (documentation) - DEFERRED
 
-7. **Infrastructure events in D2**: Annotate as "infrastructure" vs "domain"
-8. **Cross-context dependencies**: Document import relationships more explicitly
+8. **Infrastructure events in D2**: Annotate as "infrastructure" vs "domain" (deferred)
+9. **Cross-context dependencies**: Document import relationships more explicitly (deferred)
