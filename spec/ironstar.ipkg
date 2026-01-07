@@ -10,7 +10,11 @@ modules = Core.Decider,
           Core.Saga,
           Core.Effect,
           Core.Event,
-          Analytics.Stub,
+          Analytics.Catalog,
+          Analytics.QuerySession,
+          Analytics.Chart,
+          Analytics.Analytics,
           Session.Stub,
+          Session.Session,
           Workspace.Stub,
-          Todo.Stub
+          Todo.Todo
