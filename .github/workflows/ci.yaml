@@ -562,18 +562,23 @@ jobs:
             echo "::notice title=Next Version (${{ matrix.package.name }})::No release pending"
           fi
 
-  # job 8: preview-docs-deploy
-  # Deploy docs to preview environment (PR only, fast feedback)
-  preview-docs-deploy:
+  # job 8: preview-site-deploy
+  # Deploy sites to preview environment (PR only, fast feedback)
+  preview-site-deploy:
     needs: [set-variables]
     if: |
       !cancelled() &&
       github.event_name == 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        site: ${{ fromJson(needs.set-variables.outputs.deployable_sites) }}
     permissions:
       contents: read
       deployments: write
-    uses: ./.github/workflows/deploy-docs.yaml
+    uses: ./.github/workflows/deploy-site.yaml
     with:
+      site_name: ${{ matrix.site }}
       branch: ${{ github.head_ref }}
       environment: preview
       debug_enabled: ${{ needs.set-variables.outputs.debug }}
@@ -606,10 +611,10 @@ jobs:
     secrets:
       SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
 
-  # job 10: production-docs-deploy
-  # Documentation deployment to production (conditional)
+  # job 10: production-site-deploy
+  # Site deployment to production (conditional)
   # Depends on production-release-packages to ensure packages released first
-  production-docs-deploy:
+  production-site-deploy:
     needs: [set-variables, test, production-release-packages]
     if: |
       !cancelled() &&
@@ -620,9 +625,14 @@ jobs:
       (github.event_name != 'workflow_dispatch' ||
        inputs.job == '' ||
        inputs.job == 'deploy')
-    uses: ./.github/workflows/deploy-docs.yaml
+    strategy:
+      fail-fast: false
+      matrix:
+        site: ${{ fromJson(needs.set-variables.outputs.deployable_sites) }}
+    uses: ./.github/workflows/deploy-site.yaml
     with:
+      site_name: ${{ matrix.site }}
       debug_enabled: ${{ needs.set-variables.outputs.debug }}
       branch: ${{ needs.set-variables.outputs.checkout_ref }}
-      environment: ${{ needs.set-variables.outputs.deploy_environment }}
+      environment: production
     secrets: inherit
