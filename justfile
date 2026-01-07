@@ -725,6 +725,26 @@ eventcatalog-lint:
 eventcatalog-check:
   cd packages/eventcatalog && bun run check:fix
 
+# Run all EventCatalog tests
+[group('eventcatalog')]
+eventcatalog-test:
+  cd packages/eventcatalog && bun run test
+
+# Run EventCatalog unit tests
+[group('eventcatalog')]
+eventcatalog-test-unit:
+  cd packages/eventcatalog && bun run test:unit
+
+# Run EventCatalog E2E tests
+[group('eventcatalog')]
+eventcatalog-test-e2e:
+  cd packages/eventcatalog && bun run test:e2e
+
+# Generate EventCatalog test coverage report
+[group('eventcatalog')]
+eventcatalog-test-coverage:
+  cd packages/eventcatalog && bun run test:coverage
+
 ## Nix
 
 # Validate the Nix flake configuration (all checks including treefmt, nix-unit)
