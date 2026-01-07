@@ -15,6 +15,7 @@ module Workspace.Dashboard
 import Analytics.Chart
 import Core.Decider
 import Core.Event
+import Core.View
 import Data.List
 import Data.Nat
 
@@ -296,3 +297,60 @@ dashboardDecider = MkDecider
 --
 -- This can be enforced in decide by checking hasTab before allowing
 -- MoveChartToTab or AddChart with tabId set.
+
+------------------------------------------------------------------------
+-- View: Dashboard Layout Projection
+------------------------------------------------------------------------
+
+||| Dashboard layout read model for rendering
+|||
+||| Denormalized projection optimized for UI rendering:
+||| - Placements grouped by tab
+||| - Quick lookup by chart ID
+||| - Dashboard metadata (name, id)
+|||
+||| Law 3 (Hoffman): All projection data comes from events
+||| Law 5 (Hoffman): All projections stem from events
+public export
+record DashboardLayoutView where
+  constructor MkDashboardLayoutView
+  dashboardId : Maybe DashboardId
+  dashboardName : String
+  placements : List ChartPlacement
+  tabs : List TabInfo
+
+||| View for dashboard layout projection
+|||
+||| Projects Dashboard events to a denormalized read model
+||| suitable for SSE streaming to clients.
+public export
+dashboardLayoutView : View DashboardLayoutView DashboardEvent
+dashboardLayoutView = MkView
+  { evolve = \state, event => case event of
+      DashboardCreated did name _ =>
+        { dashboardId := Just did
+        , dashboardName := name
+        } state
+
+      ChartAdded placement _ =>
+        { placements := placement :: state.placements } state
+
+      ChartRemoved chartId _ =>
+        { placements := filter (\p => p.chartId /= chartId) state.placements } state
+
+      TabAdded tabInfo _ =>
+        { tabs := tabInfo :: state.tabs } state
+
+      ChartMovedToTab chartId tabId _ =>
+        { placements := map (updateTabIfMatch chartId tabId) state.placements } state
+
+      DashboardRenamed newName _ =>
+        { dashboardName := newName } state
+
+  , initialState = MkDashboardLayoutView
+      { dashboardId = Nothing
+      , dashboardName = ""
+      , placements = []
+      , tabs = []
+      }
+  }
