@@ -1,8 +1,12 @@
-name: Deploy docs to Cloudflare
+name: Deploy site to Cloudflare
 
 on:
   workflow_dispatch:
     inputs:
+      site_name:
+        description: "Name of the site/package to deploy (e.g., docs, eventcatalog)"
+        required: true
+        type: string
       debug_enabled:
         description: "Run with tmate.io debugging enabled"
         required: false
@@ -29,6 +33,10 @@ on:
         default: "false"
   workflow_call:
     inputs:
+      site_name:
+        description: "Name of the site/package to deploy (e.g., docs, eventcatalog)"
+        required: true
+        type: string
       debug_enabled:
         description: "Run with tmate.io debugging enabled"
         required: false
@@ -63,11 +71,21 @@ permissions:
   deployments: write
 
 jobs:
-  deploy-docs:
+  deploy-site:
     runs-on: ubuntu-latest
     environment:
       name: ${{ inputs.environment }}
-      url: ${{ inputs.environment == 'preview' && format('https://b-{0}-ironstar-docs.sciexp.workers.dev', inputs.sanitized_branch || inputs.branch) || 'https://ironstar.scientistexperience.net' }}
+      url: >-
+        ${{
+          inputs.environment == 'preview'
+            && format('https://b-{0}-ironstar-{1}.sciexp.workers.dev',
+                      inputs.sanitized_branch || inputs.branch,
+                      inputs.site_name == 'eventcatalog' && 'events' || inputs.site_name)
+            || (inputs.site_name == 'docs'
+                && 'https://ironstar.scientistexperience.net'
+                || format('https://{0}.ironstar.scientistexperience.net',
+                          inputs.site_name == 'eventcatalog' && 'events' || inputs.site_name))
+        }}
     permissions:
       contents: read
       deployments: write
@@ -82,8 +100,8 @@ jobs:
         id: cache
         uses: ./.github/actions/cached-ci-job
         with:
-          check-name: preview-docs-deploy
-          hash-sources: 'packages/docs/**/* .github/actions/setup-nix/action.yml .github/workflows/deploy-docs.yaml'
+          check-name: ${{ inputs.site_name }}-deploy
+          hash-sources: 'packages/${{ inputs.site_name }}/**/* .github/actions/setup-nix/action.yml .github/workflows/deploy-site.yaml'
           force-run: ${{ inputs.force_run }}
 
       - name: Setup Nix
@@ -104,7 +122,7 @@ jobs:
         uses: mxschmitt/action-tmate@e5c7151931ca95bad1c6f4190c730ecf8c7dde48 # ratchet:mxschmitt/action-tmate@v3
 
       - name: Validate documentation links
-        if: steps.cache.outputs.should-run == 'true'
+        if: steps.cache.outputs.should-run == 'true' && inputs.site_name == 'docs'
         run: nix develop --accept-flake-config -c just docs-linkcheck
 
       - name: Deploy to Cloudflare Workers
@@ -118,10 +136,10 @@ jobs:
         run: |
           if [ "${{ inputs.environment }}" = "preview" ]; then
             echo "Deploying preview for branch: ${{ inputs.branch }}"
-            nix develop --accept-flake-config -c just docs-deploy-preview ${{ inputs.branch }}
+            nix develop --accept-flake-config -c just ${{ inputs.site_name }}-deploy-preview ${{ inputs.branch }}
           else
             echo "Deploying to production (promoting existing version if available)"
-            nix develop --accept-flake-config -c just docs-deploy-production
+            nix develop --accept-flake-config -c just ${{ inputs.site_name }}-deploy-production
           fi
 
       - name: Create job result marker
@@ -136,6 +154,7 @@ jobs:
             "commit": "${{ github.sha }}",
             "cache_key": "${{ steps.cache.outputs.cache-key }}",
             "workflow_run_id": "${{ github.run_id }}",
+            "site_name": "${{ inputs.site_name }}",
             "environment": "${{ inputs.environment }}",
             "branch": "${{ inputs.branch }}"
           }
