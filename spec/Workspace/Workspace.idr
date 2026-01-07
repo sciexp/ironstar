@@ -32,10 +32,10 @@ module Workspace.Workspace
 -- Import Core patterns
 import Core.Decider
 
--- Import all aggregates
-import public Workspace.Dashboard
-import public Workspace.SavedQuery
-import public Workspace.Preferences
+-- Re-export all aggregates
+import Workspace.Dashboard
+import Workspace.SavedQuery
+import Workspace.Preferences
 
 %default total
 
