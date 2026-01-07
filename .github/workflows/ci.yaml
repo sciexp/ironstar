@@ -114,6 +114,7 @@ jobs:
       checkout_ref: ${{ steps.set-variables.outputs.checkout_ref }}
       checkout_rev: ${{ steps.set-variables.outputs.checkout_rev }}
       packages: ${{ steps.discover-packages.outputs.packages }}
+      deployable_sites: ${{ steps.discover-sites.outputs.sites }}
 
     steps:
       - name: Set action variables
@@ -183,6 +184,16 @@ jobs:
           PACKAGES=$(just list-packages-json)
           echo "packages=$PACKAGES" >> $GITHUB_OUTPUT
           echo "Discovered packages: $PACKAGES"
+
+      - name: Discover deployable sites
+        id: discover-sites
+        run: |
+          # Find packages with wrangler.jsonc (indicates Cloudflare deployment)
+          SITES=$(find packages -name "wrangler.jsonc" -exec dirname {} \; | \
+            xargs -I {} basename {} | \
+            jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "sites=$SITES" >> $GITHUB_OUTPUT
+          echo "Discovered deployable sites: $SITES"
 
   # job 3: flake-validation
   # validates flake evaluation and developer tooling (justfile recipes)
