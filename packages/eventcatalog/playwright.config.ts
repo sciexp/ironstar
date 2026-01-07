@@ -35,7 +35,7 @@ export default defineConfig({
 
 	// Shared settings for all projects
 	use: {
-		// Base URL for page.goto() calls (EventCatalog default port is 3000)
+		// Base URL for page.goto() calls (EventCatalog uses port 3000 for both dev and preview)
 		baseURL: process.env.BASE_URL ?? "http://localhost:3000",
 
 		// Collect trace when retrying the failed test
@@ -72,14 +72,15 @@ export default defineConfig({
 				},
 			],
 
-	// Run EventCatalog dev server before starting tests
+	// Serve EventCatalog for e2e tests
+	// Uses preview mode (static file server) instead of dev mode because:
+	// 1. eventcatalog-build already runs before e2e tests in CI (package-test.yaml)
+	// 2. eventcatalog dev has significant startup overhead (file sync, migrations, watcher)
+	// 3. preview mode starts in ~1s vs dev mode's 30-60s+ in CI
 	webServer: {
-		command: "bun run dev",
+		command: "bun run preview",
 		url: "http://localhost:3000",
 		reuseExistingServer: !process.env.CI,
-		timeout: 120000,
-		// Redirect stderr to /dev/null due to upstream Vite race condition warnings
-		// (same workaround as justfile eventcatalog-dev recipe)
-		stderr: "ignore",
+		timeout: 60000,
 	},
 });
