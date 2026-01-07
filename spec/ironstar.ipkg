@@ -5,7 +5,8 @@ opts = "--ignore-missing-ipkg -Wno-shadowing"
 
 depends = base
 
-modules = Core.Decider,
+modules = IronstarSpec,
+          Core.Decider,
           Core.View,
           Core.Saga,
           Core.Effect,
