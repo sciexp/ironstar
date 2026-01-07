@@ -8,6 +8,7 @@ default:
 ## CI/CD
 ## Cloudflare
 ## Docs
+## EventCatalog
 ## Nix
 ## Rust
 ## Spec (Idris2)
@@ -682,6 +683,47 @@ docs-test-coverage:
 [group('docs')]
 docs-optimize-favicon:
   bunx svgo packages/docs/public/favicon.svg --multipass
+
+## EventCatalog
+
+# Start EventCatalog development server (stderr redirected to temp file due to upstream Vite race condition)
+[group('eventcatalog')]
+eventcatalog-dev:
+  #!/usr/bin/env bash
+  ERRLOG=$(mktemp /tmp/eventcatalog-dev.XXXXXX.log)
+  trap 'rm -f "$ERRLOG"' EXIT
+  echo "EventCatalog dev server starting (stderr -> $ERRLOG)"
+  cd packages/eventcatalog && bun run dev 2>"$ERRLOG"
+
+# Build EventCatalog static site
+[group('eventcatalog')]
+eventcatalog-build:
+  cd packages/eventcatalog && bun run build
+
+# Preview built EventCatalog site
+[group('eventcatalog')]
+eventcatalog-preview:
+  cd packages/eventcatalog && bun run preview
+
+# Generate EventCatalog content from generators
+[group('eventcatalog')]
+eventcatalog-generate:
+  cd packages/eventcatalog && bun run generate
+
+# Format EventCatalog code
+[group('eventcatalog')]
+eventcatalog-format:
+  cd packages/eventcatalog && bun run format
+
+# Lint EventCatalog code
+[group('eventcatalog')]
+eventcatalog-lint:
+  cd packages/eventcatalog && bun run lint
+
+# Check and fix EventCatalog code
+[group('eventcatalog')]
+eventcatalog-check:
+  cd packages/eventcatalog && bun run check:fix
 
 ## Nix
 
