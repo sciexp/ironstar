@@ -585,6 +585,73 @@ See `~/.claude/commands/preferences/secrets.md` for detailed secrets management 
 
 ---
 
+## Diagram rendering workflow
+
+D2 diagrams in `docs/notes/event-modeling/d2/` can be rendered to SVG and optionally converted to optimized PNG.
+Output goes to `docs/notes/event-modeling/rendered/` (gitignored).
+
+Basic usage:
+
+```bash
+just d2-render      # D2 → SVG only
+just d2-render-png  # D2 → SVG → PNG (default 2x zoom)
+```
+
+<details>
+<summary>Full SVG/PNG workflow reference</summary>
+
+### Available recipes
+
+| Recipe | Description |
+|--------|-------------|
+| `just svg-to-png input.svg [zoom] [output.png]` | Single file conversion |
+| `just svg-to-png-dir path/to/svgs [zoom]` | Batch convert directory |
+| `just d2-render-png [zoom]` | Full D2 → SVG → PNG pipeline |
+| `just d2-watch-png [zoom]` | Watch mode with PNG output |
+
+### Usage examples
+
+```bash
+# Existing SVG workflow (unchanged)
+just d2-render          # D2 → SVG only
+
+# New PNG workflows
+just d2-render-png      # D2 → SVG → PNG (default 2x zoom)
+just d2-render-png 3    # D2 → SVG → PNG (3x zoom for high-res)
+
+# Convert existing SVGs to PNG
+just svg-to-png docs/notes/event-modeling/rendered/bounded-contexts.svg 2
+
+# Convert any directory of SVGs
+just svg-to-png-dir some/other/path 1.5
+```
+
+### Output location
+
+PNGs are placed alongside SVGs in `docs/notes/event-modeling/rendered/` (already gitignored).
+
+### Zoom factor guidance
+
+| Zoom | Use case |
+|------|----------|
+| 1x | Web thumbnails, minimal file size |
+| 2x | Standard display, good clarity (default) |
+| 3x | High-DPI/Retina displays |
+| 4x | Print or archival quality |
+
+### Tooling
+
+The pipeline uses:
+
+- **resvg**: Fast, correct SVG rendering with configurable zoom/DPI
+- **oxipng**: Lossless PNG optimization with zopfli compression
+
+Both are available in the Nix devShell.
+
+</details>
+
+---
+
 ## Related documentation
 
 - Process orchestration details: `process-compose.yaml` (repository root)
