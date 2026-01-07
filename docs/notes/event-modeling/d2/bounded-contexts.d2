@@ -10,6 +10,44 @@ direction: down
 # Read Models: #2ecc71 (green)
 # External Systems: #9b59b6 (purple)
 
+# Global edge styling: black lines, slightly thicker
+style: {
+  stroke: "#333"
+  stroke-width: 3
+}
+
+# Classes for filled elements (transparent stroke)
+classes: {
+  aggregate: {
+    style.fill: "#f1c40f"
+    style.stroke: transparent
+  }
+  command: {
+    style.fill: "#3498db"
+    style.stroke: transparent
+    style.font-color: "#fff"
+  }
+  event: {
+    style.fill: "#e67e22"
+    style.stroke: transparent
+    style.font-color: "#fff"
+  }
+  readmodel: {
+    style.fill: "#2ecc71"
+    style.stroke: transparent
+    style.font-color: "#fff"
+  }
+  sharedkernel: {
+    style.fill: "#ffeaa7"
+    style.stroke: transparent
+  }
+  external: {
+    style.fill: "#9b59b6"
+    style.stroke: transparent
+    style.font-color: "#fff"
+  }
+}
+
 # Strategic classification legend
 legend: {
   label: "Strategic Classification"
@@ -46,12 +84,12 @@ session: "Session Context" {
 
   session_aggregate: "Session" {
     label: "Session\n(Aggregate)"
-    style.fill: "#f1c40f"
+    class: aggregate
   }
 
   user_identity: "UserIdentity" {
     label: "UserIdentity\n(Value Object)\n[Shared Kernel]"
-    style.fill: "#ffeaa7"
+    class: sharedkernel
   }
 
   # OAuth is infrastructure boundary (purple = external system)
@@ -59,18 +97,15 @@ session: "Session Context" {
   # are issued by boundary layer after OAuth callback completes
   oauth_callback: "OAuth Callback" {
     label: "OAuth Callback\n(Infrastructure)"
-    style.fill: "#9b59b6"
-    style.font-color: "#fff"
+    class: external
   }
 
   # Events
   session_created: "SessionCreated" {
-    style.fill: "#e67e22"
-    style.font-color: "#fff"
+    class: event
   }
   session_expired: "SessionExpired" {
-    style.fill: "#e67e22"
-    style.font-color: "#fff"
+    class: event
   }
 
   oauth_callback -> session_aggregate: "authenticates"
@@ -89,34 +124,29 @@ todo: "Todo Context" {
 
   todo_aggregate: "Todo" {
     label: "Todo\n(Aggregate)"
-    style.fill: "#f1c40f"
+    class: aggregate
   }
 
   # Commands
   create_todo: "CreateTodo" {
-    style.fill: "#3498db"
-    style.font-color: "#fff"
+    class: command
   }
   complete_todo: "CompleteTodo" {
-    style.fill: "#3498db"
-    style.font-color: "#fff"
+    class: command
   }
 
   # Events
   todo_created: "TodoCreated" {
-    style.fill: "#e67e22"
-    style.font-color: "#fff"
+    class: event
   }
   todo_completed: "TodoCompleted" {
-    style.fill: "#e67e22"
-    style.font-color: "#fff"
+    class: event
   }
 
   # Read Models
   todo_list: "TodoList" {
     label: "TodoList\n(Read Model)"
-    style.fill: "#2ecc71"
-    style.font-color: "#fff"
+    class: readmodel
   }
 
   create_todo -> todo_aggregate
@@ -136,71 +166,60 @@ analytics: "Analytics Context" {
 
   query_session: "QuerySession" {
     label: "QuerySession\n(Aggregate)"
-    style.fill: "#f1c40f"
+    class: aggregate
   }
 
   # Chart is Shared Kernel value objects (ChartType, ChartConfig, ChartData)
   # consumed by Workspace. Not an aggregate - no commands or events.
   chart: "Chart" {
     label: "Chart\n(Shared Kernel VO)"
-    style.fill: "#ffeaa7"
+    class: sharedkernel
   }
 
   catalog: "Catalog" {
     label: "Catalog\n(Aggregate)"
-    style.fill: "#f1c40f"
+    class: aggregate
   }
 
   # Commands
   start_query: "StartQuery" {
-    style.fill: "#3498db"
-    style.font-color: "#fff"
+    class: command
   }
   cancel_query: "CancelQuery" {
-    style.fill: "#3498db"
-    style.font-color: "#fff"
+    class: command
   }
   select_catalog: "SelectCatalog" {
-    style.fill: "#3498db"
-    style.font-color: "#fff"
+    class: command
   }
   refresh_catalog: "RefreshCatalogMetadata" {
-    style.fill: "#3498db"
-    style.font-color: "#fff"
+    class: command
   }
 
   # Events
   query_started: "QueryStarted" {
-    style.fill: "#e67e22"
-    style.font-color: "#fff"
+    class: event
   }
   query_completed: "QueryCompleted" {
-    style.fill: "#e67e22"
-    style.font-color: "#fff"
+    class: event
   }
   query_failed: "QueryFailed" {
-    style.fill: "#e67e22"
-    style.font-color: "#fff"
+    class: event
   }
   catalog_selected: "CatalogSelected" {
-    style.fill: "#e67e22"
-    style.font-color: "#fff"
+    class: event
   }
   catalog_refreshed: "CatalogMetadataRefreshed" {
-    style.fill: "#e67e22"
-    style.font-color: "#fff"
+    class: event
   }
 
   # Read Models
   query_results: "QueryResults" {
     label: "QueryResults\n(Read Model)"
-    style.fill: "#2ecc71"
-    style.font-color: "#fff"
+    class: readmodel
   }
   chart_data: "ChartData" {
     label: "ChartData\n(Read Model)"
-    style.fill: "#2ecc71"
-    style.font-color: "#fff"
+    class: readmodel
   }
 
   start_query -> query_session
@@ -225,92 +244,77 @@ workspace: "Workspace Context" {
 
   dashboard_aggregate: "Dashboard" {
     label: "Dashboard\n(Aggregate)"
-    style.fill: "#f1c40f"
+    class: aggregate
   }
 
   saved_query_aggregate: "SavedQuery" {
     label: "SavedQuery\n(Aggregate)"
-    style.fill: "#f1c40f"
+    class: aggregate
   }
 
   user_preferences_aggregate: "UserPreferences" {
     label: "UserPreferences\n(Aggregate)"
-    style.fill: "#f1c40f"
+    class: aggregate
   }
 
   # Commands (Dashboard)
   create_dashboard: "CreateDashboard" {
-    style.fill: "#3498db"
-    style.font-color: "#fff"
+    class: command
   }
   add_chart: "AddChart" {
-    style.fill: "#3498db"
-    style.font-color: "#fff"
+    class: command
   }
   remove_chart: "RemoveChart" {
-    style.fill: "#3498db"
-    style.font-color: "#fff"
+    class: command
   }
   add_tab: "AddTab" {
-    style.fill: "#3498db"
-    style.font-color: "#fff"
+    class: command
   }
   move_chart_to_tab: "MoveChartToTab" {
-    style.fill: "#3498db"
-    style.font-color: "#fff"
+    class: command
   }
 
   # Commands (SavedQuery)
   save_query: "SaveQuery" {
-    style.fill: "#3498db"
-    style.font-color: "#fff"
+    class: command
   }
 
   # Commands (Preferences)
   update_preferences: "UpdatePreferences" {
-    style.fill: "#3498db"
-    style.font-color: "#fff"
+    class: command
   }
 
   # Events (Dashboard)
   dashboard_created: "DashboardCreated" {
-    style.fill: "#e67e22"
-    style.font-color: "#fff"
+    class: event
   }
   chart_added: "ChartAdded" {
-    style.fill: "#e67e22"
-    style.font-color: "#fff"
+    class: event
   }
   chart_removed: "ChartRemoved" {
-    style.fill: "#e67e22"
-    style.font-color: "#fff"
+    class: event
   }
   tab_added: "TabAdded" {
-    style.fill: "#e67e22"
-    style.font-color: "#fff"
+    class: event
   }
   chart_moved_to_tab: "ChartMovedToTab" {
-    style.fill: "#e67e22"
-    style.font-color: "#fff"
+    class: event
   }
 
   # Events (SavedQuery)
   query_saved: "QuerySaved" {
-    style.fill: "#e67e22"
-    style.font-color: "#fff"
+    class: event
   }
 
   # Events (Preferences)
   preferences_updated: "PreferencesUpdated" {
-    style.fill: "#e67e22"
-    style.font-color: "#fff"
+    class: event
   }
 
   # Read Models
   dashboard_view: "DashboardView" {
     label: "DashboardView\n(Read Model)"
-    style.fill: "#2ecc71"
-    style.font-color: "#fff"
+    class: readmodel
   }
 
   # Command → Aggregate edges
@@ -362,8 +366,6 @@ event_bus: "Event Bus (Zenoh)" {
 
 # Session → Todo: Customer-Supplier (Session upstream)
 session -> todo: "Customer-Supplier" {
-  style.stroke: "#3498db"
-  style.stroke-width: 2
   source-arrowhead: {
     shape: diamond
     style.filled: true
@@ -375,8 +377,6 @@ session -> todo: "Customer-Supplier" {
 
 # Session → Analytics: Customer-Supplier (Session upstream)
 session -> analytics: "Customer-Supplier" {
-  style.stroke: "#3498db"
-  style.stroke-width: 2
   source-arrowhead: {
     shape: diamond
     style.filled: true
@@ -388,8 +388,6 @@ session -> analytics: "Customer-Supplier" {
 
 # Session → Workspace: Shared Kernel (user identity flows)
 session -> workspace: "Shared Kernel" {
-  style.stroke: "#e74c3c"
-  style.stroke-width: 2
   style.stroke-dash: 5
   source-arrowhead: {
     shape: arrow
@@ -401,8 +399,6 @@ session -> workspace: "Shared Kernel" {
 
 # Analytics → Workspace: Customer-Supplier (Workspace consumes ChartDefinitions)
 analytics -> workspace: "Customer-Supplier" {
-  style.stroke: "#3498db"
-  style.stroke-width: 2
   source-arrowhead: {
     shape: diamond
     style.filled: true
@@ -414,18 +410,14 @@ analytics -> workspace: "Customer-Supplier" {
 
 # All contexts publish to event bus
 session -> event_bus: "publish" {
-  style.stroke: "#e67e22"
   style.stroke-dash: 3
 }
 todo -> event_bus: "publish" {
-  style.stroke: "#e67e22"
   style.stroke-dash: 3
 }
 analytics -> event_bus: "publish" {
-  style.stroke: "#e67e22"
   style.stroke-dash: 3
 }
 workspace -> event_bus: "publish" {
-  style.stroke: "#e67e22"
   style.stroke-dash: 3
 }
