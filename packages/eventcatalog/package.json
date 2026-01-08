@@ -31,7 +31,7 @@
 		"test-release": "semantic-release --dry-run --no-ci"
 	},
 	"dependencies": {
-		"@eventcatalog/core": "^3.1.0"
+		"@eventcatalog/core": "https://github.com/cameronraysmith/eventcatalog/releases/download/v3.2.2-e475461b/eventcatalog-core-3.2.2.tgz"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.3.0",
