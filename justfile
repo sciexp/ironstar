@@ -701,6 +701,36 @@ eventcatalog-build:
   #!/usr/bin/env bash
   set -euo pipefail
   cd packages/eventcatalog
+
+  # WORKAROUND: Patch @eventcatalog/core to create package.json in .eventcatalog-core
+  #
+  # Problem: The eventcatalog CLI copies core files to .eventcatalog-core/ without a
+  # package.json. When Vite runs, it walks up to find package.json and uses
+  # packages/eventcatalog/ as root instead of .eventcatalog-core/, causing
+  # "Missing pages directory: src/pages" errors and 0 pages built.
+  #
+  # This is a bun workspace hoisting issue where astro is hoisted to the workspace
+  # root, and without a local package.json, Vite resolves to the wrong project root.
+  #
+  # Solution: Patch the copyCore() calls in the installed @eventcatalog/core to
+  # create a minimal package.json after copying files.
+  #
+  # See: https://github.com/event-catalog/eventcatalog/issues/XXX (upstream fix needed)
+  CORE_DIST="../../node_modules/@eventcatalog/core/dist/eventcatalog.js"
+  if [ -f "$CORE_DIST" ]; then
+    # Check if patch already applied (look for our package.json write)
+    if ! grep -q 'writeFileSync.*package\.json.*eventcatalog-core' "$CORE_DIST" 2>/dev/null; then
+      echo "Patching @eventcatalog/core to fix Vite root detection..."
+      # Patch: Replace "copyCore();" with "copyCore(); fs.writeFileSync(...);"
+      # The copyCore function is called directly (not as method) so we match the call
+      # Create a package.json that includes astro integrations for proper module resolution
+      sed -i.bak 's/copyCore();/copyCore(); fs.writeFileSync(path.join(core, "package.json"), JSON.stringify({name: "eventcatalog-core", type: "module", dependencies: {"@astrojs\/react": "*", "@astrojs\/mdx": "*", "@astrojs\/tailwind": "*", "astro": "*"}}));/g' "$CORE_DIST"
+      echo "Patch applied successfully"
+    else
+      echo "Patch already applied"
+    fi
+  fi
+
   bun run build
   # Verify build produced an index.html (catches silent build failures)
   if [ ! -f dist/index.html ]; then
