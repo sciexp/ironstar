@@ -14,6 +14,7 @@
 		"start": "eventcatalog dev",
 		"build": "eventcatalog build",
 		"preview": "eventcatalog build && wrangler dev",
+		"preview:ci": "wrangler pages dev ./dist --port 3000",
 		"deploy": "eventcatalog build && wrangler deploy",
 		"generate": "eventcatalog generate",
 		"cf-typegen": "wrangler types",
