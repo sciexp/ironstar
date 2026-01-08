@@ -702,6 +702,10 @@ eventcatalog-build:
   set -euo pipefail
   cd packages/eventcatalog
 
+  # Remove stale parent .astro cache that can interfere with builds
+  # (This cache shouldn't exist but can be created by failed runs)
+  rm -rf .astro
+
   # Set PROJECT_DIR in parent environment BEFORE eventcatalog runs
   # This ensures it's available when Astro evaluates content.config.ts
   export PROJECT_DIR="$(pwd)"
@@ -720,6 +724,20 @@ eventcatalog-build:
   else
     echo "Build successful: $PAGE_COUNT pages"
   fi
+
+# Clean EventCatalog build artifacts and caches for fresh rebuild
+# Each path explicit from repo root; rm -rf is fail-safe on missing paths
+[group('eventcatalog')]
+eventcatalog-clean:
+  rm -rf packages/eventcatalog/.astro
+  rm -rf packages/eventcatalog/.eventcatalog-core
+  rm -rf packages/eventcatalog/dist
+
+# Deep clean EventCatalog including node_modules for package manager reset
+[group('eventcatalog')]
+eventcatalog-clean-full: eventcatalog-clean
+  rm -rf packages/eventcatalog/node_modules
+  rm -f packages/eventcatalog/package-lock.json
 
 # Preview built EventCatalog site
 [group('eventcatalog')]
