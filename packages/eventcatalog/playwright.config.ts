@@ -73,11 +73,11 @@ export default defineConfig({
 			],
 
 	// Serve EventCatalog for e2e tests
-	// Uses preview:ci mode (wrangler pages dev) instead of dev or preview mode because:
+	// Uses preview:ci mode (bunx serve) instead of dev or preview mode because:
 	// 1. eventcatalog-build already runs before e2e tests in CI (package-test.yaml)
 	// 2. preview:ci serves pre-built dist without rebuilding or requiring CF credentials
-	// 3. wrangler pages dev starts in ~1s vs dev mode's 30-60s+ in CI
-	// 4. preview script uses wrangler dev which may require authentication
+	// 3. bunx serve starts in ~1s vs dev mode's 30-60s+ in CI
+	// 4. wrangler pages dev hangs silently in CI due to interactive session detection
 	webServer: {
 		command: "bun run preview:ci",
 		url: "http://localhost:3000",
