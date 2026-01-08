@@ -698,7 +698,19 @@ eventcatalog-dev:
 # Build EventCatalog static site
 [group('eventcatalog')]
 eventcatalog-build:
-  cd packages/eventcatalog && bun run build
+  #!/usr/bin/env bash
+  set -euo pipefail
+  cd packages/eventcatalog
+  bun run build
+  # Verify build produced an index.html (catches silent build failures)
+  if [ ! -f dist/index.html ]; then
+    echo "ERROR: EventCatalog build completed but dist/index.html not found"
+    echo "This usually means the content collections failed to load any files."
+    echo "Check that PROJECT_DIR is set correctly and content files exist."
+    ls -la dist/ 2>/dev/null || echo "dist/ directory does not exist"
+    exit 1
+  fi
+  echo "Build verified: dist/index.html exists"
 
 # Preview built EventCatalog site
 [group('eventcatalog')]
