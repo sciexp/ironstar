@@ -31,7 +31,7 @@
 		"test-release": "semantic-release --dry-run --no-ci"
 	},
 	"dependencies": {
-		"@eventcatalog/core": "^3.0.0-beta.28"
+		"@eventcatalog/core": "^3.1.0"
 	},
 	"devDependencies": {
 		"astro": "5.16.6",
