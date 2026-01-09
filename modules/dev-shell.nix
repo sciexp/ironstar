@@ -139,8 +139,6 @@
             export PLAYWRIGHT_BROWSERS_PATH="${playwrightDriver.browsers}"
             export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
             export PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=true
-
-            printf "\n$GIT_REPO_NAME $GIT_REF $GIT_SHA_SHORT\n\n"
           '';
         };
       };
