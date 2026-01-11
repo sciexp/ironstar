@@ -1,0 +1,33 @@
+---
+id: CatalogService
+name: Catalog Service
+version: 0.0.1
+summary: |
+  Manages DuckLake catalog selection and metadata synchronization.
+owners:
+  - engineering
+sends: []
+receives: []
+---
+
+## Responsibilities
+
+- Select and switch DuckLake catalogs
+- Refresh catalog metadata (dataset list, schema versions)
+- Provide catalog context for query execution
+
+## Aggregate: Catalog
+
+The Catalog aggregate enforces single active catalog invariant.
+
+### State Machine
+
+```
+NoCatalogSelected → CatalogActive(ref, metadata)
+```
+
+### Key Value Objects
+
+- **CatalogRef**: URI reference to DuckLake catalog (e.g., `ducklake://hf/sciexp/fixtures`)
+- **DatasetInfo**: Dataset name, table count, schema version
+- **CatalogMetadata**: Collection of datasets with refresh timestamp

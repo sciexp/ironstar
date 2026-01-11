@@ -1,0 +1,36 @@
+---
+id: Analytics
+name: Analytics
+version: 0.0.1
+summary: |
+  Core domain for scientific data analysis. Manages DuckLake catalog selection and query execution with chart visualization.
+owners:
+  - engineering
+services:
+  - id: CatalogService
+    version: 0.0.1
+  - id: QuerySessionService
+    version: 0.0.1
+---
+
+## Overview
+
+The Analytics bounded context is the Core Domain of ironstar, enabling data analysts to explore DuckLake catalogs, execute SQL queries against datasets, and visualize results.
+
+## Strategic Classification
+
+**Core Domain**: Primary business differentiator providing scientific data analysis capabilities.
+
+## Key Aggregates
+
+- **Catalog**: Manages DuckLake catalog selection and metadata refresh
+- **QuerySession**: Handles query execution lifecycle (start → completed/failed/cancelled)
+
+## Integration Points
+
+- Downstream: Workspace consumes QuerySession results for Dashboard charts
+- Upstream: Session provides authenticated user context
+
+## Zenoh Channel
+
+Events published to: `events/analytics/**`

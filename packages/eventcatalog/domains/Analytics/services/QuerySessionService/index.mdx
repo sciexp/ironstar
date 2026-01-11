@@ -1,0 +1,38 @@
+---
+id: QuerySessionService
+name: Query Session Service
+version: 0.0.1
+summary: |
+  Manages analytical query execution lifecycle from start through completion, failure, or cancellation.
+owners:
+  - engineering
+sends: []
+receives: []
+---
+
+## Responsibilities
+
+- Execute SQL queries against DuckLake datasets via DuckDB
+- Track query execution state and timing
+- Handle query cancellation
+- Emit completion/failure events with results or error messages
+
+## Aggregate: QuerySession
+
+The QuerySession aggregate models query execution as a state machine.
+
+### State Machine
+
+```
+Idle → Running(queryId, datasetRef, sql) → Completed(queryId, results) | Failed(queryId, error)
+                      ↓ (cancel)
+                    Idle
+```
+
+### Key Value Objects
+
+- **QueryId**: Unique identifier for query execution
+- **DatasetRef**: Reference to catalog + dataset (e.g., `hf://datasets/sciexp/fixtures/experiment_results`)
+- **SqlQuery**: The SQL string to execute
+- **QueryResults**: Row count, column names (results cached separately)
+- **ErrorMessage**: Execution error details
