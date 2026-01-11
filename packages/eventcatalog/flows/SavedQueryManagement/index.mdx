@@ -1,0 +1,116 @@
+---
+id: SavedQueryManagement
+name: Saved Query Management
+version: 0.0.1
+summary: |
+  Saved query CRUD operations from creation through SQL and dataset updates to deletion.
+steps:
+  - id: analyst
+    title: Data Analyst
+    actor:
+      name: Data Analyst
+    next_step:
+      id: create-query
+      label: "saves query"
+
+  - id: create-query
+    title: Query Created
+    message:
+      id: SavedQueryCreated
+      version: "0.0.1"
+    next_steps:
+      - id: rename-query
+        label: "rename"
+      - id: update-sql
+        label: "modify SQL"
+      - id: update-dataset
+        label: "change dataset"
+      - id: delete-query
+        label: "delete"
+
+  - id: rename-query
+    title: Query Renamed
+    message:
+      id: SavedQueryRenamed
+      version: "0.0.1"
+    next_steps:
+      - id: update-sql
+        label: "modify SQL"
+      - id: delete-query
+        label: "delete"
+
+  - id: update-sql
+    title: Query SQL Updated
+    message:
+      id: SavedQuerySqlUpdated
+      version: "0.0.1"
+    next_steps:
+      - id: update-sql
+        label: "further refinement"
+      - id: update-dataset
+        label: "change dataset"
+      - id: delete-query
+        label: "delete"
+
+  - id: update-dataset
+    title: Dataset Reference Updated
+    message:
+      id: SavedQueryDatasetRefUpdated
+      version: "0.0.1"
+    next_steps:
+      - id: update-sql
+        label: "adjust SQL"
+      - id: delete-query
+        label: "delete"
+
+  - id: delete-query
+    title: Query Deleted
+    message:
+      id: SavedQueryDeleted
+      version: "0.0.1"
+---
+
+## Overview
+
+This flow documents the saved query management operations for persisting and maintaining reusable queries.
+Saved queries enable analysts to build a library of useful analytical queries.
+
+## Query creation
+
+Users save queries after successful execution to reuse them later.
+The SavedQueryCreated event captures the SQL, target dataset reference, and descriptive name.
+
+Saved queries are associated with the creating user and may be shared.
+
+## Query modification
+
+Saved queries can be modified over time as requirements evolve.
+
+*SQL updates* allow refining the query logic without creating a new saved query.
+The SavedQuerySqlUpdated event maintains an audit trail of query evolution.
+
+*Dataset reference updates* allow retargeting queries to different catalogs or tables.
+This is useful when migrating between development and production datasets.
+
+*Renaming* allows improving query organization without affecting query logic.
+
+## Query deletion
+
+Queries may be deleted when no longer needed.
+The SavedQueryDeleted event enables soft-delete patterns if audit requirements demand it.
+
+Charts referencing deleted queries require attention (broken reference handling).
+
+## Query editor integration
+
+The saved query system integrates with the query editor UI.
+Saved queries appear in a sidebar for quick loading.
+
+The query editor state (current SQL, cursor position, results) is tracked separately from saved query state.
+
+## Version considerations
+
+Saved queries do not currently version their SQL content.
+Each modification overwrites the previous version.
+
+If versioning becomes necessary, the SavedQuerySqlUpdated events provide a full audit trail for reconstructing any historical version.
