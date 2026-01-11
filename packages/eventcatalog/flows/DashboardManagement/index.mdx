@@ -1,0 +1,132 @@
+---
+id: DashboardManagement
+name: Dashboard Management
+version: 0.0.1
+summary: |
+  Dashboard CRUD operations from creation through chart and tab management to renaming.
+steps:
+  - id: analyst
+    title: Data Analyst
+    actor:
+      name: Data Analyst
+    next_step:
+      id: create-dashboard
+      label: "creates dashboard"
+
+  - id: create-dashboard
+    title: Dashboard Created
+    message:
+      id: DashboardCreated
+      version: "0.0.1"
+    next_steps:
+      - id: add-chart
+        label: "add visualization"
+      - id: rename-dashboard
+        label: "rename"
+
+  - id: add-chart
+    title: Chart Added
+    message:
+      id: DashboardChartAdded
+      version: "0.0.1"
+    next_steps:
+      - id: add-chart
+        label: "add another"
+      - id: add-tab
+        label: "organize into tabs"
+      - id: remove-chart
+        label: "remove"
+
+  - id: add-tab
+    title: Tab Added
+    message:
+      id: DashboardTabAdded
+      version: "0.0.1"
+    next_steps:
+      - id: move-chart
+        label: "organize charts"
+      - id: add-tab
+        label: "add another tab"
+
+  - id: move-chart
+    title: Chart Moved to Tab
+    message:
+      id: DashboardChartMovedToTab
+      version: "0.0.1"
+    next_steps:
+      - id: move-chart
+        label: "move another"
+      - id: add-chart
+        label: "add more charts"
+
+  - id: remove-chart
+    title: Chart Removed
+    message:
+      id: DashboardChartRemoved
+      version: "0.0.1"
+    next_steps:
+      - id: add-chart
+        label: "add replacement"
+      - id: remove-chart
+        label: "remove another"
+
+  - id: rename-dashboard
+    title: Dashboard Renamed
+    message:
+      id: DashboardRenamed
+      version: "0.0.1"
+---
+
+## Overview
+
+This flow documents the dashboard management operations for organizing and visualizing query results.
+Dashboards provide a persistent workspace for charts and visualizations derived from saved queries.
+
+## Dashboard creation
+
+Users create dashboards to organize related visualizations.
+A dashboard starts empty and is populated with charts over time.
+
+The DashboardCreated event captures the dashboard identifier, owner, and initial metadata.
+
+## Chart management
+
+Charts are added to dashboards to visualize query results.
+Each chart references a saved query or inline SQL and a chart configuration (type, axes, styling).
+
+Charts can be removed when no longer needed.
+The DashboardChartRemoved event enables audit trailing of dashboard evolution.
+
+## Tab organization
+
+Tabs provide logical grouping within dashboards.
+Large dashboards benefit from organizing related charts into tabs.
+
+Charts can be moved between tabs using the DashboardChartMovedToTab event.
+Tab order and naming are configurable.
+
+## Chart types
+
+The platform supports common chart types via ECharts integration.
+
+*Line charts* for time series and trend visualization.
+
+*Bar charts* for categorical comparisons.
+
+*Scatter plots* for correlation analysis.
+
+*Pie charts* for proportion visualization.
+
+*Tables* for detailed data inspection.
+
+Additional chart types are extensible through the ds-echarts web component.
+
+## Layout persistence
+
+Dashboard layout (chart positions, sizes, tab order) is persisted and restored on subsequent visits.
+Layout changes emit events for collaborative editing scenarios.
+
+## Sharing and access
+
+Dashboards may be private (owner only) or shared with team members.
+Access control is managed through user preferences and session context.
