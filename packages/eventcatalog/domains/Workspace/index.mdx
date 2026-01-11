@@ -1,0 +1,39 @@
+---
+id: Workspace
+name: Workspace
+version: 0.0.1
+summary: |
+  Supporting domain for persistent user workspace configuration. Manages dashboards, saved queries, and user preferences.
+owners:
+  - engineering
+services:
+  - id: DashboardService
+    version: 0.0.1
+  - id: SavedQueryService
+    version: 0.0.1
+  - id: UserPreferencesService
+    version: 0.0.1
+---
+
+## Overview
+
+The Workspace bounded context persists user-specific configurations that span sessions: dashboard layouts, reusable queries, and UI preferences.
+
+## Strategic Classification
+
+**Supporting Domain**: Enhances user experience by providing persistent workspace state.
+
+## Key Aggregates
+
+- **Dashboard**: Layout configuration with chart placements and tabs
+- **SavedQuery**: Named, reusable SQL queries with dataset references
+- **UserPreferences**: Theme, default catalog, and UI state
+
+## Integration Points
+
+- Upstream: Consumes ChartDefinition references from Analytics
+- Upstream: Consumes UserId from Session via Shared Kernel
+
+## Zenoh Channel
+
+Events published to: `events/workspace/**`

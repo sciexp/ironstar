@@ -1,0 +1,32 @@
+---
+id: DashboardService
+name: Dashboard Service
+version: 0.0.1
+summary: |
+  Manages dashboard layout configuration including chart placements, tabs, and grid positioning.
+owners:
+  - engineering
+sends: []
+receives: []
+---
+
+## Responsibilities
+
+- Create and rename dashboards
+- Add, remove, and position charts on grid
+- Organize charts into tabs
+- Persist layout configuration across sessions
+
+## Aggregate: Dashboard
+
+The Dashboard aggregate manages UI layout state with grid-based chart positioning.
+
+### Key Value Objects
+
+- **DashboardId**: Unique dashboard identifier
+- **TabId**: Tab identifier within a dashboard
+- **ChartId**: Chart placement identifier
+- **ChartDefinitionRef**: Reference to Analytics ChartDefinition (Customer-Supplier)
+- **GridPosition**: Row/column placement (0-indexed)
+- **GridSize**: Width/height in grid units
+- **ChartPlacement**: Associates chart reference with position, size, and optional tab
