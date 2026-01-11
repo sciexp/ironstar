@@ -1,0 +1,72 @@
+---
+id: events.workspace
+name: Workspace Events Channel
+version: 0.0.1
+summary: |
+  Zenoh key expression pattern for Workspace domain events including dashboards, saved queries, and user preferences.
+address: events/workspace/**
+protocols:
+  - zenoh
+owners:
+  - engineering
+---
+
+## Overview
+
+This channel carries all workspace domain events using Zenoh's key expression filtering.
+The workspace domain covers user-created artifacts like dashboards, saved queries, and preferences.
+
+## Key expression patterns
+
+The channel uses hierarchical key expressions for flexible subscription.
+
+`events/workspace/**` subscribes to all workspace events.
+
+`events/workspace/dashboard/**` subscribes to dashboard events.
+
+`events/workspace/dashboard/created` subscribes to dashboard creation.
+
+`events/workspace/dashboard/chart/**` subscribes to chart management events.
+
+`events/workspace/dashboard/tab/**` subscribes to tab management events.
+
+`events/workspace/query/**` subscribes to saved query events.
+
+`events/workspace/query/created` subscribes to new saved queries.
+
+`events/workspace/query/deleted` subscribes to query deletions.
+
+`events/workspace/preferences/**` subscribes to user preferences events.
+
+`events/workspace/preferences/theme` subscribes to theme changes.
+
+`events/workspace/preferences/ui-state` subscribes to UI state updates.
+
+## Event types carried
+
+This channel carries events from DashboardService, SavedQueryService, and UserPreferencesService.
+
+Dashboard events include DashboardCreated, DashboardChartAdded, DashboardTabAdded, DashboardChartMovedToTab, DashboardChartRemoved, and DashboardRenamed.
+
+Saved query events include SavedQueryCreated, SavedQueryRenamed, SavedQuerySqlUpdated, SavedQueryDatasetRefUpdated, and SavedQueryDeleted.
+
+Preferences events include UserPreferencesInitialized, UserPreferencesThemeSet, UserPreferencesDefaultCatalogSet, UserPreferencesDefaultCleared, and UserPreferencesUiStateUpdated.
+
+## Subscriber patterns
+
+Workspace events typically interest the following consumers.
+
+*Collaborative editing* synchronizes dashboard changes across multiple browser tabs.
+
+*Recent items* updates the user's recent dashboards and queries lists.
+
+*Search indexing* updates the search index when queries are created or renamed.
+
+*Backup processes* trigger incremental backup on workspace changes.
+
+## User-scoped filtering
+
+Workspace events include user identifiers enabling user-specific subscriptions.
+For per-session event delivery, combine with session-scoped key expressions.
+
+`events/workspace/{user_id}/dashboard/**` filters to a specific user's dashboard events.
