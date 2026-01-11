@@ -1,0 +1,60 @@
+---
+id: events.session
+name: Session Events Channel
+version: 0.0.1
+summary: |
+  Zenoh key expression pattern for Session domain events including creation, refresh, and termination.
+address: events/session/**
+protocols:
+  - zenoh
+owners:
+  - engineering
+---
+
+## Overview
+
+This channel carries all session lifecycle events using Zenoh's key expression filtering.
+Subscribers can filter to specific event types or receive all session events.
+
+## Key expression patterns
+
+The channel uses hierarchical key expressions for flexible subscription.
+
+`events/session/**` subscribes to all session events.
+
+`events/session/created` subscribes only to session creation events.
+
+`events/session/refreshed` subscribes only to session refresh events.
+
+`events/session/invalidated` subscribes only to session invalidation events.
+
+`events/session/expired` subscribes only to session expiration events.
+
+## Event types carried
+
+This channel carries the following events from the SessionService.
+
+*SessionCreated* is published when a new authenticated session is established after OAuth callback.
+
+*SessionRefreshed* is published when an active session's TTL is extended due to user activity.
+
+*SessionInvalidated* is published when a user explicitly logs out.
+
+*SessionExpired* is published when a session's TTL elapses without refresh.
+
+## Subscriber patterns
+
+Session events typically interest the following consumers.
+
+*Analytics projections* track active user counts and session durations.
+
+*Audit logging* records all session lifecycle changes for compliance.
+
+*Real-time dashboard* displays current active session metrics.
+
+## Zenoh configuration
+
+In embedded mode, Zenoh operates in-process without network overhead.
+Session events are distributed to all in-process subscribers.
+
+For multi-node deployments, configure Zenoh peer mode to distribute events across nodes.
