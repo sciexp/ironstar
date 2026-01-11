@@ -1,0 +1,67 @@
+---
+id: Catalog
+name: Catalog
+version: 0.0.1
+summary: |
+  Aggregate root representing a DuckLake catalog with health monitoring and metadata refresh.
+owners:
+  - engineering
+aggregateRoot: true
+identifier: id
+properties:
+  - name: id
+    type: string
+    required: true
+    format: uuid
+    summary: Unique catalog identifier
+  - name: name
+    type: string
+    required: true
+    summary: Human-readable catalog name
+  - name: healthStatus
+    type: string
+    required: true
+    enum: [Healthy, Degraded, Unavailable]
+    summary: Current catalog availability status
+  - name: lastMetadataRefresh
+    type: string
+    required: true
+    format: date-time
+    summary: Timestamp of most recent metadata sync from DuckLake
+---
+
+## Overview
+
+The Catalog aggregate manages DuckLake catalog connections, tracking their health status and metadata freshness.
+Catalogs serve as the entry point for dataset discovery and query execution in the Analytics domain.
+
+## Decider Pattern
+
+The Catalog aggregate follows the fmodel-rust Decider pattern.
+
+**Commands handled:**
+- `SelectCatalog`: Sets a catalog as the active working context
+- `RefreshCatalogMetadata`: Triggers metadata sync from DuckLake backend
+
+**Events emitted:**
+- `CatalogSelected`: User selected a catalog for querying
+- `CatalogMetadataRefreshed`: Metadata sync completed successfully
+
+## Relationships
+
+- **Dataset**: A Catalog contains zero or more Datasets (one-to-many)
+- **UserPreferences** (Workspace): References Catalog as default selection
+- **CatalogService**: Catalog is the aggregate root managed by CatalogService
+
+## Health Status Semantics
+
+| Status | Meaning |
+|--------|---------|
+| Healthy | All datasets queryable, metadata current |
+| Degraded | Some datasets unavailable, queries may fail |
+| Unavailable | Catalog connection failed, no queries possible |
+
+## DuckLake Integration
+
+Catalogs connect to DuckLake backends via the `hf://` protocol for HuggingFace-hosted datasets or S3-compatible storage.
+Metadata refresh pulls table schemas and statistics without loading full datasets.

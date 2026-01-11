@@ -1,0 +1,100 @@
+---
+id: Dashboard
+name: Dashboard
+version: 0.0.1
+summary: |
+  Aggregate root managing persistent dashboard layouts with chart placements and tabs.
+owners:
+  - engineering
+aggregateRoot: true
+identifier: id
+properties:
+  - name: id
+    type: string
+    required: true
+    format: uuid
+    summary: Unique dashboard identifier
+  - name: title
+    type: string
+    required: true
+    summary: Dashboard display title
+  - name: ownerId
+    type: reference
+    required: true
+    referenceTo: User
+    summary: Reference to the user who owns this dashboard
+  - name: layoutJson
+    type: string
+    required: true
+    summary: JSON blob encoding chart placements, tab structure, and grid positions
+  - name: createdAt
+    type: string
+    required: true
+    format: date-time
+    summary: Timestamp when dashboard was created
+  - name: updatedAt
+    type: string
+    required: true
+    format: date-time
+    summary: Timestamp of most recent layout modification
+---
+
+## Overview
+
+The Dashboard aggregate manages persistent visual layouts for data analysis.
+Dashboards contain multiple charts organized into tabs, with each chart referencing query results from the Analytics domain.
+
+## Decider Pattern
+
+The Dashboard aggregate follows the fmodel-rust Decider pattern.
+
+**Commands handled:**
+- `CreateDashboard`: Creates a new empty dashboard
+- `AddChart`: Adds a chart definition to the dashboard
+- `AddTab`: Creates a new organizational tab
+- `MoveChartToTab`: Relocates a chart to a different tab
+- `RemoveChart`: Removes a chart from the dashboard
+- `RenameDashboard`: Updates the dashboard title
+
+**Events emitted:**
+- `DashboardCreated`: New dashboard initialized
+- `DashboardChartAdded`: Chart added to layout
+- `DashboardTabAdded`: New tab created
+- `DashboardChartMovedToTab`: Chart relocated
+- `DashboardChartRemoved`: Chart removed
+- `DashboardRenamed`: Title updated
+
+## Relationships
+
+- **User** (Session): Dashboard has single owner (many-to-one)
+- **SavedQuery**: Charts reference SavedQuery for data source
+- **DashboardService**: Dashboard is managed by DashboardService
+
+## Layout JSON Schema
+
+The `layoutJson` field encodes a hierarchical structure:
+
+```json
+{
+  "tabs": [
+    {
+      "id": "tab-uuid",
+      "name": "Overview",
+      "charts": [
+        {
+          "id": "chart-uuid",
+          "queryRef": "saved-query-uuid",
+          "chartType": "line",
+          "position": { "x": 0, "y": 0, "w": 6, "h": 4 }
+        }
+      ]
+    }
+  ]
+}
+```
+
+## Invariants
+
+- Dashboard must have at least one tab after creation
+- Chart positions must not overlap within a tab
+- Only the owner can modify the dashboard

@@ -1,0 +1,68 @@
+---
+id: User
+name: User
+version: 0.0.1
+summary: |
+  Shared kernel entity representing an authenticated user identity across bounded contexts.
+owners:
+  - engineering
+aggregateRoot: false
+identifier: id
+properties:
+  - name: id
+    type: string
+    required: true
+    format: uuid
+    summary: Unique user identifier (internal, not OAuth provider ID)
+  - name: fullName
+    type: string
+    required: true
+    summary: User's display name from OAuth provider profile
+  - name: email
+    type: string
+    required: true
+    format: email
+    summary: User's email address from OAuth provider
+  - name: roleName
+    type: string
+    required: true
+    summary: User's role for authorization (e.g., admin, analyst, viewer)
+---
+
+## Overview
+
+The User entity represents an authenticated identity obtained from OAuth providers (GitHub primary, Google planned).
+As part of the Shared Kernel, User is defined in Session but exported for consumption by Workspace and Analytics bounded contexts.
+
+## Shared Kernel Pattern
+
+User is not an aggregate root within Session; instead, it is a reference type exported via the Shared Kernel pattern.
+Other bounded contexts receive `UserId` references through session context rather than managing User entities directly.
+
+**Exported types:**
+- `UserId`: Opaque identifier for user references in other contexts
+- `UserProfile`: Read-only projection of user display information
+
+## Relationships
+
+- **Session**: Users are associated with one or more Sessions (one-to-many)
+- **Dashboard** (Workspace): References User as owner
+- **SavedQuery** (Workspace): References User as owner
+- **UserPreferences** (Workspace): One-to-one relationship with User
+- **QuerySession** (Analytics): References User for audit trail
+
+## OAuth Provider Mapping
+
+The User entity abstracts over OAuth provider-specific identities.
+
+| Field | GitHub Source | Google Source |
+|-------|---------------|---------------|
+| fullName | `name` or `login` | `name` |
+| email | primary verified email | `email` |
+| roleName | derived from org membership | derived from domain |
+
+## Invariants
+
+- Email must be verified by the OAuth provider
+- User identity is immutable after creation (no profile editing)
+- Role assignment follows principle of least privilege

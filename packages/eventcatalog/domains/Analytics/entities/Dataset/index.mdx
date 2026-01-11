@@ -1,0 +1,65 @@
+---
+id: Dataset
+name: Dataset
+version: 0.0.1
+summary: |
+  Value object representing a queryable table within a DuckLake catalog.
+owners:
+  - engineering
+aggregateRoot: false
+identifier: id
+properties:
+  - name: id
+    type: string
+    required: true
+    format: uuid
+    summary: Unique dataset identifier
+  - name: name
+    type: string
+    required: true
+    summary: Human-readable dataset name
+  - name: catalogId
+    type: reference
+    required: true
+    referenceTo: Catalog
+    summary: Reference to the parent catalog
+  - name: tableName
+    type: string
+    required: true
+    summary: Fully qualified table name in DuckDB (e.g., catalog.schema.table)
+---
+
+## Overview
+
+The Dataset entity is a value object within the Catalog aggregate, representing a single queryable table in a DuckLake catalog.
+Datasets provide the schema and location information needed for SQL query construction.
+
+## Value Object Semantics
+
+Dataset is not an aggregate root; it is managed as part of the Catalog aggregate's consistency boundary.
+Dataset identity is derived from its parent Catalog and tableName combination.
+
+**Immutability constraints:**
+- Dataset properties are refreshed during `CatalogMetadataRefreshed` events
+- No direct commands target Dataset; changes flow through Catalog
+
+## Relationships
+
+- **Catalog**: Parent aggregate containing this dataset (many-to-one)
+- **SavedQuery** (Workspace): References Dataset via `datasetReference` URI
+- **QuerySession**: Queries execute against one or more Datasets
+
+## Table Name Format
+
+The `tableName` property uses DuckDB's fully qualified naming:
+
+```
+{catalog_name}.{schema_name}.{table_name}
+```
+
+For DuckLake catalogs, the schema typically matches the Parquet file organization.
+
+## Dataset Discovery
+
+Datasets are discovered during catalog metadata refresh, not created explicitly.
+The QuerySessionService's `DatasetBrowserView` query provides dataset listing with schema preview.

@@ -1,0 +1,72 @@
+---
+id: Session
+name: Session
+version: 0.0.1
+summary: |
+  Aggregate root managing authenticated user sessions with TTL-based lifecycle.
+owners:
+  - engineering
+aggregateRoot: true
+identifier: id
+properties:
+  - name: id
+    type: string
+    required: true
+    format: uuid
+    summary: Unique session identifier
+  - name: userId
+    type: reference
+    required: true
+    referenceTo: User
+    summary: Reference to the authenticated user
+  - name: status
+    type: string
+    required: true
+    enum: [Active, Expired, Invalidated]
+    summary: Current session lifecycle state
+  - name: expiresAt
+    type: string
+    required: true
+    format: date-time
+    summary: Timestamp when session will automatically expire
+  - name: createdAt
+    type: string
+    required: true
+    format: date-time
+    summary: Timestamp when session was created
+---
+
+## Overview
+
+The Session aggregate is the core entity in the Session bounded context, managing authenticated user sessions from creation through expiration or invalidation.
+Sessions are created after successful OAuth callback processing and maintain a TTL-based lifecycle.
+
+## Decider Pattern
+
+The Session aggregate follows the fmodel-rust Decider pattern with pure synchronous decision logic.
+
+**Commands handled:**
+- `CreateSession`: Initiates a new session after OAuth callback
+- `RefreshSession`: Extends session TTL for continued activity
+- `InvalidateSession`: Explicit logout terminates session
+- `ExpireSession`: System-triggered TTL expiration
+
+**State transitions:**
+
+```
+NoSession -> Active(id, userId, expiresAt)
+Active    -> Active (refresh extends TTL)
+Active    -> Expired (TTL elapsed)
+Active    -> Invalidated (explicit logout)
+```
+
+## Relationships
+
+- **User**: Each Session references exactly one User (many-to-one relationship)
+- **SessionService**: Session is the aggregate root managed by SessionService
+
+## Invariants
+
+- A session cannot be refreshed after expiration or invalidation
+- Session TTL must be positive and within configured bounds
+- Only one active session per user (enforced at application layer)

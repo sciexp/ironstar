@@ -1,0 +1,93 @@
+---
+id: QuerySession
+name: Query Session
+version: 0.0.1
+summary: |
+  Aggregate root managing the lifecycle of an interactive SQL query execution.
+owners:
+  - engineering
+aggregateRoot: true
+identifier: id
+properties:
+  - name: id
+    type: string
+    required: true
+    format: uuid
+    summary: Unique query session identifier
+  - name: userId
+    type: reference
+    required: true
+    referenceTo: User
+    summary: Reference to the user who initiated the query
+  - name: sqlStatement
+    type: string
+    required: true
+    summary: The SQL query being executed
+  - name: status
+    type: string
+    required: true
+    enum: [Idle, Running, Completed, Failed]
+    summary: Current query execution state
+  - name: startedAt
+    type: string
+    required: true
+    format: date-time
+    summary: Timestamp when query execution began
+  - name: durationMs
+    type: integer
+    required: true
+    summary: Query execution duration in milliseconds (0 if still running)
+  - name: errorDetails
+    type: string
+    required: false
+    summary: Error message if status is Failed, null otherwise
+---
+
+## Overview
+
+The QuerySession aggregate manages interactive SQL query execution within the Analytics domain.
+Each query session tracks a single SQL statement through its complete lifecycle from submission to completion or failure.
+
+## Decider Pattern
+
+The QuerySession aggregate follows the fmodel-rust Decider pattern.
+
+**Commands handled:**
+- `StartQuery`: Initiates query execution with SQL statement
+- `CancelQuery`: User-requested cancellation of running query
+
+**Events emitted:**
+- `QuerySessionStarted`: Query execution began
+- `QuerySessionCompleted`: Query finished successfully with results
+- `QuerySessionFailed`: Query terminated with error
+- `QuerySessionCancelled`: User cancelled running query
+
+**State transitions:**
+
+```
+Idle -> Running (StartQuery)
+Running -> Completed (success)
+Running -> Failed (error)
+Running -> Cancelled (CancelQuery)
+```
+
+## Relationships
+
+- **User** (Session): Each query is associated with an authenticated user
+- **Dataset**: Queries reference one or more datasets (implicit via SQL)
+- **Dashboard** (Workspace): Chart definitions may reference QuerySession results
+- **QuerySessionService**: QuerySession is managed by QuerySessionService
+
+## Execution Model
+
+Queries execute against DuckDB via async-duckdb with streaming results.
+Long-running queries support cancellation through the `CancelQuery` command.
+Results are cached in moka with TTL-based eviction.
+
+## Audit Trail
+
+The QuerySession provides audit capabilities by recording:
+- Who executed the query (userId)
+- What was executed (sqlStatement)
+- When it ran (startedAt, durationMs)
+- Outcome (status, errorDetails)

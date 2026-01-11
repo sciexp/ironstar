@@ -1,0 +1,81 @@
+---
+id: SavedQuery
+name: Saved Query
+version: 0.0.1
+summary: |
+  Aggregate root representing a named, reusable SQL query with dataset reference.
+owners:
+  - engineering
+aggregateRoot: true
+identifier: id
+properties:
+  - name: id
+    type: string
+    required: true
+    format: uuid
+    summary: Unique saved query identifier
+  - name: name
+    type: string
+    required: true
+    summary: Human-readable query name for display
+  - name: ownerId
+    type: reference
+    required: true
+    referenceTo: User
+    summary: Reference to the user who owns this query
+  - name: sqlStatement
+    type: string
+    required: true
+    summary: The SQL query text
+  - name: datasetReference
+    type: string
+    required: true
+    format: uri
+    summary: URI reference to the target dataset (e.g., ducklake://catalog/dataset)
+---
+
+## Overview
+
+The SavedQuery aggregate persists named SQL queries for reuse across sessions.
+Saved queries provide a library of pre-built analyses that can be referenced by Dashboard charts or executed interactively.
+
+## Decider Pattern
+
+The SavedQuery aggregate follows the fmodel-rust Decider pattern.
+
+**Commands handled:**
+- `SaveQuery`: Creates a new saved query
+- `RenameSavedQuery`: Updates the query name
+- `UpdateSavedQuerySql`: Modifies the SQL statement
+- `UpdateDatasetReference`: Changes the target dataset
+- `DeleteSavedQuery`: Removes the saved query
+
+**Events emitted:**
+- `SavedQueryCreated`: New query saved
+- `SavedQueryRenamed`: Name updated
+- `SavedQuerySqlUpdated`: SQL statement modified
+- `SavedQueryDatasetRefUpdated`: Dataset reference changed
+- `SavedQueryDeleted`: Query removed
+
+## Relationships
+
+- **User** (Session): Each saved query has a single owner (many-to-one)
+- **Dataset** (Analytics): References target dataset via URI
+- **Dashboard**: Charts reference SavedQuery as data source
+- **SavedQueryService**: SavedQuery is managed by SavedQueryService
+
+## Dataset Reference URI Format
+
+The `datasetReference` field uses a URI scheme for flexible dataset addressing:
+
+| Scheme | Example | Description |
+|--------|---------|-------------|
+| `ducklake://` | `ducklake://catalog/schema/table` | DuckLake catalog reference |
+| `hf://` | `hf://datasets/org/dataset` | HuggingFace dataset |
+| `s3://` | `s3://bucket/path` | S3-compatible storage |
+
+## Invariants
+
+- Query name must be unique per owner
+- SQL statement must be syntactically valid (validated at save time)
+- Only the owner can modify or delete the saved query
