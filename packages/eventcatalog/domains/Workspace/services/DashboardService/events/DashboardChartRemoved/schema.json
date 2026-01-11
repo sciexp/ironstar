@@ -1,0 +1,25 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "DashboardChartRemoved",
+	"type": "object",
+	"title": "DashboardChartRemoved",
+	"description": "Recorded when a Data Analyst removes a chart from a dashboard.",
+	"required": ["dashboardId", "chartId", "removedAt"],
+	"properties": {
+		"dashboardId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Dashboard from which the chart is removed"
+		},
+		"chartId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Chart being removed"
+		},
+		"removedAt": {
+			"type": "string",
+			"format": "date-time",
+			"description": "Timestamp when the chart was removed"
+		}
+	}
+}

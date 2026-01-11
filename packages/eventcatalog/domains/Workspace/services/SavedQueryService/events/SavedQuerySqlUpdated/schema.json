@@ -1,0 +1,28 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "SavedQuerySqlUpdated",
+	"type": "object",
+	"title": "SavedQuerySqlUpdated",
+	"description": "Recorded when a Data Analyst updates the SQL text of an existing saved query.",
+	"required": ["savedQueryId", "newSqlText", "updatedAt"],
+	"properties": {
+		"savedQueryId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Saved query being updated"
+		},
+		"previousSqlText": {
+			"type": "string",
+			"description": "Previous SQL text"
+		},
+		"newSqlText": {
+			"type": "string",
+			"description": "New SQL text"
+		},
+		"updatedAt": {
+			"type": "string",
+			"format": "date-time",
+			"description": "Timestamp when the SQL was updated"
+		}
+	}
+}

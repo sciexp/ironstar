@@ -1,0 +1,25 @@
+---
+id: DashboardChartMovedToTab
+name: Dashboard Chart Moved To Tab
+version: 0.0.1
+summary: |
+  Recorded when a Data Analyst moves a chart from one tab to another within a dashboard.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This event is emitted when a user reorganizes charts by moving them between tabs.
+This enables iterative refinement of dashboard layout to tell a coherent data story.
+
+## Business Rules
+
+- Source and destination tabs must exist in the dashboard
+- Chart must exist and be currently placed in the source tab (or default view)
+- Moving to the same tab is a no-op (not recorded)
+
+## Given-When-Then
+
+Given a dashboard with multiple tabs and charts, When the Data Analyst moves a chart to another tab, Then Dashboard Chart Moved To Tab is recorded.

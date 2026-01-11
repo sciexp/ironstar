@@ -1,0 +1,33 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "DashboardTabAdded",
+	"type": "object",
+	"title": "DashboardTabAdded",
+	"description": "Recorded when a Data Analyst adds a new tab to organize charts within a dashboard.",
+	"required": ["dashboardId", "tabId", "tabTitle", "addedAt"],
+	"properties": {
+		"dashboardId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Dashboard receiving the tab"
+		},
+		"tabId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Unique identifier for this tab"
+		},
+		"tabTitle": {
+			"type": "string",
+			"description": "Display title for the tab"
+		},
+		"tabOrder": {
+			"type": "integer",
+			"description": "Position in tab order (0-indexed)"
+		},
+		"addedAt": {
+			"type": "string",
+			"format": "date-time",
+			"description": "Timestamp when the tab was added"
+		}
+	}
+}

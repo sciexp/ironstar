@@ -1,0 +1,25 @@
+---
+id: UpdateUiState
+name: Update UI State
+version: 0.0.1
+summary: |
+  Command to persist UI state changes (panel sizes, collapsed sections, etc.).
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This command saves UI layout preferences.
+State includes panel dimensions, collapsed sections, and other layout settings.
+
+## Validation Rules
+
+- Preferences must exist for this user
+- UI state must be valid JSON
+- State size limits are enforced
+
+## Emits
+
+- `UserPreferencesUiStateUpdated` on success

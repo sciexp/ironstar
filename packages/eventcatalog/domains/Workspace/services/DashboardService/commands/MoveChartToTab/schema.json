@@ -1,0 +1,33 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "MoveChartToTab",
+	"type": "object",
+	"title": "MoveChartToTab",
+	"description": "Command to move a chart from one tab to another within a dashboard.",
+	"required": ["dashboardId", "chartId", "toTabId"],
+	"properties": {
+		"dashboardId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Dashboard containing the chart"
+		},
+		"chartId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Chart to move"
+		},
+		"toTabId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Destination tab ID"
+		},
+		"newGridX": {
+			"type": "integer",
+			"description": "Optional new column position in destination tab"
+		},
+		"newGridY": {
+			"type": "integer",
+			"description": "Optional new row position in destination tab"
+		}
+	}
+}

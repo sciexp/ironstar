@@ -1,0 +1,25 @@
+---
+id: RenameSavedQuery
+name: Rename Saved Query
+version: 0.0.1
+summary: |
+  Command to change the display name of an existing saved query.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This command updates the name of an existing saved query.
+Recent aliases are tracked for discoverability.
+
+## Validation Rules
+
+- Saved query must exist and be owned by the user
+- New name must be non-empty
+- New name should be unique per user
+
+## Emits
+
+- `SavedQueryRenamed` on success

@@ -1,0 +1,53 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "GetDashboardDetails",
+	"type": "object",
+	"title": "GetDashboardDetails",
+	"description": "Query to retrieve metadata and summary information for a specific dashboard.",
+	"required": ["dashboardId"],
+	"properties": {
+		"dashboardId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Dashboard to retrieve details for"
+		},
+		"response": {
+			"type": "object",
+			"required": ["dashboardId", "title", "ownerId", "createdAt"],
+			"properties": {
+				"dashboardId": {
+					"type": "string",
+					"format": "uuid",
+					"description": "Dashboard identifier"
+				},
+				"title": {
+					"type": "string",
+					"description": "Current display title"
+				},
+				"ownerId": {
+					"type": "string",
+					"format": "uuid",
+					"description": "User ID of the dashboard owner"
+				},
+				"chartCount": {
+					"type": "integer",
+					"description": "Number of charts in the dashboard"
+				},
+				"tabCount": {
+					"type": "integer",
+					"description": "Number of tabs in the dashboard"
+				},
+				"createdAt": {
+					"type": "string",
+					"format": "date-time",
+					"description": "When the dashboard was created"
+				},
+				"lastModifiedAt": {
+					"type": "string",
+					"format": "date-time",
+					"description": "When the dashboard was last modified"
+				}
+			}
+		}
+	}
+}

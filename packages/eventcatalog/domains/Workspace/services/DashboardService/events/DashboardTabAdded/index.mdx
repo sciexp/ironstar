@@ -1,0 +1,25 @@
+---
+id: DashboardTabAdded
+name: Dashboard Tab Added
+version: 0.0.1
+summary: |
+  Recorded when a Data Analyst adds a new tab to organize charts within a dashboard.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This event is emitted when a user adds a new tab to a dashboard for grouping related charts.
+Tabs provide organizational structure for complex dashboards with many visualizations.
+
+## Business Rules
+
+- Tab titles should be descriptive and concise
+- Tabs are ordered by creation time by default
+- Empty tabs are allowed (charts can be moved in later)
+
+## Given-When-Then
+
+Given a dashboard exists, When the Data Analyst adds a new tab with a title, Then Dashboard Tab Added is recorded.

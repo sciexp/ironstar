@@ -1,0 +1,19 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "UpdateSavedQuerySql",
+	"type": "object",
+	"title": "UpdateSavedQuerySql",
+	"description": "Command to update the SQL text of an existing saved query.",
+	"required": ["savedQueryId", "newSqlText"],
+	"properties": {
+		"savedQueryId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Saved query to update"
+		},
+		"newSqlText": {
+			"type": "string",
+			"description": "New SQL text"
+		}
+	}
+}

@@ -1,0 +1,25 @@
+---
+id: SavedQuerySqlUpdated
+name: Saved Query SQL Updated
+version: 0.0.1
+summary: |
+  Recorded when a Data Analyst updates the SQL text of an existing saved query.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This event is emitted when a user modifies the SQL statement of a saved query.
+Impact analysis should be performed to identify dashboards using this query.
+
+## Business Rules
+
+- Saved query must exist and be owned by the user
+- New SQL text must be non-empty
+- Changes may break dependent dashboards (warning provided)
+
+## Given-When-Then
+
+Given a saved query exists, When the Data Analyst updates its SQL text, Then Saved Query SQL Updated is recorded.

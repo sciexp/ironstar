@@ -1,0 +1,28 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "SavedQueryRenamed",
+	"type": "object",
+	"title": "SavedQueryRenamed",
+	"description": "Recorded when a Data Analyst renames an existing saved query.",
+	"required": ["savedQueryId", "newName", "renamedAt"],
+	"properties": {
+		"savedQueryId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Saved query being renamed"
+		},
+		"previousName": {
+			"type": "string",
+			"description": "Previous display name"
+		},
+		"newName": {
+			"type": "string",
+			"description": "New display name"
+		},
+		"renamedAt": {
+			"type": "string",
+			"format": "date-time",
+			"description": "Timestamp when the query was renamed"
+		}
+	}
+}

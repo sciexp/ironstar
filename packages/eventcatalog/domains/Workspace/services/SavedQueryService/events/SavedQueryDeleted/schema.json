@@ -1,0 +1,20 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "SavedQueryDeleted",
+	"type": "object",
+	"title": "SavedQueryDeleted",
+	"description": "Recorded when a Data Analyst deletes a saved query that is not required by active dashboards.",
+	"required": ["savedQueryId", "deletedAt"],
+	"properties": {
+		"savedQueryId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Saved query being deleted"
+		},
+		"deletedAt": {
+			"type": "string",
+			"format": "date-time",
+			"description": "Timestamp when the query was deleted"
+		}
+	}
+}

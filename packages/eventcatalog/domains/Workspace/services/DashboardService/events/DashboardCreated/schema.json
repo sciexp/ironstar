@@ -1,0 +1,33 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "DashboardCreated",
+	"type": "object",
+	"title": "DashboardCreated",
+	"description": "Recorded when a Data Analyst creates a new dashboard with a name and initial layout.",
+	"required": ["dashboardId", "ownerId", "title", "createdAt"],
+	"properties": {
+		"dashboardId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Unique identifier for the dashboard"
+		},
+		"ownerId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "User ID of the dashboard owner"
+		},
+		"title": {
+			"type": "string",
+			"description": "Display title for the dashboard"
+		},
+		"layoutJson": {
+			"type": "string",
+			"description": "Initial layout configuration as JSON blob (empty for new dashboards)"
+		},
+		"createdAt": {
+			"type": "string",
+			"format": "date-time",
+			"description": "Timestamp when the dashboard was created"
+		}
+	}
+}

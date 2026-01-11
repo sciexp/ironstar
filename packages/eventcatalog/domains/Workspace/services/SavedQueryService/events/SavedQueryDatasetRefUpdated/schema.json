@@ -1,0 +1,30 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "SavedQueryDatasetRefUpdated",
+	"type": "object",
+	"title": "SavedQueryDatasetRefUpdated",
+	"description": "Recorded when a Data Analyst updates the dataset reference of a saved query.",
+	"required": ["savedQueryId", "newDatasetRef", "updatedAt"],
+	"properties": {
+		"savedQueryId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Saved query being updated"
+		},
+		"previousDatasetRef": {
+			"type": "string",
+			"format": "uri",
+			"description": "Previous dataset URI"
+		},
+		"newDatasetRef": {
+			"type": "string",
+			"format": "uri",
+			"description": "New dataset URI"
+		},
+		"updatedAt": {
+			"type": "string",
+			"format": "date-time",
+			"description": "Timestamp when the dataset reference was updated"
+		}
+	}
+}

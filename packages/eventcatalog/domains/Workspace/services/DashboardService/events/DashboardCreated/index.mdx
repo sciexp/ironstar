@@ -1,0 +1,25 @@
+---
+id: DashboardCreated
+name: Dashboard Created
+version: 0.0.1
+summary: |
+  Recorded when a Data Analyst creates a new dashboard with a name and initial layout.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This event is emitted when a user creates a new dashboard to organize and share insights.
+The event captures the dashboard identity, owner, initial title, and empty layout configuration.
+
+## Business Rules
+
+- Dashboard names must be unique per owner
+- Initial layout contains zero charts and zero tabs
+- Owner is derived from the authenticated session's UserId
+
+## Given-When-Then
+
+Given the user has an active session, When the Data Analyst creates a dashboard with a name, Then Dashboard Created is recorded with owner and initial layout.

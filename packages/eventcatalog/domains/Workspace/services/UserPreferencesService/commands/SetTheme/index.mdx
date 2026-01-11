@@ -1,0 +1,24 @@
+---
+id: SetTheme
+name: Set Theme
+version: 0.0.1
+summary: |
+  Command to change the user's theme preference to Light, Dark, or System.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This command updates the user's theme preference.
+Changes are applied instantly without page reload.
+
+## Validation Rules
+
+- Preferences must exist for this user
+- Theme must be one of: Light, Dark, System
+
+## Emits
+
+- `UserPreferencesThemeSet` on success

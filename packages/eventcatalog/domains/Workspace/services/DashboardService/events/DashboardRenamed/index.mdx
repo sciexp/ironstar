@@ -1,0 +1,25 @@
+---
+id: DashboardRenamed
+name: Dashboard Renamed
+version: 0.0.1
+summary: |
+  Recorded when a Data Analyst renames a dashboard.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This event is emitted when a user changes the display title of a dashboard.
+Stable IDs ensure external references remain valid despite title changes.
+
+## Business Rules
+
+- New title must be non-empty
+- New title should be unique per owner (warning, not hard error)
+- Dashboard ID remains unchanged for stable deep links
+
+## Given-When-Then
+
+Given a dashboard exists, When the Data Analyst renames it, Then Dashboard Renamed is recorded with the new title.

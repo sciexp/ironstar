@@ -1,0 +1,30 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "UserPreferencesThemeSet",
+	"type": "object",
+	"title": "UserPreferencesThemeSet",
+	"description": "Recorded when a Data Analyst sets the theme to Light, Dark, or System.",
+	"required": ["preferencesId", "theme", "setAt"],
+	"properties": {
+		"preferencesId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Preferences being updated"
+		},
+		"previousTheme": {
+			"type": "string",
+			"enum": ["Light", "Dark", "System"],
+			"description": "Previous theme value"
+		},
+		"theme": {
+			"type": "string",
+			"enum": ["Light", "Dark", "System"],
+			"description": "New theme value"
+		},
+		"setAt": {
+			"type": "string",
+			"format": "date-time",
+			"description": "Timestamp when the theme was set"
+		}
+	}
+}

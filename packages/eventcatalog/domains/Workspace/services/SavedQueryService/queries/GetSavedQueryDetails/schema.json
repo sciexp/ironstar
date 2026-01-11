@@ -1,0 +1,65 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "GetSavedQueryDetails",
+	"type": "object",
+	"title": "GetSavedQueryDetails",
+	"description": "Query to retrieve full details of a specific saved query.",
+	"required": ["savedQueryId"],
+	"properties": {
+		"savedQueryId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Saved query to retrieve"
+		},
+		"response": {
+			"type": "object",
+			"required": [
+				"savedQueryId",
+				"name",
+				"sqlText",
+				"datasetRef",
+				"ownerId",
+				"createdAt"
+			],
+			"properties": {
+				"savedQueryId": {
+					"type": "string",
+					"format": "uuid",
+					"description": "Saved query identifier"
+				},
+				"name": {
+					"type": "string",
+					"description": "Current display name"
+				},
+				"sqlText": {
+					"type": "string",
+					"description": "Current SQL text"
+				},
+				"datasetRef": {
+					"type": "string",
+					"format": "uri",
+					"description": "Current dataset URI"
+				},
+				"ownerId": {
+					"type": "string",
+					"format": "uuid",
+					"description": "User ID of the owner"
+				},
+				"createdAt": {
+					"type": "string",
+					"format": "date-time",
+					"description": "When the query was created"
+				},
+				"lastModifiedAt": {
+					"type": "string",
+					"format": "date-time",
+					"description": "When the query was last modified"
+				},
+				"usageCount": {
+					"type": "integer",
+					"description": "Number of times the query has been executed"
+				}
+			}
+		}
+	}
+}

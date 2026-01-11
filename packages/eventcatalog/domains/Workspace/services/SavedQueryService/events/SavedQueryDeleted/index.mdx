@@ -1,0 +1,25 @@
+---
+id: SavedQueryDeleted
+name: Saved Query Deleted
+version: 0.0.1
+summary: |
+  Recorded when a Data Analyst deletes a saved query that is not required by active dashboards.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This event is emitted when a user removes a saved query from their workspace.
+Dependency checks should warn if dashboards rely on this query.
+
+## Business Rules
+
+- Saved query must exist and be owned by the user
+- Deletion should be blocked or warned if dashboards depend on this query
+- Soft delete with restore capability is recommended
+
+## Given-When-Then
+
+Given a saved query exists and is not required by active dashboards, When the Data Analyst deletes it, Then Saved Query Deleted is recorded.

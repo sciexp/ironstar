@@ -1,0 +1,19 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "AddTab",
+	"type": "object",
+	"title": "AddTab",
+	"description": "Command to add a new tab to a dashboard for grouping related charts.",
+	"required": ["dashboardId", "tabTitle"],
+	"properties": {
+		"dashboardId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Dashboard to add the tab to"
+		},
+		"tabTitle": {
+			"type": "string",
+			"description": "Display title for the new tab"
+		}
+	}
+}

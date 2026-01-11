@@ -1,0 +1,28 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "DashboardRenamed",
+	"type": "object",
+	"title": "DashboardRenamed",
+	"description": "Recorded when a Data Analyst renames a dashboard.",
+	"required": ["dashboardId", "newTitle", "renamedAt"],
+	"properties": {
+		"dashboardId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Dashboard being renamed"
+		},
+		"previousTitle": {
+			"type": "string",
+			"description": "Previous display title"
+		},
+		"newTitle": {
+			"type": "string",
+			"description": "New display title"
+		},
+		"renamedAt": {
+			"type": "string",
+			"format": "date-time",
+			"description": "Timestamp when the dashboard was renamed"
+		}
+	}
+}

@@ -1,0 +1,25 @@
+---
+id: AddTab
+name: Add Tab
+version: 0.0.1
+summary: |
+  Command to add a new tab to a dashboard for grouping related charts.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This command creates a new tab within a dashboard to organize charts into logical groups.
+Charts can be moved to the tab after creation.
+
+## Validation Rules
+
+- Dashboard must exist and be owned by the user
+- Tab title must be non-empty
+- Tab titles should be unique within the dashboard (warning if duplicate)
+
+## Emits
+
+- `DashboardTabAdded` on success

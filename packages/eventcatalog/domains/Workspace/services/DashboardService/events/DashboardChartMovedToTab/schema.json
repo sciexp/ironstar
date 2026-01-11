@@ -1,0 +1,43 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "DashboardChartMovedToTab",
+	"type": "object",
+	"title": "DashboardChartMovedToTab",
+	"description": "Recorded when a Data Analyst moves a chart from one tab to another within a dashboard.",
+	"required": ["dashboardId", "chartId", "toTabId", "movedAt"],
+	"properties": {
+		"dashboardId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Dashboard containing the chart"
+		},
+		"chartId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Chart being moved"
+		},
+		"fromTabId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Source tab ID (null if from default view)"
+		},
+		"toTabId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Destination tab ID"
+		},
+		"newGridX": {
+			"type": "integer",
+			"description": "New column position in destination tab"
+		},
+		"newGridY": {
+			"type": "integer",
+			"description": "New row position in destination tab"
+		},
+		"movedAt": {
+			"type": "string",
+			"format": "date-time",
+			"description": "Timestamp when the chart was moved"
+		}
+	}
+}

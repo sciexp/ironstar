@@ -1,0 +1,64 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "DashboardChartAdded",
+	"type": "object",
+	"title": "DashboardChartAdded",
+	"description": "Recorded when a Data Analyst adds a chart to a dashboard with position and size.",
+	"required": [
+		"dashboardId",
+		"chartId",
+		"chartDefinitionId",
+		"gridX",
+		"gridY",
+		"gridWidth",
+		"gridHeight",
+		"addedAt"
+	],
+	"properties": {
+		"dashboardId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Dashboard receiving the chart"
+		},
+		"chartId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Unique identifier for this chart placement"
+		},
+		"chartDefinitionId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Reference to the ChartDefinition from Analytics"
+		},
+		"tabId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Optional tab ID if chart is placed within a tab"
+		},
+		"gridX": {
+			"type": "integer",
+			"description": "Column position on the grid (0-indexed)"
+		},
+		"gridY": {
+			"type": "integer",
+			"description": "Row position on the grid (0-indexed)"
+		},
+		"gridWidth": {
+			"type": "integer",
+			"description": "Width in grid units"
+		},
+		"gridHeight": {
+			"type": "integer",
+			"description": "Height in grid units"
+		},
+		"chartConfig": {
+			"type": "string",
+			"description": "Optional chart-specific configuration as JSON blob"
+		},
+		"addedAt": {
+			"type": "string",
+			"format": "date-time",
+			"description": "Timestamp when the chart was added"
+		}
+	}
+}

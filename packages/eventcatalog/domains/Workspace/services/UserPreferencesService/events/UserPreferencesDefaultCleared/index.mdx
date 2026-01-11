@@ -1,0 +1,25 @@
+---
+id: UserPreferencesDefaultCleared
+name: User Preferences Default Cleared
+version: 0.0.1
+summary: |
+  Recorded when a Data Analyst clears their default catalog preference.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This event is emitted when a user removes their default catalog setting.
+After clearing, the user will be prompted to choose a catalog each session.
+
+## Business Rules
+
+- A default catalog must currently be set
+- Clearing is always allowed
+- User will see catalog selection on next login
+
+## Given-When-Then
+
+Given a default catalog is currently set, When the Data Analyst clears the default, Then User Preferences Default Cleared is recorded.

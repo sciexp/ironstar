@@ -1,0 +1,19 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "RenameDashboard",
+	"type": "object",
+	"title": "RenameDashboard",
+	"description": "Command to change the display title of a dashboard.",
+	"required": ["dashboardId", "newTitle"],
+	"properties": {
+		"dashboardId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Dashboard to rename"
+		},
+		"newTitle": {
+			"type": "string",
+			"description": "New display title"
+		}
+	}
+}

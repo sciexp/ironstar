@@ -1,0 +1,19 @@
+---
+id: GetDashboardLayout
+name: Get Dashboard Layout
+version: 0.0.1
+summary: |
+  Query to retrieve the complete layout configuration of a dashboard including charts and tabs.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This query returns the full layout state of a specific dashboard including all chart placements, tab organization, and grid positions.
+Used to render the dashboard editor and viewer.
+
+## Read Model
+
+Built from `DashboardCreated`, `DashboardChartAdded`, `DashboardTabAdded`, `DashboardChartMovedToTab`, and `DashboardChartRemoved` events.

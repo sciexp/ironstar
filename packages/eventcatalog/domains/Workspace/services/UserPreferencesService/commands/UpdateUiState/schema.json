@@ -1,0 +1,14 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "UpdateUiState",
+	"type": "object",
+	"title": "UpdateUiState",
+	"description": "Command to persist UI state changes (panel sizes, collapsed sections, etc.).",
+	"required": ["uiStateJson"],
+	"properties": {
+		"uiStateJson": {
+			"type": "string",
+			"description": "Complete UI state as JSON blob"
+		}
+	}
+}

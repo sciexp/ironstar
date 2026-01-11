@@ -1,0 +1,46 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "ListSavedQueries",
+	"type": "object",
+	"title": "ListSavedQueries",
+	"description": "Query to retrieve all saved queries owned by the current user.",
+	"properties": {
+		"response": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"required": ["savedQueryId", "name", "datasetRef", "createdAt"],
+				"properties": {
+					"savedQueryId": {
+						"type": "string",
+						"format": "uuid",
+						"description": "Saved query identifier"
+					},
+					"name": {
+						"type": "string",
+						"description": "Display name"
+					},
+					"datasetRef": {
+						"type": "string",
+						"format": "uri",
+						"description": "Dataset URI"
+					},
+					"createdAt": {
+						"type": "string",
+						"format": "date-time",
+						"description": "When the query was created"
+					},
+					"lastModifiedAt": {
+						"type": "string",
+						"format": "date-time",
+						"description": "When the query was last modified"
+					},
+					"usageCount": {
+						"type": "integer",
+						"description": "Number of times the query has been executed"
+					}
+				}
+			}
+		}
+	}
+}

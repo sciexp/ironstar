@@ -1,0 +1,27 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "GetCurrentUiState",
+	"type": "object",
+	"title": "GetCurrentUiState",
+	"description": "Query to retrieve the user's persisted UI state for layout restoration.",
+	"properties": {
+		"response": {
+			"type": "object",
+			"properties": {
+				"uiStateJson": {
+					"type": "string",
+					"description": "Complete UI state as JSON blob"
+				},
+				"stateVersion": {
+					"type": "integer",
+					"description": "Version number for state schema"
+				},
+				"lastUpdatedAt": {
+					"type": "string",
+					"format": "date-time",
+					"description": "When UI state was last updated"
+				}
+			}
+		}
+	}
+}

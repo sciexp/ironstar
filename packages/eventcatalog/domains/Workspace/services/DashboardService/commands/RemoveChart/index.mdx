@@ -1,0 +1,24 @@
+---
+id: RemoveChart
+name: Remove Chart
+version: 0.0.1
+summary: |
+  Command to remove a chart from a dashboard.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This command removes a chart placement from a dashboard.
+The underlying ChartDefinition in Analytics remains unaffected.
+
+## Validation Rules
+
+- Dashboard must exist and be owned by the user
+- Chart must exist in the dashboard
+
+## Emits
+
+- `DashboardChartRemoved` on success

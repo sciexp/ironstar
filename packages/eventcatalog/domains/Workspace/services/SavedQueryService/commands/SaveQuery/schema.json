@@ -1,0 +1,23 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "SaveQuery",
+	"type": "object",
+	"title": "SaveQuery",
+	"description": "Command to save a new query with a name, SQL text, and dataset reference.",
+	"required": ["name", "sqlText", "datasetRef"],
+	"properties": {
+		"name": {
+			"type": "string",
+			"description": "Display name for the saved query"
+		},
+		"sqlText": {
+			"type": "string",
+			"description": "The SQL query text"
+		},
+		"datasetRef": {
+			"type": "string",
+			"format": "uri",
+			"description": "URI reference to the target dataset"
+		}
+	}
+}

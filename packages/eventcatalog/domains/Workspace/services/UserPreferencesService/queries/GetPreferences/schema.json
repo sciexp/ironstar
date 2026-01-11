@@ -1,0 +1,39 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "GetPreferences",
+	"type": "object",
+	"title": "GetPreferences",
+	"description": "Query to retrieve the current user's preferences including theme and default catalog.",
+	"properties": {
+		"response": {
+			"type": "object",
+			"required": ["preferencesId", "theme"],
+			"properties": {
+				"preferencesId": {
+					"type": "string",
+					"format": "uuid",
+					"description": "Preferences identifier"
+				},
+				"theme": {
+					"type": "string",
+					"enum": ["Light", "Dark", "System"],
+					"description": "Current theme preference"
+				},
+				"defaultCatalogUri": {
+					"type": "string",
+					"format": "uri",
+					"description": "Default catalog URI if set"
+				},
+				"defaultCatalogName": {
+					"type": "string",
+					"description": "Human-readable name of default catalog"
+				},
+				"lastModifiedAt": {
+					"type": "string",
+					"format": "date-time",
+					"description": "When preferences were last modified"
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,20 @@
+---
+id: GetCurrentUiState
+name: Get Current UI State
+version: 0.0.1
+summary: |
+  Query to retrieve the user's persisted UI state for layout restoration.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This query returns the stored UI state JSON for the authenticated user.
+Used to restore panel sizes, collapsed sections, and other layout preferences.
+
+## Read Model
+
+Built from `UserPreferencesUiStateUpdated` events.
+Returns the most recent state version.

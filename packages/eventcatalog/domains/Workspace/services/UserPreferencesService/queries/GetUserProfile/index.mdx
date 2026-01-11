@@ -1,0 +1,19 @@
+---
+id: GetUserProfile
+name: Get User Profile
+version: 0.0.1
+summary: |
+  Query to retrieve user profile information including preferences and authentication details.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This query returns the user's profile combining identity from Session and preferences from Workspace.
+Used for displaying user information in the UI header and settings.
+
+## Read Model
+
+Built from Session `SessionCreated` events (for identity) and Workspace `UserPreferencesInitialized` events.

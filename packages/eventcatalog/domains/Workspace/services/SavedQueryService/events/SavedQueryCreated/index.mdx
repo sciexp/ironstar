@@ -1,0 +1,25 @@
+---
+id: SavedQueryCreated
+name: Saved Query Created
+version: 0.0.1
+summary: |
+  Recorded when a Data Analyst saves a composed SQL statement with a name and dataset reference.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This event is emitted when a user saves a new reusable query.
+The query captures the SQL text, target dataset, and user-provided name.
+
+## Business Rules
+
+- Query name must be non-empty and unique per user
+- SQL text must be non-empty
+- Dataset reference must be a valid URI format
+
+## Given-When-Then
+
+Given a composed SQL statement and target dataset exist, When the Data Analyst saves the query with a name, Then Saved Query Created is recorded.

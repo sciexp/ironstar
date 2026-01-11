@@ -1,0 +1,25 @@
+---
+id: UserPreferencesInitialized
+name: User Preferences Initialized
+version: 0.0.1
+summary: |
+  Recorded when a new user without stored preferences initializes their preferences.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This event is emitted when preferences are created for a new user.
+Sensible organization-level defaults are applied during initialization.
+
+## Business Rules
+
+- Each user has exactly one preferences aggregate
+- Initialization sets default theme and empty UI state
+- Triggered automatically on first authenticated access
+
+## Given-When-Then
+
+Given a new user without stored preferences, When the Data Analyst initializes preferences, Then User Preferences Initialized is recorded.

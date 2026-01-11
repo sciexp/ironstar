@@ -1,0 +1,25 @@
+---
+id: DashboardChartAdded
+name: Dashboard Chart Added
+version: 0.0.1
+summary: |
+  Recorded when a Data Analyst adds a chart to a dashboard with position and size.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This event is emitted when a user adds a chart visualization to an existing dashboard.
+The chart is placed on a grid with specified position and size, optionally within a tab.
+
+## Business Rules
+
+- Chart definition must reference a valid ChartDefinition from Analytics
+- Grid position must not overlap with existing charts
+- Chart can be placed on the default view or within a specific tab
+
+## Given-When-Then
+
+Given a dashboard exists and chart definitions from prior queries are available, When the Data Analyst adds a chart with position and size, Then Dashboard Chart Added is recorded.

@@ -1,0 +1,103 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "GetDashboardLayout",
+	"type": "object",
+	"title": "GetDashboardLayout",
+	"description": "Query to retrieve the complete layout configuration of a dashboard including charts and tabs.",
+	"required": ["dashboardId"],
+	"properties": {
+		"dashboardId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Dashboard to retrieve layout for"
+		},
+		"response": {
+			"type": "object",
+			"required": ["dashboardId", "title", "tabs", "charts"],
+			"properties": {
+				"dashboardId": {
+					"type": "string",
+					"format": "uuid",
+					"description": "Dashboard identifier"
+				},
+				"title": {
+					"type": "string",
+					"description": "Current display title"
+				},
+				"tabs": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"required": ["tabId", "tabTitle", "tabOrder"],
+						"properties": {
+							"tabId": {
+								"type": "string",
+								"format": "uuid",
+								"description": "Tab identifier"
+							},
+							"tabTitle": {
+								"type": "string",
+								"description": "Tab display title"
+							},
+							"tabOrder": {
+								"type": "integer",
+								"description": "Position in tab order"
+							}
+						}
+					}
+				},
+				"charts": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"required": [
+							"chartId",
+							"chartDefinitionId",
+							"gridX",
+							"gridY",
+							"gridWidth",
+							"gridHeight"
+						],
+						"properties": {
+							"chartId": {
+								"type": "string",
+								"format": "uuid",
+								"description": "Chart placement identifier"
+							},
+							"chartDefinitionId": {
+								"type": "string",
+								"format": "uuid",
+								"description": "Reference to Analytics ChartDefinition"
+							},
+							"tabId": {
+								"type": "string",
+								"format": "uuid",
+								"description": "Tab containing this chart (null for default view)"
+							},
+							"gridX": {
+								"type": "integer",
+								"description": "Column position"
+							},
+							"gridY": {
+								"type": "integer",
+								"description": "Row position"
+							},
+							"gridWidth": {
+								"type": "integer",
+								"description": "Width in grid units"
+							},
+							"gridHeight": {
+								"type": "integer",
+								"description": "Height in grid units"
+							},
+							"chartConfig": {
+								"type": "string",
+								"description": "Chart-specific configuration JSON"
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

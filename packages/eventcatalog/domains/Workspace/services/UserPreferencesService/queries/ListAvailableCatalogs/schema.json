@@ -1,0 +1,35 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "ListAvailableCatalogs",
+	"type": "object",
+	"title": "ListAvailableCatalogs",
+	"description": "Query to retrieve all catalogs available for selection as the user's default.",
+	"properties": {
+		"response": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"required": ["catalogUri", "catalogName"],
+				"properties": {
+					"catalogUri": {
+						"type": "string",
+						"format": "uri",
+						"description": "Catalog URI"
+					},
+					"catalogName": {
+						"type": "string",
+						"description": "Human-readable catalog name"
+					},
+					"description": {
+						"type": "string",
+						"description": "Optional catalog description"
+					},
+					"isHealthy": {
+						"type": "boolean",
+						"description": "Whether the catalog is currently accessible"
+					}
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,20 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "UpdateDatasetReference",
+	"type": "object",
+	"title": "UpdateDatasetReference",
+	"description": "Command to retarget a saved query to a different dataset.",
+	"required": ["savedQueryId", "newDatasetRef"],
+	"properties": {
+		"savedQueryId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Saved query to update"
+		},
+		"newDatasetRef": {
+			"type": "string",
+			"format": "uri",
+			"description": "New dataset URI"
+		}
+	}
+}

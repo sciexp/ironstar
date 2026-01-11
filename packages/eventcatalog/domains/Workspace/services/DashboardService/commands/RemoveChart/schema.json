@@ -1,0 +1,20 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "RemoveChart",
+	"type": "object",
+	"title": "RemoveChart",
+	"description": "Command to remove a chart from a dashboard.",
+	"required": ["dashboardId", "chartId"],
+	"properties": {
+		"dashboardId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Dashboard containing the chart"
+		},
+		"chartId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Chart to remove"
+		}
+	}
+}

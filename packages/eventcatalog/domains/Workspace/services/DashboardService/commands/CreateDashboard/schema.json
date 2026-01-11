@@ -1,0 +1,14 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "CreateDashboard",
+	"type": "object",
+	"title": "CreateDashboard",
+	"description": "Command to create a new dashboard with a name for organizing and sharing insights.",
+	"required": ["title"],
+	"properties": {
+		"title": {
+			"type": "string",
+			"description": "Display title for the new dashboard"
+		}
+	}
+}

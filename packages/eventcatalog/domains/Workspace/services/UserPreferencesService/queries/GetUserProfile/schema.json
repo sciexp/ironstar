@@ -1,0 +1,49 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "GetUserProfile",
+	"type": "object",
+	"title": "GetUserProfile",
+	"description": "Query to retrieve user profile information including preferences and authentication details.",
+	"properties": {
+		"response": {
+			"type": "object",
+			"required": ["userId", "theme"],
+			"properties": {
+				"userId": {
+					"type": "string",
+					"format": "uuid",
+					"description": "User identifier"
+				},
+				"displayName": {
+					"type": "string",
+					"description": "User display name from OAuth provider"
+				},
+				"email": {
+					"type": "string",
+					"format": "email",
+					"description": "User email from OAuth provider"
+				},
+				"avatarUrl": {
+					"type": "string",
+					"format": "uri",
+					"description": "User avatar URL from OAuth provider"
+				},
+				"theme": {
+					"type": "string",
+					"enum": ["Light", "Dark", "System"],
+					"description": "Current theme preference"
+				},
+				"defaultCatalogUri": {
+					"type": "string",
+					"format": "uri",
+					"description": "Default catalog if set"
+				},
+				"preferencesInitializedAt": {
+					"type": "string",
+					"format": "date-time",
+					"description": "When preferences were initialized"
+				}
+			}
+		}
+	}
+}

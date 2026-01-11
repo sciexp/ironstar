@@ -1,0 +1,8 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "ClearDefaultCatalog",
+	"type": "object",
+	"title": "ClearDefaultCatalog",
+	"description": "Command to clear the default catalog preference.",
+	"properties": {}
+}

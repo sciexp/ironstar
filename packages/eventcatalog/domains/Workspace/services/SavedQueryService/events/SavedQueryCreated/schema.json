@@ -1,0 +1,45 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "SavedQueryCreated",
+	"type": "object",
+	"title": "SavedQueryCreated",
+	"description": "Recorded when a Data Analyst saves a composed SQL statement with a name and dataset reference.",
+	"required": [
+		"savedQueryId",
+		"ownerId",
+		"name",
+		"sqlText",
+		"datasetRef",
+		"createdAt"
+	],
+	"properties": {
+		"savedQueryId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Unique identifier for the saved query"
+		},
+		"ownerId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "User ID of the query owner"
+		},
+		"name": {
+			"type": "string",
+			"description": "Display name for the saved query"
+		},
+		"sqlText": {
+			"type": "string",
+			"description": "The SQL query text"
+		},
+		"datasetRef": {
+			"type": "string",
+			"format": "uri",
+			"description": "URI reference to the target dataset (hf://, s3://, etc.)"
+		},
+		"createdAt": {
+			"type": "string",
+			"format": "date-time",
+			"description": "Timestamp when the query was saved"
+		}
+	}
+}

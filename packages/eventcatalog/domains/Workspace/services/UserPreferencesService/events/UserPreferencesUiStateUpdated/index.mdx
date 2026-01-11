@@ -1,0 +1,25 @@
+---
+id: UserPreferencesUiStateUpdated
+name: User Preferences UI State Updated
+version: 0.0.1
+summary: |
+  Recorded when a Data Analyst updates stored UI state JSON (e.g., panel sizes, collapsed sections).
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This event is emitted when UI state changes are persisted.
+UI state includes panel dimensions, collapsed sections, and other layout preferences.
+
+## Business Rules
+
+- UI state must be valid JSON
+- Stale keys should be pruned periodically
+- State is versioned for partial restores
+
+## Given-When-Then
+
+Given preferences exist, When the Data Analyst updates stored UI state JSON (e.g., panel sizes, collapsed sections), Then User Preferences UI State Updated is recorded.

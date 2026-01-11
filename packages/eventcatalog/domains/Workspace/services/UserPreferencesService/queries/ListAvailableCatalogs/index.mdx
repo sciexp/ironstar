@@ -1,0 +1,20 @@
+---
+id: ListAvailableCatalogs
+name: List Available Catalogs
+version: 0.0.1
+summary: |
+  Query to retrieve all catalogs available for selection as the user's default.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This query returns catalogs that can be set as the user's default.
+Used for the catalog selection dropdown in preferences.
+
+## Read Model
+
+Built from Analytics `CatalogRegistered` events.
+Filtered by user access permissions.

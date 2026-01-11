@@ -1,0 +1,25 @@
+---
+id: DeleteSavedQuery
+name: Delete Saved Query
+version: 0.0.1
+summary: |
+  Command to delete an obsolete saved query from the workspace.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This command removes a saved query from the user's workspace.
+Dependency checks prevent breaking dashboards.
+
+## Validation Rules
+
+- Saved query must exist and be owned by the user
+- Deletion should warn or block if dashboards depend on this query
+- Soft delete with restore is recommended
+
+## Emits
+
+- `SavedQueryDeleted` on success

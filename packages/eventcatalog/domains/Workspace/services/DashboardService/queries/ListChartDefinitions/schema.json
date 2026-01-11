@@ -1,0 +1,40 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "ListChartDefinitions",
+	"type": "object",
+	"title": "ListChartDefinitions",
+	"description": "Query to retrieve available chart definitions that can be added to dashboards.",
+	"properties": {
+		"response": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"required": ["chartDefinitionId", "name", "chartType"],
+				"properties": {
+					"chartDefinitionId": {
+						"type": "string",
+						"format": "uuid",
+						"description": "Unique chart definition identifier"
+					},
+					"name": {
+						"type": "string",
+						"description": "Display name for the chart"
+					},
+					"chartType": {
+						"type": "string",
+						"description": "Type of chart (bar, line, pie, etc.)"
+					},
+					"description": {
+						"type": "string",
+						"description": "Optional description of the chart"
+					},
+					"createdAt": {
+						"type": "string",
+						"format": "date-time",
+						"description": "When the chart definition was created"
+					}
+				}
+			}
+		}
+	}
+}

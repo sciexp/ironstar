@@ -1,0 +1,25 @@
+---
+id: UserPreferencesThemeSet
+name: User Preferences Theme Set
+version: 0.0.1
+summary: |
+  Recorded when a Data Analyst sets the theme to Light, Dark, or System.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This event is emitted when a user changes their theme preference.
+Theme changes are applied instantly without requiring page reload.
+
+## Business Rules
+
+- Theme must be one of: Light, Dark, System
+- Preferences are synced across devices
+- System theme follows OS preference
+
+## Given-When-Then
+
+Given user preferences exist, When the Data Analyst sets the theme to Light, Dark, or System, Then User Preferences Theme Set is recorded.

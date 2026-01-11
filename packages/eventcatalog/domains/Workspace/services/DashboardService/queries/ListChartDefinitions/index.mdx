@@ -1,0 +1,20 @@
+---
+id: ListChartDefinitions
+name: List Chart Definitions
+version: 0.0.1
+summary: |
+  Query to retrieve available chart definitions that can be added to dashboards.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This query returns chart definitions from the Analytics bounded context that are available for placement on dashboards.
+Acts as a Customer-Supplier integration with Analytics as the upstream supplier.
+
+## Read Model
+
+Built from Analytics `ChartDefinitionCreated` events.
+Provides chart metadata without the full visualization configuration.

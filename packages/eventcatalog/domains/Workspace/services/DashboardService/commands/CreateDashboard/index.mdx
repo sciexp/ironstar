@@ -1,0 +1,25 @@
+---
+id: CreateDashboard
+name: Create Dashboard
+version: 0.0.1
+summary: |
+  Command to create a new dashboard with a name for organizing and sharing insights.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This command initiates the creation of a new dashboard.
+The authenticated user becomes the owner with initial empty layout.
+
+## Validation Rules
+
+- User must have an active session
+- Dashboard name must be non-empty
+- Name should be unique per owner (warning if duplicate)
+
+## Emits
+
+- `DashboardCreated` on success

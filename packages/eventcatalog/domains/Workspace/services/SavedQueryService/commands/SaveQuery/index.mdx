@@ -1,0 +1,26 @@
+---
+id: SaveQuery
+name: Save Query
+version: 0.0.1
+summary: |
+  Command to save a new query with a name, SQL text, and dataset reference.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This command creates a new saved query in the user's workspace.
+The authenticated user becomes the owner.
+
+## Validation Rules
+
+- User must have an active session
+- Name must be non-empty and unique per user
+- SQL text must be non-empty
+- Dataset reference must be a valid URI
+
+## Emits
+
+- `SavedQueryCreated` on success

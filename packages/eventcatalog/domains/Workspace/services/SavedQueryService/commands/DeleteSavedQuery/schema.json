@@ -1,0 +1,15 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "DeleteSavedQuery",
+	"type": "object",
+	"title": "DeleteSavedQuery",
+	"description": "Command to delete an obsolete saved query from the workspace.",
+	"required": ["savedQueryId"],
+	"properties": {
+		"savedQueryId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Saved query to delete"
+		}
+	}
+}

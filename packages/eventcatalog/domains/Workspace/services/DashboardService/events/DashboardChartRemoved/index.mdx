@@ -1,0 +1,25 @@
+---
+id: DashboardChartRemoved
+name: Dashboard Chart Removed
+version: 0.0.1
+summary: |
+  Recorded when a Data Analyst removes a chart from a dashboard.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This event is emitted when a user removes a chart placement from a dashboard.
+The underlying ChartDefinition in Analytics remains unaffected.
+
+## Business Rules
+
+- Chart must exist in the dashboard
+- Removing the last chart from a tab does not delete the tab
+- ChartDefinition reference remains valid in Analytics
+
+## Given-When-Then
+
+Given a dashboard with charts, When the Data Analyst removes an unneeded chart, Then Dashboard Chart Removed is recorded.

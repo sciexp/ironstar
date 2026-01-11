@@ -1,0 +1,52 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "AddChart",
+	"type": "object",
+	"title": "AddChart",
+	"description": "Command to add a chart visualization to an existing dashboard with position and size.",
+	"required": [
+		"dashboardId",
+		"chartDefinitionId",
+		"gridX",
+		"gridY",
+		"gridWidth",
+		"gridHeight"
+	],
+	"properties": {
+		"dashboardId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Dashboard to add the chart to"
+		},
+		"chartDefinitionId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Reference to the ChartDefinition from Analytics"
+		},
+		"tabId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Optional tab to place the chart within"
+		},
+		"gridX": {
+			"type": "integer",
+			"description": "Column position on the grid (0-indexed)"
+		},
+		"gridY": {
+			"type": "integer",
+			"description": "Row position on the grid (0-indexed)"
+		},
+		"gridWidth": {
+			"type": "integer",
+			"description": "Width in grid units"
+		},
+		"gridHeight": {
+			"type": "integer",
+			"description": "Height in grid units"
+		},
+		"chartConfig": {
+			"type": "string",
+			"description": "Optional chart-specific configuration as JSON blob"
+		}
+	}
+}

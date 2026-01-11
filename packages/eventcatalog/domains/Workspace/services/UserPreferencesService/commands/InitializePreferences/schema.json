@@ -1,0 +1,19 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "InitializePreferences",
+	"type": "object",
+	"title": "InitializePreferences",
+	"description": "Command to initialize preferences for a new user with sensible defaults.",
+	"properties": {
+		"theme": {
+			"type": "string",
+			"enum": ["Light", "Dark", "System"],
+			"description": "Optional initial theme (defaults to System)"
+		},
+		"defaultCatalogUri": {
+			"type": "string",
+			"format": "uri",
+			"description": "Optional initial default catalog"
+		}
+	}
+}

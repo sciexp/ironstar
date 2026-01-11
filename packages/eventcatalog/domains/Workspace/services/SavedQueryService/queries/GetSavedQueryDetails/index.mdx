@@ -1,0 +1,19 @@
+---
+id: GetSavedQueryDetails
+name: Get Saved Query Details
+version: 0.0.1
+summary: |
+  Query to retrieve full details of a specific saved query.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This query returns complete information about a saved query including SQL, dataset, and metadata.
+Used when loading a saved query into the editor.
+
+## Read Model
+
+Built from `SavedQueryCreated`, `SavedQueryRenamed`, `SavedQuerySqlUpdated`, and `SavedQueryDatasetRefUpdated` events.

@@ -1,0 +1,20 @@
+---
+id: ListDashboards
+name: List Dashboards
+version: 0.0.1
+summary: |
+  Query to retrieve all dashboards owned by or shared with the current user.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This query returns a list of dashboards accessible to the authenticated user.
+Results include owned dashboards and those shared via collaboration.
+
+## Read Model
+
+Built from `DashboardCreated` and `DashboardRenamed` events.
+Filtered by owner ID matching the authenticated user.

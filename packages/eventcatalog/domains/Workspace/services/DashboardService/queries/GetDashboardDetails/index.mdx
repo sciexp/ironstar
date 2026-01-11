@@ -1,0 +1,19 @@
+---
+id: GetDashboardDetails
+name: Get Dashboard Details
+version: 0.0.1
+summary: |
+  Query to retrieve metadata and summary information for a specific dashboard.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This query returns dashboard metadata including title, owner, creation date, and summary statistics.
+Used for dashboard list items and detail views.
+
+## Read Model
+
+Built from `DashboardCreated`, `DashboardRenamed`, and aggregate chart/tab counts from related events.

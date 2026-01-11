@@ -1,0 +1,25 @@
+---
+id: RenameDashboard
+name: Rename Dashboard
+version: 0.0.1
+summary: |
+  Command to change the display title of a dashboard.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This command updates the display title of an existing dashboard.
+The dashboard ID remains stable for external references.
+
+## Validation Rules
+
+- Dashboard must exist and be owned by the user
+- New title must be non-empty
+- New title should be unique per owner (warning if duplicate)
+
+## Emits
+
+- `DashboardRenamed` on success

@@ -1,0 +1,26 @@
+---
+id: AddChart
+name: Add Chart
+version: 0.0.1
+summary: |
+  Command to add a chart visualization to an existing dashboard with position and size.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This command adds a chart from a ChartDefinition to a dashboard at specified grid coordinates.
+The chart can optionally be placed within a specific tab.
+
+## Validation Rules
+
+- Dashboard must exist and be owned by the user
+- ChartDefinitionId must reference a valid Analytics ChartDefinition
+- Grid position must not overlap with existing charts
+- If tabId is specified, the tab must exist in the dashboard
+
+## Emits
+
+- `DashboardChartAdded` on success

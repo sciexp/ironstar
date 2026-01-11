@@ -1,0 +1,24 @@
+---
+id: ClearDefaultCatalog
+name: Clear Default Catalog
+version: 0.0.1
+summary: |
+  Command to clear the default catalog preference.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This command removes the user's default catalog setting.
+After clearing, the user chooses a catalog each session.
+
+## Validation Rules
+
+- Preferences must exist for this user
+- A default catalog must currently be set
+
+## Emits
+
+- `UserPreferencesDefaultCleared` on success

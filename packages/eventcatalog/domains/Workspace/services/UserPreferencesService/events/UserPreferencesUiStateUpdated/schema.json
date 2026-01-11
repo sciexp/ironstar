@@ -1,0 +1,28 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "UserPreferencesUiStateUpdated",
+	"type": "object",
+	"title": "UserPreferencesUiStateUpdated",
+	"description": "Recorded when a Data Analyst updates stored UI state JSON (e.g., panel sizes, collapsed sections).",
+	"required": ["preferencesId", "uiStateJson", "updatedAt"],
+	"properties": {
+		"preferencesId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Preferences being updated"
+		},
+		"uiStateJson": {
+			"type": "string",
+			"description": "Complete UI state as JSON blob"
+		},
+		"stateVersion": {
+			"type": "integer",
+			"description": "Version number for state schema"
+		},
+		"updatedAt": {
+			"type": "string",
+			"format": "date-time",
+			"description": "Timestamp when UI state was updated"
+		}
+	}
+}

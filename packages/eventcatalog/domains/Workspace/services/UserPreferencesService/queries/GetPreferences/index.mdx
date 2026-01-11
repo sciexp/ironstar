@@ -1,0 +1,19 @@
+---
+id: GetPreferences
+name: Get Preferences
+version: 0.0.1
+summary: |
+  Query to retrieve the current user's preferences including theme and default catalog.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This query returns all preference settings for the authenticated user.
+Used for settings pages and theme initialization.
+
+## Read Model
+
+Built from `UserPreferencesInitialized`, `UserPreferencesThemeSet`, `UserPreferencesDefaultCatalogSet`, and `UserPreferencesDefaultCleared` events.

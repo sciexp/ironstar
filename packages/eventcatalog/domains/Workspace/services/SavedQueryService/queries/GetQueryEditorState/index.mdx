@@ -1,0 +1,19 @@
+---
+id: GetQueryEditorState
+name: Get Query Editor State
+version: 0.0.1
+summary: |
+  Query to retrieve the current state of the query editor including active query and dataset.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This query returns the current query editor state for the authenticated user.
+Used to restore editor state when returning to the query builder.
+
+## Read Model
+
+Built from query execution history and current editor buffer state.

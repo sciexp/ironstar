@@ -1,0 +1,25 @@
+---
+id: InitializePreferences
+name: Initialize Preferences
+version: 0.0.1
+summary: |
+  Command to initialize preferences for a new user with sensible defaults.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This command creates the preferences aggregate for a new user.
+Typically triggered automatically on first authenticated access.
+
+## Validation Rules
+
+- User must have an active session
+- Preferences must not already exist for this user
+- Default theme is System
+
+## Emits
+
+- `UserPreferencesInitialized` on success
