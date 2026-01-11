@@ -1,0 +1,123 @@
+---
+id: QueryExecution
+name: Query Execution
+version: 0.0.1
+summary: |
+  Analytics query workflow from catalog selection through metadata refresh to query execution and result handling.
+steps:
+  - id: analyst
+    title: Data Analyst
+    actor:
+      name: Data Analyst
+    next_step:
+      id: select-catalog
+      label: "chooses catalog"
+
+  - id: select-catalog
+    title: Catalog Selected
+    message:
+      id: CatalogSelected
+      version: "0.0.1"
+    next_step:
+      id: refresh-metadata
+      label: "catalog chosen"
+
+  - id: refresh-metadata
+    title: Catalog Metadata Refreshed
+    message:
+      id: CatalogMetadataRefreshed
+      version: "0.0.1"
+    next_step:
+      id: browse-datasets
+      label: "metadata loaded"
+
+  - id: browse-datasets
+    title: Browse Available Datasets
+    service:
+      id: QuerySessionService
+      version: "0.0.1"
+    next_step:
+      id: start-query
+      label: "query composed"
+
+  - id: start-query
+    title: Query Session Started
+    message:
+      id: QuerySessionStarted
+      version: "0.0.1"
+    next_steps:
+      - id: query-completed
+        label: "success"
+      - id: query-failed
+        label: "error"
+      - id: query-cancelled
+        label: "cancelled"
+
+  - id: query-completed
+    title: Query Session Completed
+    message:
+      id: QuerySessionCompleted
+      version: "0.0.1"
+
+  - id: query-failed
+    title: Query Session Failed
+    message:
+      id: QuerySessionFailed
+      version: "0.0.1"
+
+  - id: query-cancelled
+    title: Query Session Cancelled
+    message:
+      id: QuerySessionCancelled
+      version: "0.0.1"
+---
+
+## Overview
+
+This flow documents the analytics query workflow from initial catalog selection through query execution.
+It represents the core data analysis capability of the ironstar platform.
+
+## Catalog selection
+
+Users select a DuckLake catalog from the available catalogs list.
+Catalog selection establishes the context for all subsequent query operations.
+
+When a catalog is selected, the CatalogService emits a CatalogSelected event and triggers metadata refresh.
+
+## Metadata refresh
+
+Catalog metadata refresh populates the dataset browser with available tables, schemas, and column information.
+This operation queries the DuckLake catalog's information schema and caches results for the dataset browser UI.
+
+Metadata is refreshed on catalog selection and may be manually triggered if the user expects schema changes.
+
+## Query execution lifecycle
+
+Query execution follows a three-outcome pattern common in long-running operations.
+
+*Started* indicates the query has been submitted for execution.
+The QuerySessionStarted event captures the SQL, target dataset, and initiating user.
+
+*Completed* indicates successful query execution.
+The QuerySessionCompleted event includes result metadata (row count, execution time) but not result data.
+Results are streamed to the client via SSE as they become available.
+
+*Failed* indicates query execution encountered an error.
+The QuerySessionFailed event captures the error type and message for display and debugging.
+
+*Cancelled* indicates the user requested query termination.
+The QuerySessionCancelled event records the cancellation for audit purposes.
+
+## DuckDB execution
+
+Queries execute against DuckDB with DuckLake catalog extensions.
+DuckDB's columnar processing provides efficient analytical query execution.
+
+Long-running queries may be cancelled via the CancelQuery command.
+Query timeout limits prevent runaway queries from exhausting resources.
+
+## Result streaming
+
+Query results are streamed to the client as datastar SSE events.
+Large result sets are paginated to avoid memory exhaustion.
+The client UI updates incrementally as results arrive.
