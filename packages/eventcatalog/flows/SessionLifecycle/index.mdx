@@ -1,0 +1,108 @@
+---
+id: SessionLifecycle
+name: Session Lifecycle
+version: 0.0.1
+summary: |
+  Session state machine from creation through refresh cycles to termination via invalidation or expiration.
+steps:
+  - id: oauth-start
+    title: OAuth Flow Initiated
+    actor:
+      name: User
+    next_step:
+      id: oauth-callback
+      label: "completes OAuth"
+
+  - id: oauth-callback
+    title: OAuth Callback Processed
+    service:
+      id: SessionService
+      version: "0.0.1"
+    next_step:
+      id: session-created
+      label: "validated"
+
+  - id: session-created
+    title: Session Created
+    message:
+      id: SessionCreated
+      version: "0.0.1"
+    next_steps:
+      - id: session-refreshed
+        label: "activity detected"
+      - id: session-invalidated
+        label: "logout"
+      - id: session-expired
+        label: "TTL elapsed"
+
+  - id: session-refreshed
+    title: Session Refreshed
+    message:
+      id: SessionRefreshed
+      version: "0.0.1"
+    next_steps:
+      - id: session-refreshed
+        label: "continued activity"
+      - id: session-invalidated
+        label: "logout"
+      - id: session-expired
+        label: "TTL elapsed"
+
+  - id: session-invalidated
+    title: Session Invalidated
+    message:
+      id: SessionInvalidated
+      version: "0.0.1"
+
+  - id: session-expired
+    title: Session Expired
+    message:
+      id: SessionExpired
+      version: "0.0.1"
+---
+
+## Overview
+
+This flow documents the complete session lifecycle from initial OAuth authentication through termination.
+Sessions are the security boundary for all user interactions with the ironstar platform.
+
+## State machine
+
+The Session aggregate follows the Decider pattern with a finite state machine.
+
+*NoSession* is the initial state before any authenticated session exists.
+
+*Active* represents an authenticated session with a TTL expiration timestamp.
+The session transitions to Active upon successful OAuth callback processing.
+
+*Expired* is a terminal state reached when the session TTL elapses without refresh.
+
+*Invalidated* is a terminal state reached through explicit user logout.
+
+## Session refresh mechanics
+
+Active sessions are refreshed on user activity to extend the TTL.
+The refresh operation is idempotent and updates only the expiration timestamp.
+
+Refresh occurs when any authenticated request is processed, preventing session timeout during active use.
+The refresh cadence is configurable but defaults to extending TTL by the original duration on each activity.
+
+## Termination paths
+
+Sessions terminate through one of two paths.
+
+*Invalidation* occurs when the user explicitly logs out.
+The session cookie is cleared and the session record marked as invalidated.
+This is the expected termination for interactive users.
+
+*Expiration* occurs when the TTL elapses without activity.
+A background process identifies expired sessions and emits SessionExpired events.
+This handles abandoned sessions and browser windows left open.
+
+## Security considerations
+
+Session tokens are cryptographically random and stored server-side in SQLite.
+The client receives only a signed session cookie with the session identifier.
+
+Failed OAuth callbacks do not create sessions.
+Invalid or expired session tokens result in 401 responses and redirect to OAuth flow.
