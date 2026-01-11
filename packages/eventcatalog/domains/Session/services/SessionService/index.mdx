@@ -1,0 +1,36 @@
+---
+id: SessionService
+name: Session Service
+version: 0.0.1
+summary: |
+  Handles OAuth authentication callbacks and session lifecycle management.
+owners:
+  - engineering
+sends: []
+receives: []
+---
+
+## Responsibilities
+
+- Process OAuth callbacks from GitHub (and future Google)
+- Create, refresh, and invalidate user sessions
+- Enforce session TTL expiration
+- Emit session events for downstream consumers
+
+## Aggregate: Session
+
+The Session aggregate follows the Decider pattern from fmodel-rust:
+
+- **decide(command, state) -> events**: Pure function validating commands against current state
+- **evolve(state, event) -> state**: Pure function applying events to produce new state
+
+### State Machine
+
+```
+NoSession -> Active -> (Expired | Invalidated)
+```
+
+- `NoSession`: Initial state, no authenticated user
+- `Active(sessionId, userId, expiresAt)`: Authenticated session with TTL
+- `Expired(sessionId)`: Session TTL elapsed
+- `Invalidated(sessionId)`: Explicit logout

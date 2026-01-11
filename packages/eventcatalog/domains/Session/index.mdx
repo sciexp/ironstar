@@ -1,0 +1,35 @@
+---
+id: Session
+name: Session
+version: 0.0.1
+summary: |
+  Supporting domain managing OAuth-based authentication and session lifecycle.
+  Provides authenticated User identity to other bounded contexts via Shared Kernel pattern.
+owners:
+  - engineering
+services:
+  - id: SessionService
+    version: 0.0.1
+---
+
+## Overview
+
+The Session bounded context handles authentication through OAuth providers (GitHub primary, Google planned).
+Sessions follow a strict lifecycle: create -> active -> expired/invalidated.
+
+## Strategic Classification
+
+**Supporting Domain**: Enables core business capabilities by providing secure authentication infrastructure.
+
+## Key Aggregates
+
+- **Session**: Manages session lifecycle with TTL-based expiration
+
+## Shared Kernel Exports
+
+- `UserId`: User identity combining OAuth provider and external ID (consumed by Workspace)
+- `SessionId`: Reference type for session identification
+
+## Zenoh Channel
+
+Events published to: `events/session/**`
