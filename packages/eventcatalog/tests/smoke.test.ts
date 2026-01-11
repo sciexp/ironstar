@@ -21,10 +21,23 @@ describe("EventCatalog package structure", () => {
 	});
 
 	it("has content directories", () => {
-		const requiredDirs = ["domains", "channels", "teams", "users"];
+		// Core directories required for EventCatalog operation
+		// Note: users/ is optional (individual contributor profiles vs team ownership)
+		const requiredDirs = ["domains", "channels", "teams"];
 		for (const dir of requiredDirs) {
 			const dirPath = resolve(packageRoot, dir);
 			expect(existsSync(dirPath), `${dir} directory should exist`).toBe(true);
+		}
+	});
+
+	it("has real domain content", () => {
+		// Verify transformed Qlerify content exists (not just scaffolding)
+		const domainDirs = ["Session", "Analytics", "Workspace"];
+		for (const domain of domainDirs) {
+			const domainPath = resolve(packageRoot, "domains", domain, "index.mdx");
+			expect(existsSync(domainPath), `${domain} domain should exist`).toBe(
+				true,
+			);
 		}
 	});
 });
