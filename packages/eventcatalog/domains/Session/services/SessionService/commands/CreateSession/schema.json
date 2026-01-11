@@ -1,0 +1,33 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "CreateSession",
+	"type": "object",
+	"properties": {
+		"authorizationCode": {
+			"type": "string",
+			"description": "OAuth authorization code from provider callback"
+		},
+		"provider": {
+			"type": "string",
+			"enum": ["GitHub", "Google"],
+			"description": "OAuth provider that issued the authorization code"
+		},
+		"stateToken": {
+			"type": "string",
+			"description": "CSRF state token for validation"
+		},
+		"redirectUri": {
+			"type": "string",
+			"format": "uri",
+			"description": "Redirect URI used in the OAuth flow"
+		},
+		"requestedScopes": {
+			"type": "array",
+			"items": {
+				"type": "string"
+			},
+			"description": "OAuth scopes requested during authorization"
+		}
+	},
+	"required": ["authorizationCode", "provider", "stateToken", "redirectUri"]
+}

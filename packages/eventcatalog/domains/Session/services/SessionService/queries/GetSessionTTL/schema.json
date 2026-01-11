@@ -1,0 +1,43 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "GetSessionTTL",
+	"type": "object",
+	"properties": {
+		"request": {
+			"type": "object",
+			"properties": {
+				"sessionId": {
+					"type": "string",
+					"format": "uuid",
+					"description": "Session identifier to query"
+				}
+			},
+			"required": ["sessionId"]
+		},
+		"response": {
+			"type": "object",
+			"properties": {
+				"sessionId": {
+					"type": "string",
+					"format": "uuid",
+					"description": "Session identifier"
+				},
+				"status": {
+					"type": "string",
+					"enum": ["Active", "Expired", "Invalidated"],
+					"description": "Current session status"
+				},
+				"expiresAt": {
+					"type": "string",
+					"format": "date-time",
+					"description": "When the session expires"
+				},
+				"remainingSeconds": {
+					"type": "integer",
+					"description": "Seconds remaining until expiration"
+				}
+			},
+			"required": ["sessionId", "status", "expiresAt", "remainingSeconds"]
+		}
+	}
+}

@@ -1,0 +1,32 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "SessionExpired",
+	"type": "object",
+	"properties": {
+		"sessionId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Identifier of the expired session"
+		},
+		"userId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Identifier of the session owner"
+		},
+		"timestamp": {
+			"type": "string",
+			"format": "date-time",
+			"description": "When the expiration was detected/processed"
+		},
+		"originalExpiresAt": {
+			"type": "string",
+			"format": "date-time",
+			"description": "The TTL timestamp that was exceeded"
+		},
+		"idleDurationSeconds": {
+			"type": "integer",
+			"description": "Seconds of inactivity before expiration"
+		}
+	},
+	"required": ["sessionId", "timestamp", "originalExpiresAt"]
+}

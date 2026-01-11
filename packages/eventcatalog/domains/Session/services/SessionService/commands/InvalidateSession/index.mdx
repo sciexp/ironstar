@@ -1,0 +1,27 @@
+---
+id: InvalidateSession
+name: Invalidate Session
+version: 0.0.1
+summary: |
+  Command to explicitly invalidate a session when a user logs out.
+---
+
+## Description
+
+This command invalidates an active session, typically triggered by a user logout action.
+Once invalidated, the session cannot be reused even if the original TTL has not elapsed.
+
+## Preconditions
+
+- Session exists and is in Active state
+- Request originates from the session owner or an authorized admin
+
+## Command handler behavior
+
+The Decider's `decide` function validates:
+1. Session ID exists in current state
+2. Session is Active (already expired/invalidated sessions are no-ops)
+3. Requester is authorized to invalidate the session
+
+If validation passes, emits SessionInvalidated event.
+Invalidating an already-terminated session is idempotent (no error, no event).

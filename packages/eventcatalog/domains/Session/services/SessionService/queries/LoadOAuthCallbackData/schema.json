@@ -1,0 +1,49 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "LoadOAuthCallbackData",
+	"type": "object",
+	"properties": {
+		"request": {
+			"type": "object",
+			"properties": {
+				"stateToken": {
+					"type": "string",
+					"description": "CSRF state token from OAuth callback"
+				},
+				"provider": {
+					"type": "string",
+					"enum": ["GitHub", "Google"],
+					"description": "OAuth provider"
+				}
+			},
+			"required": ["stateToken", "provider"]
+		},
+		"response": {
+			"type": "object",
+			"properties": {
+				"authorizationCode": {
+					"type": "string",
+					"description": "OAuth authorization code"
+				},
+				"redirectUri": {
+					"type": "string",
+					"format": "uri",
+					"description": "Redirect URI for token exchange"
+				},
+				"requestedScopes": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"description": "Scopes requested in the authorization"
+				},
+				"initiatedAt": {
+					"type": "string",
+					"format": "date-time",
+					"description": "When the OAuth flow was initiated"
+				}
+			},
+			"required": ["authorizationCode", "redirectUri"]
+		}
+	}
+}

@@ -1,0 +1,26 @@
+---
+id: GetActiveSession
+name: Get Active Session
+version: 0.0.1
+summary: |
+  Query to retrieve the current active session for a user.
+---
+
+## Description
+
+This query returns the active session for a given user or session cookie.
+Used for authentication checks and session context retrieval.
+
+## Query parameters
+
+- `sessionId`: The session identifier from the session cookie
+- Or `userId`: The user identifier to find their active session
+
+## Response
+
+Returns the full session details including user information, provider, and expiration.
+Returns null/error if no active session exists.
+
+## Read model
+
+The query reads from the session projection, filtering for sessions in Active status with expiresAt in the future.

@@ -1,0 +1,38 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "SessionCreated",
+	"type": "object",
+	"properties": {
+		"sessionId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Unique identifier for the new session"
+		},
+		"userId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Identifier of the authenticated user"
+		},
+		"provider": {
+			"type": "string",
+			"enum": ["GitHub", "Google"],
+			"description": "OAuth provider used for authentication"
+		},
+		"email": {
+			"type": "string",
+			"format": "email",
+			"description": "User email from OAuth provider"
+		},
+		"timestamp": {
+			"type": "string",
+			"format": "date-time",
+			"description": "When the session was created"
+		},
+		"expiresAt": {
+			"type": "string",
+			"format": "date-time",
+			"description": "When the session will expire if not refreshed"
+		}
+	},
+	"required": ["sessionId", "userId", "provider", "timestamp", "expiresAt"]
+}

@@ -1,0 +1,23 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "InvalidateSession",
+	"type": "object",
+	"properties": {
+		"sessionId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Identifier of the session to invalidate"
+		},
+		"reason": {
+			"type": "string",
+			"enum": ["UserLogout", "AdminRevocation", "SecurityConcern"],
+			"description": "Reason for invalidating the session"
+		},
+		"requesterId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Identifier of the user or admin requesting invalidation"
+		}
+	},
+	"required": ["sessionId"]
+}

@@ -1,0 +1,63 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "ListIdleSessions",
+	"type": "object",
+	"properties": {
+		"request": {
+			"type": "object",
+			"properties": {
+				"thresholdSeconds": {
+					"type": "integer",
+					"description": "Return sessions expiring within this many seconds"
+				},
+				"limit": {
+					"type": "integer",
+					"description": "Maximum number of sessions to return"
+				}
+			}
+		},
+		"response": {
+			"type": "object",
+			"properties": {
+				"sessions": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"sessionId": {
+								"type": "string",
+								"format": "uuid",
+								"description": "Session identifier"
+							},
+							"userId": {
+								"type": "string",
+								"format": "uuid",
+								"description": "User identifier"
+							},
+							"expiresAt": {
+								"type": "string",
+								"format": "date-time",
+								"description": "When the session expires"
+							},
+							"idleSinceAt": {
+								"type": "string",
+								"format": "date-time",
+								"description": "Last activity timestamp"
+							},
+							"idleDurationSeconds": {
+								"type": "integer",
+								"description": "Seconds since last activity"
+							}
+						},
+						"required": ["sessionId", "userId", "expiresAt"]
+					}
+				},
+				"totalCount": {
+					"type": "integer",
+					"description": "Total number of idle sessions matching criteria"
+				}
+			},
+			"required": ["sessions"]
+		}
+	}
+}

@@ -1,0 +1,21 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "RefreshSession",
+	"type": "object",
+	"properties": {
+		"sessionId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Identifier of the session to refresh"
+		},
+		"activityType": {
+			"type": "string",
+			"description": "Type of activity that triggered the refresh"
+		},
+		"ttlExtensionSeconds": {
+			"type": "integer",
+			"description": "Requested TTL extension in seconds (optional, uses default if not specified)"
+		}
+	},
+	"required": ["sessionId"]
+}

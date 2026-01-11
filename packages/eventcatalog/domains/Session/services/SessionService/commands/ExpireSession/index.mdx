@@ -1,0 +1,27 @@
+---
+id: ExpireSession
+name: Expire Session
+version: 0.0.1
+summary: |
+  Command to mark a session as expired when its TTL has elapsed without activity.
+---
+
+## Description
+
+This command transitions a session to the Expired state when its time-to-live has elapsed.
+Typically invoked by a background cleanup process or lazily when an expired session is accessed.
+
+## Preconditions
+
+- Session exists and is in Active state
+- Current time exceeds the session's expiresAt timestamp
+
+## Command handler behavior
+
+The Decider's `decide` function validates:
+1. Session ID exists in current state
+2. Session is Active (not already Expired or Invalidated)
+3. Current time exceeds expiresAt
+
+If validation passes, emits SessionExpired event.
+If session is already terminated, operation is idempotent.

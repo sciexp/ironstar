@@ -1,0 +1,28 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "SessionInvalidated",
+	"type": "object",
+	"properties": {
+		"sessionId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Identifier of the invalidated session"
+		},
+		"userId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Identifier of the user who logged out"
+		},
+		"timestamp": {
+			"type": "string",
+			"format": "date-time",
+			"description": "When the session was invalidated"
+		},
+		"reason": {
+			"type": "string",
+			"enum": ["UserLogout", "AdminRevocation", "SecurityConcern"],
+			"description": "Reason for session invalidation"
+		}
+	},
+	"required": ["sessionId", "userId", "timestamp"]
+}

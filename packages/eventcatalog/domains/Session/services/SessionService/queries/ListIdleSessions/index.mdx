@@ -1,0 +1,25 @@
+---
+id: ListIdleSessions
+name: List Idle Sessions
+version: 0.0.1
+summary: |
+  Query to list sessions approaching expiration due to inactivity.
+---
+
+## Description
+
+This query returns sessions that are still active but approaching their expiration threshold.
+Used by background cleanup processes to identify sessions that need expiration.
+
+## Query parameters
+
+- `thresholdSeconds`: Return sessions expiring within this many seconds (default: 0 for already expired)
+- `limit`: Maximum number of sessions to return
+
+## Response
+
+Returns a list of session summaries with their expiration timestamps and idle durations.
+
+## Read model
+
+The query reads from the session projection, filtering for Active sessions where expiresAt is less than `now + thresholdSeconds`.

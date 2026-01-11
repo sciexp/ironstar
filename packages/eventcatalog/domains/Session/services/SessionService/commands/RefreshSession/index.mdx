@@ -1,0 +1,28 @@
+---
+id: RefreshSession
+name: Refresh Session
+version: 0.0.1
+summary: |
+  Command to extend an active session's TTL due to user activity.
+---
+
+## Description
+
+This command extends the time-to-live of an active session when meaningful user activity is detected.
+It produces a SessionRefreshed event with the updated expiration timestamp.
+
+## Preconditions
+
+- Session exists and is in Active state
+- Current time is before the session's expiresAt
+- Activity qualifies for TTL refresh (configurable threshold)
+
+## Command handler behavior
+
+The Decider's `decide` function validates:
+1. Session ID exists in current state
+2. Session is Active (not Expired or Invalidated)
+3. Sufficient time has passed since last refresh (debounce)
+
+If validation passes, emits SessionRefreshed event with new expiresAt.
+If session is expired or invalidated, returns error.

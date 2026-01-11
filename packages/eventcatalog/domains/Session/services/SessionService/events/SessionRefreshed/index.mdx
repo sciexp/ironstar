@@ -1,0 +1,25 @@
+---
+id: SessionRefreshed
+name: Session Refreshed
+version: 0.0.1
+summary: |
+  Emitted when an active session's TTL is extended due to user activity.
+producers:
+  - SessionService
+---
+
+## Description
+
+This event is emitted when an active session's time-to-live is extended due to detected user activity.
+Sessions are refreshed on meaningful interactions to prevent premature expiration during active use.
+
+## When emitted
+
+Given an active session exists for a user,
+when the user performs an action that triggers TTL refresh (configurable activity threshold),
+then a SessionRefreshed event is emitted with the new expiration timestamp.
+
+## Downstream effects
+
+- Session projection updated with new expiresAt
+- Activity metrics updated for session analytics

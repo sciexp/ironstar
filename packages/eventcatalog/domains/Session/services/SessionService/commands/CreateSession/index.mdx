@@ -1,0 +1,28 @@
+---
+id: CreateSession
+name: Create Session
+version: 0.0.1
+summary: |
+  Command to create a new authenticated session after successful OAuth callback.
+---
+
+## Description
+
+This command initiates the creation of a new user session following a successful OAuth authentication flow.
+It validates the OAuth callback data and, if valid, produces a SessionCreated event.
+
+## Preconditions
+
+- Valid OAuth authorization code received from provider
+- User profile successfully retrieved from OAuth provider
+- No conflicting active session exists (or existing session will be replaced)
+
+## Command handler behavior
+
+The Decider's `decide` function validates:
+1. OAuth callback data is complete and unexpired
+2. State token matches expected value (CSRF protection)
+3. Provider is supported (GitHub or Google)
+
+If validation passes, emits SessionCreated event.
+If validation fails, returns appropriate error without emitting events.

@@ -1,0 +1,24 @@
+---
+id: GetSessionTTL
+name: Get Session TTL
+version: 0.0.1
+summary: |
+  Query to retrieve the remaining time-to-live for an active session.
+---
+
+## Description
+
+This query returns the remaining TTL for a session, used by clients to display session expiration warnings or schedule refresh requests.
+
+## Query parameters
+
+- `sessionId`: The session identifier to check
+
+## Response
+
+Returns the current expiration timestamp and calculated remaining seconds.
+Returns an error if the session is not found or already terminated.
+
+## Read model
+
+The query reads from the session projection, which is updated by SessionCreated and SessionRefreshed events.

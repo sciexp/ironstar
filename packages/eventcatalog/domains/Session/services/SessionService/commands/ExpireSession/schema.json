@@ -1,0 +1,18 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "ExpireSession",
+	"type": "object",
+	"properties": {
+		"sessionId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Identifier of the session to expire"
+		},
+		"detectedAt": {
+			"type": "string",
+			"format": "date-time",
+			"description": "When the expiration was detected"
+		}
+	},
+	"required": ["sessionId"]
+}

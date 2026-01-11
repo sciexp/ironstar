@@ -1,0 +1,70 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "GetActiveSession",
+	"type": "object",
+	"properties": {
+		"request": {
+			"type": "object",
+			"properties": {
+				"sessionId": {
+					"type": "string",
+					"format": "uuid",
+					"description": "Session identifier from cookie"
+				},
+				"userId": {
+					"type": "string",
+					"format": "uuid",
+					"description": "User identifier to find active session"
+				}
+			}
+		},
+		"response": {
+			"type": "object",
+			"properties": {
+				"sessionId": {
+					"type": "string",
+					"format": "uuid",
+					"description": "Session identifier"
+				},
+				"userId": {
+					"type": "string",
+					"format": "uuid",
+					"description": "User identifier"
+				},
+				"provider": {
+					"type": "string",
+					"enum": ["GitHub", "Google"],
+					"description": "OAuth provider used for authentication"
+				},
+				"email": {
+					"type": "string",
+					"format": "email",
+					"description": "User email"
+				},
+				"status": {
+					"type": "string",
+					"enum": ["Active", "Expired", "Invalidated"],
+					"description": "Current session status"
+				},
+				"createdAt": {
+					"type": "string",
+					"format": "date-time",
+					"description": "When the session was created"
+				},
+				"expiresAt": {
+					"type": "string",
+					"format": "date-time",
+					"description": "When the session expires"
+				}
+			},
+			"required": [
+				"sessionId",
+				"userId",
+				"provider",
+				"status",
+				"createdAt",
+				"expiresAt"
+			]
+		}
+	}
+}
