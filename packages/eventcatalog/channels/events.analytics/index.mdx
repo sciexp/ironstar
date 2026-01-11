@@ -1,0 +1,74 @@
+---
+id: events.analytics
+name: Analytics Events Channel
+version: 0.0.1
+summary: |
+  Zenoh key expression pattern for Analytics domain events including catalog selection and query execution.
+address: events/analytics/**
+protocols:
+  - zenoh
+owners:
+  - engineering
+---
+
+## Overview
+
+This channel carries all analytics domain events using Zenoh's key expression filtering.
+Subscribers can filter to specific event types, catalogs, or query sessions.
+
+## Key expression patterns
+
+The channel uses hierarchical key expressions for flexible subscription.
+
+`events/analytics/**` subscribes to all analytics events.
+
+`events/analytics/catalog/**` subscribes to catalog-related events.
+
+`events/analytics/catalog/selected` subscribes only to catalog selection events.
+
+`events/analytics/catalog/metadata-refreshed` subscribes only to metadata refresh events.
+
+`events/analytics/query/**` subscribes to all query session events.
+
+`events/analytics/query/started` subscribes to query start events.
+
+`events/analytics/query/completed` subscribes to query completion events.
+
+`events/analytics/query/failed` subscribes to query failure events.
+
+`events/analytics/query/cancelled` subscribes to query cancellation events.
+
+## Event types carried
+
+This channel carries events from CatalogService and QuerySessionService.
+
+*CatalogSelected* is published when a user selects a DuckLake catalog.
+
+*CatalogMetadataRefreshed* is published when catalog schema information is refreshed.
+
+*QuerySessionStarted* is published when a query begins execution.
+
+*QuerySessionCompleted* is published when a query finishes successfully.
+
+*QuerySessionFailed* is published when a query encounters an error.
+
+*QuerySessionCancelled* is published when a user cancels a running query.
+
+## Subscriber patterns
+
+Analytics events typically interest the following consumers.
+
+*Cache invalidation* listens for catalog changes to invalidate stale metadata caches.
+
+*Query monitoring* tracks active queries and resource usage.
+
+*Usage analytics* aggregates query patterns for capacity planning.
+
+*Real-time feedback* updates UI during long-running query execution.
+
+## Performance considerations
+
+Query events may be high-volume during intensive analysis sessions.
+Subscribers should handle backpressure appropriately.
+
+Use specific key expressions rather than wildcards when possible to reduce message routing overhead.
