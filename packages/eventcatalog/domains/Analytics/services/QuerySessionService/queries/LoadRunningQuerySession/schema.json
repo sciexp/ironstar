@@ -1,0 +1,44 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "LoadRunningQuerySession",
+	"type": "object",
+	"properties": {
+		"request": {
+			"type": "object",
+			"properties": {
+				"queryId": {
+					"type": "string",
+					"format": "uuid"
+				}
+			},
+			"required": ["queryId"]
+		},
+		"response": {
+			"type": "object",
+			"properties": {
+				"queryId": {
+					"type": "string",
+					"format": "uuid"
+				},
+				"status": {
+					"type": "string",
+					"enum": ["Idle", "Running", "Completed", "Failed", "Cancelled"]
+				},
+				"sqlText": {
+					"type": "string"
+				},
+				"datasetRef": {
+					"type": "string",
+					"format": "uri"
+				},
+				"startedAt": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"elapsedMs": {
+					"type": "integer"
+				}
+			}
+		}
+	}
+}

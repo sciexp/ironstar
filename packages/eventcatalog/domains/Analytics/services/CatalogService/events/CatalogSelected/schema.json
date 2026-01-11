@@ -1,0 +1,38 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "CatalogSelected",
+	"type": "object",
+	"properties": {
+		"catalogId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Unique identifier for the catalog"
+		},
+		"catalogUri": {
+			"type": "string",
+			"format": "uri",
+			"description": "URI reference to DuckLake catalog (e.g., ducklake://hf/sciexp/fixtures)"
+		},
+		"catalogName": {
+			"type": "string",
+			"description": "Human-readable catalog name"
+		},
+		"selectedAt": {
+			"type": "string",
+			"format": "date-time",
+			"description": "Timestamp when catalog was selected"
+		},
+		"selectedBy": {
+			"type": "string",
+			"format": "uuid",
+			"description": "User ID who selected the catalog"
+		}
+	},
+	"required": [
+		"catalogId",
+		"catalogUri",
+		"catalogName",
+		"selectedAt",
+		"selectedBy"
+	]
+}

@@ -6,8 +6,16 @@ summary: |
   Manages DuckLake catalog selection and metadata synchronization.
 owners:
   - engineering
-sends: []
-receives: []
+sends:
+  - id: CatalogSelected
+    version: 0.0.1
+  - id: CatalogMetadataRefreshed
+    version: 0.0.1
+receives:
+  - id: SelectCatalog
+    version: 0.0.1
+  - id: RefreshCatalogMetadata
+    version: 0.0.1
 ---
 
 ## Responsibilities

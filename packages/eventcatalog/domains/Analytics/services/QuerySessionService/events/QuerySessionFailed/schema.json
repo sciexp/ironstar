@@ -1,0 +1,35 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "QuerySessionFailed",
+	"type": "object",
+	"properties": {
+		"queryId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Unique identifier for this query execution"
+		},
+		"sessionId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "User session that initiated the query"
+		},
+		"errorCode": {
+			"type": "string",
+			"description": "Error classification code"
+		},
+		"errorMessage": {
+			"type": "string",
+			"description": "Human-readable error description"
+		},
+		"failedAt": {
+			"type": "string",
+			"format": "date-time",
+			"description": "Timestamp when query execution failed"
+		},
+		"elapsedMs": {
+			"type": "integer",
+			"description": "Time elapsed before failure in milliseconds"
+		}
+	},
+	"required": ["queryId", "sessionId", "errorCode", "errorMessage", "failedAt"]
+}

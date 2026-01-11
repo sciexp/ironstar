@@ -1,0 +1,22 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "SelectCatalog",
+	"type": "object",
+	"properties": {
+		"catalogUri": {
+			"type": "string",
+			"format": "uri",
+			"description": "URI reference to DuckLake catalog to select"
+		},
+		"catalogName": {
+			"type": "string",
+			"description": "Human-readable catalog name"
+		},
+		"requestedBy": {
+			"type": "string",
+			"format": "uuid",
+			"description": "User ID requesting catalog selection"
+		}
+	},
+	"required": ["catalogUri", "requestedBy"]
+}

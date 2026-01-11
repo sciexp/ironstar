@@ -1,0 +1,44 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "QuerySessionStarted",
+	"type": "object",
+	"properties": {
+		"queryId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Unique identifier for this query execution"
+		},
+		"sessionId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "User session initiating the query"
+		},
+		"catalogId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Catalog context for query execution"
+		},
+		"datasetRef": {
+			"type": "string",
+			"format": "uri",
+			"description": "Reference to catalog + dataset (e.g., hf://datasets/sciexp/fixtures/experiment_results)"
+		},
+		"sqlText": {
+			"type": "string",
+			"description": "The SQL query to execute"
+		},
+		"startedAt": {
+			"type": "string",
+			"format": "date-time",
+			"description": "Timestamp when query execution started"
+		}
+	},
+	"required": [
+		"queryId",
+		"sessionId",
+		"catalogId",
+		"datasetRef",
+		"sqlText",
+		"startedAt"
+	]
+}

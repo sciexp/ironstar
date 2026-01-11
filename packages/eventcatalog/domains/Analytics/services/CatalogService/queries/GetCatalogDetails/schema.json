@@ -1,0 +1,59 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "GetCatalogDetails",
+	"type": "object",
+	"properties": {
+		"request": {
+			"type": "object",
+			"properties": {
+				"catalogId": {
+					"type": "string",
+					"format": "uuid",
+					"description": "Catalog to retrieve details for"
+				}
+			},
+			"required": ["catalogId"]
+		},
+		"response": {
+			"type": "object",
+			"properties": {
+				"catalogId": {
+					"type": "string",
+					"format": "uuid"
+				},
+				"catalogUri": {
+					"type": "string",
+					"format": "uri"
+				},
+				"catalogName": {
+					"type": "string"
+				},
+				"datasets": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"datasetName": {
+								"type": "string"
+							},
+							"tableCount": {
+								"type": "integer"
+							},
+							"schemaVersion": {
+								"type": "string"
+							}
+						}
+					}
+				},
+				"lastRefreshedAt": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"healthStatus": {
+					"type": "string",
+					"enum": ["Healthy", "Degraded", "Unavailable"]
+				}
+			}
+		}
+	}
+}

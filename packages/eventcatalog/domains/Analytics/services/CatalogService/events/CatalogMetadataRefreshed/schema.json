@@ -1,0 +1,47 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "CatalogMetadataRefreshed",
+	"type": "object",
+	"properties": {
+		"catalogId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Unique identifier for the catalog"
+		},
+		"catalogUri": {
+			"type": "string",
+			"format": "uri",
+			"description": "URI reference to DuckLake catalog"
+		},
+		"datasetCount": {
+			"type": "integer",
+			"description": "Total number of datasets in the catalog"
+		},
+		"tableCount": {
+			"type": "integer",
+			"description": "Total number of tables across all datasets"
+		},
+		"lastRefreshedAt": {
+			"type": "string",
+			"format": "date-time",
+			"description": "Timestamp when metadata was last refreshed"
+		},
+		"refreshStatus": {
+			"type": "string",
+			"enum": ["Success", "PartialSuccess", "Failed"],
+			"description": "Status of the refresh operation"
+		},
+		"refreshDurationMs": {
+			"type": "integer",
+			"description": "Duration of refresh operation in milliseconds"
+		}
+	},
+	"required": [
+		"catalogId",
+		"catalogUri",
+		"datasetCount",
+		"tableCount",
+		"lastRefreshedAt",
+		"refreshStatus"
+	]
+}

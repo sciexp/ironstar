@@ -6,8 +6,20 @@ summary: |
   Manages analytical query execution lifecycle from start through completion, failure, or cancellation.
 owners:
   - engineering
-sends: []
-receives: []
+sends:
+  - id: QuerySessionStarted
+    version: 0.0.1
+  - id: QuerySessionCompleted
+    version: 0.0.1
+  - id: QuerySessionFailed
+    version: 0.0.1
+  - id: QuerySessionCancelled
+    version: 0.0.1
+receives:
+  - id: StartQuery
+    version: 0.0.1
+  - id: CancelQuery
+    version: 0.0.1
 ---
 
 ## Responsibilities

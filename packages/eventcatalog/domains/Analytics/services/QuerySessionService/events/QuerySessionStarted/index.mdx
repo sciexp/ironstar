@@ -1,0 +1,18 @@
+---
+id: QuerySessionStarted
+name: Query Session Started
+version: 0.0.1
+summary: |
+  Raised when a SQL query begins execution against a DuckLake dataset.
+producers:
+  - QuerySessionService
+---
+
+## Description
+
+This event records the initiation of a query execution session.
+It captures the query text, target dataset, and execution context.
+
+## Trigger
+
+Raised in response to the `StartQuery` command after validating the SQL and dataset reference.

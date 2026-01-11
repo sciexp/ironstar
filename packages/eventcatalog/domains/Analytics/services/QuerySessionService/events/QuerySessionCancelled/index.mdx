@@ -1,0 +1,18 @@
+---
+id: QuerySessionCancelled
+name: Query Session Cancelled
+version: 0.0.1
+summary: |
+  Raised when a user cancels a running query.
+producers:
+  - QuerySessionService
+---
+
+## Description
+
+This event records user-initiated query cancellation.
+The query execution is terminated and resources are released.
+
+## Trigger
+
+Raised in response to the `CancelQuery` command for a query in Running state.

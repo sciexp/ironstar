@@ -1,0 +1,45 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "QuerySessionCompleted",
+	"type": "object",
+	"properties": {
+		"queryId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Unique identifier for this query execution"
+		},
+		"sessionId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "User session that initiated the query"
+		},
+		"rowCount": {
+			"type": "integer",
+			"description": "Number of rows returned by the query"
+		},
+		"columnNames": {
+			"type": "array",
+			"items": {
+				"type": "string"
+			},
+			"description": "List of column names in the result set"
+		},
+		"completedAt": {
+			"type": "string",
+			"format": "date-time",
+			"description": "Timestamp when query execution completed"
+		},
+		"durationMs": {
+			"type": "integer",
+			"description": "Total query execution time in milliseconds"
+		}
+	},
+	"required": [
+		"queryId",
+		"sessionId",
+		"rowCount",
+		"columnNames",
+		"completedAt",
+		"durationMs"
+	]
+}

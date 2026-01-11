@@ -1,0 +1,59 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "GetQueryStatus",
+	"type": "object",
+	"properties": {
+		"request": {
+			"type": "object",
+			"properties": {
+				"queryId": {
+					"type": "string",
+					"format": "uuid"
+				}
+			},
+			"required": ["queryId"]
+		},
+		"response": {
+			"type": "object",
+			"properties": {
+				"queryId": {
+					"type": "string",
+					"format": "uuid"
+				},
+				"status": {
+					"type": "string",
+					"enum": ["Idle", "Running", "Completed", "Failed", "Cancelled"]
+				},
+				"sqlText": {
+					"type": "string"
+				},
+				"startedAt": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"completedAt": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"durationMs": {
+					"type": "integer"
+				},
+				"rowCount": {
+					"type": "integer"
+				},
+				"columnNames": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					}
+				},
+				"errorCode": {
+					"type": "string"
+				},
+				"errorMessage": {
+					"type": "string"
+				}
+			}
+		}
+	}
+}

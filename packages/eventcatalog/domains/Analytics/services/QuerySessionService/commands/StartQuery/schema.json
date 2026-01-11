@@ -1,0 +1,31 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "StartQuery",
+	"type": "object",
+	"properties": {
+		"sessionId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "User session initiating the query"
+		},
+		"catalogId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Catalog context for query execution"
+		},
+		"datasetRef": {
+			"type": "string",
+			"format": "uri",
+			"description": "Reference to target dataset"
+		},
+		"sqlText": {
+			"type": "string",
+			"description": "The SQL query to execute"
+		},
+		"timeoutMs": {
+			"type": "integer",
+			"description": "Maximum execution time in milliseconds"
+		}
+	},
+	"required": ["sessionId", "catalogId", "datasetRef", "sqlText"]
+}

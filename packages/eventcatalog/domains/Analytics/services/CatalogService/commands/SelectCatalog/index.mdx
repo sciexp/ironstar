@@ -1,0 +1,21 @@
+---
+id: SelectCatalog
+name: Select Catalog
+version: 0.0.1
+summary: |
+  Selects a DuckLake catalog as the active context for query operations.
+---
+
+## Description
+
+This command initiates catalog selection, making the specified catalog the active context for all subsequent query operations.
+
+## Preconditions
+
+- The catalog URI must reference a valid DuckLake catalog
+- The user must have access permissions to the catalog
+
+## Postconditions
+
+- On success: `CatalogSelected` event is raised
+- On failure: Command is rejected with validation error

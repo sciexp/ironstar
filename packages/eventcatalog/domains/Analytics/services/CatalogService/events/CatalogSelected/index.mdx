@@ -1,0 +1,18 @@
+---
+id: CatalogSelected
+name: Catalog Selected
+version: 0.0.1
+summary: |
+  Raised when user selects a DuckLake catalog from the available catalogs list.
+producers:
+  - CatalogService
+---
+
+## Description
+
+This event records that a user has selected a specific DuckLake catalog to work with.
+The catalog becomes the active context for all subsequent query operations.
+
+## Trigger
+
+Raised in response to the `SelectCatalog` command after validating catalog availability.

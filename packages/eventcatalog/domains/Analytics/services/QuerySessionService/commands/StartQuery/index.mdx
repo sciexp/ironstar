@@ -1,0 +1,23 @@
+---
+id: StartQuery
+name: Start Query
+version: 0.0.1
+summary: |
+  Initiates SQL query execution against a DuckLake dataset.
+---
+
+## Description
+
+This command starts a new query execution session with the provided SQL and target dataset.
+The query is validated and then executed asynchronously.
+
+## Preconditions
+
+- A catalog must be currently selected
+- The dataset reference must be valid within the selected catalog
+- The SQL must be syntactically valid
+
+## Postconditions
+
+- On success: `QuerySessionStarted` event is raised and query execution begins
+- On failure: Command is rejected with validation error

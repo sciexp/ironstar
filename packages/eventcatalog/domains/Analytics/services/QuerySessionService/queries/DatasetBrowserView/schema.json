@@ -1,0 +1,60 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "DatasetBrowserView",
+	"type": "object",
+	"properties": {
+		"request": {
+			"type": "object",
+			"properties": {
+				"catalogId": {
+					"type": "string",
+					"format": "uuid"
+				},
+				"datasetRef": {
+					"type": "string",
+					"format": "uri"
+				}
+			},
+			"required": ["catalogId", "datasetRef"]
+		},
+		"response": {
+			"type": "object",
+			"properties": {
+				"datasetName": {
+					"type": "string"
+				},
+				"tables": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"tableName": {
+								"type": "string"
+							},
+							"rowCount": {
+								"type": "integer"
+							},
+							"columns": {
+								"type": "array",
+								"items": {
+									"type": "object",
+									"properties": {
+										"columnName": {
+											"type": "string"
+										},
+										"dataType": {
+											"type": "string"
+										},
+										"nullable": {
+											"type": "boolean"
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

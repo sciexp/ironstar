@@ -1,0 +1,18 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "CancelQuery",
+	"type": "object",
+	"properties": {
+		"queryId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Identifier of the query to cancel"
+		},
+		"cancelledBy": {
+			"type": "string",
+			"format": "uuid",
+			"description": "User ID requesting cancellation"
+		}
+	},
+	"required": ["queryId", "cancelledBy"]
+}

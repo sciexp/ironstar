@@ -1,0 +1,22 @@
+---
+id: CancelQuery
+name: Cancel Query
+version: 0.0.1
+summary: |
+  Cancels a running query execution.
+---
+
+## Description
+
+This command requests cancellation of an in-progress query.
+The query execution is terminated and resources are released.
+
+## Preconditions
+
+- The query must be in Running state
+- The requesting user must have permission to cancel the query
+
+## Postconditions
+
+- On success: `QuerySessionCancelled` event is raised
+- On failure: Command is rejected if query is not running or not found

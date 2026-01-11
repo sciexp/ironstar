@@ -1,0 +1,21 @@
+---
+id: RefreshCatalogMetadata
+name: Refresh Catalog Metadata
+version: 0.0.1
+summary: |
+  Refreshes metadata for the active catalog from the DuckLake source.
+---
+
+## Description
+
+This command triggers a metadata refresh operation, fetching the current dataset list, table counts, and schema version information from the catalog source.
+
+## Preconditions
+
+- A catalog must be currently selected
+- The catalog source must be reachable
+
+## Postconditions
+
+- On success: `CatalogMetadataRefreshed` event is raised with updated metadata
+- On failure: Command is rejected with connectivity or access error

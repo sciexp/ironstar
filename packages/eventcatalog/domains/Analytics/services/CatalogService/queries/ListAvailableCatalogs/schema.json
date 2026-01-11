@@ -1,0 +1,49 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "ListAvailableCatalogs",
+	"type": "object",
+	"properties": {
+		"request": {
+			"type": "object",
+			"properties": {
+				"userId": {
+					"type": "string",
+					"format": "uuid",
+					"description": "User requesting catalog list"
+				}
+			},
+			"required": ["userId"]
+		},
+		"response": {
+			"type": "object",
+			"properties": {
+				"catalogs": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"catalogId": {
+								"type": "string",
+								"format": "uuid"
+							},
+							"catalogUri": {
+								"type": "string",
+								"format": "uri"
+							},
+							"catalogName": {
+								"type": "string"
+							},
+							"datasetCount": {
+								"type": "integer"
+							},
+							"lastRefreshedAt": {
+								"type": "string",
+								"format": "date-time"
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

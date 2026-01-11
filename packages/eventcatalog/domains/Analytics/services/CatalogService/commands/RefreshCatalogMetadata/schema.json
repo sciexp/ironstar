@@ -1,0 +1,23 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "RefreshCatalogMetadata",
+	"type": "object",
+	"properties": {
+		"catalogId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Identifier of catalog to refresh"
+		},
+		"forceRefresh": {
+			"type": "boolean",
+			"description": "Force refresh even if cache is fresh",
+			"default": false
+		},
+		"requestedBy": {
+			"type": "string",
+			"format": "uuid",
+			"description": "User ID requesting metadata refresh"
+		}
+	},
+	"required": ["catalogId", "requestedBy"]
+}
