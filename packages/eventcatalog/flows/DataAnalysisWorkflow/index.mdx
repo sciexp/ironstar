@@ -1,0 +1,160 @@
+---
+id: DataAnalysisWorkflow
+name: Data Analysis Workflow
+version: 0.0.1
+summary: |
+  End-to-end golden path from OAuth authentication through catalog selection, query execution, and dashboard creation.
+steps:
+  - id: authenticate
+    title: User Authentication
+    actor:
+      name: Data Analyst
+    next_step:
+      id: session-created
+      label: "initiates OAuth"
+
+  - id: session-created
+    title: Session Established
+    message:
+      id: SessionCreated
+      version: "0.0.1"
+    next_step:
+      id: select-catalog
+      label: "authenticated"
+
+  - id: select-catalog
+    title: Select Catalog
+    message:
+      id: CatalogSelected
+      version: "0.0.1"
+    next_step:
+      id: refresh-metadata
+      label: "catalog chosen"
+
+  - id: refresh-metadata
+    title: Refresh Catalog Metadata
+    message:
+      id: CatalogMetadataRefreshed
+      version: "0.0.1"
+    next_step:
+      id: start-query
+      label: "metadata loaded"
+
+  - id: start-query
+    title: Execute Query
+    message:
+      id: QuerySessionStarted
+      version: "0.0.1"
+    next_steps:
+      - id: query-completed
+        label: "success"
+      - id: query-failed
+        label: "error"
+      - id: query-cancelled
+        label: "cancelled"
+
+  - id: query-completed
+    title: Query Completed
+    message:
+      id: QuerySessionCompleted
+      version: "0.0.1"
+    next_step:
+      id: create-dashboard
+      label: "results available"
+
+  - id: query-failed
+    title: Query Failed
+    message:
+      id: QuerySessionFailed
+      version: "0.0.1"
+
+  - id: query-cancelled
+    title: Query Cancelled
+    message:
+      id: QuerySessionCancelled
+      version: "0.0.1"
+
+  - id: create-dashboard
+    title: Create Dashboard
+    message:
+      id: DashboardCreated
+      version: "0.0.1"
+    next_step:
+      id: add-chart
+      label: "dashboard ready"
+
+  - id: add-chart
+    title: Add Chart to Dashboard
+    message:
+      id: DashboardChartAdded
+      version: "0.0.1"
+    next_steps:
+      - id: add-tab
+        label: "organize charts"
+      - id: save-query
+        label: "persist query"
+
+  - id: add-tab
+    title: Add Tab to Dashboard
+    message:
+      id: DashboardTabAdded
+      version: "0.0.1"
+    next_step:
+      id: move-chart
+      label: "organize"
+
+  - id: move-chart
+    title: Move Chart to Tab
+    message:
+      id: DashboardChartMovedToTab
+      version: "0.0.1"
+
+  - id: save-query
+    title: Save Query
+    message:
+      id: SavedQueryCreated
+      version: "0.0.1"
+    next_step:
+      id: session-end
+      label: "work complete"
+
+  - id: session-end
+    title: Session Lifecycle End
+    service:
+      id: SessionService
+      version: "0.0.1"
+---
+
+## Overview
+
+This flow represents the golden path through the ironstar platform, from initial authentication through data analysis and dashboard creation.
+It captures the typical journey of a data analyst using the system.
+
+## Workflow stages
+
+The workflow progresses through distinct phases.
+
+*Authentication* establishes user identity via OAuth (GitHub or Google) and creates an authenticated session.
+
+*Catalog selection* allows the user to choose which DuckLake catalog to work with, triggering metadata refresh to populate the dataset browser.
+
+*Query execution* represents the core analytical work, where SQL queries are executed against the selected catalog.
+This phase has three possible outcomes: successful completion, failure (with error details), or cancellation by the user.
+
+*Dashboard creation* enables visualization of query results through chart widgets organized into tabbed layouts.
+
+*Query persistence* allows saving queries for reuse, completing the typical work session.
+
+## Branching logic
+
+The flow includes decision points where execution may diverge.
+
+Query execution branches into three outcomes based on whether the query completes successfully, encounters an error, or is cancelled by the user.
+
+After adding charts, users may either organize them into tabs or proceed directly to saving queries.
+
+## Session lifecycle
+
+Sessions are refreshed periodically while active.
+The session may terminate through explicit logout (invalidation) or TTL expiration.
+See the SessionLifecycle flow for detailed session state transitions.
