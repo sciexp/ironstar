@@ -1,0 +1,125 @@
+---
+id: UserPreferencesSetup
+name: User Preferences Setup
+version: 0.0.1
+summary: |
+  User preferences configuration from initialization through theme and default catalog settings to UI state persistence.
+steps:
+  - id: new-user
+    title: New User
+    actor:
+      name: User
+    next_step:
+      id: initialize-prefs
+      label: "first login"
+
+  - id: initialize-prefs
+    title: Preferences Initialized
+    message:
+      id: UserPreferencesInitialized
+      version: "0.0.1"
+    next_steps:
+      - id: set-theme
+        label: "configure theme"
+      - id: set-default-catalog
+        label: "set default catalog"
+      - id: update-ui-state
+        label: "interact with UI"
+
+  - id: set-theme
+    title: Theme Set
+    message:
+      id: UserPreferencesThemeSet
+      version: "0.0.1"
+    next_steps:
+      - id: set-theme
+        label: "change theme"
+      - id: set-default-catalog
+        label: "set defaults"
+      - id: update-ui-state
+        label: "interact with UI"
+
+  - id: set-default-catalog
+    title: Default Catalog Set
+    message:
+      id: UserPreferencesDefaultCatalogSet
+      version: "0.0.1"
+    next_steps:
+      - id: clear-default
+        label: "clear default"
+      - id: set-default-catalog
+        label: "change default"
+      - id: update-ui-state
+        label: "interact with UI"
+
+  - id: clear-default
+    title: Default Cleared
+    message:
+      id: UserPreferencesDefaultCleared
+      version: "0.0.1"
+    next_steps:
+      - id: set-default-catalog
+        label: "set new default"
+      - id: update-ui-state
+        label: "interact with UI"
+
+  - id: update-ui-state
+    title: UI State Updated
+    message:
+      id: UserPreferencesUiStateUpdated
+      version: "0.0.1"
+    next_steps:
+      - id: update-ui-state
+        label: "continued interaction"
+      - id: set-theme
+        label: "change theme"
+---
+
+## Overview
+
+This flow documents user preferences configuration and UI state persistence.
+Preferences enable personalization and restore user context across sessions.
+
+## Initialization
+
+User preferences are initialized on first login.
+The UserPreferencesInitialized event establishes default values for all configurable settings.
+
+Initialization occurs automatically during session creation if no preferences exist for the user.
+
+## Theme configuration
+
+Users can select between light and dark themes.
+The platform uses Open Props design tokens with OKLch color space for perceptually uniform theming.
+
+Theme selection is persisted and restored on subsequent sessions.
+The `light-dark()` CSS function enables native theme switching.
+
+## Default catalog selection
+
+Users can set a default catalog that is automatically selected on login.
+This streamlines the workflow for users who consistently work with the same data.
+
+The default catalog can be cleared to restore the catalog selection prompt on login.
+
+## UI state persistence
+
+UI state captures ephemeral preferences that enhance user experience.
+
+*Panel positions* and sizes are remembered across sessions.
+
+*Sidebar collapse state* is persisted.
+
+*Query editor preferences* (font size, line numbers, etc.) are maintained.
+
+*Recent items* lists are updated as users interact with the system.
+
+UI state updates occur frequently during normal usage.
+These events are batched to avoid excessive event volume.
+
+## Privacy considerations
+
+User preferences are stored per-user and are not shared.
+Preferences do not contain sensitive data and are not encrypted separately from the event store.
+
+Users may clear their preferences to reset to defaults.
