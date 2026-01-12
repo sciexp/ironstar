@@ -2,11 +2,11 @@
   "nodes": {
     "crane": {
       "locked": {
-        "lastModified": 1765145449,
-        "narHash": "sha256-aBVHGWWRzSpfL++LubA0CwOOQ64WNLegrYHwsVuVN7A=",
+        "lastModified": 1767461147,
+        "narHash": "sha256-TH/xTeq/RI+DOzo+c+4F431eVuBpYVwQwBxzURe7kcI=",
         "owner": "ipetkov",
         "repo": "crane",
-        "rev": "69f538cdce5955fcd47abfed4395dc6d5194c1c5",
+        "rev": "7d59256814085fd9666a2ae3e774dc5ee216b630",
         "type": "github"
       },
       "original": {
@@ -192,11 +192,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1765673574,
-        "narHash": "sha256-r6EKZdnLfzOA5hGvYRdEK3fl/a1q3ws7IonYlhKRIO4=",
+        "lastModified": 1767640844,
+        "narHash": "sha256-+IUfPMWoC/LJLPVB+KuY4kCS7yxcHZUk2dutfgXENhI=",
         "owner": "juspay",
         "repo": "rust-flake",
-        "rev": "5069f0d5774d9bfd4a5d2ba79e63690977531159",
+        "rev": "107cf0c2b8231c39f4b879b47b4f136d6667cc30",
         "type": "github"
       },
       "original": {
