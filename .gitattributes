@@ -3,7 +3,5 @@ scripts/** linguist-detectable=false
 .envrc linguist-detectable=false
 justfile linguist-detectable=false
 Makefile linguist-detectable=false
-
-
-# Use bd merge for beads JSONL files
+*.mdx linguist-documentation
 .beads/issues.jsonl merge=beads
