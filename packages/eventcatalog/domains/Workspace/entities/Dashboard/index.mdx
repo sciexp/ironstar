@@ -98,3 +98,79 @@ The `layoutJson` field encodes a hierarchical structure:
 - Dashboard must have at least one tab after creation
 - Chart positions must not overlap within a tab
 - Only the owner can modify the dashboard
+
+## fmodel-rust Implementation
+
+This aggregate implements the Decider pattern from fmodel-rust.
+
+### decide
+
+```rust
+fn decide(cmd: DashboardCommand, state: &DashboardState) -> Result<Vec<DashboardEvent>, String>
+```
+
+**Command handling logic:**
+
+- **CreateDashboard(name)** when `dashboardId` is `None`:
+  - Validates: No preconditions
+  - Produces: `DashboardCreated(dashboard_id, name, timestamp)`
+  - Error if dashboard exists: "Dashboard already exists"
+
+- **AddChart(placement)** when dashboard exists:
+  - Validates: Dashboard must exist
+  - Produces: `ChartAdded(placement, timestamp)`
+  - Error if no dashboard: "No dashboard to add chart to"
+
+- **RemoveChart(chart_id)** when dashboard exists:
+  - Validates: Dashboard must exist (idempotent for non-existent charts)
+  - Produces: `ChartRemoved(chart_id, timestamp)`
+
+- **AddTab(tab_name)** when dashboard exists:
+  - Validates: Dashboard must exist
+  - Produces: `TabAdded(tab_id, tab_name, timestamp)`
+
+- **MoveChartToTab(chart_id, tab_id)** when dashboard exists:
+  - Validates: Dashboard must exist (full validation at boundary)
+  - Produces: `ChartMovedToTab(chart_id, tab_id, timestamp)`
+
+- **RenameDashboard(new_name)** when dashboard exists:
+  - Validates: Dashboard must exist
+  - Produces: `DashboardRenamed(new_name, timestamp)`
+
+### evolve
+
+```rust
+fn evolve(state: DashboardState, event: &DashboardEvent) -> DashboardState
+```
+
+**Event application logic:**
+
+- **DashboardCreated(dashboard_id, name, _)**:
+  - Updates: `dashboardId` → `Some(dashboard_id)`, `name` → provided name
+
+- **ChartAdded(placement, _)**:
+  - Updates: Prepends `placement` to `placements` list
+
+- **ChartRemoved(chart_id, _)**:
+  - Updates: Filters out placement with matching `chartId`
+
+- **TabAdded(tab_info, _)**:
+  - Updates: Prepends `tab_info` to `tabs` list
+
+- **ChartMovedToTab(chart_id, tab_id, _)**:
+  - Updates: Sets `tabId` to `Some(tab_id)` for matching chart placement
+
+- **DashboardRenamed(new_name, _)**:
+  - Updates: `name` → `new_name`
+
+### initial_state
+
+```rust
+fn initial_state() -> DashboardState
+```
+
+Returns `DashboardState` with:
+- `dashboardId`: `None`
+- `name`: `""`
+- `placements`: `[]`
+- `tabs`: `[]`
