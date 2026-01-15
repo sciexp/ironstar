@@ -1,0 +1,109 @@
+---
+dictionary:
+  - id: dashboard
+    name: Dashboard
+    summary: Aggregate managing persistent visual layouts with chart placements and tabs
+    description: |
+      The Dashboard aggregate organizes charts into tabs with grid-based positioning.
+      Each dashboard has a single owner and stores layout configuration as JSON.
+      Charts reference SavedQuery aggregates for their data sources.
+    icon: LayoutDashboard
+
+  - id: saved-query
+    name: Saved Query
+    summary: Named, reusable SQL query with dataset reference for analytics
+    description: |
+      A SavedQuery persists SQL statements that can be reused across sessions.
+      Each query references a dataset via URI and belongs to a single owner.
+      Dashboard charts reference saved queries as their data source.
+    icon: FileSearch
+
+  - id: user-preferences
+    name: User Preferences
+    summary: Aggregate for persistent user-specific settings and UI state
+    description: |
+      UserPreferences stores theme selection, default catalog, and UI state.
+      Created lazily on first authenticated access with sensible defaults.
+      One-to-one relationship with User from Session context.
+    icon: Settings
+
+  - id: theme
+    name: Theme
+    summary: Color scheme preference with Light, Dark, or System variants
+    description: |
+      A sum type representing the user's preferred color scheme.
+      System variant defers to OS preference via prefers-color-scheme media query.
+      Integrates with Open Props native theming via CSS custom properties.
+    icon: Palette
+
+  - id: grid-position
+    name: Grid Position
+    summary: Row and column coordinates for chart placement within a dashboard
+    description: |
+      A value object with 0-indexed row and column indices.
+      Used with GridSize to define chart bounding boxes in the layout grid.
+      Overlap detection ensures charts do not intersect within a tab.
+    icon: Grid3x3
+
+  - id: tab-definition
+    name: Tab Definition
+    summary: Named section within a dashboard for organizing related charts
+    description: |
+      Tabs provide logical grouping of charts within a dashboard.
+      Each tab has a unique TabId and human-readable name.
+      Charts can be moved between tabs via MoveChartToTab command.
+    icon: FolderOpen
+
+  - id: chart-placement
+    name: Chart Placement
+    summary: Associates a chart reference with position, size, and tab assignment
+    description: |
+      Combines ChartDefinitionRef with GridPosition, GridSize, and optional TabId.
+      The ChartDefinitionRef points to Analytics context; position is local to the dashboard.
+      Uniquely identified by ChartId within the dashboard aggregate.
+    icon: SquareStack
+
+  - id: ui-state
+    name: UI State
+    summary: Opaque JSON blob persisting transient UI concerns across sessions
+    description: |
+      Stores panel sizes, collapsed sections, recent catalogs, and similar ephemeral state.
+      Schema is intentionally loose to accommodate UI evolution without event migration.
+      Updated via UpdateUiState command without validation beyond JSON parsing.
+    icon: SlidersHorizontal
+
+  - id: dataset-reference
+    name: Dataset Reference
+    summary: URI identifying a target dataset for query execution
+    description: |
+      Decomposed into catalogUri and datasetName components for filtering.
+      Supports ducklake://, hf://, and s3:// schemes for flexible addressing.
+      DuckDB resolves the reference at query execution time.
+    icon: Database
+
+  - id: chart-definition-ref
+    name: Chart Definition Reference
+    summary: Cross-context reference to ChartDefinition in Analytics domain
+    description: |
+      A customer-supplier relationship where Workspace references but does not own the chart definition.
+      Contains refId for lookup and optional chartTypeHint for UI hints.
+      Actual ChartConfig is resolved at query time via Analytics context.
+    icon: Link
+
+  - id: grid-size
+    name: Grid Size
+    summary: Width and height in grid units for chart bounding box
+    description: |
+      Paired with GridPosition to define chart layout rectangles.
+      Used in overlap detection to ensure charts do not intersect.
+      Non-negative natural numbers for both dimensions.
+    icon: Expand
+
+  - id: layout-json
+    name: Layout JSON
+    summary: Serialized dashboard structure encoding tabs and chart placements
+    description: |
+      Hierarchical JSON structure stored in Dashboard aggregate.
+      Contains tabs array with nested charts, each having position and queryRef.
+      Enables dashboard state persistence and restoration across sessions.
+    icon: FileJson
