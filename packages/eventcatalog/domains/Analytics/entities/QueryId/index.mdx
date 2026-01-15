@@ -1,0 +1,36 @@
+---
+id: QueryId
+name: QueryId
+version: 0.0.1
+summary: |
+  Unique identifier for a query execution session.
+owners:
+  - engineering
+aggregateRoot: false
+identifier: unQueryId
+properties:
+  - name: unQueryId
+    type: string
+    required: true
+    summary: Unique string identifier for the query session
+---
+
+## Overview
+
+QueryId is a value object representing a unique identifier for a query execution session within the Analytics bounded context.
+Each query execution receives a unique identifier that tracks it through its lifecycle.
+
+## Invariants
+
+- Query ID must be unique across all query executions
+- Query ID equality is determined by string equality
+- Query ID is immutable once assigned
+
+## Usage
+
+- **QuerySession aggregate**: Tracks running, completed, and failed queries
+- **QueryStarted event**: Assigns a unique ID to new query executions
+- **QueryCompleted event**: Records which query completed
+- **QueryFailed event**: Records which query failed
+- **QueryCancelled event**: Records which query was cancelled
+- **CancelQuery command**: Specifies which running query to cancel

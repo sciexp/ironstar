@@ -1,0 +1,38 @@
+---
+id: ChartType
+name: ChartType
+version: 0.0.1
+summary: |
+  Enumeration of supported visualization types.
+owners:
+  - engineering
+aggregateRoot: false
+---
+
+## Overview
+
+ChartType is a sum type enumerating supported visualization types in the Analytics bounded context.
+Each variant maps to both ECharts and Vega-Lite chart types, providing a unified abstraction.
+
+## Variants
+
+| Variant | Description |
+|---------|-------------|
+| Line | Line chart for continuous data trends |
+| Bar | Bar chart for categorical comparisons |
+| Scatter | Scatter plot for correlation and distribution |
+| Pie | Pie chart for proportional data (single series) |
+| Heatmap | Heatmap for 2D density visualization |
+| Area | Area chart for cumulative trends |
+| Histogram | Histogram for frequency distribution |
+| Boxplot | Box plot for statistical distribution summary |
+
+## Invariants
+
+- ChartType is exhaustive; all variants must be handled in pattern matching
+- Pie charts are restricted to single series data
+
+## Usage
+
+- **ChartConfig**: Specifies the chart type for visualization
+- **Chart validation**: Validates that data matches chart type constraints

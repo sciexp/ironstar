@@ -1,0 +1,44 @@
+---
+id: CatalogRef
+name: CatalogRef
+version: 0.0.1
+summary: |
+  URI reference to a DuckLake catalog.
+owners:
+  - engineering
+aggregateRoot: false
+identifier: uri
+properties:
+  - name: uri
+    type: string
+    required: true
+    format: uri
+    summary: DuckLake catalog URI (e.g., "ducklake:hf://datasets/sciexp/fixtures")
+---
+
+## Overview
+
+CatalogRef is a value object representing a reference to a DuckLake catalog through a URI.
+The URI scheme follows the pattern `ducklake:{provider}://{path}` where provider indicates the data source (e.g., `hf` for Hugging Face).
+
+## URI Format
+
+| Component | Example | Description |
+|-----------|---------|-------------|
+| Scheme | `ducklake:` | DuckLake protocol identifier |
+| Provider | `hf:` | Hugging Face datasets |
+| Path | `//datasets/sciexp/fixtures` | Resource path within provider |
+
+Full example: `ducklake:hf://datasets/sciexp/fixtures`
+
+## Invariants
+
+- URI must follow DuckLake URI format conventions
+- URI uniqueness determines catalog identity
+- Two CatalogRef instances with the same URI are considered equal
+
+## Usage
+
+- **Catalog aggregate**: Tracks the currently active catalog via CatalogActive state
+- **CatalogSelected event**: Records which catalog was selected
+- **SelectCatalog command**: Specifies which catalog to activate

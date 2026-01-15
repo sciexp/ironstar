@@ -1,0 +1,37 @@
+---
+id: QueryResults
+name: QueryResults
+version: 0.0.1
+summary: |
+  Query execution result metadata.
+owners:
+  - engineering
+aggregateRoot: false
+properties:
+  - name: rowCount
+    type: integer
+    required: true
+    summary: Number of rows returned by the query (non-negative)
+  - name: columnNames
+    type: array
+    required: true
+    summary: Ordered list of column names in the result set
+---
+
+## Overview
+
+QueryResults is a value object representing metadata about a successful query execution.
+This is a simplified representation for the event sourcing specification; production implementations include actual row data via separate caching.
+
+## Invariants
+
+- Row count must be non-negative
+- Column names list must be non-empty for non-zero row counts
+- Column names must be unique within a result set
+- Column name order matches the column order in the result set
+
+## Usage
+
+- **QueryCompleted event**: Records result metadata when query succeeds
+- **QuerySession aggregate**: Stores results in Completed state
+- **Analytics read model**: Tracks completed query results for history

@@ -1,0 +1,32 @@
+---
+id: ErrorMessage
+name: ErrorMessage
+version: 0.0.1
+summary: |
+  Error message wrapper for failed query executions.
+owners:
+  - engineering
+aggregateRoot: false
+identifier: message
+properties:
+  - name: message
+    type: string
+    required: true
+    summary: Human-readable error message describing the query failure
+---
+
+## Overview
+
+ErrorMessage is a value object wrapping an error message string for failed query executions.
+The wrapper distinguishes error messages from arbitrary strings, providing type safety for error handling.
+
+## Invariants
+
+- Error message is immutable once constructed
+- Error message content should be human-readable and suitable for user display
+
+## Usage
+
+- **QueryFailed event**: Records error message when query fails
+- **QuerySession aggregate**: Stores error in Failed state
+- **Analytics read model**: Tracks failed query errors for history

@@ -1,0 +1,38 @@
+---
+id: DatasetRef
+name: DatasetRef
+version: 0.0.1
+summary: |
+  Reference to a dataset within a DuckLake catalog.
+owners:
+  - engineering
+aggregateRoot: false
+identifier: [catalogUri, datasetName]
+properties:
+  - name: catalogUri
+    type: string
+    required: true
+    summary: URI of the parent DuckLake catalog
+  - name: datasetName
+    type: string
+    required: true
+    summary: Name of the dataset within the catalog
+---
+
+## Overview
+
+DatasetRef is a value object representing a reference to a specific dataset within a DuckLake catalog.
+The 2-field structure separates catalog location from dataset identity, enabling filtering and grouping by catalog.
+
+## Invariants
+
+- Dataset equality is determined by both catalogUri and datasetName
+- Dataset names must be valid identifiers within the DuckLake catalog schema
+- Catalog URI must reference an accessible DuckLake catalog
+
+## Usage
+
+- **StartQuery command**: Specifies which dataset the query targets
+- **QueryStarted event**: Records the dataset reference
+- **QuerySession aggregate**: Stores dataset reference for running queries
+- **SavedQuery aggregate**: Stores dataset reference for reusable queries

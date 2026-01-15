@@ -1,0 +1,58 @@
+---
+id: ChartOptions
+name: ChartOptions
+version: 0.0.1
+summary: |
+  Chart rendering options for visualization configuration.
+owners:
+  - engineering
+aggregateRoot: false
+properties:
+  - name: title
+    type: string
+    required: false
+    summary: Optional chart title
+  - name: xAxis
+    type: AxisConfig
+    required: false
+    summary: Optional X-axis configuration
+  - name: yAxis
+    type: AxisConfig
+    required: false
+    summary: Optional Y-axis configuration
+  - name: legend
+    type: LegendConfig
+    required: true
+    summary: Legend display configuration
+  - name: grid
+    type: GridConfig
+    required: true
+    summary: Grid positioning configuration (padding)
+  - name: palette
+    type: ColorPalette
+    required: true
+    summary: Color palette for chart series
+  - name: interactive
+    type: boolean
+    required: true
+    summary: Enable interactive features (zoom, pan, tooltips)
+---
+
+## Overview
+
+ChartOptions is a value object representing the complete set of rendering options for chart visualization.
+This includes axis configuration, legend placement, grid layout, color palettes, and interactivity settings.
+
+## Invariants
+
+- Default values are provided via defaultChartOptions for zero-config rendering
+- Axis configurations are optional to support charts without explicit axes (e.g., Pie)
+- Grid configuration values are in pixels
+- Color palette must contain at least one valid hex color code
+- Interactive flag defaults to true
+
+## Usage
+
+- **ChartConfig**: Combines with ChartType for complete chart specification
+- **Frontend visualization**: Consumes options to configure ECharts/Vega-Lite
+- **Default configuration**: Provides sensible defaults for quick chart creation

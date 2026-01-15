@@ -1,0 +1,34 @@
+---
+id: SqlQuery
+name: SqlQuery
+version: 0.0.1
+summary: |
+  SQL query string wrapper for type-safe query execution.
+owners:
+  - engineering
+aggregateRoot: false
+identifier: sql
+properties:
+  - name: sql
+    type: string
+    required: true
+    summary: SQL query text to be executed against DuckDB
+---
+
+## Overview
+
+SqlQuery is a value object wrapping a SQL query string for type-safe query execution.
+The wrapper distinguishes SQL query strings from arbitrary strings in the type system, providing compile-time safety and clear intent.
+
+## Invariants
+
+- SQL string is immutable once constructed
+- No SQL syntax validation at value object level (validation happens at execution time)
+- Non-empty validation enforced at aggregate level (SavedQuery decider)
+
+## Usage
+
+- **StartQuery command**: Specifies the SQL query to execute
+- **QueryStarted event**: Records the SQL query text submitted
+- **QuerySession aggregate**: Stores the SQL query for running queries
+- **SavedQuery aggregate**: Stores the SQL query for reusable queries

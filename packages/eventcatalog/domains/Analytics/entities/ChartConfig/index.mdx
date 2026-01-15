@@ -1,0 +1,38 @@
+---
+id: ChartConfig
+name: ChartConfig
+version: 0.0.1
+summary: |
+  Complete chart specification combining type and rendering options.
+owners:
+  - engineering
+aggregateRoot: false
+properties:
+  - name: chartType
+    type: ChartType
+    required: true
+    summary: Type of chart (Line, Bar, Scatter, etc.)
+  - name: options
+    type: ChartOptions
+    required: true
+    summary: Chart rendering options (title, axes, legend, grid, palette, interactivity)
+---
+
+## Overview
+
+ChartConfig is a value object representing a complete chart specification combining chart type with rendering options.
+This configuration is produced by Analytics and consumed by Workspace for visualization rendering.
+
+The configuration supports both ECharts and Vega-Lite libraries with a unified abstraction layer.
+
+## Invariants
+
+- Chart type must be a valid ChartType variant
+- Chart options must be well-formed according to ChartOptions structure
+- Chart configuration must be serializable for SSE transmission
+
+## Usage
+
+- **StartQuery command**: Optionally specifies chart configuration
+- **QueryStarted event**: Records chart configuration when provided
+- **Workspace Dashboard**: Consumes chart configuration to render visualizations

@@ -1,0 +1,41 @@
+---
+id: DatasetInfo
+name: DatasetInfo
+version: 0.0.1
+summary: |
+  Summary information about a dataset within a catalog.
+owners:
+  - engineering
+aggregateRoot: false
+properties:
+  - name: name
+    type: string
+    required: true
+    summary: Dataset name within the catalog
+  - name: tableCount
+    type: integer
+    required: true
+    summary: Number of tables in the dataset (non-negative)
+  - name: schemaVersion
+    type: string
+    required: true
+    summary: Schema version identifier for the dataset
+---
+
+## Overview
+
+DatasetInfo is a value object representing summary information about a dataset within a DuckLake catalog.
+This provides essential metadata for dataset discovery without requiring full schema introspection.
+
+## Invariants
+
+- Dataset name must be unique within a catalog
+- Table count must be non-negative (may be zero for empty datasets)
+- Schema version follows semantic versioning or custom versioning scheme
+- Dataset equality determined by name, table count, and schema version
+
+## Usage
+
+- **CatalogMetadata**: Contains list of DatasetInfo for catalog inventory
+- **CatalogMetadataRefreshed event**: Records dataset inventory changes
+- **Catalog read model**: Provides dataset listing for UI display

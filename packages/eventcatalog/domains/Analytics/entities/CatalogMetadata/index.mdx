@@ -1,0 +1,38 @@
+---
+id: CatalogMetadata
+name: CatalogMetadata
+version: 0.0.1
+summary: |
+  Metadata about a DuckLake catalog including dataset inventory.
+owners:
+  - engineering
+aggregateRoot: false
+properties:
+  - name: datasets
+    type: array
+    required: true
+    summary: List of DatasetInfo for datasets available in the catalog
+  - name: lastRefreshed
+    type: Timestamp
+    required: true
+    summary: Timestamp of the most recent metadata refresh
+---
+
+## Overview
+
+CatalogMetadata is a value object representing metadata about a DuckLake catalog, including the inventory of available datasets and freshness timestamp.
+This metadata is refreshed periodically to synchronize with upstream catalog changes.
+
+## Invariants
+
+- Datasets list may be empty (for newly selected catalogs before first refresh)
+- Last refreshed timestamp must be valid and non-future
+- Dataset list order is stable across refreshes
+- Dataset uniqueness determined by name within the catalog
+
+## Usage
+
+- **Catalog aggregate**: Stores metadata in CatalogActive state
+- **CatalogMetadataRefreshed event**: Records updated metadata
+- **CatalogSelected event**: Initializes with empty dataset list
+- **Analytics read model**: Projects catalog metadata for queries
