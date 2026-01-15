@@ -1,0 +1,35 @@
+---
+id: SessionId
+name: SessionId
+version: 0.0.1
+summary: |
+  Unique identifier for an authenticated user session.
+owners:
+  - engineering
+aggregateRoot: false
+identifier: unSessionId
+properties:
+  - name: unSessionId
+    type: string
+    required: true
+    summary: Opaque session identifier string generated at boundary layer
+---
+
+## Overview
+
+SessionId is a value object representing a unique identifier for an authenticated user session.
+Each session created after OAuth callback receives a unique SessionId that persists until the session expires or is invalidated.
+
+## Invariants
+
+- Generated at boundary layer during session creation (not in pure domain logic)
+- Immutable after creation
+- Uniqueness guaranteed by generation algorithm (UUID or similar)
+
+## Usage
+
+- **Session aggregate**: Primary identifier for session lifecycle tracking
+- **SessionCreated event**: Records the assigned SessionId
+- **RefreshSession command**: References SessionId for authorization
+- **InvalidateSession command**: References SessionId for logout
+- **Zenoh key expressions**: Used in event routing (`events/session/{session_id}/...`)
