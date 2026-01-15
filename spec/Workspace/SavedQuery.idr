@@ -32,16 +32,24 @@ public export
 Eq SavedQueryId where
   (MkSavedQueryId x) == (MkSavedQueryId y) = x == y
 
-||| Dataset reference (hf://datasets/..., s3://..., etc.)
-||| This is a URI that DuckDB can resolve via httpfs or other extensions
+||| Dataset reference decomposed into catalog and dataset components
+|||
+||| The catalogUri identifies the data catalog (e.g., "ducklake:hf://datasets/sciexp")
+||| and datasetName identifies the specific dataset within that catalog (e.g., "fixtures").
+||| This 2-field structure matches the canonical definition in Analytics.QuerySession
+||| and enables filtering/grouping by catalog.
+|||
+||| Full URI reconstruction: catalogUri + "/" + datasetName
+||| DuckDB resolves via httpfs or other extensions based on URI scheme.
 public export
 record DatasetRef where
   constructor MkDatasetRef
-  unDatasetRef : String
+  catalogUri : String
+  datasetName : String
 
 public export
 Eq DatasetRef where
-  (MkDatasetRef x) == (MkDatasetRef y) = x == y
+  (MkDatasetRef c1 d1) == (MkDatasetRef c2 d2) = c1 == c2 && d1 == d2
 
 ------------------------------------------------------------------------
 -- Commands
