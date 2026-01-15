@@ -92,3 +92,74 @@ The `uiStateJson` field persists transient UI state:
 - Each user has exactly one UserPreferences aggregate
 - UserPreferences is created lazily on first authenticated access
 - Default catalog must reference an existing, accessible Catalog
+
+## fmodel-rust Implementation
+
+This aggregate implements the Decider pattern from fmodel-rust.
+
+### decide
+
+```rust
+fn decide(cmd: PreferencesCommand, state: &PreferencesState) -> Result<Vec<PreferencesEvent>, String>
+```
+
+**Command handling logic:**
+
+- **InitializePreferences** when `preferencesId` is `None`:
+  - Validates: No preconditions
+  - Produces: `PreferencesInitialized(preferences_id, timestamp)`
+  - Error if already initialized: "Preferences already initialized"
+
+- **SetTheme(theme)** when preferences exist:
+  - Validates: Preferences must exist
+  - Produces: `ThemeSet(theme, timestamp)`
+  - Error if not initialized: "Preferences not initialized"
+
+- **SetDefaultCatalog(catalog)** when preferences exist:
+  - Validates: Preferences must exist
+  - Produces: `DefaultCatalogSet(catalog, timestamp)`
+
+- **ClearDefaultCatalog** when preferences exist:
+  - Validates: Preferences must exist
+  - Produces: `DefaultCatalogCleared(timestamp)`
+
+- **UpdateUiState(json_blob)** when preferences exist:
+  - Validates: Preferences must exist (JSON validation at boundary)
+  - Produces: `UiStateUpdated(json_blob, timestamp)`
+
+### evolve
+
+```rust
+fn evolve(state: PreferencesState, event: &PreferencesEvent) -> PreferencesState
+```
+
+**Event application logic:**
+
+- **PreferencesInitialized(preferences_id, _)**:
+  - Updates: `preferencesId` → `Some(preferences_id)`
+
+- **ThemeSet(theme, _)**:
+  - Updates: `theme` → provided value (Light, Dark, or System)
+
+- **DefaultCatalogSet(catalog, _)**:
+  - Updates: `defaultCatalog` → `Some(catalog)`
+
+- **DefaultCatalogCleared(_)**:
+  - Updates: `defaultCatalog` → `None`
+
+- **UiStateUpdated(json_blob, _)**:
+  - Updates: `uiState` → provided JSON string
+
+### initial_state
+
+```rust
+fn initial_state() -> PreferencesState
+```
+
+Returns `PreferencesState` with:
+- `preferencesId`: `None`
+- `theme`: `Theme::System` (defer to OS preference)
+- `defaultCatalog`: `None`
+- `uiState`: `"{}"` (empty JSON object)
+
+**Note:** One PreferencesState per authenticated user, enforced by aggregate ID construction (e.g., `AggregateId("UserPreferences", "user_123")`).
