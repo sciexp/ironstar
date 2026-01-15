@@ -1,0 +1,34 @@
+---
+id: TabId
+name: TabId
+version: 0.0.1
+summary: |
+  Unique identifier for a tab within a dashboard.
+owners:
+  - engineering
+aggregateRoot: false
+identifier: unTabId
+properties:
+  - name: unTabId
+    type: string
+    required: true
+    summary: Opaque tab identifier string unique within a dashboard
+---
+
+## Overview
+
+TabId is a value object representing a unique identifier for an organizational tab within a dashboard.
+Tabs group related charts and are referenced when moving charts between organizational sections.
+
+## Invariants
+
+- TabIds are unique within a dashboard
+- Referenced TabIds in ChartPlacement should exist in tabs list
+- Immutable after creation
+
+## Usage
+
+- **Dashboard aggregate**: Identifies tabs in tabs list
+- **TabAdded event**: Records the assigned TabId
+- **MoveChartToTab command**: Specifies destination tab for chart
+- **ChartPlacement**: References TabId for chart organization

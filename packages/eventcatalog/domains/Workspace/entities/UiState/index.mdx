@@ -1,0 +1,50 @@
+---
+id: UiState
+name: UiState
+version: 0.0.1
+summary: |
+  Opaque JSON blob for persistent UI state.
+owners:
+  - engineering
+aggregateRoot: false
+properties:
+  - name: value
+    type: string
+    required: true
+    format: json
+    summary: JSON string encoding arbitrary UI state
+---
+
+## Overview
+
+UiState is an opaque JSON blob by design.
+The domain layer treats it as an uninterpreted string; the boundary layer validates JSON structure.
+This isolation prevents UI implementation details from leaking into domain types, preserving the separation between pure domain logic and presentation concerns.
+
+## Design Rationale
+
+UI state includes transient presentation concerns like:
+- Panel collapse states
+- Scroll positions
+- Selected tabs
+- Editor preferences
+
+These are inherently UI-specific and may vary as features evolve.
+Forcing algebraic structure would couple domain to UI implementation details.
+
+## Invariants
+
+- Must be valid JSON (validated at boundary layer, not in domain)
+- Empty object `"{}"` is the default value
+- No schema enforcement at domain level
+
+## Usage
+
+- **UserPreferences aggregate**: Stores uiState field
+- **UiStateUpdated event**: Records UI state changes
+- **Frontend components**: Serialize/deserialize for state persistence
+
+## Evolution Path
+
+If specific UI state fields need domain validation, extract them as explicit PreferencesCommand variants rather than adding schema to UiState.
+This keeps UiState as the "escape hatch" for truly arbitrary UI concerns.

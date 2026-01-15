@@ -1,0 +1,36 @@
+---
+id: GridPosition
+name: GridPosition
+version: 0.0.1
+summary: |
+  Grid coordinates for chart placement within a dashboard.
+owners:
+  - engineering
+aggregateRoot: false
+properties:
+  - name: row
+    type: integer
+    required: true
+    summary: Row index in the dashboard grid (0-indexed, non-negative)
+  - name: col
+    type: integer
+    required: true
+    summary: Column index in the dashboard grid (0-indexed, non-negative)
+---
+
+## Overview
+
+GridPosition is a value object representing coordinates within a dashboard's grid layout system.
+Charts are positioned using row and column indices, enabling responsive grid-based layouts.
+
+## Invariants
+
+- Row and column values must be non-negative (0-indexed grid)
+- Chart placements should not overlap within a tab
+- Overlap detection: two charts overlap if their grid rectangles intersect
+
+## Usage
+
+- **ChartPlacement**: Contains GridPosition for chart positioning
+- **Dashboard aggregate**: Uses GridPosition in placements list
+- **Layout validation**: Checks for overlapping chart positions

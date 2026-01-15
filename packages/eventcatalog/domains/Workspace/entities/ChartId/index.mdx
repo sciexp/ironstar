@@ -1,0 +1,34 @@
+---
+id: ChartId
+name: ChartId
+version: 0.0.1
+summary: |
+  Unique identifier for a chart within a dashboard.
+owners:
+  - engineering
+aggregateRoot: false
+identifier: unChartId
+properties:
+  - name: unChartId
+    type: string
+    required: true
+    summary: Opaque chart identifier string unique within a dashboard
+---
+
+## Overview
+
+ChartId is a value object representing a unique identifier for a chart within a dashboard.
+Charts are identified by their ID within the context of their parent dashboard.
+
+## Invariants
+
+- ChartIds are unique within a dashboard
+- Must exist in placements list to be valid for RemoveChart or MoveChartToTab
+- Immutable after creation
+
+## Usage
+
+- **Dashboard aggregate**: Identifies charts in placements list
+- **ChartAdded event**: Records the assigned ChartId
+- **RemoveChart command**: Specifies which chart to remove
+- **MoveChartToTab command**: Specifies which chart to move

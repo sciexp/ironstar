@@ -1,0 +1,47 @@
+---
+id: Theme
+name: Theme
+version: 0.0.1
+summary: |
+  User's preferred color scheme.
+owners:
+  - engineering
+aggregateRoot: false
+---
+
+## Overview
+
+Theme is a sum type representing the user's preferred color scheme.
+The theme preference integrates with Open Props' native theming via CSS custom properties.
+
+## Variants
+
+| Variant | Description |
+|---------|-------------|
+| Light | Force light color scheme |
+| Dark | Force dark color scheme |
+| System | Follow OS preference via `prefers-color-scheme` media query |
+
+## Invariants
+
+- Theme is exhaustive; all variants must be handled
+- Always a valid Theme value (enforced by type)
+- Implements Eq for comparison
+- parseTheme function handles string deserialization
+
+## Integration
+
+Theme values map to Open Props + Open Props UI theming:
+
+| Theme | CSS Implementation |
+|-------|-------------------|
+| Light | `color-scheme: light` |
+| Dark | `color-scheme: dark` |
+| System | `color-scheme: light dark` (browser decides) |
+
+## Usage
+
+- **UserPreferences aggregate**: Stores theme preference
+- **ThemeSet event**: Records theme changes
+- **SetTheme command**: Updates user's theme preference
+- **Frontend**: Applies theme via CSS custom properties

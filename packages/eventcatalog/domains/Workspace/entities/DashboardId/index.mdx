@@ -1,0 +1,33 @@
+---
+id: DashboardId
+name: DashboardId
+version: 0.0.1
+summary: |
+  Unique identifier for a dashboard.
+owners:
+  - engineering
+aggregateRoot: false
+identifier: unDashboardId
+properties:
+  - name: unDashboardId
+    type: string
+    required: true
+    summary: Opaque dashboard identifier string generated at boundary layer
+---
+
+## Overview
+
+DashboardId is a value object representing a unique identifier for a dashboard within the Workspace bounded context.
+Each dashboard created receives a unique identifier that persists through its lifecycle.
+
+## Invariants
+
+- Generated at boundary layer during dashboard creation
+- Immutable after creation
+- Uniqueness guaranteed by generation algorithm
+
+## Usage
+
+- **Dashboard aggregate**: Primary identifier for dashboard lifecycle
+- **DashboardCreated event**: Records the assigned DashboardId
+- **Dashboard commands**: Reference DashboardId for authorization

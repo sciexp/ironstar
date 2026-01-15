@@ -1,0 +1,33 @@
+---
+id: SavedQueryId
+name: SavedQueryId
+version: 0.0.1
+summary: |
+  Unique identifier for a saved query.
+owners:
+  - engineering
+aggregateRoot: false
+identifier: unSavedQueryId
+properties:
+  - name: unSavedQueryId
+    type: string
+    required: true
+    summary: Opaque saved query identifier string
+---
+
+## Overview
+
+SavedQueryId is a value object representing a unique identifier for a saved query.
+Query names are unique per user, enforced at boundary via aggregate ID pattern like "user_123/my-query-name".
+
+## Invariants
+
+- Generated at boundary layer during query save
+- Immutable after creation
+- Per-user uniqueness enforced via aggregate ID construction
+
+## Usage
+
+- **SavedQuery aggregate**: Primary identifier for saved query lifecycle
+- **QuerySaved event**: Records the assigned SavedQueryId
+- **Dashboard charts**: Reference SavedQueryId as data source
