@@ -1,0 +1,117 @@
+---
+dictionary:
+  - id: catalog
+    name: Catalog
+    summary: DuckLake catalog instance providing access to queryable datasets.
+    description: |
+      Aggregate root managing DuckLake catalog connections, tracking health status and metadata freshness.
+      Catalogs serve as the entry point for dataset discovery and query execution.
+      Only one catalog can be active at a time.
+    icon: Database
+
+  - id: dataset
+    name: Dataset
+    summary: Queryable table within a DuckLake catalog.
+    description: |
+      Value object within the Catalog aggregate representing a single table.
+      Datasets are discovered during catalog metadata refresh, not created explicitly.
+      Identity derives from parent Catalog and tableName combination.
+    icon: Table
+
+  - id: dataset-ref
+    name: Dataset Reference
+    summary: Composite identifier combining catalog URI and dataset name.
+    description: |
+      Two-field value object enabling filtering and grouping by catalog.
+      Used in StartQuery commands and QueryStarted events to specify query targets.
+    icon: Link
+
+  - id: query-session
+    name: Query Session
+    summary: Lifecycle manager for interactive SQL query execution.
+    description: |
+      Aggregate root tracking a single SQL statement through submission to completion or failure.
+      State machine: Idle -> Running -> (Completed | Failed | Cancelled).
+      Provides audit trail recording who executed what, when, and outcome.
+    icon: Play
+
+  - id: sql-query
+    name: SQL Query
+    summary: Type-safe wrapper for SQL query text submitted for execution.
+    description: |
+      Value object distinguishing SQL strings from arbitrary strings at compile time.
+      Immutable once constructed; syntax validation occurs at execution time.
+    icon: Code
+
+  - id: query-results
+    name: Query Results
+    summary: Columnar result data returned from successful query execution.
+    description: |
+      Contains row count and column names from DuckDB query execution.
+      Cached in moka with TTL-based eviction for repeated access.
+    icon: FileSpreadsheet
+
+  - id: ducklake
+    name: DuckLake
+    summary: Lakehouse catalog format providing versioned, queryable data storage.
+    description: |
+      Catalogs connect via hf:// protocol for HuggingFace-hosted datasets or S3-compatible storage.
+      Supports table schemas and statistics without loading full datasets.
+    icon: Warehouse
+
+  - id: olap
+    name: OLAP
+    summary: Online analytical processing for complex queries over large datasets.
+    description: |
+      Analytics pattern optimized for read-heavy analytical workloads.
+      DuckDB provides columnar storage and vectorized execution for OLAP queries.
+    icon: BarChart3
+
+  - id: catalog-uri
+    name: Catalog URI
+    summary: Location identifier for a DuckLake catalog instance.
+    description: |
+      String reference to catalog location, e.g., "ducklake://hf/sciexp/fixtures".
+      Used in CatalogRef and DatasetRef value objects.
+    icon: Globe
+
+  - id: catalog-metadata
+    name: Catalog Metadata
+    summary: Schema information and statistics about datasets in a catalog.
+    description: |
+      Contains list of DatasetInfo records and last refresh timestamp.
+      Refreshed via RefreshCatalogMetadata command without loading full datasets.
+    icon: Info
+
+  - id: health-status
+    name: Health Status
+    summary: Current availability state of a catalog connection.
+    description: |
+      Three-state enum: Healthy (all queryable), Degraded (some unavailable), Unavailable (no queries possible).
+      Determines whether queries can be executed against the catalog.
+    icon: HeartPulse
+
+  - id: query-id
+    name: Query ID
+    summary: Unique identifier for a specific query execution instance.
+    description: |
+      UUID-format string identifying a query session for cancellation and result retrieval.
+      Generated when StartQuery command is processed.
+    icon: Hash
+
+  - id: error-message
+    name: Error Message
+    summary: Diagnostic information from failed query execution.
+    description: |
+      Captured when query transitions to Failed state.
+      Provides details for debugging and user feedback.
+    icon: AlertCircle
+
+  - id: chart-config
+    name: Chart Configuration
+    summary: Visualization settings for rendering query results.
+    description: |
+      Optional configuration specifying chart type and options.
+      Passed with StartQuery command to enable result visualization.
+    icon: PieChart
+---
