@@ -22,12 +22,12 @@ Key findings:
 | D2 | UiStateUpdated.value type: String vs Json | Idris, Qlerify | Warning | Align on Json type in Idris |
 | D3 | Enum case convention: PascalCase vs lowercase | Idris, EventCatalog | Warning | Document serialization normalization |
 | D4 | Timestamp: epoch ms vs ISO 8601 | Idris, EventCatalog | Warning | Document conversion at boundary |
-| D5 | UserId: composite vs UUID surrogate | Idris, EventCatalog | Blocking | Resolve identity model conflict |
+| D5 | UserId: composite vs UUID surrogate | Idris, EventCatalog | ~~Blocking~~ Resolved | Adopted composite key (provider, externalId) - see ironstar-2it.23 |
 | D6 | 19 value objects missing from EventCatalog | Qlerify, EventCatalog | Warning | Generate entity documentation |
 | D7 | Flow linearization (siblings as sequential) | Qlerify, EventCatalog | Warning | Add branching notation to flows |
 | D8 | GridSize allows 0 in Idris, requires 1 in EC | Idris, EventCatalog | Blocking | Add smart constructor in Idris |
 | D9 | Missing userId on Todo mutation events | Idris, EventCatalog | Warning | Add userId field for audit |
-| D10 | Missing Session/Query/Dashboard/Prefs event types in Idris | Idris, EventCatalog | Blocking | Complete Idris formal specifications |
+| ~~D10~~ | ~~Missing Session/Query/Dashboard/Prefs event types in Idris~~ | ~~Idris, EventCatalog~~ | ~~Blocking~~ | Report error: All Idris specs exist and are complete |
 | D11 | Session/Workspace aggregates not in Rust code | Architecture, Code | Blocking | Implement aggregates |
 | D12 | 8-layer crate architecture planned but not implemented | Architecture, Code | Info | Single-crate acceptable for now |
 | D13 | RevocationReason/QueryErrorCode enums missing | Idris, EventCatalog | Warning | Add to Idris Types.idr |
@@ -39,9 +39,9 @@ Key findings:
 
 Location: `/Users/crs58/projects/rust-workspace/ironstar/spec/`
 
-- [ ] **D5**: Resolve UserId identity model - choose composite (provider + externalId) or surrogate UUID
+- [x] **D5**: ~~Resolve UserId identity model~~ Resolved: composite key (provider, externalId) adopted
 - [ ] **D8**: Add smart constructor for GridSize enforcing width >= 1 and height >= 1
-- [ ] **D10**: Add event type definitions for Session, Catalog, QuerySession, Dashboard, SavedQuery, UserPreferences aggregates
+- [x] ~~**D10**: Add event type definitions~~ Report error: All specs exist (Session.idr, Dashboard.idr, Preferences.idr, Catalog.idr, QuerySession.idr, SavedQuery.idr)
 - [ ] **D13**: Add `RevocationReason` enum (UserLogout, AdminAction, SecurityConcern)
 - [ ] **D13**: Add `QueryErrorCode` enum (SyntaxError, PermissionDenied, Timeout, ResourceExhausted, InternalError)
 - [ ] **D13**: Add `SessionStatus` enum (Active, Expired, Revoked)
@@ -89,16 +89,16 @@ Location: `.beads/issues.jsonl`
 
 New issues needed:
 
-- [ ] Create issue: Complete Idris event type definitions (blocks: Rust aggregate implementations)
+- [x] ~~Create issue: Complete Idris event type definitions~~ Report error: All specs already exist
 - [ ] Create issue: Generate EventCatalog value object entities (documentation)
-- [ ] Create issue: Resolve UserId identity model (blocking architectural decision)
+- [x] ~~Create issue: Resolve UserId identity model~~ Created: ironstar-2it.23
 - [ ] Create issue: Add Idris refined types for string constraints
 - [ ] Update ironstar-r62.4 (AppState): Document as critical blocker for 7+ downstream tasks
 
 Epic coverage gaps to address:
 
 - [ ] No epic for EventCatalog value object documentation
-- [ ] No epic for Idris specification completion (Session, Catalog, QuerySession, Dashboard, SavedQuery, UserPreferences)
+- [x] ~~No epic for Idris specification completion~~ Not needed: all specs exist
 - [ ] Consider consolidating orphaned issues (32 standalone tasks) into relevant epics
 
 ## Implementation Roadmap
@@ -107,18 +107,18 @@ Epic coverage gaps to address:
 
 Priority: High - blocks downstream work
 
-1. **Resolve UserId identity model (D5)**
-   - Decision required: composite vs surrogate
-   - Update spec/Common.idr or spec/Session.idr accordingly
-   - Update EventCatalog User entity to match
+1. **~~Resolve UserId identity model (D5)~~** COMPLETED
+   - Decision: composite key (provider, externalId) adopted
+   - EventCatalog User entity updated (commit 29b6ddf)
+   - Issue: ironstar-2it.23
 
-2. **Complete event type definitions (D10)**
-   - Add Session.idr with SessionEvent, SessionCommand
-   - Add Catalog.idr with CatalogEvent, CatalogCommand
-   - Add QuerySession.idr with QuerySessionEvent, QuerySessionCommand
-   - Add Dashboard.idr with DashboardEvent, DashboardCommand
-   - Add SavedQuery.idr with SavedQueryEvent, SavedQueryCommand
-   - Add UserPreferences.idr with UserPreferencesEvent, UserPreferencesCommand
+2. **~~Complete event type definitions (D10)~~** REPORT ERROR
+   - All Idris specifications already exist and are complete:
+   - spec/Session/Session.idr (267 lines) - SessionCommand, SessionEvent, SessionState, sessionDecider
+   - spec/Workspace/Dashboard.idr (357 lines) - DashboardCommand, DashboardEvent, DashboardState, dashboardDecider
+   - spec/Workspace/Preferences.idr (205 lines) - PreferencesCommand, PreferencesEvent, PreferencesState, preferencesDecider
+   - spec/Analytics/Catalog.idr (114 lines), spec/Analytics/QuerySession.idr (192 lines)
+   - spec/Workspace/SavedQuery.idr (211 lines)
 
 3. **Add missing enums (D13)**
    - RevocationReason, QueryErrorCode, SessionStatus, QueryStatus to Types.idr
@@ -168,7 +168,7 @@ After implementing corrections:
 - [ ] All EventCatalog flows document branching behavior correctly
 - [ ] All value objects have EventCatalog entity documentation
 - [ ] All aggregates have implementation issues in beads
-- [ ] UserId identity model consistent across all layers
+- [x] UserId identity model consistent across all layers (composite key adopted 2026-01-15)
 - [ ] Timestamp format documented at all boundaries
 - [ ] Enum case conventions documented
 
