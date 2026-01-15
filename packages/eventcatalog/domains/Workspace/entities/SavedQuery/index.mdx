@@ -79,3 +79,74 @@ The `datasetReference` field uses a URI scheme for flexible dataset addressing:
 - Query name must be unique per owner
 - SQL statement must be syntactically valid (validated at save time)
 - Only the owner can modify or delete the saved query
+
+## fmodel-rust Implementation
+
+This aggregate implements the Decider pattern from fmodel-rust.
+
+### decide
+
+```rust
+fn decide(cmd: SavedQueryCommand, state: &SavedQueryState) -> Result<Vec<SavedQueryEvent>, String>
+```
+
+**Command handling logic:**
+
+- **SaveQuery(name, sql, dataset_ref)** when `NoQuery`:
+  - Validates: `name` and `sql` must be non-empty
+  - Produces: `QuerySaved(query_id, name, sql, dataset_ref, timestamp)`
+  - Error if name empty: "Query name cannot be empty"
+  - Error if SQL empty: "Query SQL cannot be empty"
+  - Error if query exists: "Query already exists"
+
+- **DeleteQuery** when `QueryExists(_)`:
+  - Validates: Query must exist
+  - Produces: `QueryDeleted(timestamp)`
+  - Error if no query: "No query to delete"
+
+- **RenameQuery(new_name)** when `QueryExists(_)`:
+  - Validates: `new_name` must be non-empty
+  - Produces: `QueryRenamed(new_name, timestamp)`
+  - Error if name empty: "Query name cannot be empty"
+
+- **UpdateQuerySql(new_sql)** when `QueryExists(_)`:
+  - Validates: `new_sql` must be non-empty
+  - Produces: `QuerySqlUpdated(new_sql, timestamp)`
+  - Error if SQL empty: "Query SQL cannot be empty"
+
+- **UpdateDatasetRef(new_ref)** when `QueryExists(_)`:
+  - Validates: Query must exist
+  - Produces: `DatasetRefUpdated(new_ref, timestamp)`
+
+### evolve
+
+```rust
+fn evolve(state: SavedQueryState, event: &SavedQueryEvent) -> SavedQueryState
+```
+
+**Event application logic:**
+
+- **QuerySaved(query_id, name, sql, dataset_ref, _)**:
+  - Updates: `NoQuery` → `QueryExists(query_id, name, sql, dataset_ref)`
+
+- **QueryDeleted(_)**:
+  - Updates: `QueryExists(_)` → `NoQuery`
+
+- **QueryRenamed(new_name, _)**:
+  - Updates: `name` field in `QueryExists`, preserving other fields
+
+- **QuerySqlUpdated(new_sql, _)**:
+  - Updates: `sql` field in `QueryExists`, preserving other fields
+
+- **DatasetRefUpdated(new_ref, _)**:
+  - Updates: `dataset_ref` field in `QueryExists`, preserving other fields
+
+### initial_state
+
+```rust
+fn initial_state() -> SavedQueryState
+```
+
+Returns `SavedQueryState::NoQuery`.
+
+**Note:** Each SavedQuery is a separate aggregate. Multiple queries per user use separate aggregates with IDs like `user_id/query_name`.
