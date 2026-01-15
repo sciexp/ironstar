@@ -1,28 +1,27 @@
 ---
 id: User
 name: User
-version: 0.0.1
+version: 0.1.0
 summary: |
   Shared kernel entity representing an authenticated user identity across bounded contexts.
+  Identity is the composite key (provider, externalId) from OAuth authentication.
 owners:
   - engineering
 aggregateRoot: false
-identifier: id
+identifier: [provider, externalId]
 properties:
-  - name: id
+  - name: provider
+    type: OAuthProvider
+    required: true
+    summary: OAuth provider that authenticated this user (GitHub, Google)
+  - name: externalId
     type: string
     required: true
-    format: uuid
-    summary: Unique user identifier (internal, not OAuth provider ID)
+    summary: Provider-assigned unique identifier (immutable, stable across sessions)
   - name: fullName
     type: string
     required: true
-    summary: User's display name from OAuth provider profile
-  - name: email
-    type: string
-    required: true
-    format: email
-    summary: User's email address from OAuth provider
+    summary: User's display name from OAuth provider profile (denormalized, updated on re-auth)
   - name: roleName
     type: string
     required: true
@@ -32,7 +31,12 @@ properties:
 ## Overview
 
 The User entity represents an authenticated identity obtained from OAuth providers (GitHub primary, Google planned).
+Identity is the composite key `(provider, externalId)` which is immutable and stable across sessions.
 As part of the Shared Kernel, User is defined in Session but exported for consumption by Workspace and Analytics bounded contexts.
+
+Contact information (email) is not stored in the User entity.
+Email is captured in `SessionStarted` events as an OAuth claim and projected for UI display.
+This design ensures the OAuth provider remains the single source of truth for contact information.
 
 ## Shared Kernel Pattern
 
@@ -57,12 +61,38 @@ The User entity abstracts over OAuth provider-specific identities.
 
 | Field | GitHub Source | Google Source |
 |-------|---------------|---------------|
+| provider | `"GitHub"` literal | `"Google"` literal |
+| externalId | `id` (numeric string) | `sub` claim |
 | fullName | `name` or `login` | `name` |
-| email | primary verified email | `email` |
 | roleName | derived from org membership | derived from domain |
+
+Contact information (email) is captured in SessionStarted events, not the User entity.
 
 ## Invariants
 
-- Email must be verified by the OAuth provider
-- User identity is immutable after creation (no profile editing)
+- Composite key `(provider, externalId)` is immutable after creation
+- `externalId` is the OAuth provider's stable identifier, not a display name or email
 - Role assignment follows principle of least privilege
+- User identity cannot be transferred between providers
+
+## Design Rationale
+
+The composite key pattern aligns with algebraic functional domain modeling principles:
+
+1. **Event immutability** (Hoffman Law 1): Events containing `(provider, externalId)` remain interpretable without external lookups during replay. Surrogate UUIDs require mapping tables that may not exist in future replays.
+
+2. **Algebraic correctness**: `UserId = OAuthProvider × String` represents the actual identity source. A surrogate UUID adds indirection that can become stale after user deletion/recreation.
+
+3. **Shared Kernel self-sufficiency**: The exported `UserId` type is complete without requiring mapping tables in consuming bounded contexts.
+
+4. **FRP signal stability**: Datastar signals referencing user identities remain valid across session boundaries because the composite key is stable.
+
+## Evolution Path
+
+For future account linking (multiple OAuth identities → one human), introduce a `VerifiedContact` entity:
+
+- `User` retains identity: `(provider, externalId)`
+- `VerifiedContact` links verified emails to users with explicit events
+- Account linking becomes an explicit domain event, not implicit email matching
+
+This evolution preserves backward compatibility with existing events while adding the flexibility to unify identities when business requirements demand it.
