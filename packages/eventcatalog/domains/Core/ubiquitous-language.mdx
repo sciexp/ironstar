@@ -1,0 +1,51 @@
+---
+dictionary:
+  - id: shared-kernel
+    name: Shared Kernel
+    summary: Domain-agnostic types shared across all bounded contexts.
+    description: |
+      A DDD pattern where multiple bounded contexts agree to share a subset of domain model types.
+      In ironstar, the Core domain provides value objects (Timestamp, Duration) that establish common vocabulary and invariants across Analytics, Workspace, and Session contexts.
+    icon: Share2
+
+  - id: timestamp
+    name: Timestamp
+    summary: Unix timestamp in milliseconds representing an instant in time.
+    description: |
+      Value object for temporal ordering in event sourcing.
+      Used for both event time (when domain events occurred) and recorded time (when events were persisted).
+      Total ordering ensures monotonic SSE delivery via Last-Event-ID semantics.
+    icon: Clock
+
+  - id: duration
+    name: Duration
+    summary: Elapsed time in milliseconds between two points in time.
+    description: |
+      Value object representing time spans.
+      Used for query execution tracking, cache TTL configuration, and performance metrics in analytics projections.
+    icon: Timer
+
+  - id: value-object
+    name: Value Object
+    summary: Immutable type defined by attributes rather than identity.
+    description: |
+      A DDD tactical pattern for types that have no unique identity and are compared by their attribute values.
+      All Core types (Timestamp, Duration) are value objects, ensuring immutability and deterministic behavior in projections.
+    icon: Box
+
+  - id: cross-cutting-concern
+    name: Cross-cutting Concern
+    summary: Functionality that spans multiple bounded contexts.
+    description: |
+      Aspects like temporal ordering, serialization formats, and event envelope metadata that apply uniformly across all domains.
+      The Core domain encapsulates these concerns as reusable value objects.
+    icon: Layers
+
+  - id: event-envelope
+    name: Event Envelope
+    summary: Metadata wrapper containing timestamps and routing information for events.
+    description: |
+      Standard structure surrounding domain events with event time, recorded time, aggregate identifiers, and sequence numbers.
+      Enables temporal queries, point-in-time projections, and SSE replay semantics.
+    icon: Mail
+---
