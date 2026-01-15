@@ -91,3 +91,63 @@ The QuerySession provides audit capabilities by recording:
 - What was executed (sqlStatement)
 - When it ran (startedAt, durationMs)
 - Outcome (status, errorDetails)
+
+## fmodel-rust Implementation
+
+This aggregate implements the Decider pattern from fmodel-rust.
+
+### decide
+
+```rust
+fn decide(cmd: QueryCommand, state: &QueryState) -> Result<Vec<QueryEvent>, QueryError>
+```
+
+**Command handling logic:**
+
+- **StartQuery(dsRef, query, chartCfg)** when `Idle`:
+  - Validates: No preconditions (can start query from idle state)
+  - Produces: `[QueryStarted(qid, dsRef, query, chartCfg, timestamp)]`
+
+- **StartQuery(_, _, _)** when `Running(_, _, _)`:
+  - Validates: Fails with error "Query already running; cancel or wait for completion"
+
+- **StartQuery(dsRef, query, chartCfg)** when `Completed(_)` or `Failed(_)`:
+  - Validates: No preconditions (can start new query after terminal state)
+  - Produces: `[QueryStarted(qid, dsRef, query, chartCfg, timestamp)]`
+
+- **CancelQuery(qid)** when `Running(currentId, _, _)`:
+  - Validates: Checks if `qid == currentId`
+  - Produces: `[QueryCancelled(qid, timestamp)]` if IDs match, otherwise error "Query ID mismatch"
+
+- **CancelQuery(_)** when `Idle`, `Completed(_)`, or `Failed(_)`:
+  - Validates: Fails with error "No running query to cancel"
+
+**Key invariant:** Only one query can be running at a time.
+
+### evolve
+
+```rust
+fn evolve(state: QueryState, event: &QueryEvent) -> QueryState
+```
+
+**Event application logic:**
+
+- **QueryStarted(qid, dsRef, query, _, _)**:
+  - Updates state: Any → `Running(qid, dsRef, query)`
+
+- **QueryCompleted(qid, results, _, _)**:
+  - Updates state: `Running(_, _, _)` → `Completed(qid, results)`
+
+- **QueryFailed(qid, err, _)**:
+  - Updates state: `Running(_, _, _)` → `Failed(qid, err)`
+
+- **QueryCancelled(_, _)**:
+  - Updates state: `Running(_, _, _)` → `Idle`
+
+### initial_state
+
+```rust
+fn initial_state() -> QueryState
+```
+
+Returns `Idle`, representing the initial state before any query has been started.
