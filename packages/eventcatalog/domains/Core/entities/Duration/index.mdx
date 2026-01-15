@@ -1,0 +1,32 @@
+---
+id: Duration
+name: Duration
+version: 0.0.1
+summary: |
+  Elapsed time in milliseconds representing a span between two points in time.
+owners:
+  - engineering
+aggregateRoot: false
+identifier: milliseconds
+properties:
+  - name: milliseconds
+    type: integer
+    required: true
+    summary: Elapsed time in milliseconds
+---
+
+## Overview
+
+Duration is a value object representing the elapsed time between two instants.
+Ironstar uses Duration to track query execution time and cache entry lifetimes.
+
+## Invariants
+
+- Non-negative values: All durations must be >= 0 (time cannot flow backward)
+- Millisecond precision: Values represent elapsed milliseconds (1/1000th of a second)
+
+## Usage
+
+- **QuerySession aggregate**: Records execution duration in QueryCompleted events
+- **moka cache**: TTL values specified as Duration for cache eviction policy
+- **Analytics projections**: Tracks query performance metrics

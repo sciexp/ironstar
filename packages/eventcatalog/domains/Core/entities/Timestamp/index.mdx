@@ -1,0 +1,40 @@
+---
+id: Timestamp
+name: Timestamp
+version: 0.0.1
+summary: |
+  Unix timestamp in milliseconds representing a point in time.
+owners:
+  - engineering
+aggregateRoot: false
+identifier: unTimestamp
+properties:
+  - name: unTimestamp
+    type: integer
+    required: true
+    summary: Unix timestamp in milliseconds since epoch (January 1, 1970 UTC)
+---
+
+## Overview
+
+Timestamp is a value object representing an instant in time as Unix milliseconds.
+Ironstar uses Timestamp for two distinct purposes:
+
+1. **Event Time**: When an event occurred in the domain (business time)
+2. **Recorded Time**: When the event was stored in the event log (system time)
+
+Both times are required in the EventEnvelope to support temporal queries, point-in-time projections, and SSE replay semantics.
+
+## Invariants
+
+- Non-negative values: All timestamps must be >= 0
+- Total ordering: For any two timestamps, exactly one of t1 < t2, t1 == t2, or t1 > t2 holds
+- Epoch reference: All values are measured in milliseconds since January 1, 1970 UTC
+
+## Usage
+
+- **EventEnvelope**: Contains two Timestamps (event time and recorded time)
+- **Session aggregate**: Tracks session expiration via ExpiresAt (Timestamp alias)
+- **QuerySession aggregate**: Records query start times
+- **CatalogMetadata**: Tracks last refresh time
+- **SSE resumption**: Timestamp ordering ensures monotonic event delivery via Last-Event-ID
