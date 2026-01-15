@@ -65,3 +65,57 @@ The Catalog aggregate follows the fmodel-rust Decider pattern.
 
 Catalogs connect to DuckLake backends via the `hf://` protocol for HuggingFace-hosted datasets or S3-compatible storage.
 Metadata refresh pulls table schemas and statistics without loading full datasets.
+
+## fmodel-rust Implementation
+
+This aggregate implements the Decider pattern from fmodel-rust.
+
+### decide
+
+```rust
+fn decide(cmd: CatalogCommand, state: &CatalogState) -> Result<Vec<CatalogEvent>, CatalogError>
+```
+
+**Command handling logic:**
+
+- **SelectCatalog(ref)** when `NoCatalogSelected`:
+  - Validates: No preconditions (can always select when none active)
+  - Produces: `[CatalogSelected(ref, timestamp)]`
+
+- **SelectCatalog(ref)** when `CatalogActive(currentRef, _)`:
+  - Validates: Checks if `ref == currentRef`
+  - Produces: `[]` (no-op) if catalog already selected, otherwise returns error "Cannot change active catalog; deselect first"
+
+- **RefreshCatalogMetadata** when `NoCatalogSelected`:
+  - Validates: Fails with error "No catalog selected"
+  - Produces: No events (validation failure)
+
+- **RefreshCatalogMetadata** when `CatalogActive(_, _)`:
+  - Validates: No preconditions (can always refresh when catalog active)
+  - Produces: `[CatalogMetadataRefreshed(metadata, timestamp)]`
+
+**Key invariant:** Only one catalog can be active at a time.
+
+### evolve
+
+```rust
+fn evolve(state: CatalogState, event: &CatalogEvent) -> CatalogState
+```
+
+**Event application logic:**
+
+- **CatalogSelected(ref, ts)**:
+  - Updates state: `NoCatalogSelected` → `CatalogActive(ref, CatalogMetadata { datasets: [], lastRefreshed: ts })`
+  - Initializes metadata with empty dataset list and selection timestamp
+
+- **CatalogMetadataRefreshed(metadata, _)**:
+  - Updates state: `CatalogActive(ref, _)` → `CatalogActive(ref, metadata)`
+  - Preserves catalog reference, replaces metadata
+
+### initial_state
+
+```rust
+fn initial_state() -> CatalogState
+```
+
+Returns `NoCatalogSelected`, representing the initial state before any catalog has been selected.
