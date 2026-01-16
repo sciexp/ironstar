@@ -39,11 +39,11 @@ module Workspace.Workspace
 import Core.Decider
 
 -- Re-export all aggregates
-import public Workspace.WorkspaceAggregate
-import public Workspace.WorkspacePreferences
-import public Workspace.Dashboard
-import public Workspace.SavedQuery
-import public Workspace.Preferences
+import public Workspace.WorkspaceAggregate as WA
+import public Workspace.WorkspacePreferences as WP
+import public Workspace.Dashboard as D
+import public Workspace.SavedQuery as SQ
+import public Workspace.UserPreferences as UP
 
 %default total
 
