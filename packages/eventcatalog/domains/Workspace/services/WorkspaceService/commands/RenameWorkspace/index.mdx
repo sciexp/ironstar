@@ -1,0 +1,25 @@
+---
+id: RenameWorkspace
+name: Rename Workspace
+version: 0.0.1
+summary: |
+  Command to change the display name of an existing workspace.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This command changes the display name of an existing workspace.
+The workspace must already exist for this command to succeed.
+
+## Validation Rules
+
+- Workspace must exist (workspaceId is set)
+- New name must be non-empty
+- Caller must have permission to modify workspace (future: owner or admin)
+
+## Emits
+
+- `WorkspaceRenamed` on success

@@ -1,0 +1,24 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "CreateWorkspace",
+	"type": "object",
+	"title": "CreateWorkspace",
+	"description": "Command to create a new workspace with owner, name, and visibility settings.",
+	"required": ["name", "visibility"],
+	"properties": {
+		"name": {
+			"type": "string",
+			"description": "Display name for the workspace"
+		},
+		"ownerId": {
+			"type": ["string", "null"],
+			"format": "uuid",
+			"description": "Optional owner's user ID (null for anonymous workspaces)"
+		},
+		"visibility": {
+			"type": "string",
+			"enum": ["Public", "Private"],
+			"description": "Workspace visibility setting"
+		}
+	}
+}

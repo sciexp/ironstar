@@ -1,0 +1,25 @@
+---
+id: WorkspaceRenamed
+name: Workspace Renamed
+version: 0.0.1
+summary: |
+  Recorded when a workspace's display name is changed.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This event is emitted when a user changes the display name of an existing workspace.
+The event captures only the new name and timestamp, as workspace identity remains immutable.
+
+## Business Rules
+
+- Workspace must exist before renaming
+- New name replaces the previous name entirely
+- Timestamp is captured at the boundary
+
+## Given-When-Then
+
+Given a workspace exists, When the user renames the workspace, Then WorkspaceRenamed is recorded with the new name.

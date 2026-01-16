@@ -1,0 +1,26 @@
+---
+id: CreateWorkspace
+name: Create Workspace
+version: 0.0.1
+summary: |
+  Command to create a new workspace with owner, name, and visibility settings.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This command initiates the creation of a new workspace.
+The workspace serves as an organizational container for dashboards, saved queries, and preferences.
+
+## Validation Rules
+
+- No existing workspace may exist for this aggregate
+- Workspace name must be non-empty
+- Visibility must be either Public or Private
+- OwnerId is optional (anonymous workspaces for unauthenticated exploration)
+
+## Emits
+
+- `WorkspaceCreated` on success

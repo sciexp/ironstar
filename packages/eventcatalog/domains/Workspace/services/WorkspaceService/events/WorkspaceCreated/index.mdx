@@ -1,0 +1,26 @@
+---
+id: WorkspaceCreated
+name: Workspace Created
+version: 0.0.1
+summary: |
+  Recorded when a new workspace is created with owner, name, and visibility settings.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This event is emitted when a user creates a new workspace to organize dashboards, saved queries, and preferences.
+The event captures the workspace identity, owner, name, and initial visibility setting.
+
+## Business Rules
+
+- WorkspaceId is generated at the boundary and becomes immutable
+- OwnerId is optional (null for anonymous workspaces)
+- Visibility defaults based on command input (no implicit default)
+- Timestamp is captured at the boundary
+
+## Given-When-Then
+
+Given no workspace exists for this aggregate, When the user creates a workspace with name and visibility, Then WorkspaceCreated is recorded with new workspace identity.

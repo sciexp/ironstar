@@ -1,0 +1,19 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "WorkspaceRenamed",
+	"type": "object",
+	"title": "WorkspaceRenamed",
+	"description": "Recorded when a workspace's display name is changed.",
+	"required": ["name", "renamedAt"],
+	"properties": {
+		"name": {
+			"type": "string",
+			"description": "New display name for the workspace"
+		},
+		"renamedAt": {
+			"type": "string",
+			"format": "date-time",
+			"description": "Timestamp when the workspace was renamed"
+		}
+	}
+}

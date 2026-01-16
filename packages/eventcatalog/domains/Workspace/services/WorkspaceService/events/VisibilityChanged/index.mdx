@@ -1,0 +1,30 @@
+---
+id: VisibilityChanged
+name: Visibility Changed
+version: 0.0.1
+summary: |
+  Recorded when a workspace's visibility setting is changed.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This event is emitted when a user changes the visibility of an existing workspace.
+The event captures the new visibility setting and timestamp.
+
+## Visibility Semantics
+
+- **Public**: Visible to all authenticated users
+- **Private**: Visible only to owner (and explicitly shared users in future)
+
+## Business Rules
+
+- Workspace must exist before changing visibility
+- Visibility transitions in either direction are valid (Public to Private, Private to Public)
+- Timestamp is captured at the boundary
+
+## Given-When-Then
+
+Given a workspace exists, When the user changes the visibility setting, Then VisibilityChanged is recorded with the new visibility.

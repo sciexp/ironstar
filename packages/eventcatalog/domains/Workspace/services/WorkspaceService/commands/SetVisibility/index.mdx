@@ -1,0 +1,30 @@
+---
+id: SetVisibility
+name: Set Visibility
+version: 0.0.1
+summary: |
+  Command to change the visibility setting of an existing workspace.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This command changes the visibility of an existing workspace between Public and Private.
+The workspace must already exist for this command to succeed.
+
+## Validation Rules
+
+- Workspace must exist (workspaceId is set)
+- Visibility must be either Public or Private
+- Caller must have permission to modify workspace (future: owner or admin)
+
+## Visibility Semantics
+
+- **Public**: Visible to all authenticated users
+- **Private**: Visible only to owner (and explicitly shared users in future)
+
+## Emits
+
+- `VisibilityChanged` on success

@@ -1,0 +1,41 @@
+---
+id: WorkspaceService
+name: Workspace Service
+version: 0.0.1
+summary: |
+  Manages workspace lifecycle including creation, naming, ownership, and visibility settings.
+owners:
+  - engineering
+sends: []
+receives: []
+---
+
+## Responsibilities
+
+- Create new workspaces with owner and visibility settings
+- Rename workspaces
+- Change workspace visibility (Public/Private)
+- Maintain workspace identity immutability after creation
+
+## Aggregate: Workspace
+
+The Workspace aggregate serves as the organizational container for dashboards, saved queries, and preferences.
+It manages workspace identity, naming, ownership, and visibility settings.
+
+### Key Value Objects
+
+- **WorkspaceId**: Unique identifier for a workspace (immutable after creation)
+- **WorkspaceName**: User-facing display name
+- **Visibility**: Access control setting (Public or Private)
+- **UserId**: Reference to owner from SharedKernel
+
+### Invariants
+
+- WorkspaceId is immutable after creation
+- OwnerId references a valid UserId from SharedKernel
+- Visibility is always a valid Visibility value (Public or Private)
+
+## Visibility Semantics
+
+- **Public**: Visible to all authenticated users
+- **Private**: Visible only to owner (and explicitly shared users in future)

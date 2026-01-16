@@ -1,0 +1,20 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "VisibilityChanged",
+	"type": "object",
+	"title": "VisibilityChanged",
+	"description": "Recorded when a workspace's visibility setting is changed.",
+	"required": ["visibility", "changedAt"],
+	"properties": {
+		"visibility": {
+			"type": "string",
+			"enum": ["Public", "Private"],
+			"description": "New visibility setting"
+		},
+		"changedAt": {
+			"type": "string",
+			"format": "date-time",
+			"description": "Timestamp when the visibility was changed"
+		}
+	}
+}

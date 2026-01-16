@@ -1,0 +1,14 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "RenameWorkspace",
+	"type": "object",
+	"title": "RenameWorkspace",
+	"description": "Command to change the display name of an existing workspace.",
+	"required": ["name"],
+	"properties": {
+		"name": {
+			"type": "string",
+			"description": "New display name for the workspace"
+		}
+	}
+}

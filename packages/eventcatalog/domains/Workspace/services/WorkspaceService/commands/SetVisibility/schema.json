@@ -1,0 +1,15 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "SetVisibility",
+	"type": "object",
+	"title": "SetVisibility",
+	"description": "Command to change the visibility setting of an existing workspace.",
+	"required": ["visibility"],
+	"properties": {
+		"visibility": {
+			"type": "string",
+			"enum": ["Public", "Private"],
+			"description": "New visibility setting for the workspace"
+		}
+	}
+}
