@@ -5,7 +5,7 @@
 ||| and contains SQL that will be executed by DuckDB.
 |||
 ||| Key invariants:
-||| - Query names are unique per user (enforced at boundary, not here)
+||| - Query names are unique per workspace (enforced at boundary, not here)
 ||| - SQL is non-empty
 ||| - Dataset references are valid (enforced at runtime by DuckDB)
 |||
@@ -275,7 +275,7 @@ savedQueryDecider = MkDecider
 -- Pre: SaveQuery sql => sql /= ""
 -- Pre: UpdateQuerySql sql => sql /= ""
 
--- Invariant: Query names are unique per user
+-- Invariant: Query names are unique per workspace
 -- This is enforced at the boundary by using aggregate IDs like:
---   AggregateId "SavedQuery" "user_123/my-query-name"
--- Multiple SavedQuery aggregates per user, each with unique name in ID.
+--   AggregateId "SavedQuery" "workspace_123/query_my-query-name"
+-- Multiple SavedQuery aggregates per workspace, each with unique name in ID.
