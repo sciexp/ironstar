@@ -1,0 +1,107 @@
+---
+id: WorkspaceLifecycle
+name: Workspace Lifecycle
+version: 0.0.1
+summary: |
+  Workspace creation, configuration, and deletion lifecycle managing the container for dashboards and saved queries.
+steps:
+  - id: analyst
+    title: Data Analyst
+    actor:
+      name: Data Analyst
+    next_step:
+      id: create-workspace
+      label: "creates workspace"
+
+  - id: create-workspace
+    title: Workspace Created
+    custom:
+      type: placeholder
+      description: "WorkspaceCreated event (to be implemented)"
+    next_steps:
+      - id: init-preferences
+        label: "initialize preferences"
+      - id: add-dashboard
+        label: "add dashboard"
+      - id: add-query
+        label: "add saved query"
+
+  - id: init-preferences
+    title: Preferences Initialized
+    message:
+      id: UserPreferencesInitialized
+      version: "0.0.1"
+    next_steps:
+      - id: add-dashboard
+        label: "add dashboard"
+      - id: add-query
+        label: "add saved query"
+
+  - id: add-dashboard
+    title: Dashboard Added
+    message:
+      id: DashboardCreated
+      version: "0.0.1"
+    next_steps:
+      - id: add-dashboard
+        label: "add another"
+      - id: add-query
+        label: "add query"
+      - id: delete-workspace
+        label: "delete workspace"
+
+  - id: add-query
+    title: Query Added
+    message:
+      id: SavedQueryCreated
+      version: "0.0.1"
+    next_steps:
+      - id: add-query
+        label: "add another"
+      - id: add-dashboard
+        label: "add dashboard"
+      - id: delete-workspace
+        label: "delete workspace"
+
+  - id: delete-workspace
+    title: Workspace Deleted
+    custom:
+      type: placeholder
+      description: "WorkspaceDeleted event (to be implemented)"
+---
+
+## Overview
+
+This flow documents the workspace lifecycle from creation through configuration and eventual deletion.
+A workspace serves as the container for dashboards and saved queries, providing organizational structure and access control boundaries.
+
+The workspace lifecycle involves creating the container, initializing user preferences, populating with content, and eventual cleanup.
+
+## Workspace creation
+
+Users create workspaces to organize related analytical artifacts.
+A workspace provides isolation for dashboards and saved queries, enabling focused analysis on specific projects or data domains.
+
+The WorkspaceCreated event captures the workspace identifier, owner, and initial metadata such as name and description.
+
+## Preference initialization
+
+After workspace creation, user preferences are initialized with sensible defaults.
+Preferences include theme settings, default catalog selection, and UI state persistence.
+
+Preferences are user-scoped rather than workspace-scoped, applying across all workspaces the user accesses.
+
+## Content population
+
+Workspaces are populated with dashboards and saved queries over time.
+Each dashboard and query belongs to exactly one workspace, identified by the `workspaceId` field in all workspace domain events.
+
+Content can be added in any order.
+Users typically create saved queries first, then visualize results in dashboards.
+
+## Workspace deletion
+
+Workspaces may be deleted when no longer needed.
+Deletion should cascade to contained dashboards and queries, or require explicit cleanup first depending on policy.
+
+Soft delete with recovery period is recommended for enterprise deployments.
