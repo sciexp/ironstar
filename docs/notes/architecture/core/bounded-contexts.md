@@ -55,13 +55,15 @@ Ironstar has four bounded contexts with distinct responsibilities:
 
 **Strategic classification**: Supporting domain
 
-**Aggregates:**
-- `Workspace` (aggregate root): Container for dashboards, saved queries, and workspace-scoped settings
-  - Properties: id (uuid), name, owner_id (nullable — null for system-seeded public workspaces), visibility (public|private, default public), created_at, updated_at
-  - `Dashboard` (child entity): Layout configuration, tab organization, chart placements
-  - `SavedQuery` (child entity): Named queries with parameters
-  - `WorkspacePreferences` (child entity): Workspace-scoped settings (default catalog, layout defaults)
-- `UserPreferences` (separate aggregate): User-scoped personal settings (theme, locale, UI state) that follow the user across all workspaces
+**Aggregates:** The Workspace bounded context contains five aggregates, composed via `workspaceContextDecider` using monoidal `combine5`:
+
+1. **WorkspaceAggregate**: Workspace identity, ownership (UserId from SharedKernel), visibility (Public/Private)
+2. **WorkspacePreferences**: Workspace-scoped settings (default catalog, layout defaults)
+3. **Dashboard**: Layout configuration, tab organization, chart placements (belongs to workspace)
+4. **SavedQuery**: Named queries with parameters (belongs to workspace)
+5. **UserPreferences**: User-scoped personal settings (theme, locale, UI state) that follow the user across all workspaces — *not* workspace-scoped
+
+**Note on UserPreferences scope**: Although UserPreferences lives in the Workspace bounded context, it is keyed by user (`user_{user_id}/preferences`), not by workspace. User-scoped settings like theme and locale follow the user across all workspaces they access. Workspace-scoped settings like default catalog belong to WorkspacePreferences.
 
 **Concern**: User's persistent saved state across sessions — WHERE charts appear, WHICH queries are saved, HOW the UI is configured
 
@@ -126,7 +128,7 @@ Todo (Generality Canary) ──────[Isolated for template generality val
 
 **Relationship patterns:**
 
-- **Shared Kernel** (Session → Workspace): User identity is shared concept; both contexts must agree on User structure
+- **Shared Kernel** (Session ↔ Workspace): UserId is defined in `spec/SharedKernel/UserId.idr` and imported by both contexts for bidirectional ownership. Session uses UserId for session state and events; Workspace uses UserId for workspace ownership. Neither context owns the type — it is neutral shared infrastructure.
 - **Customer-Supplier** (Analytics → Workspace): Analytics defines Chart value objects (ChartConfig, ChartType, ChartData); Workspace consumes them for dashboard layout; Analytics owns the schema, Workspace uses them
 - **Isolated** (Todo): No domain coupling with other contexts; validates template generality by proving CQRS/ES infrastructure works for any domain without coupling to Analytics-specific concerns
 
@@ -522,6 +524,30 @@ The architectural patterns remain constant; only the mechanism changes from in-p
 This section documents the aggregates within the Workspace bounded context.
 Each aggregate follows the fmodel-rust Decider pattern with pure `decide`/`evolve`/`initial_state` functions.
 
+### Dashboard aggregate
+
+Dashboard manages persistent UI layout configuration: chart placements, tab organization, and grid positioning within a workspace.
+
+**Aggregate ID pattern**: `workspace_{workspace_id}/dashboard_{dashboard_name}`
+
+**State pattern (canonical for workspace-scoped aggregates)**: Dashboard uses a sum type for state that distinguishes non-existence from existence:
+
+```idris
+data DashboardState
+  = NoDashboard
+  | DashboardExists DashboardId WorkspaceId DashboardName (List ChartPlacement) (List TabInfo)
+```
+
+This pattern has several important properties:
+
+- `initialState` is a constant (`NoDashboard`), not parameterized — the Decider is a value, not a factory
+- Events carry all context needed for self-sufficient replay (e.g., `DashboardCreated` includes `WorkspaceId`)
+- State reconstruction depends only on the event stream, never external parameters
+- The sum type makes illegal states unrepresentable: operations requiring existence fail at pattern match in `decide`
+
+This follows Law 3 (Hoffman): all projection data comes from events.
+Use this pattern as the canonical approach for other workspace-scoped aggregates that may or may not exist (SavedQuery follows the same pattern).
+
 ### UserPreferences aggregate
 
 User-scoped personal settings that follow the user across all workspaces.
@@ -607,14 +633,14 @@ These settings apply to all users within the workspace context.
 Aggregate IDs follow hierarchical patterns that support event store identification, Zenoh key expression routing, and Idris2 spec AggregateId construction.
 
 **Workspace context aggregate IDs:**
-- Workspace: `workspace_{workspace_id}`
-- Dashboard: `workspace_{workspace_id}/dashboard_{dashboard_name}`
-- SavedQuery: `workspace_{workspace_id}/query_{query_name}`
-- WorkspacePreferences: `workspace_{workspace_id}/preferences`
+- Workspace: `workspace_{workspace_id}` — workspace identity and ownership
+- WorkspacePreferences: `workspace_{workspace_id}/preferences` — workspace-scoped settings
+- Dashboard: `workspace_{workspace_id}/dashboard_{dashboard_name}` — layout and charts
+- SavedQuery: `workspace_{workspace_id}/query_{query_name}` — named queries
+- UserPreferences: `user_{user_id}/preferences` — user-scoped settings (note: keyed by user, not workspace)
 
 **Session context aggregate IDs:**
 - Session: `session_{session_id}`
-- UserPreferences: `user_{user_id}/preferences`
 
 **Analytics context aggregate IDs:**
 - Catalog: `catalog_{catalog_id}`
