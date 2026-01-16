@@ -3,28 +3,22 @@
 	"$id": "DashboardCreated",
 	"type": "object",
 	"title": "DashboardCreated",
-	"description": "Recorded when a Data Analyst creates a new dashboard with a name and initial layout.",
-	"required": ["dashboardId", "ownerId", "title", "createdAt"],
+	"description": "Recorded when a dashboard is created within a workspace.",
+	"required": ["dashboardId", "workspaceId", "name", "timestamp"],
 	"properties": {
 		"dashboardId": {
 			"type": "string",
-			"format": "uuid",
 			"description": "Unique identifier for the dashboard"
 		},
-		"ownerId": {
+		"workspaceId": {
 			"type": "string",
-			"format": "uuid",
-			"description": "User ID of the dashboard owner"
+			"description": "Unique identifier for the containing workspace"
 		},
-		"title": {
+		"name": {
 			"type": "string",
-			"description": "Display title for the dashboard"
+			"description": "Dashboard name (human-readable identifier within workspace)"
 		},
-		"layoutJson": {
-			"type": "string",
-			"description": "Initial layout configuration as JSON blob (empty for new dashboards)"
-		},
-		"createdAt": {
+		"timestamp": {
 			"type": "string",
 			"format": "date-time",
 			"description": "Timestamp when the dashboard was created"

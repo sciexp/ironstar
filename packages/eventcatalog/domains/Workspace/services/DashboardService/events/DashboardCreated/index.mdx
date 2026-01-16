@@ -11,17 +11,27 @@ schemaPath: schema.json
 
 ## Description
 
-This event is emitted when a user creates a new dashboard to organize and share insights.
-The event captures the dashboard identity, owner, initial title, and empty layout configuration.
+This event is emitted when a dashboard is created within a workspace.
+The event captures the dashboard identity, workspace scope, name, and creation timestamp.
 
-Event payload includes `workspaceId` identifying the containing workspace.
+Dashboards are workspace-scoped resources; the aggregate ID is `workspace_{workspaceId}/dashboard_{name}`.
+The event contains all data needed to reconstruct dashboard state through event replay.
 
 ## Business Rules
 
-- Dashboard names must be unique per owner
-- Initial layout contains zero charts and zero tabs
-- Owner is derived from the authenticated session's UserId
+- Dashboard names must be unique within a workspace
+- Dashboards are created empty (no initial charts or tabs)
+- Workspaces are the ownership boundary; dashboards belong to workspaces, not individual users
+
+## Event Schema
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `dashboardId` | string | Unique identifier for the dashboard |
+| `workspaceId` | string | Unique identifier for the containing workspace |
+| `name` | string | Dashboard name (human-readable identifier within workspace) |
+| `timestamp` | ISO 8601 datetime | When the dashboard was created |
 
 ## Given-When-Then
 
-Given the user has an active session, When the Data Analyst creates a dashboard with a name, Then Dashboard Created is recorded with owner and initial layout.
+Given a workspace exists, When a dashboard is created with a name, Then DashboardCreated is recorded with dashboardId, workspaceId, name, and timestamp.
