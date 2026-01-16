@@ -619,6 +619,88 @@ This pattern has several important properties:
 This follows Law 3 (Hoffman): all projection data comes from events.
 Use this pattern as the canonical approach for other workspace-scoped aggregates that may or may not exist (SavedQuery follows the same pattern).
 
+### SavedQuery aggregate
+
+SavedQuery manages user-defined reusable analytics queries within a workspace.
+Each query references a dataset and contains SQL for DuckDB execution, with optional parameters for parameterized queries.
+
+**Aggregate ID pattern**: `workspace_{workspace_id}/query_{query_name}` — multiple saved queries per workspace, each identified by name
+
+**State pattern**: SavedQuery uses the same canonical sum type pattern as Dashboard to distinguish non-existence from existence:
+
+```idris
+data SavedQueryState
+  = NoQuery
+  | QueryExists SavedQueryId WorkspaceId QueryName SqlQuery DatasetRef
+```
+
+Properties:
+
+- `initialState` is a constant (`NoQuery`), not parameterized — the Decider is a value, not a factory
+- Events carry all context needed for self-sufficient replay (e.g., `QuerySaved` includes `WorkspaceId`)
+- State reconstruction depends only on the event stream, never external parameters
+- The sum type makes illegal states unrepresentable: operations requiring existence fail at pattern match in `decide`
+
+This follows Law 3 (Hoffman): all projection data comes from events and Law 8: use sum types to make illegal states unrepresentable.
+
+**Commands:**
+
+| Command | Preconditions | Effect |
+|---------|---------------|--------|
+| `SaveQuery(workspaceId, name, sql, datasetRef)` | No query exists (`NoQuery` state) | Emits `QuerySaved` event; generates new query ID and timestamp at boundary |
+| `RenameQuery(newName)` | Query exists (`QueryExists` state) | Emits `QueryRenamed` event; updates query name field |
+| `UpdateQuerySql(newSql)` | Query exists (`QueryExists` state) | Emits `QuerySqlUpdated` event; updates SQL field |
+| `UpdateDatasetRef(newDatasetRef)` | Query exists (`QueryExists` state) | Emits `DatasetRefUpdated` event; updates dataset reference |
+| `DeleteQuery` | Query exists (`QueryExists` state) | Emits `QueryDeleted` event; transitions to `NoQuery` state |
+
+**Events:**
+
+| Event | Fields | Semantics |
+|-------|--------|-----------|
+| `QuerySaved` | `query_id, workspace_id, name, sql, dataset_ref, timestamp` | Query created with identity and dataset reference; carries all context needed for replay (Law 3) |
+| `QueryRenamed` | `new_name, timestamp` | Query name updated; enables refactoring query names without ID change |
+| `QuerySqlUpdated` | `new_sql, timestamp` | Query SQL updated; enables iterative refinement of query logic |
+| `DatasetRefUpdated` | `new_dataset_ref, timestamp` | Dataset reference updated; enables repointing queries to different datasets or catalogs |
+| `QueryDeleted` | `timestamp` | Query removed; transitions back to `NoQuery` state |
+
+**Value Object: DatasetRef**
+
+DatasetRef encapsulates a two-part dataset reference decomposed into catalog and dataset components:
+
+```idris
+record DatasetRef where
+  catalogUri : CatalogUri      -- e.g., "ducklake:hf://datasets/sciexp"
+  datasetName : DatasetName    -- e.g., "fixtures"
+```
+
+This structure matches the canonical definition in Analytics.QuerySession and enables:
+- Filtering and grouping by catalog in projections and queries
+- Full URI reconstruction: `catalogUri + "/" + datasetName`
+- DuckDB resolution via httpfs or other extensions based on URI scheme
+- Explicit separation of concerns between catalog versioning and dataset selection
+
+**Invariants:**
+
+- **Single query per aggregate**: `SaveQuery` only succeeds when no query exists; each query is a separate aggregate identified by `workspace_{workspace_id}/query_{query_name}`
+- **Query names non-empty**: Validated in `SaveQuery` and `RenameQuery` preconditions
+- **Query SQL non-empty**: Validated in `SaveQuery` and `UpdateQuerySql` preconditions
+- **Query names unique per workspace**: Enforced at boundary via aggregate ID pattern — the aggregate ID includes the workspace ID and query name, making duplicates impossible
+- **Valid dataset references**: DuckDB validates dataset existence at runtime; aggregate does not pre-validate
+
+**Decider pattern alignment:**
+
+- `decide`: Pure function `(SavedQueryCommand, SavedQueryState) -> Result<Vec<SavedQueryEvent>, String>`
+- `evolve`: Pure function `(SavedQueryState, SavedQueryEvent) -> SavedQueryState`
+- `initial_state`: `NoQuery` — no query until `SaveQuery` command succeeds
+- No async in aggregate logic; side effects (ID generation, timestamp capture) at axum/Zenoh boundaries only
+
+**Relationship to other aggregates:**
+
+- SavedQuery carries `workspace_id` to establish containment within a workspace
+- Multiple SavedQuery aggregates per workspace, each with unique query name
+- WorkspaceAggregate has no knowledge of SavedQuery children — inverse relationship only
+- When a workspace is deleted (future), all SavedQueries must be cascade-deleted at application boundary
+
 ### UserPreferences aggregate
 
 User-scoped personal settings that follow the user across all workspaces.

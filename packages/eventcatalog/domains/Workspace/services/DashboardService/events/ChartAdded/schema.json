@@ -4,58 +4,73 @@
 	"type": "object",
 	"title": "DashboardChartAdded",
 	"description": "Recorded when a Data Analyst adds a chart to a dashboard with position and size.",
-	"required": [
-		"dashboardId",
-		"chartId",
-		"chartDefinitionId",
-		"gridX",
-		"gridY",
-		"gridWidth",
-		"gridHeight",
-		"addedAt"
-	],
+	"required": ["chartPlacement", "timestamp"],
 	"properties": {
-		"dashboardId": {
-			"type": "string",
-			"format": "uuid",
-			"description": "Dashboard receiving the chart"
+		"chartPlacement": {
+			"type": "object",
+			"description": "The chart placement with position, size, and references",
+			"required": ["chartId", "chartDefRef", "position", "size"],
+			"properties": {
+				"chartId": {
+					"type": "string",
+					"description": "Unique identifier for this chart placement"
+				},
+				"chartDefRef": {
+					"type": "object",
+					"description": "Reference to the ChartDefinition from Analytics context",
+					"required": ["refId"],
+					"properties": {
+						"refId": {
+							"type": "string",
+							"description": "Unique identifier for the ChartDefinition in Analytics context"
+						},
+						"chartTypeHint": {
+							"type": ["string", "null"],
+							"description": "Optional cached chart type for UI hints (may be stale)"
+						}
+					}
+				},
+				"position": {
+					"type": "object",
+					"description": "Position in grid layout (0-indexed)",
+					"required": ["row", "col"],
+					"properties": {
+						"row": {
+							"type": "integer",
+							"minimum": 0,
+							"description": "Row position on the grid (0-indexed)"
+						},
+						"col": {
+							"type": "integer",
+							"minimum": 0,
+							"description": "Column position on the grid (0-indexed)"
+						}
+					}
+				},
+				"size": {
+					"type": "object",
+					"description": "Size in grid units",
+					"required": ["width", "height"],
+					"properties": {
+						"width": {
+							"type": "integer",
+							"minimum": 1,
+							"description": "Width in grid units"
+						},
+						"height": {
+							"type": "integer",
+							"minimum": 1,
+							"description": "Height in grid units"
+						}
+					}
+				},
+				"tabId": {
+					"type": ["string", "null"],
+					"description": "Optional tab ID if chart is placed within a tab"
+				}
+			}
 		},
-		"chartId": {
-			"type": "string",
-			"format": "uuid",
-			"description": "Unique identifier for this chart placement"
-		},
-		"chartDefinitionId": {
-			"type": "string",
-			"format": "uuid",
-			"description": "Reference to the ChartDefinition from Analytics"
-		},
-		"tabId": {
-			"type": "string",
-			"format": "uuid",
-			"description": "Optional tab ID if chart is placed within a tab"
-		},
-		"gridX": {
-			"type": "integer",
-			"description": "Column position on the grid (0-indexed)"
-		},
-		"gridY": {
-			"type": "integer",
-			"description": "Row position on the grid (0-indexed)"
-		},
-		"gridWidth": {
-			"type": "integer",
-			"description": "Width in grid units"
-		},
-		"gridHeight": {
-			"type": "integer",
-			"description": "Height in grid units"
-		},
-		"chartConfig": {
-			"type": "string",
-			"description": "Optional chart-specific configuration as JSON blob"
-		},
-		"addedAt": {
+		"timestamp": {
 			"type": "string",
 			"format": "date-time",
 			"description": "Timestamp when the chart was added"

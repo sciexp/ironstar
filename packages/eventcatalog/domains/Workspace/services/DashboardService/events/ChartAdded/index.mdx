@@ -12,16 +12,23 @@ schemaPath: schema.json
 ## Description
 
 This event is emitted when a user adds a chart visualization to an existing dashboard.
-The chart is placed on a grid with specified position and size, optionally within a tab.
+The event carries a `ChartPlacement` record containing the chart ID, reference to the ChartDefinition, grid position, size, and optional tab assignment.
 
-Event payload includes `workspaceId` identifying the containing workspace.
+The `ChartPlacement` record structure is:
+- `chartId`: Unique identifier for this chart placement
+- `chartDefRef`: Reference to the ChartDefinition from Analytics context (contains `refId` and optional `chartTypeHint`)
+- `position`: Grid position as a record with `row` and `col` (0-indexed)
+- `size`: Grid size as a record with `width` and `height` (in grid units)
+- `tabId`: Optional tab ID if chart is placed within a specific tab
 
 ## Business Rules
 
-- Chart definition must reference a valid ChartDefinition from Analytics
-- Grid position must not overlap with existing charts
+- Chart definition reference must point to a valid ChartDefinition from Analytics
+- Grid position must be valid (non-negative row and column)
+- Grid size must be positive (width and height >= 1)
 - Chart can be placed on the default view or within a specific tab
+- If tabId is specified, it must reference an existing tab in the dashboard
 
 ## Given-When-Then
 
-Given a dashboard exists and chart definitions from prior queries are available, When the Data Analyst adds a chart with position and size, Then Dashboard Chart Added is recorded.
+Given a dashboard exists and chart definitions from prior queries are available, When the Data Analyst adds a chart with placement information (position, size, and optional tab), Then ChartAdded is recorded with the complete ChartPlacement record.
