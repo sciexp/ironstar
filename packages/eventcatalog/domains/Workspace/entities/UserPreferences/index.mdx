@@ -3,7 +3,7 @@ id: UserPreferences
 name: User Preferences
 version: 0.0.1
 summary: |
-  Aggregate root managing persistent user-specific settings and UI state.
+  Aggregate root managing user-scoped settings that follow the user across all workspaces.
 owners:
   - engineering
 aggregateRoot: true
@@ -24,11 +24,10 @@ properties:
     required: true
     enum: [Light, Dark, System]
     summary: User's preferred color scheme
-  - name: defaultCatalogId
-    type: reference
+  - name: locale
+    type: string
     required: false
-    referenceTo: Catalog
-    summary: Optional default catalog selection for new sessions
+    summary: User's preferred locale for internationalization (e.g., en-US, de-DE)
   - name: uiStateJson
     type: string
     required: true
@@ -37,8 +36,11 @@ properties:
 
 ## Overview
 
-The UserPreferences aggregate persists user-specific settings that span sessions.
+The UserPreferences aggregate persists user-scoped settings that follow the user across all workspaces.
+These are global user settings independent of any particular workspace context.
 Preferences are initialized on first login and updated through explicit user actions.
+
+See WorkspacePreferences for workspace-scoped settings such as default catalog selection.
 
 ## Decider Pattern
 
@@ -47,22 +49,20 @@ The UserPreferences aggregate follows the fmodel-rust Decider pattern.
 **Commands handled:**
 - `InitializePreferences`: Creates default preferences on first login
 - `SetTheme`: Updates color scheme preference
-- `SetDefaultCatalog`: Sets the default catalog for new sessions
-- `ClearDefaultCatalog`: Removes default catalog selection
+- `SetLocale`: Updates locale preference
 - `UpdateUiState`: Persists current UI layout state
 
 **Events emitted:**
 - `UserPreferencesInitialized`: Default preferences created
 - `UserPreferencesThemeSet`: Theme updated
-- `UserPreferencesDefaultCatalogSet`: Default catalog selected
-- `UserPreferencesDefaultCleared`: Default catalog cleared
+- `UserPreferencesLocaleSet`: Locale updated
 - `UserPreferencesUiStateUpdated`: UI state persisted
 
 ## Relationships
 
 - **User** (Session): One-to-one relationship with User
-- **Catalog** (Analytics): Optional reference to default catalog
 - **UserPreferencesService**: Managed by UserPreferencesService
+- **WorkspacePreferences**: See WorkspacePreferences for workspace-scoped settings
 
 ## Theme Integration
 
@@ -91,7 +91,7 @@ The `uiStateJson` field persists transient UI state:
 
 - Each user has exactly one UserPreferences aggregate
 - UserPreferences is created lazily on first authenticated access
-- Default catalog must reference an existing, accessible Catalog
+- Settings apply globally across all workspaces the user has access to
 
 ## fmodel-rust Implementation
 
@@ -115,13 +115,9 @@ fn decide(cmd: PreferencesCommand, state: &PreferencesState) -> Result<Vec<Prefe
   - Produces: `ThemeSet(theme, timestamp)`
   - Error if not initialized: "Preferences not initialized"
 
-- **SetDefaultCatalog(catalog)** when preferences exist:
+- **SetLocale(locale)** when preferences exist:
   - Validates: Preferences must exist
-  - Produces: `DefaultCatalogSet(catalog, timestamp)`
-
-- **ClearDefaultCatalog** when preferences exist:
-  - Validates: Preferences must exist
-  - Produces: `DefaultCatalogCleared(timestamp)`
+  - Produces: `LocaleSet(locale, timestamp)`
 
 - **UpdateUiState(json_blob)** when preferences exist:
   - Validates: Preferences must exist (JSON validation at boundary)
@@ -141,11 +137,8 @@ fn evolve(state: PreferencesState, event: &PreferencesEvent) -> PreferencesState
 - **ThemeSet(theme, _)**:
   - Updates: `theme` → provided value (Light, Dark, or System)
 
-- **DefaultCatalogSet(catalog, _)**:
-  - Updates: `defaultCatalog` → `Some(catalog)`
-
-- **DefaultCatalogCleared(_)**:
-  - Updates: `defaultCatalog` → `None`
+- **LocaleSet(locale, _)**:
+  - Updates: `locale` → `Some(locale)`
 
 - **UiStateUpdated(json_blob, _)**:
   - Updates: `uiState` → provided JSON string
@@ -159,7 +152,7 @@ fn initial_state() -> PreferencesState
 Returns `PreferencesState` with:
 - `preferencesId`: `None`
 - `theme`: `Theme::System` (defer to OS preference)
-- `defaultCatalog`: `None`
+- `locale`: `None` (defer to browser locale)
 - `uiState`: `"{}"` (empty JSON object)
 
 **Note:** One PreferencesState per authenticated user, enforced by aggregate ID construction (e.g., `AggregateId("UserPreferences", "user_123")`).
