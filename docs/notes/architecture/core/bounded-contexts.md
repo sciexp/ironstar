@@ -524,6 +524,77 @@ The architectural patterns remain constant; only the mechanism changes from in-p
 This section documents the aggregates within the Workspace bounded context.
 Each aggregate follows the fmodel-rust Decider pattern with pure `decide`/`evolve`/`initial_state` functions.
 
+### WorkspaceAggregate (root)
+
+WorkspaceAggregate manages workspace identity, ownership, and visibility settings.
+This is the root aggregate of the Workspace bounded context — all other aggregates (Dashboard, SavedQuery, WorkspacePreferences) belong to a specific workspace instance.
+
+**Aggregate ID pattern**: `workspace_{workspace_id}` — globally unique workspace identifier
+
+**State pattern:**
+
+WorkspaceAggregate uses an `Option<WorkspaceId>` to track whether a workspace has been created:
+
+```idris
+record WorkspaceState where
+  workspaceId : Maybe WorkspaceId       -- Just id after creation, Nothing initially
+  name : WorkspaceName                   -- Current workspace name
+  ownerId : Maybe UserId                 -- From SharedKernel; null for system workspaces (MVP)
+  visibility : Visibility                -- Public or Private
+  createdAt : Maybe Timestamp            -- Initialized on creation
+  updatedAt : Maybe Timestamp            -- Updated on rename or visibility change
+```
+
+The `Maybe WorkspaceId` pattern ensures illegal states are unrepresentable:
+- Before creation, `workspaceId` is `Nothing` and rename/visibility commands fail
+- After creation, `workspaceId` is `Just id` and only creation attempts fail
+- Once set, `workspaceId` is immutable (no command modifies it)
+
+This follows Law 8 (Hoffman): Use sum types to make illegal states unrepresentable.
+
+**Commands:**
+
+| Command | Preconditions | Effect |
+|---------|---------------|--------|
+| `CreateWorkspace(name, ownerId, visibility)` | No workspace exists (`workspaceId` is `Nothing`) | Emits `WorkspaceCreated` event; generates new workspace ID and timestamp at boundary |
+| `RenameWorkspace(newName)` | Workspace exists (`workspaceId` is `Just id`) | Emits `WorkspaceRenamed` event; updates name field |
+| `SetVisibility(visibility)` | Workspace exists (`workspaceId` is `Just id`) | Emits `VisibilityChanged` event; updates visibility field |
+
+**Events:**
+
+| Event | Fields | Semantics |
+|-------|--------|-----------|
+| `WorkspaceCreated` | `workspace_id, name, owner_id, visibility, timestamp` | Workspace initialized with identity and ownership; carries all context needed for replay (Law 3: all projection data from events) |
+| `WorkspaceRenamed` | `new_name, timestamp` | Workspace name updated; owner_id immutable (only name and visibility can change) |
+| `VisibilityChanged` | `visibility, timestamp` | Workspace visibility toggled between Public (system workspaces) and Private (user workspaces) |
+
+**Invariants:**
+
+- **Immutable identity**: Once `workspace_id` is set, no command can change it (enforced by pattern match in `decide`)
+- **Single creation**: `CreateWorkspace` only succeeds when no workspace exists
+- **Existence enforcement**: `RenameWorkspace` and `SetVisibility` only succeed when workspace exists
+- **Valid ownership**: `owner_id` references a valid `UserId` from SharedKernel (type enforced at module boundary)
+- **Valid visibility**: Visibility is constrained to enum variants (Public | Private) by type system
+
+**Decider pattern alignment:**
+
+- `decide`: Pure function `(WorkspaceCommand, WorkspaceState) -> Result<Vec<WorkspaceEvent>, String>`
+- `evolve`: Pure function `(WorkspaceState, WorkspaceEvent) -> WorkspaceState`
+- `initial_state`: `MkWorkspaceState Nothing (MkWorkspaceName "") Nothing Private Nothing Nothing` — no workspace, empty name, no owner, private by default
+- No async in aggregate logic; side effects (UUID generation, timestamp capture) at axum/Zenoh boundaries only
+
+**MVP scope (all workspaces system-scoped):**
+
+In MVP, all workspaces are seeded as public system workspaces with `owner_id = null`.
+User-created private workspaces are deferred to future phases.
+This simplifies the initial deployment while keeping the aggregate semantics correct for future evolution.
+
+**Relationship to other aggregates:**
+
+- Dashboard, SavedQuery, WorkspacePreferences all carry `workspace_id` to establish containment
+- WorkspaceAggregate has no knowledge of these children — inverse relationship only
+- When a workspace is deleted (future), all children must be cascade-deleted at application boundary (not in aggregate)
+
 ### Dashboard aggregate
 
 Dashboard manages persistent UI layout configuration: chart placements, tab organization, and grid positioning within a workspace.
