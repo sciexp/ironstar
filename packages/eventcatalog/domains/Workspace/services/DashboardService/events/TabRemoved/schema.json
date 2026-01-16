@@ -1,0 +1,25 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "TabRemoved",
+	"type": "object",
+	"title": "TabRemoved",
+	"description": "Recorded when a Data Analyst removes a tab from a dashboard.",
+	"required": ["dashboardId", "tabId", "removedAt"],
+	"properties": {
+		"dashboardId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Dashboard from which the tab was removed"
+		},
+		"tabId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Unique identifier of the removed tab"
+		},
+		"removedAt": {
+			"type": "string",
+			"format": "date-time",
+			"description": "Timestamp when the tab was removed"
+		}
+	}
+}
