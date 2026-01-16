@@ -117,7 +117,7 @@ Recommendation: Keep Idris2 focused on domain events; D2 shows full system behav
 |--------------|---------------|--------|
 | Dashboard | `Workspace.Dashboard` | Aligned |
 | SavedQuery | `Workspace.SavedQuery` | Aligned |
-| UserPreferences | `Workspace.Preferences` | Aligned |
+| UserPreferences | `Workspace.UserPreferences` | Aligned |
 
 **Command alignment:**
 
