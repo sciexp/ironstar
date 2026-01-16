@@ -113,6 +113,41 @@ Ironstar has four bounded contexts with distinct responsibilities:
 
 **Integration**: Fully isolated — shares infrastructure (EventRepository, Zenoh, Session) but NO domain coupling with other bounded contexts. This isolation is intentional: coupling Todo to Analytics would defeat its purpose as a generality test.
 
+## Naming conventions
+
+### Event and command names
+
+Event and command names follow context-scoped naming within the Idris2 specification:
+
+| Context | Naming Pattern | Example |
+|---------|----------------|---------|
+| Idris2 spec | Short, domain-language names | `QuerySaved`, `ThemeSet`, `ChartAdded` |
+| Rust implementation | Module-qualified | `saved_query::QuerySaved` |
+| Event store | Dot-separated qualified | `"workspace.saved_query.query_saved"` |
+| EventCatalog | Prefixed (for discoverability) | `SavedQueryCreated`, `UserPreferencesThemeSet` |
+
+The Idris2 module system provides namespace context.
+Domain experts use natural language ("Query Saved", not "SavedQuery Query Saved").
+The spec reflects ubiquitous language within each bounded context.
+
+The Idris2 spec is authoritative.
+EventCatalog prefixed names are documentation conventions for integration discoverability, not the canonical form.
+
+See ADR-007 in `architecture-decisions.md` for full decision context.
+
+### Aggregate ID patterns
+
+Aggregate IDs follow hierarchical patterns reflecting ownership:
+
+| Aggregate | ID Pattern | Example |
+|-----------|------------|---------|
+| Workspace | `workspace_{uuid}` | `workspace_abc123` |
+| WorkspacePreferences | `workspace_{uuid}/preferences` | `workspace_abc123/preferences` |
+| Dashboard | `workspace_{uuid}/dashboard_{name}` | `workspace_abc123/dashboard_main` |
+| SavedQuery | `workspace_{uuid}/query_{name}` | `workspace_abc123/query_sales_report` |
+| UserPreferences | `user_{uuid}/preferences` | `user_def456/preferences` |
+| Session | `session_{uuid}` | `session_ghi789` |
+
 ## Context map
 
 The following diagram shows integration patterns between bounded contexts.
