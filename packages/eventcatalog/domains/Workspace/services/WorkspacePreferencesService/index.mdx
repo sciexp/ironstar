@@ -7,15 +7,23 @@ summary: |
 owners:
   - engineering
 sends:
-  - WorkspacePreferencesInitialized
-  - WorkspaceDefaultCatalogSet
-  - WorkspaceDefaultCatalogCleared
-  - LayoutDefaultsUpdated
+  - id: WorkspacePreferencesInitialized
+    version: 0.0.1
+  - id: WorkspaceDefaultCatalogSet
+    version: 0.0.1
+  - id: WorkspaceDefaultCatalogCleared
+    version: 0.0.1
+  - id: LayoutDefaultsUpdated
+    version: 0.0.1
 receives:
-  - InitializeWorkspacePreferences
-  - SetWorkspaceDefaultCatalog
-  - ClearWorkspaceDefaultCatalog
-  - UpdateLayoutDefaults
+  - id: InitializeWorkspacePreferences
+    version: 0.0.1
+  - id: SetWorkspaceDefaultCatalog
+    version: 0.0.1
+  - id: ClearWorkspaceDefaultCatalog
+    version: 0.0.1
+  - id: UpdateLayoutDefaults
+    version: 0.0.1
 ---
 
 ## Responsibilities
