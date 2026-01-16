@@ -53,13 +53,13 @@ The Workspace aggregate follows the fmodel-rust Decider pattern.
 - `CreateWorkspace`: Creates a new workspace with name, owner, and visibility
 - `RenameWorkspace`: Updates the workspace name
 - `SetVisibility`: Changes the access control setting
-- `TransferOwnership`: Assigns a new owner to the workspace
+- `TransferOwnership`: Assigns a new owner to the workspace *(future scope)*
 
 **Events emitted:**
 - `WorkspaceCreated`: New workspace initialized
 - `WorkspaceRenamed`: Name updated
 - `WorkspaceVisibilityChanged`: Access control modified
-- `WorkspaceOwnershipTransferred`: Owner changed
+- `WorkspaceOwnershipTransferred`: Owner changed *(future scope)*
 
 ## Relationships
 
@@ -110,7 +110,7 @@ fn decide(cmd: WorkspaceCommand, state: &WorkspaceState) -> Result<Vec<Workspace
   - Validates: Workspace must exist
   - Produces: `WorkspaceVisibilityChanged(visibility, timestamp)`
 
-- **TransferOwnership(new_owner_id)** when workspace exists:
+- **TransferOwnership(new_owner_id)** when workspace exists *(future scope)*:
   - Validates: Workspace must exist, must have current owner (not system workspace)
   - Produces: `WorkspaceOwnershipTransferred(new_owner_id, timestamp)`
   - Error if system workspace: "Cannot transfer system workspace"
@@ -132,7 +132,7 @@ fn evolve(state: WorkspaceState, event: &WorkspaceEvent) -> WorkspaceState
 - **WorkspaceVisibilityChanged(visibility, _)**:
   - Updates: `visibility` -> provided value
 
-- **WorkspaceOwnershipTransferred(new_owner_id, _)**:
+- **WorkspaceOwnershipTransferred(new_owner_id, _)** *(future scope)*:
   - Updates: `ownerId` -> `Some(new_owner_id)`
 
 ### initial_state
