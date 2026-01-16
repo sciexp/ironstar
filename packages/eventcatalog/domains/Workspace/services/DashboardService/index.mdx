@@ -7,19 +7,31 @@ summary: |
 owners:
   - engineering
 sends:
-  - DashboardCreated
-  - DashboardRenamed
-  - TabAdded
-  - TabRemoved
-  - ChartPlaced
-  - ChartRemoved
+  - id: DashboardCreated
+    version: 0.0.1
+  - id: DashboardRenamed
+    version: 0.0.1
+  - id: DashboardTabAdded
+    version: 0.0.1
+  - id: DashboardChartAdded
+    version: 0.0.1
+  - id: DashboardChartRemoved
+    version: 0.0.1
+  - id: DashboardChartMovedToTab
+    version: 0.0.1
 receives:
-  - CreateDashboard
-  - RenameDashboard
-  - AddTab
-  - RemoveTab
-  - PlaceChart
-  - RemoveChart
+  - id: CreateDashboard
+    version: 0.0.1
+  - id: RenameDashboard
+    version: 0.0.1
+  - id: AddTab
+    version: 0.0.1
+  - id: AddChart
+    version: 0.0.1
+  - id: RemoveChart
+    version: 0.0.1
+  - id: MoveChartToTab
+    version: 0.0.1
 ---
 
 ## Responsibilities
