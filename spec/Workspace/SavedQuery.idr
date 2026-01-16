@@ -15,6 +15,7 @@ module Workspace.SavedQuery
 import Core.Decider
 import Core.Event
 import Data.List
+import Workspace.WorkspaceAggregate  -- WorkspaceId
 
 %default total
 
@@ -58,7 +59,7 @@ Eq DatasetRef where
 ||| Commands for saved query management
 public export
 data SavedQueryCommand
-  = SaveQuery String String DatasetRef  -- name, sql, datasetRef
+  = SaveQuery WorkspaceId String String DatasetRef  -- workspaceId, name, sql, datasetRef
   | DeleteQuery
   | RenameQuery String
   | UpdateQuerySql String
@@ -69,10 +70,11 @@ data SavedQueryCommand
 ------------------------------------------------------------------------
 
 ||| Events representing saved query state changes
+||| Law 1 (Hoffman): Events are past-tense and immutable
 public export
 data SavedQueryEvent
-  = QuerySaved SavedQueryId String String DatasetRef Timestamp
-    -- id, name, sql, datasetRef, timestamp
+  = QuerySaved SavedQueryId WorkspaceId String String DatasetRef Timestamp
+    -- id, workspaceId, name, sql, datasetRef, timestamp
   | QueryDeleted Timestamp
   | QueryRenamed String Timestamp
   | QuerySqlUpdated String Timestamp
@@ -87,8 +89,8 @@ data SavedQueryEvent
 public export
 data SavedQueryState
   = NoQuery
-  | QueryExists SavedQueryId String String DatasetRef
-    -- id, name, sql, datasetRef
+  | QueryExists SavedQueryId WorkspaceId String String DatasetRef
+    -- id, workspaceId, name, sql, datasetRef
 
 ||| Initial state: no query saved
 public export
@@ -102,12 +104,17 @@ initialSavedQueryState = NoQuery
 ||| Extract query ID if query exists
 queryId : SavedQueryState -> Maybe SavedQueryId
 queryId NoQuery = Nothing
-queryId (QueryExists qid _ _ _) = Just qid
+queryId (QueryExists qid _ _ _ _) = Just qid
+
+||| Extract workspace ID if query exists
+queryWorkspaceId : SavedQueryState -> Maybe WorkspaceId
+queryWorkspaceId NoQuery = Nothing
+queryWorkspaceId (QueryExists _ wsId _ _ _) = Just wsId
 
 ||| Extract query name if query exists
 queryName : SavedQueryState -> Maybe String
 queryName NoQuery = Nothing
-queryName (QueryExists _ name _ _) = Just name
+queryName (QueryExists _ _ name _ _) = Just name
 
 ------------------------------------------------------------------------
 -- Decider implementation
@@ -122,30 +129,34 @@ queryName (QueryExists _ name _ _) = Just name
 ||| - UpdateQuerySql: Only when query exists
 ||| - UpdateDatasetRef: Only when query exists
 |||
+||| Law 7 (Hoffman): Work is a side effect
+||| - decide and evolve are pure functions
+||| - All I/O (ID generation, timestamp) happens at boundaries
+|||
 ||| Note: This models each SavedQuery as a separate aggregate.
 ||| For multiple queries per user, use multiple SavedQuery aggregates
-||| with different aggregate IDs (e.g., user_id/query_name).
+||| with different aggregate IDs (e.g., workspace_id/query_name).
 public export
 savedQueryDecider : Decider SavedQueryCommand SavedQueryState SavedQueryEvent String
 savedQueryDecider = MkDecider
   { decide = \cmd, state => case (cmd, state) of
-      (SaveQuery name sql datasetRef, NoQuery) =>
+      (SaveQuery wsId name sql datasetRef, NoQuery) =>
         if name == "" then
           Left "Query name cannot be empty"
         else if sql == "" then
           Left "Query SQL cannot be empty"
         else
           -- Generate new query ID at boundary
-          Right [QuerySaved ?newQueryId name sql datasetRef ?now]
-      (SaveQuery _ _ _, QueryExists _ _ _ _) =>
+          Right [QuerySaved ?newQueryId wsId name sql datasetRef ?now]
+      (SaveQuery _ _ _ _, QueryExists _ _ _ _ _) =>
         Left "Query already exists"
 
-      (DeleteQuery, QueryExists _ _ _ _) =>
+      (DeleteQuery, QueryExists _ _ _ _ _) =>
         Right [QueryDeleted ?now2]
       (DeleteQuery, NoQuery) =>
         Left "No query to delete"
 
-      (RenameQuery newName, QueryExists _ _ _ _) =>
+      (RenameQuery newName, QueryExists _ _ _ _ _) =>
         if newName == "" then
           Left "Query name cannot be empty"
         else
@@ -153,7 +164,7 @@ savedQueryDecider = MkDecider
       (RenameQuery _, NoQuery) =>
         Left "No query to rename"
 
-      (UpdateQuerySql newSql, QueryExists _ _ _ _) =>
+      (UpdateQuerySql newSql, QueryExists _ _ _ _ _) =>
         if newSql == "" then
           Left "Query SQL cannot be empty"
         else
@@ -161,14 +172,14 @@ savedQueryDecider = MkDecider
       (UpdateQuerySql _, NoQuery) =>
         Left "No query to update"
 
-      (UpdateDatasetRef newRef, QueryExists _ _ _ _) =>
+      (UpdateDatasetRef newRef, QueryExists _ _ _ _ _) =>
         Right [DatasetRefUpdated newRef ?now5]
       (UpdateDatasetRef _, NoQuery) =>
         Left "No query to update"
 
   , evolve = \state, event => case event of
-      QuerySaved qid name sql datasetRef _ =>
-        QueryExists qid name sql datasetRef
+      QuerySaved qid wsId name sql datasetRef _ =>
+        QueryExists qid wsId name sql datasetRef
 
       QueryDeleted _ =>
         NoQuery
@@ -176,20 +187,20 @@ savedQueryDecider = MkDecider
       QueryRenamed newName _ =>
         case state of
           NoQuery => NoQuery  -- Should not happen (event invalid for this state)
-          QueryExists qid _ sql datasetRef =>
-            QueryExists qid newName sql datasetRef
+          QueryExists qid wsId _ sql datasetRef =>
+            QueryExists qid wsId newName sql datasetRef
 
       QuerySqlUpdated newSql _ =>
         case state of
           NoQuery => NoQuery  -- Should not happen
-          QueryExists qid name _ datasetRef =>
-            QueryExists qid name newSql datasetRef
+          QueryExists qid wsId name _ datasetRef =>
+            QueryExists qid wsId name newSql datasetRef
 
       DatasetRefUpdated newRef _ =>
         case state of
           NoQuery => NoQuery  -- Should not happen
-          QueryExists qid name sql _ =>
-            QueryExists qid name sql newRef
+          QueryExists qid wsId name sql _ =>
+            QueryExists qid wsId name sql newRef
 
   , initialState = initialSavedQueryState
   }
