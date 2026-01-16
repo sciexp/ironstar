@@ -6,7 +6,7 @@
 |||
 ||| Key invariants:
 ||| - WorkspaceId is immutable after creation
-||| - OwnerId references a valid UserId from Session context (Shared Kernel)
+||| - OwnerId references a valid UserId from SharedKernel
 ||| - Visibility controls access permissions (Public/Private)
 |||
 ||| Law 1 (Hoffman): Events are past-tense and immutable
@@ -15,7 +15,7 @@ module Workspace.WorkspaceAggregate
 
 import Core.Decider
 import Core.Event
-import Session.Session  -- UserId from Shared Kernel
+import SharedKernel.UserId
 
 %default total
 
@@ -102,7 +102,7 @@ record WorkspaceState where
   constructor MkWorkspaceState
   workspaceId : Maybe WorkspaceId
   name : WorkspaceName
-  ownerId : Maybe UserId  -- From Session.Session (Shared Kernel)
+  ownerId : Maybe UserId  -- From SharedKernel.UserId
   visibility : Visibility
   createdAt : Maybe Timestamp
   updatedAt : Maybe Timestamp
@@ -188,5 +188,5 @@ workspaceDecider = MkDecider
 -- Invariant: Visibility is always a valid Visibility value
 -- Enforced by type: visibility : Visibility
 
--- Invariant: OwnerId references valid UserId from Session context
--- Enforced at boundary via Shared Kernel import
+-- Invariant: OwnerId references valid UserId from SharedKernel
+-- Enforced at boundary via SharedKernel.UserId import
