@@ -17,6 +17,11 @@ receives: []
 - Organize charts into tabs
 - Persist layout configuration across sessions
 
+## Workspace Context
+
+Dashboard operations occur within a Workspace context.
+All dashboards belong to exactly one Workspace, referenced via `workspaceId`.
+
 ## Aggregate: Dashboard
 
 The Dashboard aggregate manages UI layout state with grid-based chart positioning.
@@ -24,6 +29,7 @@ The Dashboard aggregate manages UI layout state with grid-based chart positionin
 ### Key Value Objects
 
 - **DashboardId**: Unique dashboard identifier
+- **WorkspaceId**: Reference to containing Workspace
 - **TabId**: Tab identifier within a dashboard
 - **ChartId**: Chart placement identifier
 - **ChartDefinitionRef**: Reference to Analytics ChartDefinition (Customer-Supplier)
