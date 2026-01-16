@@ -23,6 +23,34 @@ import Workspace.WorkspaceAggregate  -- WorkspaceId
 %default total
 
 ------------------------------------------------------------------------
+-- Newtypes (Domain Vocabulary)
+------------------------------------------------------------------------
+
+||| Dashboard name - human-readable identifier within workspace
+public export
+data DashboardName = MkDashboardName String
+
+export
+Show DashboardName where
+  show (MkDashboardName n) = n
+
+public export
+Eq DashboardName where
+  (MkDashboardName x) == (MkDashboardName y) = x == y
+
+||| Tab name within a dashboard
+public export
+data TabName = MkTabName String
+
+export
+Show TabName where
+  show (MkTabName n) = n
+
+public export
+Eq TabName where
+  (MkTabName x) == (MkTabName y) = x == y
+
+------------------------------------------------------------------------
 -- Value Objects
 ------------------------------------------------------------------------
 
@@ -119,7 +147,7 @@ public export
 record TabInfo where
   constructor MkTabInfo
   tabId : TabId
-  name : String
+  name : TabName
 
 public export
 Eq TabInfo where
@@ -132,12 +160,12 @@ Eq TabInfo where
 ||| Commands for dashboard management
 public export
 data DashboardCommand
-  = CreateDashboard WorkspaceId String  -- workspaceId, name
+  = CreateDashboard WorkspaceId DashboardName  -- workspaceId, name
   | AddChart ChartPlacement
   | RemoveChart ChartId
-  | AddTab String  -- tab name
+  | AddTab TabName  -- tab name
   | MoveChartToTab ChartId TabId
-  | RenameDashboard String
+  | RenameDashboard DashboardName
 
 ------------------------------------------------------------------------
 -- Events
@@ -147,33 +175,31 @@ data DashboardCommand
 ||| Law 1 (Hoffman): Events are past-tense and immutable
 public export
 data DashboardEvent
-  = DashboardCreated DashboardId WorkspaceId String Timestamp
+  = DashboardCreated DashboardId WorkspaceId DashboardName Timestamp
   | ChartAdded ChartPlacement Timestamp
   | ChartRemoved ChartId Timestamp
   | TabAdded TabInfo Timestamp
   | ChartMovedToTab ChartId TabId Timestamp
-  | DashboardRenamed String Timestamp
+  | DashboardRenamed DashboardName Timestamp
 
 ------------------------------------------------------------------------
 -- State
 ------------------------------------------------------------------------
 
 ||| Dashboard aggregate state
-||| Invariant: If dashboardId is Just, then dashboard exists
+||| Uses sum type to distinguish non-existent from existent dashboard.
+||| All state is reconstructed from events - no external context needed.
 public export
-record DashboardState where
-  constructor MkDashboardState
-  dashboardId : Maybe DashboardId
-  workspaceId : WorkspaceId  -- Workspace this dashboard belongs to
-  name : String
-  placements : List ChartPlacement
-  tabs : List TabInfo
+data DashboardState
+  = NoDashboard
+  | DashboardExists DashboardId WorkspaceId DashboardName (List ChartPlacement) (List TabInfo)
+    -- dashboardId, workspaceId, name, placements, tabs
 
 ||| Initial state: no dashboard created yet
-||| Note: workspaceId must be provided at creation time
+||| Constant value - Decider is a value, not a factory.
 public export
-initialDashboardState : WorkspaceId -> DashboardState
-initialDashboardState wsId = MkDashboardState Nothing wsId "" [] []
+initialDashboardState : DashboardState
+initialDashboardState = NoDashboard
 
 ------------------------------------------------------------------------
 -- Helper functions for validation
@@ -213,85 +239,93 @@ updateTabIfMatch targetId newTabId p =
 ||| - decide and evolve are pure functions
 ||| - All I/O (ID generation, timestamp) happens at boundaries (marked with holes)
 |||
-||| Note: This decider requires a WorkspaceId for initialState construction.
-||| Use makeDashboardDecider to create a decider with the workspace context.
+||| Decider is a value, not a factory. Initial state is a constant (NoDashboard).
+||| All state is reconstructed from events via evolve - DashboardCreated carries
+||| all data needed including WorkspaceId.
 public export
-makeDashboardDecider : WorkspaceId -> Decider DashboardCommand DashboardState DashboardEvent String
-makeDashboardDecider wsId = MkDecider
-  { decide = \cmd, state => case (cmd, state.dashboardId) of
-      (CreateDashboard cmdWsId name, Nothing) =>
+dashboardDecider : Decider DashboardCommand DashboardState DashboardEvent String
+dashboardDecider = MkDecider
+  { decide = \cmd, state => case (cmd, state) of
+      (CreateDashboard wsId name, NoDashboard) =>
         -- Generate new dashboard ID at boundary
-        Right [DashboardCreated ?newDashId cmdWsId name ?now]
-      (CreateDashboard _ _, Just _) =>
+        Right [DashboardCreated ?newDashId wsId name ?now]
+      (CreateDashboard _ _, DashboardExists _ _ _ _ _) =>
         Left "Dashboard already exists"
 
-      (AddChart placement, Just _) =>
+      (AddChart placement, DashboardExists _ _ _ _ _) =>
         -- Could validate: chart ID not already used, ChartDefinitionRef exists
         Right [ChartAdded placement ?now2]
-      (AddChart _, Nothing) =>
+      (AddChart _, NoDashboard) =>
         Left "No dashboard to add chart to"
 
-      (RemoveChart chartId, Just _) =>
+      (RemoveChart chartId, DashboardExists _ _ _ _ _) =>
         -- Idempotent: removing non-existent chart is allowed
         Right [ChartRemoved chartId ?now3]
-      (RemoveChart _, Nothing) =>
+      (RemoveChart _, NoDashboard) =>
         Left "No dashboard"
 
-      (AddTab tabName, Just _) =>
+      (AddTab tabName, DashboardExists _ _ _ _ _) =>
         -- Generate new tab ID at boundary
         Right [TabAdded (MkTabInfo ?newTabId tabName) ?now4]
-      (AddTab _, Nothing) =>
+      (AddTab _, NoDashboard) =>
         Left "No dashboard"
 
-      (MoveChartToTab chartId tabId, Just _) =>
+      (MoveChartToTab chartId tabId, DashboardExists _ _ _ _ _) =>
         -- Full validation would check: chart exists, tab exists
         -- Keeping simple for now - boundary can enforce stricter rules
         Right [ChartMovedToTab chartId tabId ?now5]
-      (MoveChartToTab _ _, Nothing) =>
+      (MoveChartToTab _ _, NoDashboard) =>
         Left "No dashboard"
 
-      (RenameDashboard newName, Just _) =>
+      (RenameDashboard newName, DashboardExists _ _ _ _ _) =>
         Right [DashboardRenamed newName ?now6]
-      (RenameDashboard _, Nothing) =>
+      (RenameDashboard _, NoDashboard) =>
         Left "No dashboard"
 
   , evolve = \state, event => case event of
-      DashboardCreated did evtWsId name _ =>
-        { dashboardId := Just did
-        , workspaceId := evtWsId
-        , name := name
-        } state
+      DashboardCreated did wsId name _ =>
+        -- Construct state entirely from event data
+        DashboardExists did wsId name [] []
 
       ChartAdded placement _ =>
-        { placements := placement :: state.placements } state
+        case state of
+          NoDashboard => NoDashboard  -- Should not happen (event invalid for this state)
+          DashboardExists did wsId name placements tabs =>
+            DashboardExists did wsId name (placement :: placements) tabs
 
       ChartRemoved chartId _ =>
-        { placements := filter (\p => p.chartId /= chartId) state.placements } state
+        case state of
+          NoDashboard => NoDashboard
+          DashboardExists did wsId name placements tabs =>
+            DashboardExists did wsId name (filter (\p => p.chartId /= chartId) placements) tabs
 
       TabAdded tabInfo _ =>
-        { tabs := tabInfo :: state.tabs } state
+        case state of
+          NoDashboard => NoDashboard
+          DashboardExists did wsId name placements tabs =>
+            DashboardExists did wsId name placements (tabInfo :: tabs)
 
       ChartMovedToTab chartId tabId _ =>
-        { placements := map (updateTabIfMatch chartId tabId) state.placements } state
+        case state of
+          NoDashboard => NoDashboard
+          DashboardExists did wsId name placements tabs =>
+            DashboardExists did wsId name (map (updateTabIfMatch chartId tabId) placements) tabs
 
       DashboardRenamed newName _ =>
-        { name := newName } state
+        case state of
+          NoDashboard => NoDashboard
+          DashboardExists did wsId _ placements tabs =>
+            DashboardExists did wsId newName placements tabs
 
-  , initialState = initialDashboardState wsId
+  , initialState = initialDashboardState
   }
-
-||| Default dashboard decider (requires workspace context at runtime)
-||| Prefer makeDashboardDecider when workspace is known at construction time
-public export
-dashboardDecider : Decider DashboardCommand DashboardState DashboardEvent String
-dashboardDecider = makeDashboardDecider (MkWorkspaceId "")
 
 ------------------------------------------------------------------------
 -- Invariants (postconditions, not enforced at compile time)
 ------------------------------------------------------------------------
 
--- Invariant: Dashboard creation makes dashboardId Just
--- Post: evolve (CreateDashboard name) Nothing => dashboardId is Just
+-- Invariant: Dashboard creation transitions NoDashboard to DashboardExists
+-- Post: evolve (DashboardCreated ...) NoDashboard => DashboardExists
 --
 -- This is a semantic invariant we expect to hold after evolve.
 
@@ -334,7 +368,7 @@ record DashboardLayoutView where
   constructor MkDashboardLayoutView
   dashboardId : Maybe DashboardId
   workspaceId : Maybe WorkspaceId
-  dashboardName : String
+  dashboardName : DashboardName
   placements : List ChartPlacement
   tabs : List TabInfo
 
@@ -370,7 +404,7 @@ dashboardLayoutView = MkView
   , initialState = MkDashboardLayoutView
       { dashboardId = Nothing
       , workspaceId = Nothing
-      , dashboardName = ""
+      , dashboardName = MkDashboardName ""
       , placements = []
       , tabs = []
       }
