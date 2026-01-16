@@ -1,0 +1,25 @@
+---
+id: SetWorkspaceDefaultCatalog
+name: SetWorkspaceDefaultCatalog
+version: 0.1.0
+summary: Sets the default catalog for the workspace
+---
+
+Sets the default DuckDB catalog that workspace members will use by default when creating new queries.
+The catalog name references a catalog registered in DuckDB (e.g., "ducklake:hf://datasets/sciexp").
+
+## Preconditions
+
+- Workspace preferences must be initialized
+- Catalog validation is deferred to boundary layer
+
+## Schema
+
+| Field | Type | Description |
+|-------|------|-------------|
+| catalogName | CatalogName | The catalog to set as default |
+
+## Behavior
+
+On success, emits `WorkspaceDefaultCatalogSet`.
+Fails if workspace preferences have not been initialized.

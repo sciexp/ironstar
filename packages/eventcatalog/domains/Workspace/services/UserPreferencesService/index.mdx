@@ -7,15 +7,23 @@ summary: |
 owners:
   - engineering
 sends:
-  - PreferencesInitialized
-  - ThemeSet
-  - LocaleSet
-  - UiStateUpdated
+  - id: UserPreferencesInitialized
+    version: 0.0.1
+  - id: UserPreferencesThemeSet
+    version: 0.0.1
+  - id: UserPreferencesLocaleSet
+    version: 0.0.1
+  - id: UserPreferencesUiStateUpdated
+    version: 0.0.1
 receives:
-  - InitializePreferences
-  - SetTheme
-  - SetLocale
-  - UpdateUiState
+  - id: InitializePreferences
+    version: 0.0.1
+  - id: SetTheme
+    version: 0.0.1
+  - id: SetLocale
+    version: 0.0.1
+  - id: UpdateUiState
+    version: 0.0.1
 ---
 
 ## Responsibilities

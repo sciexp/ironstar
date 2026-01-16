@@ -1,0 +1,24 @@
+---
+id: InitializeWorkspacePreferences
+name: InitializeWorkspacePreferences
+version: 0.1.0
+summary: Creates default preferences for a new workspace
+---
+
+Initializes the WorkspacePreferences aggregate for a newly created workspace.
+This command should be dispatched when a workspace is created to establish workspace-scoped settings.
+
+## Preconditions
+
+- Workspace preferences must not already exist for this workspace
+
+## Schema
+
+| Field | Type | Description |
+|-------|------|-------------|
+| workspaceId | WorkspaceId | The workspace to initialize preferences for |
+
+## Behavior
+
+On success, emits `WorkspacePreferencesInitialized` with a generated `WorkspacePreferencesId`.
+Fails if preferences already exist for the workspace.

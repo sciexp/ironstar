@@ -1,0 +1,21 @@
+---
+id: LayoutDefaultsUpdated
+name: LayoutDefaultsUpdated
+version: 0.1.0
+summary: Layout defaults for new dashboards have been updated
+---
+
+Indicates that the layout defaults JSON blob has been updated.
+These defaults will be applied when workspace members create new dashboards.
+
+## Schema
+
+| Field | Type | Description |
+|-------|------|-------------|
+| layoutDefaults | String | JSON blob containing the new layout defaults |
+| timestamp | Timestamp | When the layout defaults were updated |
+
+## Notes
+
+JSON validity is enforced at the boundary layer before the command is accepted.
+The exact structure of the JSON blob is application-specific.

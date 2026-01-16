@@ -1,0 +1,21 @@
+---
+id: ClearWorkspaceDefaultCatalog
+name: ClearWorkspaceDefaultCatalog
+version: 0.1.0
+summary: Removes the default catalog selection from workspace preferences
+---
+
+Clears the default catalog setting, leaving workspace members to explicitly select a catalog for new queries.
+
+## Preconditions
+
+- Workspace preferences must be initialized
+
+## Schema
+
+This command has no fields (operates on the current workspace context).
+
+## Behavior
+
+On success, emits `WorkspaceDefaultCatalogCleared`.
+Fails if workspace preferences have not been initialized.

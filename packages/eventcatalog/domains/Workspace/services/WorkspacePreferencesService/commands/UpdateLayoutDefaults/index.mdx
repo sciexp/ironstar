@@ -1,0 +1,25 @@
+---
+id: UpdateLayoutDefaults
+name: UpdateLayoutDefaults
+version: 0.1.0
+summary: Persists default layout settings for new dashboard creation
+---
+
+Updates the layout defaults JSON blob that will be used when workspace members create new dashboards.
+JSON validation is enforced at the boundary layer before this command is dispatched.
+
+## Preconditions
+
+- Workspace preferences must be initialized
+- JSON blob must be valid (enforced at boundary)
+
+## Schema
+
+| Field | Type | Description |
+|-------|------|-------------|
+| layoutDefaults | String | JSON blob containing layout defaults |
+
+## Behavior
+
+On success, emits `LayoutDefaultsUpdated`.
+Fails if workspace preferences have not been initialized.

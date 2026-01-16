@@ -1,0 +1,27 @@
+---
+id: UserPreferencesLocaleSet
+name: User Preferences Locale Set
+version: 0.0.1
+summary: |
+  Recorded when a Data Analyst sets their preferred locale for UI localization.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This event is emitted when a user changes their locale preference.
+Locale changes affect date formats, number formats, and UI translations.
+
+User-scoped event that applies across all workspaces.
+
+## Business Rules
+
+- Locale must be a valid BCP-47 language tag
+- Preferences are synced across devices
+- Default locale is en-US
+
+## Given-When-Then
+
+Given user preferences exist, When the Data Analyst sets the locale, Then User Preferences Locale Set is recorded.

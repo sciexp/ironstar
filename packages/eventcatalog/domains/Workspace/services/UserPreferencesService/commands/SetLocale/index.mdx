@@ -1,0 +1,24 @@
+---
+id: SetLocale
+name: Set Locale
+version: 0.0.1
+summary: |
+  Command to set the user's preferred locale for UI localization.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This command sets the user's preferred locale using BCP-47 language tags (e.g., "en-US", "de-DE").
+The locale affects date formats, number formats, and UI translations.
+
+## Validation Rules
+
+- Preferences must exist for this user
+- Locale must be a valid BCP-47 language tag
+
+## Emits
+
+- `UserPreferencesLocaleSet` on success

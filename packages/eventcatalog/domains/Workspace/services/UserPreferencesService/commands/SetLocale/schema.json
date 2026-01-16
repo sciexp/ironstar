@@ -1,0 +1,14 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "SetLocale",
+	"type": "object",
+	"title": "SetLocale",
+	"description": "Command to set the user's preferred locale for UI localization.",
+	"required": ["locale"],
+	"properties": {
+		"locale": {
+			"type": "string",
+			"description": "BCP-47 language tag (e.g., 'en-US', 'de-DE')"
+		}
+	}
+}

@@ -1,0 +1,22 @@
+---
+id: WorkspacePreferencesInitialized
+name: WorkspacePreferencesInitialized
+version: 0.1.0
+summary: Workspace preferences aggregate has been created
+---
+
+Indicates that the WorkspacePreferences aggregate has been initialized for a workspace.
+This event is emitted once per workspace when preferences are first created.
+
+## Schema
+
+| Field | Type | Description |
+|-------|------|-------------|
+| preferencesId | WorkspacePreferencesId | Unique identifier for this preferences record |
+| workspaceId | WorkspaceId | The workspace these preferences belong to |
+| timestamp | Timestamp | When the preferences were initialized |
+
+## Invariants established
+
+- The workspace now has exactly one preferences record
+- The workspaceId is immutable after initialization

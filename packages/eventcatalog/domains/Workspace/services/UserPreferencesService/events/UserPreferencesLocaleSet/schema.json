@@ -1,0 +1,28 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "UserPreferencesLocaleSet",
+	"type": "object",
+	"title": "UserPreferencesLocaleSet",
+	"description": "Recorded when a Data Analyst sets their preferred locale for UI localization.",
+	"required": ["preferencesId", "locale", "setAt"],
+	"properties": {
+		"preferencesId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "Preferences being updated"
+		},
+		"previousLocale": {
+			"type": "string",
+			"description": "Previous locale value"
+		},
+		"locale": {
+			"type": "string",
+			"description": "New locale value (BCP-47 language tag)"
+		},
+		"setAt": {
+			"type": "string",
+			"format": "date-time",
+			"description": "Timestamp when the locale was set"
+		}
+	}
+}
