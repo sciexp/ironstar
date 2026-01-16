@@ -1,17 +1,21 @@
 ||| Workspace bounded context
 |||
-||| The Workspace bounded context manages user's persistent configuration
-||| across sessions: dashboard layouts, saved queries, and UI preferences.
+||| The Workspace bounded context manages multi-tenant workspaces with ownership,
+||| visibility, and persistent configuration: dashboard layouts, saved queries,
+||| and preferences (both user-scoped and workspace-scoped).
 |||
 ||| Strategic classification: Supporting domain
 |||
 ||| Aggregates:
-||| - Dashboard: Layout configuration, tab organization, chart placements
-||| - SavedQuery: Named queries with parameters
-||| - UserPreferences: Theme, defaults, UI state
+||| - WorkspaceAggregate: Workspace identity, ownership (UserId), visibility (Public/Private)
+||| - Dashboard: Layout configuration, tab organization, chart placements (belongs to workspace)
+||| - SavedQuery: Named queries with parameters (belongs to workspace)
+||| - UserPreferences: User-scoped settings (theme, locale) - follows user across workspaces
+||| - WorkspacePreferences: Workspace-scoped settings (default catalog, layout defaults)
 |||
 ||| Relationships:
 ||| - Customer-Supplier with Analytics: Consumes ChartDefinition references
+||| - Shared Kernel with Session: Imports UserId for workspace ownership
 ||| - Requires authenticated User from Session: Operations only valid in auth context
 |||
 ||| Lifetime: Persists across session boundaries
@@ -19,9 +23,11 @@
 ||| for next login. This distinguishes Workspace (permanent) from Session (ephemeral).
 |||
 ||| Integration notes:
+||| - WorkspaceAggregate.ownerId references Session.UserId (Shared Kernel)
+||| - Dashboard.workspaceId and SavedQuery.workspaceId reference WorkspaceId
 ||| - Dashboard.ChartPlacement.chartDefRef references Analytics.ChartDefinition IDs
 ||| - SavedQuery.DatasetRef references dataset URIs that DuckDB can resolve
-||| - UserPreferences.defaultCatalog references DuckDB catalog names
+||| - WorkspacePreferences.defaultCatalog references DuckDB catalog names
 |||
 ||| All aggregates use the Decider pattern from Core.Decider:
 ||| - Pure decision logic (decide: Command -> State -> Either Error (List Event))
@@ -33,9 +39,11 @@ module Workspace.Workspace
 import Core.Decider
 
 -- Re-export all aggregates
-import Workspace.Dashboard
-import Workspace.SavedQuery
-import Workspace.Preferences
+import public Workspace.WorkspaceAggregate
+import public Workspace.WorkspacePreferences
+import public Workspace.Dashboard
+import public Workspace.SavedQuery
+import public Workspace.Preferences
 
 %default total
 
@@ -46,35 +54,49 @@ import Workspace.Preferences
 -- Workspace ubiquitous language:
 --
 -- Core concepts:
--- - Dashboard: Visual organization of charts and analytics
+-- - Workspace: Multi-tenant organizational container with ownership and visibility
+-- - Dashboard: Visual organization of charts and analytics (belongs to workspace)
 -- - Layout: Grid-based positioning system for charts
 -- - Tab: Logical grouping of charts within a dashboard
 -- - ChartPlacement: Association of ChartDefinition with position/size
--- - SavedQuery: Named DuckDB query with dataset reference
--- - UserPreferences: Persistent UI configuration (theme, defaults)
+-- - SavedQuery: Named DuckDB query with dataset reference (belongs to workspace)
+-- - UserPreferences: User-scoped UI configuration (theme, locale) - follows user across workspaces
+-- - WorkspacePreferences: Workspace-scoped settings (default catalog, layout defaults)
 --
 -- Invariants enforced across aggregates:
--- 1. Dashboard layout validity:
+-- 1. Workspace ownership:
+--    - WorkspaceId is immutable after creation
+--    - OwnerId references UserId from Session (Shared Kernel)
+--    - Visibility controls access (Public/Private)
+-- 2. Dashboard layout validity:
 --    - Grid positions are non-negative (row, col : Nat)
 --    - Placements should not overlap (documented, not type-enforced)
--- 2. Reference integrity:
+--    - Dashboard belongs to exactly one workspace (workspaceId field)
+-- 3. Reference integrity:
 --    - ChartPlacement.chartDefRef must reference existing ChartDefinition
 --    - SavedQuery.datasetRef must be valid DuckDB URI
---    - UserPreferences.defaultCatalog must be valid catalog name
--- 3. Uniqueness within user scope:
---    - Dashboard names unique per user (enforced at boundary via aggregate ID)
---    - SavedQuery names unique per user (enforced at boundary via aggregate ID)
+--    - SavedQuery belongs to exactly one workspace (workspaceId field)
+--    - WorkspacePreferences.defaultCatalog must be valid catalog name
+-- 4. Uniqueness within workspace scope:
+--    - Dashboard names unique per workspace (enforced at boundary via aggregate ID)
+--    - SavedQuery names unique per workspace (enforced at boundary via aggregate ID)
+--    - One WorkspacePreferences per workspace (enforced at boundary via aggregate ID)
 --    - One UserPreferences per user (enforced at boundary via aggregate ID)
 --
 -- Aggregate ID conventions:
--- - Dashboard: "Dashboard" / "user_{user_id}/dashboard_{dashboard_name}"
--- - SavedQuery: "SavedQuery" / "user_{user_id}/query_{query_name}"
+-- - Workspace: "Workspace" / "workspace_{workspace_id}"
+-- - Dashboard: "Dashboard" / "workspace_{workspace_id}/dashboard_{dashboard_name}"
+-- - SavedQuery: "SavedQuery" / "workspace_{workspace_id}/query_{query_name}"
+-- - WorkspacePreferences: "WorkspacePreferences" / "workspace_{workspace_id}"
 -- - UserPreferences: "UserPreferences" / "user_{user_id}"
 --
 -- Customer-Supplier relationships:
 -- - Analytics → Workspace: ChartDefinition IDs consumed by Dashboard
 -- - Workspace does not emit events that Analytics subscribes to
 -- - Workspace is downstream consumer only
+--
+-- Shared Kernel:
+-- - Session.UserId imported for workspace ownership
 
 ------------------------------------------------------------------------
 -- Composition examples
