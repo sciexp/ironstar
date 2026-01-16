@@ -18,6 +18,7 @@ import Core.Event
 import Core.View
 import Data.List
 import Data.Nat
+import Workspace.WorkspaceAggregate  -- WorkspaceId
 
 %default total
 
@@ -131,7 +132,7 @@ Eq TabInfo where
 ||| Commands for dashboard management
 public export
 data DashboardCommand
-  = CreateDashboard String  -- name
+  = CreateDashboard WorkspaceId String  -- workspaceId, name
   | AddChart ChartPlacement
   | RemoveChart ChartId
   | AddTab String  -- tab name
@@ -143,9 +144,10 @@ data DashboardCommand
 ------------------------------------------------------------------------
 
 ||| Events representing dashboard state changes
+||| Law 1 (Hoffman): Events are past-tense and immutable
 public export
 data DashboardEvent
-  = DashboardCreated DashboardId String Timestamp
+  = DashboardCreated DashboardId WorkspaceId String Timestamp
   | ChartAdded ChartPlacement Timestamp
   | ChartRemoved ChartId Timestamp
   | TabAdded TabInfo Timestamp
@@ -162,14 +164,16 @@ public export
 record DashboardState where
   constructor MkDashboardState
   dashboardId : Maybe DashboardId
+  workspaceId : WorkspaceId  -- Workspace this dashboard belongs to
   name : String
   placements : List ChartPlacement
   tabs : List TabInfo
 
 ||| Initial state: no dashboard created yet
+||| Note: workspaceId must be provided at creation time
 public export
-initialDashboardState : DashboardState
-initialDashboardState = MkDashboardState Nothing "" [] []
+initialDashboardState : WorkspaceId -> DashboardState
+initialDashboardState wsId = MkDashboardState Nothing wsId "" [] []
 
 ------------------------------------------------------------------------
 -- Helper functions for validation
@@ -205,15 +209,20 @@ updateTabIfMatch targetId newTabId p =
 |||   (Full validation would check chart and tab exist, but kept simple for now)
 ||| - RenameDashboard: Only when dashboard exists
 |||
-||| Note: Timestamp generation is deferred to boundary layer (marked with holes)
+||| Law 7 (Hoffman): Work is a side effect
+||| - decide and evolve are pure functions
+||| - All I/O (ID generation, timestamp) happens at boundaries (marked with holes)
+|||
+||| Note: This decider requires a WorkspaceId for initialState construction.
+||| Use makeDashboardDecider to create a decider with the workspace context.
 public export
-dashboardDecider : Decider DashboardCommand DashboardState DashboardEvent String
-dashboardDecider = MkDecider
+makeDashboardDecider : WorkspaceId -> Decider DashboardCommand DashboardState DashboardEvent String
+makeDashboardDecider wsId = MkDecider
   { decide = \cmd, state => case (cmd, state.dashboardId) of
-      (CreateDashboard name, Nothing) =>
+      (CreateDashboard cmdWsId name, Nothing) =>
         -- Generate new dashboard ID at boundary
-        Right [DashboardCreated ?newDashId name ?now]
-      (CreateDashboard _, Just _) =>
+        Right [DashboardCreated ?newDashId cmdWsId name ?now]
+      (CreateDashboard _ _, Just _) =>
         Left "Dashboard already exists"
 
       (AddChart placement, Just _) =>
@@ -247,8 +256,11 @@ dashboardDecider = MkDecider
         Left "No dashboard"
 
   , evolve = \state, event => case event of
-      DashboardCreated did name _ =>
-        { dashboardId := Just did, name := name } state
+      DashboardCreated did evtWsId name _ =>
+        { dashboardId := Just did
+        , workspaceId := evtWsId
+        , name := name
+        } state
 
       ChartAdded placement _ =>
         { placements := placement :: state.placements } state
@@ -265,8 +277,14 @@ dashboardDecider = MkDecider
       DashboardRenamed newName _ =>
         { name := newName } state
 
-  , initialState = initialDashboardState
+  , initialState = initialDashboardState wsId
   }
+
+||| Default dashboard decider (requires workspace context at runtime)
+||| Prefer makeDashboardDecider when workspace is known at construction time
+public export
+dashboardDecider : Decider DashboardCommand DashboardState DashboardEvent String
+dashboardDecider = makeDashboardDecider (MkWorkspaceId "")
 
 ------------------------------------------------------------------------
 -- Invariants (postconditions, not enforced at compile time)
@@ -307,7 +325,7 @@ dashboardDecider = MkDecider
 ||| Denormalized projection optimized for UI rendering:
 ||| - Placements grouped by tab
 ||| - Quick lookup by chart ID
-||| - Dashboard metadata (name, id)
+||| - Dashboard metadata (name, id, workspaceId)
 |||
 ||| Law 3 (Hoffman): All projection data comes from events
 ||| Law 5 (Hoffman): All projections stem from events
@@ -315,6 +333,7 @@ public export
 record DashboardLayoutView where
   constructor MkDashboardLayoutView
   dashboardId : Maybe DashboardId
+  workspaceId : Maybe WorkspaceId
   dashboardName : String
   placements : List ChartPlacement
   tabs : List TabInfo
@@ -327,8 +346,9 @@ public export
 dashboardLayoutView : View DashboardLayoutView DashboardEvent
 dashboardLayoutView = MkView
   { evolve = \state, event => case event of
-      DashboardCreated did name _ =>
+      DashboardCreated did wsId name _ =>
         { dashboardId := Just did
+        , workspaceId := Just wsId
         , dashboardName := name
         } state
 
@@ -349,6 +369,7 @@ dashboardLayoutView = MkView
 
   , initialState = MkDashboardLayoutView
       { dashboardId = Nothing
+      , workspaceId = Nothing
       , dashboardName = ""
       , placements = []
       , tabs = []
