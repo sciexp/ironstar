@@ -218,7 +218,7 @@ Zenoh key expressions enforce context isolation:
 - `events/Todo/**`
 
 Cross-context integration happens via:
-1. **Shared Kernel**: Workspace imports `Session::User` type and `Analytics::Chart` value objects (ChartConfig, ChartType, ChartData)
+1. **Shared Kernel**: Workspace imports `SharedKernel.UserId` and `Analytics::Chart` value objects (ChartConfig, ChartType, ChartData)
 2. **Customer-Supplier**: Workspace subscribes to `events/Analytics/Chart/**` keys for chart definition updates
 3. **Process Managers**: Coordinate multi-context workflows (e.g., Dashboard creation after first login)
 
