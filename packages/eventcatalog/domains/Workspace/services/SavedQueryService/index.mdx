@@ -7,17 +7,27 @@ summary: |
 owners:
   - engineering
 sends:
-  - QuerySaved
-  - QueryRenamed
-  - QuerySqlUpdated
-  - QueryDeleted
-  - DatasetRefSet
+  - id: SavedQueryCreated
+    version: 0.0.1
+  - id: SavedQueryRenamed
+    version: 0.0.1
+  - id: SavedQuerySqlUpdated
+    version: 0.0.1
+  - id: SavedQueryDeleted
+    version: 0.0.1
+  - id: SavedQueryDatasetRefUpdated
+    version: 0.0.1
 receives:
-  - SaveQuery
-  - RenameQuery
-  - UpdateQuerySql
-  - DeleteQuery
-  - SetDatasetRef
+  - id: SaveQuery
+    version: 0.0.1
+  - id: RenameSavedQuery
+    version: 0.0.1
+  - id: UpdateSavedQuerySql
+    version: 0.0.1
+  - id: DeleteSavedQuery
+    version: 0.0.1
+  - id: UpdateDatasetReference
+    version: 0.0.1
 ---
 
 ## Responsibilities
