@@ -1,11 +1,40 @@
 ---
 dictionary:
+  - id: workspace
+    name: Workspace
+    summary: First-class aggregate root containing dashboards, queries, and workspace-scoped preferences
+    description: |
+      A Workspace is the primary container for organizing analytics artifacts.
+      Each workspace has a name, optional owner, and visibility setting (public or private).
+      Workspaces contain Dashboard, SavedQuery, and WorkspacePreferences child aggregates.
+      System workspaces (ownerId null) provide shared defaults for all users.
+    icon: Briefcase
+
+  - id: workspace-preferences
+    name: Workspace Preferences
+    summary: Workspace-scoped settings including default catalog and layout defaults
+    description: |
+      WorkspacePreferences stores configuration specific to a single workspace.
+      Settings include default catalog selection and layout defaults for new dashboards.
+      Distinguished from UserPreferences which apply to the user across all workspaces.
+    icon: Settings2
+
+  - id: visibility
+    name: Visibility
+    summary: Access control setting with Public (all authenticated users) or Private (owner/members only) variants
+    description: |
+      A sum type controlling workspace access.
+      Public workspaces are visible to all authenticated users.
+      Private workspaces are visible only to the owner and explicit members.
+      System workspaces typically use Public visibility.
+    icon: Eye
+
   - id: dashboard
     name: Dashboard
     summary: Aggregate managing persistent visual layouts with chart placements and tabs
     description: |
       The Dashboard aggregate organizes charts into tabs with grid-based positioning.
-      Each dashboard has a single owner and stores layout configuration as JSON.
+      Each dashboard belongs to a workspace and stores layout configuration as JSON.
       Charts reference SavedQuery aggregates for their data sources.
     icon: LayoutDashboard
 
@@ -14,18 +43,19 @@ dictionary:
     summary: Named, reusable SQL query with dataset reference for analytics
     description: |
       A SavedQuery persists SQL statements that can be reused across sessions.
-      Each query references a dataset via URI and belongs to a single owner.
+      Each query references a dataset via URI and belongs to a workspace.
       Dashboard charts reference saved queries as their data source.
     icon: FileSearch
 
   - id: user-preferences
     name: User Preferences
-    summary: Aggregate for persistent user-specific settings and UI state
+    summary: User-scoped settings for theme, locale, and UI state that apply across all workspaces
     description: |
-      UserPreferences stores theme selection, default catalog, and UI state.
+      UserPreferences stores personal settings that follow the user regardless of workspace.
+      Settings include theme selection (Light, Dark, System), locale, and transient UI state.
       Created lazily on first authenticated access with sensible defaults.
       One-to-one relationship with User from Session context.
-    icon: Settings
+    icon: UserCog
 
   - id: theme
     name: Theme
