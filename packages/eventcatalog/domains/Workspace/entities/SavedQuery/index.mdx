@@ -14,6 +14,11 @@ properties:
     required: true
     format: uuid
     summary: Unique saved query identifier
+  - name: workspaceId
+    type: reference
+    required: true
+    referenceTo: Workspace
+    summary: Reference to the Workspace this saved query belongs to
   - name: name
     type: string
     required: true
@@ -59,6 +64,7 @@ The SavedQuery aggregate follows the fmodel-rust Decider pattern.
 
 ## Relationships
 
+- **Workspace**: SavedQuery belongs to exactly one Workspace (many-to-one)
 - **User** (Session): Each saved query has a single owner (many-to-one)
 - **Dataset** (Analytics): References target dataset via URI
 - **Dashboard**: Charts reference SavedQuery as data source
@@ -76,7 +82,8 @@ The `datasetReference` field uses a URI scheme for flexible dataset addressing:
 
 ## Invariants
 
-- Query name must be unique per owner
+- SavedQuery must belong to exactly one Workspace
+- Query name must be unique per owner within a Workspace
 - SQL statement must be syntactically valid (validated at save time)
 - Only the owner can modify or delete the saved query
 
