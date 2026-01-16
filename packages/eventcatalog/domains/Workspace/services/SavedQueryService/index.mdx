@@ -6,8 +6,18 @@ summary: |
   Manages user-defined reusable SQL queries with dataset references.
 owners:
   - engineering
-sends: []
-receives: []
+sends:
+  - QuerySaved
+  - QueryRenamed
+  - QuerySqlUpdated
+  - QueryDeleted
+  - DatasetRefSet
+receives:
+  - SaveQuery
+  - RenameQuery
+  - UpdateQuerySql
+  - DeleteQuery
+  - SetDatasetRef
 ---
 
 ## Responsibilities
