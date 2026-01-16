@@ -18,6 +18,6 @@ modules = IronstarSpec,
           Session.Session,
           Workspace.Dashboard,
           Workspace.SavedQuery,
-          Workspace.Preferences,
+          Workspace.UserPreferences,
           Workspace.Workspace,
           Todo.Todo
