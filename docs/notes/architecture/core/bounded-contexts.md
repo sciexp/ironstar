@@ -517,6 +517,91 @@ Post-decomposition integration uses the patterns already established:
 
 The architectural patterns remain constant; only the mechanism changes from in-process to over-network.
 
+## Workspace aggregates
+
+This section documents the aggregates within the Workspace bounded context.
+Each aggregate follows the fmodel-rust Decider pattern with pure `decide`/`evolve`/`initial_state` functions.
+
+### UserPreferences aggregate
+
+User-scoped personal settings that follow the user across all workspaces.
+
+**Aggregate ID pattern**: `user_{user_id}/preferences`
+
+**Properties:**
+- `preferences_id`: Unique identifier (UUID)
+- `user_id`: Reference to authenticated user (from Session context)
+- `theme`: Light/dark/system preference
+- `locale`: Language and regional settings (e.g., "en-US")
+- `ui_state`: Optional JSON blob for persistent UI state (collapsed panels, etc.)
+- `created_at`: Timestamp of initialization
+- `updated_at`: Timestamp of last modification
+
+**Commands:**
+- `InitializeUserPreferences`: Create preferences for new user (idempotent)
+- `SetUserTheme`: Update theme preference
+- `SetUserLocale`: Update locale preference
+- `UpdateUserUiState`: Persist UI state changes
+
+**Events:**
+- `UserPreferencesInitialized { preferences_id, user_id, theme, locale, created_at }`
+- `UserThemeSet { preferences_id, theme, updated_at }`
+- `UserLocaleSet { preferences_id, locale, updated_at }`
+- `UserUiStateUpdated { preferences_id, ui_state, updated_at }`
+
+**Invariants:**
+- One UserPreferences per User (enforced by aggregate ID pattern)
+- Theme must be valid enum variant (Light, Dark, System)
+- Locale must be valid BCP 47 language tag
+
+**Decider pattern alignment:**
+- `decide`: Pure function `(Command, State) -> Result<Vec<Event>, Error>`
+- `evolve`: Pure function `(State, Event) -> State`
+- `initial_state`: Default preferences (theme=System, locale=en-US, ui_state=None)
+- No async in aggregate logic; side effects at axum/Zenoh boundaries only
+
+### WorkspacePreferences aggregate
+
+Workspace-scoped settings that belong to a specific workspace.
+These settings apply to all users within the workspace context.
+
+**Aggregate ID pattern**: `workspace_{workspace_id}/preferences`
+
+**Properties:**
+- `preferences_id`: Unique identifier (UUID)
+- `workspace_id`: Reference to containing workspace
+- `default_catalog`: Optional CatalogName for new queries in this workspace
+- `layout_defaults`: Optional JSON blob for workspace-wide layout settings
+- `created_at`: Timestamp of initialization
+- `updated_at`: Timestamp of last modification
+
+**Commands:**
+- `InitializeWorkspacePreferences`: Create preferences for new workspace (idempotent)
+- `SetWorkspaceDefaultCatalog`: Set default catalog for new queries
+- `ClearWorkspaceDefaultCatalog`: Remove default catalog (queries use global default)
+- `UpdateWorkspaceLayoutDefaults`: Update workspace-wide layout settings
+
+**Events:**
+- `WorkspacePreferencesInitialized { preferences_id, workspace_id, created_at }`
+- `WorkspaceDefaultCatalogSet { preferences_id, catalog_name, updated_at }`
+- `WorkspaceDefaultCatalogCleared { preferences_id, updated_at }`
+- `WorkspaceLayoutDefaultsUpdated { preferences_id, layout_defaults, updated_at }`
+
+**Invariants:**
+- One WorkspacePreferences per Workspace (enforced by aggregate ID pattern)
+- `default_catalog` must reference a valid catalog if present (validated at command handling, not in aggregate)
+
+**Decider pattern alignment:**
+- `decide`: Pure function `(Command, State) -> Result<Vec<Event>, Error>`
+- `evolve`: Pure function `(State, Event) -> State`
+- `initial_state`: Empty preferences (default_catalog=None, layout_defaults=None)
+- No async in aggregate logic; side effects at axum/Zenoh boundaries only
+
+**Relationship to UserPreferences:**
+- UserPreferences: Settings that follow the user (theme, locale)
+- WorkspacePreferences: Settings that belong to the workspace (default catalog, layout defaults)
+- A user working in a workspace sees both their personal preferences and the workspace preferences
+
 ## See also
 
 - `design-principles.md` - Guiding principles and effect boundaries
