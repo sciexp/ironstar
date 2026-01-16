@@ -64,9 +64,20 @@ Workspace events typically interest the following consumers.
 
 *Backup processes* trigger incremental backup on workspace changes.
 
+## Workspace-scoped filtering
+
+Workspace events include workspace identifiers enabling workspace-specific subscriptions.
+For per-workspace event delivery, use workspace-scoped key expressions.
+
+`events/workspace/{workspace_id}/**` filters to all events within a specific workspace.
+
+`events/workspace/{workspace_id}/dashboard/**` filters to dashboard events within a specific workspace.
+
+`events/workspace/{workspace_id}/query/**` filters to saved query events within a specific workspace.
+
 ## User-scoped filtering
 
-Workspace events include user identifiers enabling user-specific subscriptions.
-For per-session event delivery, combine with session-scoped key expressions.
+User preference events are user-scoped rather than workspace-scoped.
+For per-user event delivery, combine with user-scoped key expressions.
 
-`events/workspace/{user_id}/dashboard/**` filters to a specific user's dashboard events.
+`events/workspace/preferences/{user_id}/**` filters to a specific user's preference events.
