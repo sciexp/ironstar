@@ -6,8 +6,16 @@ summary: |
   Manages user-scoped settings (theme, locale, UI state) that apply globally across all workspaces.
 owners:
   - engineering
-sends: []
-receives: []
+sends:
+  - PreferencesInitialized
+  - ThemeSet
+  - LocaleSet
+  - UiStateUpdated
+receives:
+  - InitializePreferences
+  - SetTheme
+  - SetLocale
+  - UpdateUiState
 ---
 
 ## Responsibilities
