@@ -1,0 +1,27 @@
+---
+id: TabRemoved
+name: Tab Removed
+version: 0.0.1
+summary: |
+  Recorded when a Data Analyst removes a tab from a dashboard.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This event is emitted when a user removes a tab from a dashboard.
+Any charts assigned to the removed tab are also removed from the dashboard.
+
+Event payload includes `workspaceId` identifying the containing workspace.
+
+## Business Rules
+
+- Removing a tab cascades to remove all charts assigned to that tab
+- The tab must exist in the dashboard
+- This operation cannot be undone (charts must be re-added manually)
+
+## Given-When-Then
+
+Given a dashboard with one or more tabs, When the Data Analyst removes a tab, Then Tab Removed is recorded and all charts on that tab are removed.
