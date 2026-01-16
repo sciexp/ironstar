@@ -6,8 +6,16 @@ summary: |
   Manages workspace-scoped settings: default catalog selection and layout defaults for new dashboards.
 owners:
   - engineering
-sends: []
-receives: []
+sends:
+  - WorkspacePreferencesInitialized
+  - WorkspaceDefaultCatalogSet
+  - WorkspaceDefaultCatalogCleared
+  - LayoutDefaultsUpdated
+receives:
+  - InitializeWorkspacePreferences
+  - SetWorkspaceDefaultCatalog
+  - ClearWorkspaceDefaultCatalog
+  - UpdateLayoutDefaults
 ---
 
 ## Responsibilities
