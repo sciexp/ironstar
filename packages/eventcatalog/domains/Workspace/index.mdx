@@ -3,7 +3,7 @@ id: Workspace
 name: Workspace
 version: 0.0.1
 summary: |
-  Supporting domain for persistent user workspace configuration. Manages dashboards, saved queries, and user preferences.
+  Supporting domain for persistent workspace configuration. Manages workspaces containing dashboards, saved queries, and workspace preferences, plus user-scoped preferences.
 owners:
   - engineering
 services:
@@ -11,12 +11,18 @@ services:
     version: 0.0.1
   - id: SavedQueryService
     version: 0.0.1
+  - id: WorkspacePreferencesService
+    version: 0.0.1
   - id: UserPreferencesService
     version: 0.0.1
 entities:
+  - id: Workspace
+    version: 0.0.1
   - id: Dashboard
     version: 0.0.1
   - id: SavedQuery
+    version: 0.0.1
+  - id: WorkspacePreferences
     version: 0.0.1
   - id: UserPreferences
     version: 0.0.1
@@ -38,17 +44,30 @@ entities:
 
 ## Overview
 
-The Workspace bounded context persists user-specific configurations that span sessions: dashboard layouts, reusable queries, and UI preferences.
+The Workspace bounded context provides a two-tier configuration hierarchy: Workspace aggregates serve as containers for dashboards, saved queries, and workspace-scoped preferences, while UserPreferences stores user-scoped settings that apply across all workspaces.
 
 ## Strategic Classification
 
-**Supporting Domain**: Enhances user experience by providing persistent workspace state.
+**Supporting Domain**: Enhances user experience by providing persistent workspace and user state.
 
 ## Key Aggregates
 
-- **Dashboard**: Layout configuration with chart placements and tabs
-- **SavedQuery**: Named, reusable SQL queries with dataset references
-- **UserPreferences**: Theme, default catalog, and UI state
+- **Workspace**: Primary aggregate root containing dashboards, queries, and workspace preferences
+- **Dashboard**: Layout configuration with chart placements and tabs (contained by Workspace)
+- **SavedQuery**: Named, reusable SQL queries with dataset references (contained by Workspace)
+- **WorkspacePreferences**: Workspace-scoped settings like default catalog and layout defaults
+- **UserPreferences**: User-scoped settings (theme, locale, UI state) applied across workspaces
+
+## Containment Hierarchy
+
+```
+Workspace (aggregate root)
+├── Dashboard (child aggregate)
+├── SavedQuery (child aggregate)
+└── WorkspacePreferences (child aggregate)
+
+UserPreferences (separate aggregate, user-scoped)
+```
 
 ## Integration Points
 
