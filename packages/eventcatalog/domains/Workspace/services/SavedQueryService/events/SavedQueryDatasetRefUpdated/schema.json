@@ -12,14 +12,34 @@
 			"description": "Saved query being updated"
 		},
 		"previousDatasetRef": {
-			"type": "string",
-			"format": "uri",
-			"description": "Previous dataset URI"
+			"type": "object",
+			"description": "Previous dataset reference decomposed into catalog and dataset components",
+			"required": ["catalogUri", "datasetName"],
+			"properties": {
+				"catalogUri": {
+					"type": "string",
+					"description": "Catalog URI identifier (e.g., 'ducklake:hf://datasets/sciexp')"
+				},
+				"datasetName": {
+					"type": "string",
+					"description": "Dataset name within the catalog (e.g., 'fixtures')"
+				}
+			}
 		},
 		"newDatasetRef": {
-			"type": "string",
-			"format": "uri",
-			"description": "New dataset URI"
+			"type": "object",
+			"description": "New dataset reference decomposed into catalog and dataset components",
+			"required": ["catalogUri", "datasetName"],
+			"properties": {
+				"catalogUri": {
+					"type": "string",
+					"description": "Catalog URI identifier (e.g., 'ducklake:hf://datasets/sciexp')"
+				},
+				"datasetName": {
+					"type": "string",
+					"description": "Dataset name within the catalog (e.g., 'fixtures')"
+				}
+			}
 		},
 		"updatedAt": {
 			"type": "string",

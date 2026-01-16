@@ -32,9 +32,19 @@
 			"description": "The SQL query text"
 		},
 		"datasetRef": {
-			"type": "string",
-			"format": "uri",
-			"description": "URI reference to the target dataset (hf://, s3://, etc.)"
+			"type": "object",
+			"description": "Reference to the target dataset decomposed into catalog and dataset components",
+			"required": ["catalogUri", "datasetName"],
+			"properties": {
+				"catalogUri": {
+					"type": "string",
+					"description": "Catalog URI identifier (e.g., 'ducklake:hf://datasets/sciexp')"
+				},
+				"datasetName": {
+					"type": "string",
+					"description": "Dataset name within the catalog (e.g., 'fixtures')"
+				}
+			}
 		},
 		"createdAt": {
 			"type": "string",
