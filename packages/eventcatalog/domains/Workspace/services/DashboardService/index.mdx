@@ -6,8 +6,20 @@ summary: |
   Manages dashboard layout configuration including chart placements, tabs, and grid positioning.
 owners:
   - engineering
-sends: []
-receives: []
+sends:
+  - DashboardCreated
+  - DashboardRenamed
+  - TabAdded
+  - TabRemoved
+  - ChartPlaced
+  - ChartRemoved
+receives:
+  - CreateDashboard
+  - RenameDashboard
+  - AddTab
+  - RemoveTab
+  - PlaceChart
+  - RemoveChart
 ---
 
 ## Responsibilities
