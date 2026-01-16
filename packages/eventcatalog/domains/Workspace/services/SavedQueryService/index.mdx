@@ -16,9 +16,14 @@ receives: []
 - Rename, update SQL, or change dataset reference
 - Delete saved queries
 
+## Workspace Context
+
+SavedQuery operations occur within a Workspace context.
+All saved queries belong to exactly one Workspace, referenced via `workspaceId`.
+
 ## Aggregate: SavedQuery
 
-One aggregate instance per saved query (keyed by user_id/query_name).
+One aggregate instance per saved query (keyed by workspace_id/user_id/query_name).
 
 ### State Machine
 
@@ -30,6 +35,7 @@ NoQuery → QueryExists(id, name, sql, datasetRef)
 ### Key Value Objects
 
 - **SavedQueryId**: Unique query identifier
+- **WorkspaceId**: Reference to containing Workspace
 - **DatasetRef**: URI reference to dataset (hf://, s3://, etc.)
 
 ### Invariants
