@@ -14,6 +14,11 @@ properties:
     required: true
     format: uuid
     summary: Unique dashboard identifier
+  - name: workspaceId
+    type: reference
+    required: true
+    referenceTo: Workspace
+    summary: Reference to the Workspace this dashboard belongs to
   - name: title
     type: string
     required: true
@@ -66,6 +71,7 @@ The Dashboard aggregate follows the fmodel-rust Decider pattern.
 
 ## Relationships
 
+- **Workspace**: Dashboard belongs to exactly one Workspace (many-to-one)
 - **User** (Session): Dashboard has single owner (many-to-one)
 - **SavedQuery**: Charts reference SavedQuery for data source
 - **DashboardService**: Dashboard is managed by DashboardService
@@ -95,6 +101,7 @@ The `layoutJson` field encodes a hierarchical structure:
 
 ## Invariants
 
+- Dashboard must belong to exactly one Workspace
 - Dashboard must have at least one tab after creation
 - Chart positions must not overlap within a tab
 - Only the owner can modify the dashboard
