@@ -1,0 +1,148 @@
+---
+id: WorkspacePreferences
+name: Workspace Preferences
+version: 0.0.1
+summary: |
+  Aggregate managing workspace-scoped settings including default catalog and layout defaults.
+owners:
+  - engineering
+aggregateRoot: true
+identifier: id
+properties:
+  - name: id
+    type: string
+    required: true
+    format: uuid
+    summary: Unique preferences identifier
+  - name: workspaceId
+    type: reference
+    required: true
+    referenceTo: Workspace
+    summary: Reference to the workspace these preferences belong to
+  - name: defaultCatalogId
+    type: reference
+    required: false
+    referenceTo: Catalog
+    summary: Optional default catalog selection for new queries in this workspace
+  - name: layoutDefaultsJson
+    type: string
+    required: true
+    summary: JSON blob encoding default layout settings for new dashboards
+---
+
+## Overview
+
+The WorkspacePreferences aggregate manages settings that apply to a specific workspace.
+These are distinct from UserPreferences, which apply to a user across all workspaces.
+
+## Distinction from UserPreferences
+
+| Aspect | WorkspacePreferences | UserPreferences |
+|--------|---------------------|-----------------|
+| Scope | Single workspace | All workspaces |
+| Examples | Default catalog, layout defaults | Theme, locale, UI state |
+| Lifecycle | Created with workspace | Created on first login |
+| Visibility | Shared with workspace members | Private to user |
+
+## Decider Pattern
+
+The WorkspacePreferences aggregate follows the fmodel-rust Decider pattern.
+
+**Commands handled:**
+- `InitializeWorkspacePreferences`: Creates default preferences for a new workspace
+- `SetDefaultCatalog`: Sets the default catalog for new queries
+- `ClearDefaultCatalog`: Removes the default catalog selection
+- `UpdateLayoutDefaults`: Persists default layout settings for new dashboards
+
+**Events emitted:**
+- `WorkspacePreferencesInitialized`: Default preferences created
+- `WorkspacePreferencesDefaultCatalogSet`: Default catalog selected
+- `WorkspacePreferencesDefaultCatalogCleared`: Default catalog removed
+- `WorkspacePreferencesLayoutDefaultsUpdated`: Layout defaults modified
+
+## Relationships
+
+- **Workspace**: One-to-one relationship (child of Workspace)
+- **Catalog** (Analytics): Optional reference to default catalog
+- **WorkspacePreferencesService**: Managed by WorkspacePreferencesService
+
+## Layout Defaults Schema
+
+The `layoutDefaultsJson` field provides defaults for new dashboards:
+
+```json
+{
+  "gridColumns": 12,
+  "defaultChartHeight": 4,
+  "defaultChartWidth": 6,
+  "autoCreateOverviewTab": true
+}
+```
+
+## Invariants
+
+- Each workspace has exactly one WorkspacePreferences aggregate
+- WorkspacePreferences is created when the workspace is created
+- Default catalog must reference an existing, accessible Catalog
+
+## fmodel-rust Implementation
+
+This aggregate implements the Decider pattern from fmodel-rust.
+
+### decide
+
+```rust
+fn decide(cmd: WorkspacePreferencesCommand, state: &WorkspacePreferencesState) -> Result<Vec<WorkspacePreferencesEvent>, String>
+```
+
+**Command handling logic:**
+
+- **InitializeWorkspacePreferences(workspace_id)** when `preferencesId` is `None`:
+  - Validates: No preconditions
+  - Produces: `WorkspacePreferencesInitialized(preferences_id, workspace_id, timestamp)`
+  - Error if already initialized: "Workspace preferences already initialized"
+
+- **SetDefaultCatalog(catalog_id)** when preferences exist:
+  - Validates: Preferences must exist
+  - Produces: `DefaultCatalogSet(catalog_id, timestamp)`
+  - Error if not initialized: "Workspace preferences not initialized"
+
+- **ClearDefaultCatalog** when preferences exist:
+  - Validates: Preferences must exist
+  - Produces: `DefaultCatalogCleared(timestamp)`
+
+- **UpdateLayoutDefaults(json_blob)** when preferences exist:
+  - Validates: Preferences must exist (JSON validation at boundary)
+  - Produces: `LayoutDefaultsUpdated(json_blob, timestamp)`
+
+### evolve
+
+```rust
+fn evolve(state: WorkspacePreferencesState, event: &WorkspacePreferencesEvent) -> WorkspacePreferencesState
+```
+
+**Event application logic:**
+
+- **WorkspacePreferencesInitialized(preferences_id, workspace_id, _)**:
+  - Updates: `preferencesId` -> `Some(preferences_id)`, `workspaceId` -> `workspace_id`
+
+- **DefaultCatalogSet(catalog_id, _)**:
+  - Updates: `defaultCatalogId` -> `Some(catalog_id)`
+
+- **DefaultCatalogCleared(_)**:
+  - Updates: `defaultCatalogId` -> `None`
+
+- **LayoutDefaultsUpdated(json_blob, _)**:
+  - Updates: `layoutDefaultsJson` -> provided JSON string
+
+### initial_state
+
+```rust
+fn initial_state() -> WorkspacePreferencesState
+```
+
+Returns `WorkspacePreferencesState` with:
+- `preferencesId`: `None`
+- `workspaceId`: `None`
+- `defaultCatalogId`: `None`
+- `layoutDefaultsJson`: `"{}"` (empty JSON object)
