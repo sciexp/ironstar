@@ -22,41 +22,23 @@ import Core.Decider
 import Core.View
 import Core.Event
 import Core.Effect
+import SharedKernel.UserId
 import Data.List
 
 %default total
 
+-- Re-export Shared Kernel types for backward compatibility
+public export
+OAuthProvider : Type
+OAuthProvider = SharedKernel.UserId.OAuthProvider
+
+public export
+UserId : Type
+UserId = SharedKernel.UserId.UserId
+
 ------------------------------------------------------------------------
 -- Value Objects
 ------------------------------------------------------------------------
-
-||| OAuth provider enumeration
-||| GitHub is primary provider, Google planned as future extension
-public export
-data OAuthProvider = GitHub | Google
-
-public export
-Eq OAuthProvider where
-  GitHub == GitHub = True
-  Google == Google = True
-  _ == _ = False
-
-public export
-Show OAuthProvider where
-  show GitHub = "GitHub"
-  show Google = "Google"
-
-||| User identifier combining OAuth provider and external ID
-||| Shared Kernel: exported to Workspace for user identity
-public export
-record UserId where
-  constructor MkUserId
-  provider : OAuthProvider
-  externalId : String
-
-public export
-Eq UserId where
-  (MkUserId p1 id1) == (MkUserId p2 id2) = p1 == p2 && id1 == id2
 
 ||| Expiration timestamp for session TTL enforcement
 public export
