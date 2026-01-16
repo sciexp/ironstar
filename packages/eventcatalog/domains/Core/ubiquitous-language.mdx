@@ -48,4 +48,68 @@ dictionary:
       Standard structure surrounding domain events with event time, recorded time, aggregate identifiers, and sequence numbers.
       Enables temporal queries, point-in-time projections, and SSE replay semantics.
     icon: Mail
+
+  - id: sum-type
+    name: Sum Type
+    summary: Algebraic data type representing one of several mutually exclusive variants.
+    description: |
+      Tagged union where a value is exactly one variant at a time (e.g., QueryState = Idle | Running | Completed | Failed).
+      Makes illegal states unrepresentable by construction.
+      In Rust, implemented as enums with pattern matching for exhaustive handling.
+    icon: GitBranch
+
+  - id: product-type
+    name: Product Type
+    summary: Algebraic data type combining multiple fields into a single composite value.
+    description: |
+      Record or tuple where all fields are present simultaneously (e.g., GridPosition = { row, col }).
+      The cardinality is the product of constituent type cardinalities.
+      In Rust, implemented as structs.
+    icon: Combine
+
+  - id: decider
+    name: Decider
+    summary: Pure function triple (decide, evolve, initial_state) for aggregate behavior.
+    description: |
+      The fmodel-rust pattern encoding aggregate logic as pure functions.
+      decide: (State, Command) -> Vec<Event> validates commands and emits events.
+      evolve: (State, Event) -> State applies events to produce new state.
+      initial_state: () -> State provides the starting aggregate state.
+    icon: Workflow
+
+  - id: signal
+    name: Signal
+    summary: Time-varying value in functional reactive programming.
+    description: |
+      Datastar signals represent reactive state that propagates changes automatically.
+      Server pushes signal updates via SSE; browser reactivity handles DOM updates.
+      Signals are the FRP primitive connecting event-sourced state to UI.
+    icon: Radio
+
+  - id: aggregate
+    name: Aggregate
+    summary: Consistency boundary grouping related entities and enforcing invariants.
+    description: |
+      DDD tactical pattern where the aggregate root controls all access to contained entities.
+      All state changes occur through the root via command handling.
+      In ironstar, aggregates are modeled as Deciders with sum-type state machines.
+    icon: Package
+
+  - id: projection
+    name: Projection
+    summary: Read model derived exclusively from the event stream.
+    description: |
+      CQRS pattern where query-optimized views are built by replaying events.
+      Projections are disposable and can be rebuilt at any time (Hoffman's Law 5).
+      Examples include ActiveSessionView, CatalogMetadataView, and analytics caches.
+    icon: Monitor
+
+  - id: event-sourcing
+    name: Event Sourcing
+    summary: Persistence pattern storing state changes as an immutable sequence of events.
+    description: |
+      Instead of storing current state, the system stores the complete history of domain events.
+      Current state is reconstructed by replaying events through the evolve function.
+      Enables temporal queries, audit trails, and event-driven projections.
+    icon: History
 ---
