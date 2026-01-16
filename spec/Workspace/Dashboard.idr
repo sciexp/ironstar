@@ -164,6 +164,7 @@ data DashboardCommand
   | AddChart ChartPlacement
   | RemoveChart ChartId
   | AddTab TabName  -- tab name
+  | RemoveTab TabId
   | MoveChartToTab ChartId TabId
   | RenameDashboard DashboardName
 
@@ -179,6 +180,7 @@ data DashboardEvent
   | ChartAdded ChartPlacement Timestamp
   | ChartRemoved ChartId Timestamp
   | TabAdded TabInfo Timestamp
+  | TabRemoved TabId Timestamp
   | ChartMovedToTab ChartId TabId Timestamp
   | DashboardRenamed DashboardName Timestamp
 
@@ -270,15 +272,22 @@ dashboardDecider = MkDecider
       (AddTab _, NoDashboard) =>
         Left "No dashboard"
 
+      (RemoveTab tabId, DashboardExists _ _ _ _ tabs) =>
+        case find (\t => t.tabId == tabId) tabs of
+          Nothing => Left "Tab not found"
+          Just _ => Right [TabRemoved tabId ?now5]
+      (RemoveTab _, NoDashboard) =>
+        Left "No dashboard"
+
       (MoveChartToTab chartId tabId, DashboardExists _ _ _ _ _) =>
         -- Full validation would check: chart exists, tab exists
         -- Keeping simple for now - boundary can enforce stricter rules
-        Right [ChartMovedToTab chartId tabId ?now5]
+        Right [ChartMovedToTab chartId tabId ?now6]
       (MoveChartToTab _ _, NoDashboard) =>
         Left "No dashboard"
 
       (RenameDashboard newName, DashboardExists _ _ _ _ _) =>
-        Right [DashboardRenamed newName ?now6]
+        Right [DashboardRenamed newName ?now7]
       (RenameDashboard _, NoDashboard) =>
         Left "No dashboard"
 
@@ -304,6 +313,15 @@ dashboardDecider = MkDecider
           NoDashboard => NoDashboard
           DashboardExists did wsId name placements tabs =>
             DashboardExists did wsId name placements (tabInfo :: tabs)
+
+      TabRemoved tabId _ =>
+        case state of
+          NoDashboard => NoDashboard
+          DashboardExists did wsId name placements tabs =>
+            -- Remove tab and unassign charts from the removed tab
+            DashboardExists did wsId name
+              (filter (\p => p.tabId /= Just tabId) placements)
+              (filter (\t => t.tabId /= tabId) tabs)
 
       ChartMovedToTab chartId tabId _ =>
         case state of
@@ -394,6 +412,11 @@ dashboardLayoutView = MkView
 
       TabAdded tabInfo _ =>
         { tabs := tabInfo :: state.tabs } state
+
+      TabRemoved tabId _ =>
+        { placements := filter (\p => p.tabId /= Just tabId) state.placements
+        , tabs := filter (\t => t.tabId /= tabId) state.tabs
+        } state
 
       ChartMovedToTab chartId tabId _ =>
         { placements := map (updateTabIfMatch chartId tabId) state.placements } state
