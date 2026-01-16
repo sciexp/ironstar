@@ -82,6 +82,9 @@ steps:
 This flow documents the dashboard management operations for organizing and visualizing query results.
 Dashboards provide a persistent workspace for charts and visualizations derived from saved queries.
 
+All dashboard operations occur within the context of a Workspace container.
+Each dashboard belongs to exactly one workspace, and all dashboard events include a `workspaceId` field enabling workspace-scoped subscriptions and filtering.
+
 ## Dashboard creation
 
 Users create dashboards to organize related visualizations.

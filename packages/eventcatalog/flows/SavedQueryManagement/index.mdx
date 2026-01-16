@@ -75,6 +75,9 @@ steps:
 This flow documents the saved query management operations for persisting and maintaining reusable queries.
 Saved queries enable analysts to build a library of useful analytical queries.
 
+All saved query operations occur within the context of a Workspace container.
+Each saved query belongs to exactly one workspace, and all query events include a `workspaceId` field enabling workspace-scoped subscriptions and filtering.
+
 ## Query creation
 
 Users save queries after successful execution to reuse them later.
