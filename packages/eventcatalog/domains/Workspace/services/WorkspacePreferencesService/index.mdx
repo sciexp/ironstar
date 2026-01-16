@@ -1,0 +1,53 @@
+---
+id: WorkspacePreferencesService
+name: Workspace Preferences Service
+version: 0.0.1
+summary: |
+  Manages workspace-scoped settings: default catalog selection and layout defaults for new dashboards.
+owners:
+  - engineering
+sends: []
+receives: []
+---
+
+## Responsibilities
+
+- Initialize preferences when workspace is created
+- Configure default catalog for queries in workspace
+- Set layout defaults for new dashboard creation
+- Clear default catalog selection
+
+## Aggregate: WorkspacePreferences
+
+One aggregate per workspace (keyed by workspace_id).
+
+### Commands
+
+| Command | Description |
+|---------|-------------|
+| InitializeWorkspacePreferences | Create default preferences for a new workspace |
+| SetDefaultCatalog | Set the default catalog for new queries |
+| ClearDefaultCatalog | Remove the default catalog selection |
+| UpdateLayoutDefaults | Persist default layout settings for new dashboards |
+
+### Key Value Objects
+
+- **PreferencesId**: Unique identifier for the preferences record
+- **WorkspaceId**: Reference to the parent workspace
+- **CatalogId**: Optional reference to default catalog
+- **LayoutDefaultsJson**: JSON blob with dashboard creation defaults
+
+### Invariants
+
+- Layout defaults must be valid JSON (enforced at boundary)
+- Default catalog must be accessible to workspace members (runtime validation)
+- Exactly one preferences record per workspace
+
+## Distinction from UserPreferencesService
+
+WorkspacePreferencesService manages settings shared by all workspace members, while UserPreferencesService manages personal settings that follow the individual user across workspaces.
+
+| Service | Scope | Example Settings |
+|---------|-------|------------------|
+| WorkspacePreferencesService | Workspace members | Default catalog, layout defaults |
+| UserPreferencesService | Individual user | Theme, locale, UI state |
