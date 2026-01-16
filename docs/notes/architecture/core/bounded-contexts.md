@@ -602,6 +602,29 @@ These settings apply to all users within the workspace context.
 - WorkspacePreferences: Settings that belong to the workspace (default catalog, layout defaults)
 - A user working in a workspace sees both their personal preferences and the workspace preferences
 
+## Aggregate ID conventions
+
+Aggregate IDs follow hierarchical patterns that support event store identification, Zenoh key expression routing, and Idris2 spec AggregateId construction.
+
+**Workspace context aggregate IDs:**
+- Workspace: `workspace_{workspace_id}`
+- Dashboard: `workspace_{workspace_id}/dashboard_{dashboard_name}`
+- SavedQuery: `workspace_{workspace_id}/query_{query_name}`
+- WorkspacePreferences: `workspace_{workspace_id}/preferences`
+
+**Session context aggregate IDs:**
+- Session: `session_{session_id}`
+- UserPreferences: `user_{user_id}/preferences`
+
+**Analytics context aggregate IDs:**
+- Catalog: `catalog_{catalog_id}`
+- QuerySession: `query_session_{query_session_id}`
+
+These patterns enable:
+1. Event store aggregate identification via `aggregate_type` and `aggregate_id` columns
+2. Zenoh key expression routing with hierarchical filtering (e.g., `events/Workspace/workspace_123/**`)
+3. Idris2 spec AggregateId construction with type-safe parsing
+
 ## See also
 
 - `design-principles.md` - Guiding principles and effect boundaries
