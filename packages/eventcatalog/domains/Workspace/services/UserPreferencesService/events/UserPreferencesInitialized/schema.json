@@ -4,31 +4,11 @@
 	"type": "object",
 	"title": "UserPreferencesInitialized",
 	"description": "Recorded when a new user without stored preferences initializes their preferences.",
-	"required": ["preferencesId", "userId", "theme", "initializedAt"],
+	"required": ["preferencesId", "initializedAt"],
 	"properties": {
 		"preferencesId": {
 			"type": "string",
-			"format": "uuid",
-			"description": "Unique identifier for the preferences (typically matches userId)"
-		},
-		"userId": {
-			"type": "string",
-			"format": "uuid",
-			"description": "User ID owning these preferences"
-		},
-		"theme": {
-			"type": "string",
-			"enum": ["Light", "Dark", "System"],
-			"description": "Initial theme preference"
-		},
-		"defaultCatalogUri": {
-			"type": "string",
-			"format": "uri",
-			"description": "Initial default catalog, if set"
-		},
-		"uiStateJson": {
-			"type": "string",
-			"description": "Initial UI state as JSON blob"
+			"description": "Unique identifier for the preferences (typically matches user ID)"
 		},
 		"initializedAt": {
 			"type": "string",
