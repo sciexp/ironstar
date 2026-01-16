@@ -20,6 +20,58 @@ import Workspace.WorkspaceAggregate  -- WorkspaceId
 %default total
 
 ------------------------------------------------------------------------
+-- Newtypes (Domain Vocabulary)
+------------------------------------------------------------------------
+
+||| Query name - human-readable identifier
+public export
+data QueryName = MkQueryName String
+
+export
+Show QueryName where
+  show (MkQueryName n) = n
+
+public export
+Eq QueryName where
+  (MkQueryName x) == (MkQueryName y) = x == y
+
+||| SQL query text
+public export
+data SqlQuery = MkSqlQuery String
+
+export
+Show SqlQuery where
+  show (MkSqlQuery s) = s
+
+public export
+Eq SqlQuery where
+  (MkSqlQuery x) == (MkSqlQuery y) = x == y
+
+||| Catalog URI reference
+public export
+data CatalogUri = MkCatalogUri String
+
+export
+Show CatalogUri where
+  show (MkCatalogUri u) = u
+
+public export
+Eq CatalogUri where
+  (MkCatalogUri x) == (MkCatalogUri y) = x == y
+
+||| Dataset name within a catalog
+public export
+data DatasetName = MkDatasetName String
+
+export
+Show DatasetName where
+  show (MkDatasetName n) = n
+
+public export
+Eq DatasetName where
+  (MkDatasetName x) == (MkDatasetName y) = x == y
+
+------------------------------------------------------------------------
 -- Value Objects
 ------------------------------------------------------------------------
 
@@ -45,8 +97,8 @@ Eq SavedQueryId where
 public export
 record DatasetRef where
   constructor MkDatasetRef
-  catalogUri : String
-  datasetName : String
+  catalogUri : CatalogUri
+  datasetName : DatasetName
 
 public export
 Eq DatasetRef where
@@ -59,10 +111,10 @@ Eq DatasetRef where
 ||| Commands for saved query management
 public export
 data SavedQueryCommand
-  = SaveQuery WorkspaceId String String DatasetRef  -- workspaceId, name, sql, datasetRef
+  = SaveQuery WorkspaceId QueryName SqlQuery DatasetRef  -- workspaceId, name, sql, datasetRef
   | DeleteQuery
-  | RenameQuery String
-  | UpdateQuerySql String
+  | RenameQuery QueryName
+  | UpdateQuerySql SqlQuery
   | UpdateDatasetRef DatasetRef
 
 ------------------------------------------------------------------------
@@ -73,11 +125,11 @@ data SavedQueryCommand
 ||| Law 1 (Hoffman): Events are past-tense and immutable
 public export
 data SavedQueryEvent
-  = QuerySaved SavedQueryId WorkspaceId String String DatasetRef Timestamp
+  = QuerySaved SavedQueryId WorkspaceId QueryName SqlQuery DatasetRef Timestamp
     -- id, workspaceId, name, sql, datasetRef, timestamp
   | QueryDeleted Timestamp
-  | QueryRenamed String Timestamp
-  | QuerySqlUpdated String Timestamp
+  | QueryRenamed QueryName Timestamp
+  | QuerySqlUpdated SqlQuery Timestamp
   | DatasetRefUpdated DatasetRef Timestamp
 
 ------------------------------------------------------------------------
@@ -89,7 +141,7 @@ data SavedQueryEvent
 public export
 data SavedQueryState
   = NoQuery
-  | QueryExists SavedQueryId WorkspaceId String String DatasetRef
+  | QueryExists SavedQueryId WorkspaceId QueryName SqlQuery DatasetRef
     -- id, workspaceId, name, sql, datasetRef
 
 ||| Initial state: no query saved
@@ -112,7 +164,7 @@ queryWorkspaceId NoQuery = Nothing
 queryWorkspaceId (QueryExists _ wsId _ _ _) = Just wsId
 
 ||| Extract query name if query exists
-queryName : SavedQueryState -> Maybe String
+queryName : SavedQueryState -> Maybe QueryName
 queryName NoQuery = Nothing
 queryName (QueryExists _ _ name _ _) = Just name
 
@@ -141,9 +193,9 @@ savedQueryDecider : Decider SavedQueryCommand SavedQueryState SavedQueryEvent St
 savedQueryDecider = MkDecider
   { decide = \cmd, state => case (cmd, state) of
       (SaveQuery wsId name sql datasetRef, NoQuery) =>
-        if name == "" then
+        if name == MkQueryName "" then
           Left "Query name cannot be empty"
-        else if sql == "" then
+        else if sql == MkSqlQuery "" then
           Left "Query SQL cannot be empty"
         else
           -- Generate new query ID at boundary
@@ -157,7 +209,7 @@ savedQueryDecider = MkDecider
         Left "No query to delete"
 
       (RenameQuery newName, QueryExists _ _ _ _ _) =>
-        if newName == "" then
+        if newName == MkQueryName "" then
           Left "Query name cannot be empty"
         else
           Right [QueryRenamed newName ?now3]
@@ -165,7 +217,7 @@ savedQueryDecider = MkDecider
         Left "No query to rename"
 
       (UpdateQuerySql newSql, QueryExists _ _ _ _ _) =>
-        if newSql == "" then
+        if newSql == MkSqlQuery "" then
           Left "Query SQL cannot be empty"
         else
           Right [QuerySqlUpdated newSql ?now4]
