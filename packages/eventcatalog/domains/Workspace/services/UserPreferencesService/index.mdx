@@ -3,7 +3,7 @@ id: UserPreferencesService
 name: User Preferences Service
 version: 0.0.1
 summary: |
-  Manages user-specific UI settings: theme, default catalog, and arbitrary UI state.
+  Manages user-scoped settings (theme, locale, UI state) that apply globally across all workspaces.
 owners:
   - engineering
 sends: []
@@ -14,8 +14,10 @@ receives: []
 
 - Initialize preferences for new users
 - Set theme (Light, Dark, System)
-- Configure default catalog for queries
+- Set locale for internationalization
 - Store arbitrary UI state as JSON blob
+
+See WorkspacePreferencesService for workspace-scoped settings such as default catalog selection.
 
 ## Aggregate: UserPreferences
 
@@ -25,9 +27,9 @@ One aggregate per authenticated user (keyed by user_id).
 
 - **PreferencesId**: Typically matches UserId
 - **Theme**: Light | Dark | System (enum)
-- **CatalogName**: Default catalog for DuckDB queries
+- **Locale**: User's preferred locale string (e.g., en-US)
 
 ### Invariants
 
 - UI state must be valid JSON (enforced at boundary)
-- Default catalog must be valid (runtime validation by DuckDB)
+- Settings apply globally across all workspaces
