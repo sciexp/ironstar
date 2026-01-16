@@ -99,28 +99,117 @@ import public Workspace.UserPreferences as UP
 -- - Session.UserId imported for workspace ownership
 
 ------------------------------------------------------------------------
--- Composition examples
+-- Sum5 type for five-way composition
 ------------------------------------------------------------------------
 
-||| Example: Combined Workspace decider for all three aggregates
-|||
-||| This shows how to combine independent aggregates using Core.Decider.combine3.
-||| In practice, each aggregate is managed separately with distinct aggregate IDs,
-||| but composition enables unified command handling if needed.
-|||
-||| Type signature:
-||| workspaceDecider : Decider
-|||   (Sum3 DashboardCommand SavedQueryCommand PreferencesCommand)
-|||   (DashboardState, SavedQueryState, PreferencesState)
-|||   (Sum3 DashboardEvent SavedQueryEvent PreferencesEvent)
-|||   String
+||| Sum type for five alternatives (extends Sum3 from Core.Decider)
 public export
-workspaceDecider : Decider
-  (Sum3 DashboardCommand SavedQueryCommand PreferencesCommand)
-  (DashboardState, SavedQueryState, PreferencesState)
-  (Sum3 DashboardEvent SavedQueryEvent PreferencesEvent)
-  String
-workspaceDecider = combine3 dashboardDecider savedQueryDecider preferencesDecider
+data Sum5 : Type -> Type -> Type -> Type -> Type -> Type where
+  Sum5_1 : a -> Sum5 a b c d e
+  Sum5_2 : b -> Sum5 a b c d e
+  Sum5_3 : c -> Sum5 a b c d e
+  Sum5_4 : d -> Sum5 a b c d e
+  Sum5_5 : e -> Sum5 a b c d e
+
+||| Combine five independent Deciders into one.
+|||
+||| This enables multi-aggregate bounded contexts where each aggregate handles
+||| its own command/event types independently while sharing a unified interface.
+|||
+||| Type transformation:
+||| - Commands: `Sum5 c1 c2 c3 c4 c5` (route to appropriate decider)
+||| - States: `(s1, s2, s3, s4, s5)` (product of independent states)
+||| - Events: `Sum5 e1 e2 e3 e4 e5` (tagged union of event types)
+|||
+||| Key property: no interference between deciders (state isolation).
+||| The combined Decider preserves all laws of the component Deciders.
+||| Monoidal composition is associative: combine5 d1 d2 d3 d4 d5 is equivalent
+||| to nested applications of combine.
+public export
+combine5 : Decider c1 s1 e1 err
+        -> Decider c2 s2 e2 err
+        -> Decider c3 s3 e3 err
+        -> Decider c4 s4 e4 err
+        -> Decider c5 s5 e5 err
+        -> Decider (Sum5 c1 c2 c3 c4 c5) (s1, s2, s3, s4, s5) (Sum5 e1 e2 e3 e4 e5) err
+combine5 d1 d2 d3 d4 d5 = MkDecider
+  { decide = \cmd, (s1, s2, s3, s4, s5) => case cmd of
+      Sum5_1 c1 => map (map Sum5_1) (d1.decide c1 s1)
+      Sum5_2 c2 => map (map Sum5_2) (d2.decide c2 s2)
+      Sum5_3 c3 => map (map Sum5_3) (d3.decide c3 s3)
+      Sum5_4 c4 => map (map Sum5_4) (d4.decide c4 s4)
+      Sum5_5 c5 => map (map Sum5_5) (d5.decide c5 s5)
+  , evolve = \(s1, s2, s3, s4, s5), evt => case evt of
+      Sum5_1 e1 => (d1.evolve s1 e1, s2, s3, s4, s5)
+      Sum5_2 e2 => (s1, d2.evolve s2 e2, s3, s4, s5)
+      Sum5_3 e3 => (s1, s2, d3.evolve s3 e3, s4, s5)
+      Sum5_4 e4 => (s1, s2, s3, d4.evolve s4 e4, s5)
+      Sum5_5 e5 => (s1, s2, s3, s4, d5.evolve s5 e5)
+  , initialState = (d1.initialState, d2.initialState, d3.initialState, d4.initialState, d5.initialState)
+  }
+
+------------------------------------------------------------------------
+-- Combined Workspace context command/event/state types
+------------------------------------------------------------------------
+
+||| Combined command type for all Workspace aggregates
+public export
+WorkspaceContextCommand : Type
+WorkspaceContextCommand = Sum5
+  WA.WorkspaceCommand
+  WP.WorkspacePreferencesCommand
+  D.DashboardCommand
+  SQ.SavedQueryCommand
+  UP.PreferencesCommand
+
+||| Combined event type for all Workspace aggregates
+public export
+WorkspaceContextEvent : Type
+WorkspaceContextEvent = Sum5
+  WA.WorkspaceEvent
+  WP.WorkspacePreferencesEvent
+  D.DashboardEvent
+  SQ.SavedQueryEvent
+  UP.PreferencesEvent
+
+||| Combined state type for all Workspace aggregates
+public export
+WorkspaceContextState : Type
+WorkspaceContextState =
+  ( WA.WorkspaceState
+  , WP.WorkspacePreferencesState
+  , D.DashboardState
+  , SQ.SavedQueryState
+  , UP.PreferencesState
+  )
+
+------------------------------------------------------------------------
+-- Combined Workspace decider
+------------------------------------------------------------------------
+
+||| Combined Workspace decider for all five aggregates
+|||
+||| This composes all five aggregates in the Workspace bounded context:
+||| 1. WorkspaceAggregate: Workspace identity, ownership (UserId), visibility
+||| 2. WorkspacePreferences: Workspace-scoped settings (default catalog, layout defaults)
+||| 3. Dashboard: Layout configuration, tab organization, chart placements
+||| 4. SavedQuery: Named queries with parameters
+||| 5. UserPreferences: User-scoped settings (theme, locale) - follows user across workspaces
+|||
+||| In practice, each aggregate is typically managed separately with distinct aggregate IDs,
+||| but composition enables unified command handling and demonstrates that the bounded
+||| context forms a coherent algebraic structure.
+|||
+||| Monoidal composition preserves correctness: the combined Decider satisfies all laws
+||| (pure decide, total evolve, deterministic replay) when each component does.
+public export
+workspaceContextDecider : Decider WorkspaceContextCommand WorkspaceContextState WorkspaceContextEvent String
+workspaceContextDecider = combine5
+  WA.workspaceDecider
+  WP.workspacePreferencesDecider
+  D.dashboardDecider
+  SQ.savedQueryDecider
+  UP.preferencesDecider
 
 ------------------------------------------------------------------------
 -- Integration with Core patterns
