@@ -502,6 +502,75 @@ async fn add_todo(
 
 ---
 
+## Naming and scope conventions
+
+### ADR-007: Event naming convention
+
+**Status:** Accepted
+**Date:** 2026-01-16
+
+**Context:** Event names appear in multiple contexts: Idris2 spec modules, Rust implementation, EventCatalog documentation, and the event store. There was ambiguity about whether names should be globally unique (prefixed, e.g., `SavedQueryCreated`) or context-scoped (short, e.g., `QuerySaved`).
+
+**Decision:** Use context-scoped (short) names in the Idris2 spec. Module namespacing provides context. Prefixed names are acceptable in EventCatalog for integration documentation discoverability, but the spec is the source of truth.
+
+**Consequences:**
+- Spec uses domain language: `QuerySaved`, `ThemeSet`, `ChartAdded`
+- Rust implementation uses module paths: `saved_query::QuerySaved`
+- Event store uses qualified strings: `"workspace.saved_query.query_saved"`
+- EventCatalog may use prefixed names for discoverability but is not authoritative
+
+**Principles applied:** domain-modeling.md (types as domain vocabulary), bounded-context-design.md (terms have meaning within context boundaries)
+
+### ADR-008: TransferOwnership deferred
+
+**Status:** Accepted
+**Date:** 2026-01-16
+
+**Context:** EventCatalog documented a `TransferOwnership` command and `WorkspaceOwnershipTransferred` event for the Workspace aggregate, but the Idris2 spec did not include them.
+
+**Decision:** Defer ownership transfer to post-MVP. Remove from EventCatalog or mark as "planned/future".
+
+**Consequences:**
+- MVP workspaces have immutable ownership (system-owned or single-user)
+- Multi-user collaboration features deferred
+- Simplifies Phase 1 implementation
+
+**Principles applied:** Avoid over-engineering; focus on MVP scope
+
+### ADR-009: workspaceContextDecider composition implicit
+
+**Status:** Accepted
+**Date:** 2026-01-16
+
+**Context:** The `workspaceContextDecider` in `Workspace.idr` composes 5 aggregates via `combine5`. Question arose whether this needed a separate beads implementation issue.
+
+**Decision:** No separate issue needed. The composition is an implementation detail that emerges naturally when implementing the Workspace module.
+
+**Consequences:**
+- `combine5` wiring is internal to Workspace module implementation
+- Covered implicitly by ironstar-7a2.2 (Workspace aggregate)
+- No additional tracking overhead
+
+**Principles applied:** Avoid over-engineering; composition is not a separate deliverable
+
+### ADR-010: RemoveTab command
+
+**Status:** Accepted
+**Date:** 2026-01-16
+
+**Context:** The beads issue ironstar-7a2.4 mentioned `RemoveTab` but it was absent from the Idris2 spec and EventCatalog.
+
+**Decision:** Add `RemoveTab` command and `TabRemoved` event to spec. Tab lifecycle management (add/remove) is symmetric and expected functionality.
+
+**Consequences:**
+- Spec updated with RemoveTab command
+- EventCatalog updated with TabRemoved event
+- Beads issue description validated
+
+**Principles applied:** Spec is source of truth; symmetric operations (add/remove) should both exist
+
+---
+
 ## Related documentation
 
 ### Architecture decision documents
