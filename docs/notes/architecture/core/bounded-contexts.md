@@ -58,7 +58,8 @@ Ironstar has four bounded contexts with distinct responsibilities:
 **Aggregates:**
 - `Dashboard`: Layout configuration, tab organization, chart placements
 - `SavedQuery`: Named queries with parameters
-- `UserPreferences`: Theme, defaults, UI state
+- `UserPreferences`: User-scoped personal settings (theme, locale, UI state) that follow the user across all workspaces — see UserPreferences aggregate for details
+- `WorkspacePreferences`: Workspace-scoped settings (default catalog, layout defaults) that belong to a specific workspace
 
 **Concern**: User's persistent saved state across sessions — WHERE charts appear, WHICH queries are saved, HOW the UI is configured
 
