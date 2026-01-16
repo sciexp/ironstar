@@ -6,8 +6,24 @@ summary: |
   Handles OAuth authentication callbacks and session lifecycle management.
 owners:
   - engineering
-sends: []
-receives: []
+sends:
+  - id: SessionCreated
+    version: 0.0.1
+  - id: SessionRefreshed
+    version: 0.0.1
+  - id: SessionExpired
+    version: 0.0.1
+  - id: SessionInvalidated
+    version: 0.0.1
+receives:
+  - id: CreateSession
+    version: 0.0.1
+  - id: RefreshSession
+    version: 0.0.1
+  - id: ExpireSession
+    version: 0.0.1
+  - id: InvalidateSession
+    version: 0.0.1
 ---
 
 ## Responsibilities
