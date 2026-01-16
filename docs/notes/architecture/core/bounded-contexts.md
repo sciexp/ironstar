@@ -56,22 +56,27 @@ Ironstar has four bounded contexts with distinct responsibilities:
 **Strategic classification**: Supporting domain
 
 **Aggregates:**
-- `Dashboard`: Layout configuration, tab organization, chart placements
-- `SavedQuery`: Named queries with parameters
-- `UserPreferences`: User-scoped personal settings (theme, locale, UI state) that follow the user across all workspaces — see UserPreferences aggregate for details
-- `WorkspacePreferences`: Workspace-scoped settings (default catalog, layout defaults) that belong to a specific workspace
+- `Workspace` (aggregate root): Container for dashboards, saved queries, and workspace-scoped settings
+  - Properties: id (uuid), name, owner_id (nullable — null for system-seeded public workspaces), visibility (public|private, default public), created_at, updated_at
+  - `Dashboard` (child entity): Layout configuration, tab organization, chart placements
+  - `SavedQuery` (child entity): Named queries with parameters
+  - `WorkspacePreferences` (child entity): Workspace-scoped settings (default catalog, layout defaults)
+- `UserPreferences` (separate aggregate): User-scoped personal settings (theme, locale, UI state) that follow the user across all workspaces
 
 **Concern**: User's persistent saved state across sessions — WHERE charts appear, WHICH queries are saved, HOW the UI is configured
 
 **Invariants:**
+- Workspace name unique per owner (or globally for system workspaces where owner_id is null)
+- Dashboard/SavedQuery belong to exactly one Workspace
+- One WorkspacePreferences per Workspace
 - Layout validity (non-overlapping regions, valid grid positions)
 - Unique names within workspace scope (SavedQuery, Dashboard)
 - Chart placement references valid ChartDefinitions
 - Tab organization consistency
 
-**Ubiquitous language**: Dashboard, Layout, SavedQuery, UserPreferences, Tab, ChartPlacement, Grid
+**Ubiquitous language**: Workspace, Dashboard, Layout, SavedQuery, UserPreferences, WorkspacePreferences, visibility, Tab, ChartPlacement, Grid
 
-**Lifetime**: Persists across session boundaries — a user logs out (Session expires) but their Dashboard configuration and SavedQuery definitions remain intact for next login
+**Lifetime**: Persists across session boundaries — a user logs out (Session expires) but their Workspace configuration, Dashboard layouts, and SavedQuery definitions remain intact for next login
 
 **Relationship:**
 - Requires authenticated User (from Session)
@@ -80,7 +85,12 @@ Ironstar has four bounded contexts with distinct responsibilities:
 
 **Integration:**
 - Customer-Supplier with Analytics: Imports Chart value objects (ChartConfig, ChartType, ChartData) from Analytics.Chart to position charts on dashboards
-- Shared Kernel with Session: Requires authenticated `User` from Session; Workspace operations only valid within authenticated context
+- Shared Kernel with Session: UserId used to create/access workspaces; Workspace operations only valid within authenticated context
+- Public workspaces (visibility=public) accessible to all authenticated users
+
+**MVP vs future:**
+- MVP: All workspaces seeded as public, owner_id null (system workspaces)
+- Future: User-created private workspaces, workspace_memberships for sharing
 
 ### Todo (Generality Canary)
 
@@ -393,8 +403,8 @@ For each bounded context, document using the Context Canvas pattern from DDD.
 | **Name** | Workspace Context |
 | **Purpose** | Manage user's persistent saved state across sessions |
 | **Strategic classification** | Supporting |
-| **Ubiquitous language** | Dashboard, Layout, SavedQuery, UserPreferences, Tab, ChartPlacement, Grid |
-| **Business decisions** | Layout grid system (12-column), max tabs per dashboard (20), saved query retention (indefinite) |
+| **Ubiquitous language** | Workspace, Dashboard, Layout, SavedQuery, UserPreferences, WorkspacePreferences, visibility, Tab, ChartPlacement, Grid |
+| **Business decisions** | Layout grid system (12-column), max tabs per dashboard (20), saved query retention (indefinite), MVP uses public system workspaces |
 | **Inbound communication** | Layout commands via HTTP, Chart value object updates via Zenoh, User identity from Session |
 | **Outbound communication** | Workspace events, SSE layout updates, saved query results |
 | **Consumed Types** | Chart value objects (ChartConfig, ChartType, ChartData) from Analytics.Chart for dashboard positioning |
