@@ -6,8 +6,20 @@ summary: |
   Manages workspace lifecycle including creation, naming, ownership, and visibility settings.
 owners:
   - engineering
-sends: []
-receives: []
+sends:
+  - id: WorkspaceCreated
+    version: 0.0.1
+  - id: WorkspaceRenamed
+    version: 0.0.1
+  - id: VisibilityChanged
+    version: 0.0.1
+receives:
+  - id: CreateWorkspace
+    version: 0.0.1
+  - id: RenameWorkspace
+    version: 0.0.1
+  - id: SetVisibility
+    version: 0.0.1
 ---
 
 ## Responsibilities
