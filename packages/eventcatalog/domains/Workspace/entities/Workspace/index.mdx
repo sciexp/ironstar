@@ -1,0 +1,148 @@
+---
+id: Workspace
+name: Workspace
+version: 0.0.1
+summary: |
+  Primary aggregate root for the Workspace domain, containing dashboards, saved queries, and workspace preferences.
+owners:
+  - engineering
+aggregateRoot: true
+identifier: id
+properties:
+  - name: id
+    type: string
+    required: true
+    format: uuid
+    summary: Unique workspace identifier
+  - name: name
+    type: string
+    required: true
+    summary: Human-readable workspace name
+  - name: ownerId
+    type: reference
+    required: false
+    referenceTo: User
+    summary: Reference to the owning user (null for system workspaces)
+  - name: visibility
+    type: string
+    required: true
+    enum: [Public, Private]
+    summary: Access control setting for the workspace
+  - name: createdAt
+    type: string
+    required: true
+    format: date-time
+    summary: Timestamp when workspace was created
+  - name: updatedAt
+    type: string
+    required: true
+    format: date-time
+    summary: Timestamp of most recent modification
+---
+
+## Overview
+
+The Workspace aggregate serves as the primary container for organizing analytics artifacts.
+A workspace groups related dashboards, saved queries, and workspace-scoped preferences into a cohesive unit with shared access control.
+
+## Decider Pattern
+
+The Workspace aggregate follows the fmodel-rust Decider pattern.
+
+**Commands handled:**
+- `CreateWorkspace`: Creates a new workspace with name, owner, and visibility
+- `RenameWorkspace`: Updates the workspace name
+- `SetVisibility`: Changes the access control setting
+- `TransferOwnership`: Assigns a new owner to the workspace
+
+**Events emitted:**
+- `WorkspaceCreated`: New workspace initialized
+- `WorkspaceRenamed`: Name updated
+- `WorkspaceVisibilityChanged`: Access control modified
+- `WorkspaceOwnershipTransferred`: Owner changed
+
+## Relationships
+
+- **User** (Session): Optional owner (many-to-one, null for system workspaces)
+- **Dashboard**: Workspace contains multiple dashboards (one-to-many)
+- **SavedQuery**: Workspace contains multiple saved queries (one-to-many)
+- **WorkspacePreferences**: Workspace has exactly one preferences record (one-to-one)
+
+## Visibility Model
+
+| Value | Access |
+|-------|--------|
+| Public | All authenticated users can view |
+| Private | Only owner and explicit members can view |
+
+System workspaces (ownerId null) typically use Public visibility to provide shared defaults.
+
+## Invariants
+
+- Workspace name must be non-empty
+- Visibility must be set at creation
+- System workspaces (ownerId null) cannot be transferred
+- Only the owner can modify Private workspaces
+
+## fmodel-rust Implementation
+
+This aggregate implements the Decider pattern from fmodel-rust.
+
+### decide
+
+```rust
+fn decide(cmd: WorkspaceCommand, state: &WorkspaceState) -> Result<Vec<WorkspaceEvent>, String>
+```
+
+**Command handling logic:**
+
+- **CreateWorkspace(name, owner_id, visibility)** when `workspaceId` is `None`:
+  - Validates: Name non-empty
+  - Produces: `WorkspaceCreated(workspace_id, name, owner_id, visibility, timestamp)`
+  - Error if workspace exists: "Workspace already exists"
+
+- **RenameWorkspace(new_name)** when workspace exists:
+  - Validates: Workspace must exist, name non-empty
+  - Produces: `WorkspaceRenamed(new_name, timestamp)`
+  - Error if not initialized: "Workspace not initialized"
+
+- **SetVisibility(visibility)** when workspace exists:
+  - Validates: Workspace must exist
+  - Produces: `WorkspaceVisibilityChanged(visibility, timestamp)`
+
+- **TransferOwnership(new_owner_id)** when workspace exists:
+  - Validates: Workspace must exist, must have current owner (not system workspace)
+  - Produces: `WorkspaceOwnershipTransferred(new_owner_id, timestamp)`
+  - Error if system workspace: "Cannot transfer system workspace"
+
+### evolve
+
+```rust
+fn evolve(state: WorkspaceState, event: &WorkspaceEvent) -> WorkspaceState
+```
+
+**Event application logic:**
+
+- **WorkspaceCreated(workspace_id, name, owner_id, visibility, _)**:
+  - Updates: `workspaceId` -> `Some(workspace_id)`, `name`, `ownerId`, `visibility`
+
+- **WorkspaceRenamed(new_name, _)**:
+  - Updates: `name` -> `new_name`
+
+- **WorkspaceVisibilityChanged(visibility, _)**:
+  - Updates: `visibility` -> provided value
+
+- **WorkspaceOwnershipTransferred(new_owner_id, _)**:
+  - Updates: `ownerId` -> `Some(new_owner_id)`
+
+### initial_state
+
+```rust
+fn initial_state() -> WorkspaceState
+```
+
+Returns `WorkspaceState` with:
+- `workspaceId`: `None`
+- `name`: `""`
+- `ownerId`: `None`
+- `visibility`: `Visibility::Private`

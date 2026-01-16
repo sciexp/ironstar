@@ -14,6 +14,8 @@ schemaPath: schema.json
 This event is emitted when a user adds a chart visualization to an existing dashboard.
 The chart is placed on a grid with specified position and size, optionally within a tab.
 
+Event payload includes `workspaceId` identifying the containing workspace.
+
 ## Business Rules
 
 - Chart definition must reference a valid ChartDefinition from Analytics

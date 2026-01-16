@@ -14,6 +14,8 @@ schemaPath: schema.json
 This event is emitted when a user reorganizes charts by moving them between tabs.
 This enables iterative refinement of dashboard layout to tell a coherent data story.
 
+Event payload includes `workspaceId` identifying the containing workspace.
+
 ## Business Rules
 
 - Source and destination tabs must exist in the dashboard

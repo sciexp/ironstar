@@ -14,6 +14,8 @@ schemaPath: schema.json
 This event is emitted when a user changes the display title of a dashboard.
 Stable IDs ensure external references remain valid despite title changes.
 
+Event payload includes `workspaceId` identifying the containing workspace.
+
 ## Business Rules
 
 - New title must be non-empty

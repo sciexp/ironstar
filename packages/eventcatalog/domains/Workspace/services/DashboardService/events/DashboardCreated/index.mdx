@@ -14,6 +14,8 @@ schemaPath: schema.json
 This event is emitted when a user creates a new dashboard to organize and share insights.
 The event captures the dashboard identity, owner, initial title, and empty layout configuration.
 
+Event payload includes `workspaceId` identifying the containing workspace.
+
 ## Business Rules
 
 - Dashboard names must be unique per owner
