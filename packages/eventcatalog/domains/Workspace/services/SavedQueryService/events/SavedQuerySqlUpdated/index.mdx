@@ -14,6 +14,8 @@ schemaPath: schema.json
 This event is emitted when a user modifies the SQL statement of a saved query.
 Impact analysis should be performed to identify dashboards using this query.
 
+Event payload includes `workspaceId` identifying the containing workspace.
+
 ## Business Rules
 
 - Saved query must exist and be owned by the user

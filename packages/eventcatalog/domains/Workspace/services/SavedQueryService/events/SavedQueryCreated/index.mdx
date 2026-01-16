@@ -14,6 +14,8 @@ schemaPath: schema.json
 This event is emitted when a user saves a new reusable query.
 The query captures the SQL text, target dataset, and user-provided name.
 
+Event payload includes `workspaceId` identifying the containing workspace.
+
 ## Business Rules
 
 - Query name must be non-empty and unique per user
