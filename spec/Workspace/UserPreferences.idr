@@ -12,7 +12,7 @@
 |||
 ||| Lifetime: One UserPreferences aggregate per authenticated user
 ||| Aggregate ID: user_{user_id}/preferences
-module Workspace.Preferences
+module Workspace.UserPreferences
 
 import Core.Decider
 import Core.Event
