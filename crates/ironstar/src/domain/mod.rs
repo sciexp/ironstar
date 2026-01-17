@@ -70,8 +70,9 @@ pub use todo::{
 
 // Analytics re-exports
 pub use analytics::{
-    AnalyticsValidationError, AnalyticsValidationErrorKind, ChartConfig, ChartType,
-    DATASET_REF_MAX_LENGTH, DatasetRef, QueryId, SQL_QUERY_MAX_LENGTH, SqlQuery,
+    AnalyticsError, AnalyticsErrorKind, AnalyticsValidationError, AnalyticsValidationErrorKind,
+    ChartConfig, ChartType, DATASET_REF_MAX_LENGTH, DatasetRef, QueryId, SQL_QUERY_MAX_LENGTH,
+    SqlQuery,
 };
 
 // QuerySession re-exports
