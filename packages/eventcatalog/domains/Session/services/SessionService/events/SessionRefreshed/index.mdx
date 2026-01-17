@@ -13,6 +13,13 @@ producers:
 This event is emitted when an active session's time-to-live is extended due to detected user activity.
 Sessions are refreshed on meaningful interactions to prevent premature expiration during active use.
 
+## Session metadata
+
+The metadata field captures request context at refresh time, enabling location change detection:
+- Compare IP address and geolocation against SessionCreated metadata
+- Detect if session is being used from an unexpected location (potential session hijacking)
+- Track device changes via User-Agent differences during active sessions
+
 ## When emitted
 
 Given an active session exists for a user,
