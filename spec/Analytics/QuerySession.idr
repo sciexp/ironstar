@@ -68,6 +68,62 @@ record ErrorMessage where
   constructor MkErrorMessage
   message : String
 
+------------------------------------------------------------------------
+-- Status and error enums
+------------------------------------------------------------------------
+
+||| Query execution lifecycle status
+||| Used for tracking query progress in projections and UI
+||| Note: Prefixed with Qs to avoid collision with QueryState constructors
+public export
+data QueryStatus
+  = QsSubmitted  -- Query received, pending execution
+  | QsRunning    -- Query currently executing
+  | QsCompleted  -- Query finished successfully
+  | QsFailed     -- Query execution failed
+
+public export
+Eq QueryStatus where
+  QsSubmitted == QsSubmitted = True
+  QsRunning == QsRunning = True
+  QsCompleted == QsCompleted = True
+  QsFailed == QsFailed = True
+  _ == _ = False
+
+public export
+Show QueryStatus where
+  show QsSubmitted = "Submitted"
+  show QsRunning = "Running"
+  show QsCompleted = "Completed"
+  show QsFailed = "Failed"
+
+||| Categorized query error codes
+||| Provides structured error reporting for query failures
+public export
+data QueryErrorCode
+  = SyntaxError        -- SQL parsing or validation error
+  | PermissionDenied   -- Insufficient privileges for operation
+  | Timeout            -- Query exceeded time limit
+  | ResourceExhausted  -- Memory or compute limit exceeded
+  | InternalError      -- Unexpected system error
+
+public export
+Eq QueryErrorCode where
+  SyntaxError == SyntaxError = True
+  PermissionDenied == PermissionDenied = True
+  Timeout == Timeout = True
+  ResourceExhausted == ResourceExhausted = True
+  InternalError == InternalError = True
+  _ == _ = False
+
+public export
+Show QueryErrorCode where
+  show SyntaxError = "SyntaxError"
+  show PermissionDenied = "PermissionDenied"
+  show Timeout = "Timeout"
+  show ResourceExhausted = "ResourceExhausted"
+  show InternalError = "InternalError"
+
 ||| Chart configuration (imported from Analytics.Chart)
 ||| Forward declaration to avoid circular imports
 public export
