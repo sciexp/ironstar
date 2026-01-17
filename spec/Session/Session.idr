@@ -54,6 +54,27 @@ public export
 Ord ExpiresAt where
   compare (MkExpiresAt x) (MkExpiresAt y) = compare x y
 
+||| Metadata captured at session creation for security audit trail.
+||| Populated at boundary layer from HTTP request context.
+public export
+record SessionMetadata where
+  constructor MkSessionMetadata
+  ipAddress : Maybe String
+  userAgent : Maybe String
+  geoLocation : Maybe String  -- Populated via GeoIP lookup at boundary
+
+public export
+Eq SessionMetadata where
+  (==) m1 m2 = m1.ipAddress == m2.ipAddress
+            && m1.userAgent == m2.userAgent
+            && m1.geoLocation == m2.geoLocation
+
+public export
+Show SessionMetadata where
+  show m = "SessionMetadata { ipAddress = " ++ show m.ipAddress
+        ++ ", userAgent = " ++ show m.userAgent
+        ++ ", geoLocation = " ++ show m.geoLocation ++ " }"
+
 ------------------------------------------------------------------------
 -- Commands
 ------------------------------------------------------------------------
@@ -74,7 +95,7 @@ data SessionCommand
 ||| Law 1 (Hoffman): Events are past-tense and immutable
 public export
 data SessionEvent
-  = SessionCreated SessionId UserId OAuthProvider Timestamp ExpiresAt
+  = SessionCreated SessionId UserId OAuthProvider Timestamp ExpiresAt SessionMetadata
   | SessionRefreshed SessionId ExpiresAt Timestamp
   | SessionInvalidated SessionId Timestamp
   | SessionExpired SessionId Timestamp
@@ -119,10 +140,10 @@ sessionDecider : Decider SessionCommand SessionState SessionEvent String
 sessionDecider = MkDecider
   { decide = \cmd, state => case (cmd, state) of
       -- Create new session when none exists
-      -- Holes: ?newSid (SessionId), ?now (Timestamp), ?expires (ExpiresAt)
+      -- Holes: ?newSid (SessionId), ?now (Timestamp), ?expires (ExpiresAt), ?metadata (SessionMetadata)
       -- Boundary fills these from OAuth callback context
       (CreateSession userId provider, NoSession) =>
-        Right [SessionCreated ?newSid userId provider ?now ?expires]
+        Right [SessionCreated ?newSid userId provider ?now ?expires ?metadata]
       (CreateSession _ _, Active _ _ _) =>
         Left "Session already active"
       (CreateSession _ _, Expired _) =>
@@ -158,7 +179,8 @@ sessionDecider = MkDecider
 
   , evolve = \state, event => case event of
       -- SessionCreated: transition NoSession → Active
-      SessionCreated sid userId _ _ expires => Active sid userId expires
+      -- Note: metadata is captured in event for audit but not projected into state
+      SessionCreated sid userId _ _ expires _ => Active sid userId expires
 
       -- SessionRefreshed: extend TTL in Active state
       -- Invariant: only Active states should see Refreshed events
@@ -199,7 +221,8 @@ activeSessionView : View ActiveSessionView SessionEvent
 activeSessionView = MkView
   { evolve = \state, event => case event of
       -- New session created: project into active lookup
-      SessionCreated sid userId _ _ expires =>
+      -- Note: metadata available in event for audit projections but not in this view
+      SessionCreated sid userId _ _ expires _ =>
         MkActiveSessionView (Just (sid, userId, expires))
 
       -- Session refreshed: update expiration in projection
