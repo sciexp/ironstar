@@ -37,6 +37,6 @@ mod state;
 // Re-export all public types
 pub use aggregate::QuerySessionAggregate;
 pub use commands::QuerySessionCommand;
-pub use errors::QuerySessionError;
+pub use errors::{QuerySessionError, QuerySessionErrorKind};
 pub use events::QuerySessionEvent;
 pub use state::{QuerySessionState, QuerySessionStatus};
