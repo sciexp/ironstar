@@ -54,6 +54,57 @@ public export
 Ord ExpiresAt where
   compare (MkExpiresAt x) (MkExpiresAt y) = compare x y
 
+------------------------------------------------------------------------
+-- Status and reason enums
+------------------------------------------------------------------------
+
+||| Reason for session revocation
+||| Used when a session is terminated before natural expiration
+public export
+data RevocationReason
+  = UserLogout       -- User initiated logout
+  | AdminAction      -- Administrator revoked session
+  | SecurityConcern  -- Security system detected anomaly
+
+public export
+Eq RevocationReason where
+  UserLogout == UserLogout = True
+  AdminAction == AdminAction = True
+  SecurityConcern == SecurityConcern = True
+  _ == _ = False
+
+public export
+Show RevocationReason where
+  show UserLogout = "UserLogout"
+  show AdminAction = "AdminAction"
+  show SecurityConcern = "SecurityConcern"
+
+||| Session lifecycle status
+||| Maps to SessionState but as a simple enum for projections and queries
+||| Note: Prefixed with Ss to avoid collision with SessionState constructors
+public export
+data SessionStatus
+  = SsActive   -- Session is valid and usable
+  | SsExpired  -- Session TTL exceeded
+  | SsRevoked  -- Session explicitly terminated
+
+public export
+Eq SessionStatus where
+  SsActive == SsActive = True
+  SsExpired == SsExpired = True
+  SsRevoked == SsRevoked = True
+  _ == _ = False
+
+public export
+Show SessionStatus where
+  show SsActive = "Active"
+  show SsExpired = "Expired"
+  show SsRevoked = "Revoked"
+
+------------------------------------------------------------------------
+-- Metadata
+------------------------------------------------------------------------
+
 ||| Metadata captured at session creation for security audit trail.
 ||| Populated at boundary layer from HTTP request context.
 public export
