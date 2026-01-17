@@ -23,6 +23,24 @@
 			"format": "email",
 			"description": "User email from OAuth provider"
 		},
+		"metadata": {
+			"type": "object",
+			"description": "Request context captured for security audit",
+			"properties": {
+				"ipAddress": {
+					"type": ["string", "null"],
+					"description": "Client IP address"
+				},
+				"userAgent": {
+					"type": ["string", "null"],
+					"description": "Client User-Agent header"
+				},
+				"geoLocation": {
+					"type": ["string", "null"],
+					"description": "Geolocation from IP lookup (populated at boundary)"
+				}
+			}
+		},
 		"timestamp": {
 			"type": "string",
 			"format": "date-time",
