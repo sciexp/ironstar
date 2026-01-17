@@ -52,6 +52,7 @@
 
 pub mod aggregate;
 pub mod analytics;
+pub mod error;
 pub mod query_session;
 pub mod signals;
 pub mod todo;
@@ -61,21 +62,24 @@ pub use aggregate::{Aggregate, AggregateRoot};
 
 // Todo re-exports (from todo/)
 pub use todo::{
-    TODO_TEXT_MAX_LENGTH, TodoAggregate, TodoCommand, TodoError, TodoEvent, TodoId, TodoState,
-    TodoStatus, TodoText,
+    TODO_TEXT_MAX_LENGTH, TodoAggregate, TodoCommand, TodoError, TodoErrorKind, TodoEvent, TodoId,
+    TodoState, TodoStatus, TodoText,
 };
 
 // Analytics re-exports
 pub use analytics::{
-    AnalyticsValidationError, ChartConfig, ChartType, DATASET_REF_MAX_LENGTH, DatasetRef, QueryId,
-    SQL_QUERY_MAX_LENGTH, SqlQuery,
+    AnalyticsValidationError, AnalyticsValidationErrorKind, ChartConfig, ChartType,
+    DATASET_REF_MAX_LENGTH, DatasetRef, QueryId, SQL_QUERY_MAX_LENGTH, SqlQuery,
 };
 
 // QuerySession re-exports
 pub use query_session::{
-    QuerySessionAggregate, QuerySessionCommand, QuerySessionError, QuerySessionEvent,
-    QuerySessionState, QuerySessionStatus,
+    QuerySessionAggregate, QuerySessionCommand, QuerySessionError, QuerySessionErrorKind,
+    QuerySessionEvent, QuerySessionState, QuerySessionStatus,
 };
 
 // Signal re-exports
-pub use signals::{TodoFilter, TodoItemView, TodoSignals};
+pub use signals::{ChartSelection, ChartSignals, TodoFilter, TodoItemView, TodoSignals};
+
+// Error re-exports
+pub use error::{DomainError, DomainErrorKind, ValidationError, ValidationErrorKind};
