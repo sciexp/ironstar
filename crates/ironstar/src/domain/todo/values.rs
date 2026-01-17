@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use uuid::Uuid;
 
-use super::errors::TodoError;
+use super::errors::{TodoError, TodoErrorKind};
 
 /// Maximum length for todo text in characters.
 pub const TODO_TEXT_MAX_LENGTH: usize = 500;
@@ -109,15 +109,12 @@ impl TodoText {
         let trimmed = text.trim();
 
         if trimmed.is_empty() {
-            return Err(TodoError::EmptyText);
+            return Err(TodoError::empty_text());
         }
 
         let char_count = trimmed.chars().count();
         if char_count > TODO_TEXT_MAX_LENGTH {
-            return Err(TodoError::TextTooLong {
-                max: TODO_TEXT_MAX_LENGTH,
-                actual: char_count,
-            });
+            return Err(TodoError::text_too_long(TODO_TEXT_MAX_LENGTH, char_count));
         }
 
         Ok(Self(trimmed.to_string()))
@@ -203,25 +200,28 @@ mod tests {
         #[test]
         fn rejects_empty_string() {
             let result = TodoText::new("");
-            assert_eq!(result, Err(TodoError::EmptyText));
+            assert!(result.is_err());
+            assert_eq!(result.unwrap_err().kind(), &TodoErrorKind::EmptyText);
         }
 
         #[test]
         fn rejects_whitespace_only() {
             let result = TodoText::new("   \t\n  ");
-            assert_eq!(result, Err(TodoError::EmptyText));
+            assert!(result.is_err());
+            assert_eq!(result.unwrap_err().kind(), &TodoErrorKind::EmptyText);
         }
 
         #[test]
         fn rejects_too_long_text() {
             let long_text = "a".repeat(TODO_TEXT_MAX_LENGTH + 1);
             let result = TodoText::new(&long_text);
+            assert!(result.is_err());
             assert_eq!(
-                result,
-                Err(TodoError::TextTooLong {
+                result.unwrap_err().kind(),
+                &TodoErrorKind::TextTooLong {
                     max: TODO_TEXT_MAX_LENGTH,
                     actual: TODO_TEXT_MAX_LENGTH + 1,
-                })
+                }
             );
         }
 
