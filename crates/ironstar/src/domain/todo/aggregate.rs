@@ -38,7 +38,7 @@ use chrono::Utc;
 use crate::domain::aggregate::Aggregate;
 
 use super::commands::TodoCommand;
-use super::errors::TodoError;
+use super::errors::{TodoError, TodoErrorKind};
 use super::events::TodoEvent;
 use super::state::{TodoState, TodoStatus};
 use super::values::{TodoId, TodoText};
@@ -117,10 +117,7 @@ impl Aggregate for TodoAggregate {
 fn handle_create(state: &TodoState, id: TodoId, text: String) -> Result<Vec<TodoEvent>, TodoError> {
     // Aggregate should not exist yet
     if state.exists() {
-        return Err(TodoError::InvalidTransition {
-            action: "create",
-            state: "already exists",
-        });
+        return Err(TodoError::invalid_transition("create", "already exists"));
     }
 
     // Validate and normalize text (smart constructor)
@@ -141,14 +138,11 @@ fn handle_update_text(
 ) -> Result<Vec<TodoEvent>, TodoError> {
     // Must exist and not be deleted
     if !state.exists() {
-        return Err(TodoError::InvalidTransition {
-            action: "update",
-            state: "not created",
-        });
+        return Err(TodoError::invalid_transition("update", "not created"));
     }
 
     if state.is_deleted() {
-        return Err(TodoError::Deleted);
+        return Err(TodoError::deleted());
     }
 
     // Validate new text
@@ -164,18 +158,15 @@ fn handle_update_text(
 /// Handle Complete command.
 fn handle_complete(state: &TodoState, id: TodoId) -> Result<Vec<TodoEvent>, TodoError> {
     if !state.exists() {
-        return Err(TodoError::InvalidTransition {
-            action: "complete",
-            state: "not created",
-        });
+        return Err(TodoError::invalid_transition("complete", "not created"));
     }
 
     if state.is_deleted() {
-        return Err(TodoError::Deleted);
+        return Err(TodoError::deleted());
     }
 
     if state.is_completed() {
-        return Err(TodoError::AlreadyCompleted);
+        return Err(TodoError::already_completed());
     }
 
     Ok(vec![TodoEvent::Completed {
@@ -187,18 +178,15 @@ fn handle_complete(state: &TodoState, id: TodoId) -> Result<Vec<TodoEvent>, Todo
 /// Handle Uncomplete command.
 fn handle_uncomplete(state: &TodoState, id: TodoId) -> Result<Vec<TodoEvent>, TodoError> {
     if !state.exists() {
-        return Err(TodoError::InvalidTransition {
-            action: "uncomplete",
-            state: "not created",
-        });
+        return Err(TodoError::invalid_transition("uncomplete", "not created"));
     }
 
     if state.is_deleted() {
-        return Err(TodoError::Deleted);
+        return Err(TodoError::deleted());
     }
 
     if !state.is_completed() {
-        return Err(TodoError::NotCompleted);
+        return Err(TodoError::not_completed());
     }
 
     Ok(vec![TodoEvent::Uncompleted {
@@ -210,14 +198,11 @@ fn handle_uncomplete(state: &TodoState, id: TodoId) -> Result<Vec<TodoEvent>, To
 /// Handle Delete command.
 fn handle_delete(state: &TodoState, id: TodoId) -> Result<Vec<TodoEvent>, TodoError> {
     if !state.exists() {
-        return Err(TodoError::InvalidTransition {
-            action: "delete",
-            state: "not created",
-        });
+        return Err(TodoError::invalid_transition("delete", "not created"));
     }
 
     if state.is_deleted() {
-        return Err(TodoError::Deleted);
+        return Err(TodoError::deleted());
     }
 
     Ok(vec![TodoEvent::Deleted {
@@ -278,7 +263,8 @@ mod tests {
 
         let result = TodoAggregate::handle_command(&state, cmd);
 
-        assert_eq!(result, Err(TodoError::EmptyText));
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().kind(), &TodoErrorKind::EmptyText);
     }
 
     #[test]
@@ -294,7 +280,11 @@ mod tests {
 
         let result = TodoAggregate::handle_command(&state, cmd);
 
-        assert!(matches!(result, Err(TodoError::InvalidTransition { .. })));
+        assert!(result.is_err());
+        assert!(matches!(
+            result.unwrap_err().kind(),
+            TodoErrorKind::InvalidTransition { .. }
+        ));
     }
 
     #[test]
@@ -323,7 +313,8 @@ mod tests {
 
         let result = TodoAggregate::handle_command(&state, cmd);
 
-        assert_eq!(result, Err(TodoError::AlreadyCompleted));
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().kind(), &TodoErrorKind::AlreadyCompleted);
     }
 
     #[test]
@@ -352,7 +343,8 @@ mod tests {
 
         let result = TodoAggregate::handle_command(&state, cmd);
 
-        assert_eq!(result, Err(TodoError::NotCompleted));
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().kind(), &TodoErrorKind::NotCompleted);
     }
 
     #[test]
@@ -390,7 +382,8 @@ mod tests {
 
         for cmd in commands {
             let result = TodoAggregate::handle_command(&state, cmd);
-            assert_eq!(result, Err(TodoError::Deleted));
+            assert!(result.is_err());
+            assert_eq!(result.unwrap_err().kind(), &TodoErrorKind::Deleted);
         }
     }
 
