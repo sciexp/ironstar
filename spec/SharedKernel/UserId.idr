@@ -10,6 +10,25 @@
 ||| Types exported:
 ||| - OAuthProvider: Authentication provider enumeration
 ||| - UserId: User identity combining provider and external ID
+|||
+||| == UserId Evolution Strategy ==
+|||
+||| Current representation: Composite key (provider, externalId) for OAuth lookup.
+||| This design supports the MVP OAuth-only authentication model.
+|||
+||| Future evolution path (no breaking changes required):
+||| 1. Rust implementation uses UUID as canonical users.id
+||| 2. Composite (provider, externalId) stored in user_identities table for lookup
+||| 3. UserId in events references the canonical UUID
+||| 4. OAuthProvider enum can extend to AuthMethod sum type:
+|||    - Add Passkey, EnterpriseSso variants
+|||    - Existing OAuth variants remain unchanged
+|||
+||| This spec defines the logical domain model. The Rust implementation
+||| bridges between composite OAuth identity and canonical UUID via the
+||| user_identities table schema documented in oauth-authentication.md.
+|||
+||| See also: docs/notes/architecture/decisions/auth-evolution-strategy.md
 module SharedKernel.UserId
 
 %default total
