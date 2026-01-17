@@ -53,6 +53,7 @@
 pub mod aggregate;
 pub mod analytics;
 pub mod query_session;
+pub mod signals;
 pub mod todo;
 
 // Re-export key types for ergonomic imports
@@ -75,3 +76,6 @@ pub use query_session::{
     QuerySessionAggregate, QuerySessionCommand, QuerySessionError, QuerySessionEvent,
     QuerySessionState, QuerySessionStatus,
 };
+
+// Signal re-exports
+pub use signals::{TodoFilter, TodoItemView, TodoSignals};
