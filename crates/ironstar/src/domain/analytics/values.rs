@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use uuid::Uuid;
 
-use super::errors::AnalyticsValidationError;
+use super::errors::{AnalyticsValidationError, AnalyticsValidationErrorKind};
 
 /// Maximum length for SQL query strings in characters.
 pub const SQL_QUERY_MAX_LENGTH: usize = 10_000;
@@ -122,15 +122,15 @@ impl DatasetRef {
         let trimmed = reference.trim();
 
         if trimmed.is_empty() {
-            return Err(AnalyticsValidationError::EmptyDatasetRef);
+            return Err(AnalyticsValidationError::empty_dataset_ref());
         }
 
         let char_count = trimmed.chars().count();
         if char_count > DATASET_REF_MAX_LENGTH {
-            return Err(AnalyticsValidationError::DatasetRefTooLong {
-                max: DATASET_REF_MAX_LENGTH,
-                actual: char_count,
-            });
+            return Err(AnalyticsValidationError::dataset_ref_too_long(
+                DATASET_REF_MAX_LENGTH,
+                char_count,
+            ));
         }
 
         // Validate that the reference starts with a recognized prefix
@@ -139,9 +139,9 @@ impl DatasetRef {
             .any(|prefix| trimmed.starts_with(prefix));
 
         if !has_valid_prefix {
-            return Err(AnalyticsValidationError::InvalidDatasetRefFormat {
-                reason: "must start with hf://, s3://, gs://, az://, file://, or a path",
-            });
+            return Err(AnalyticsValidationError::invalid_dataset_ref_format(
+                "must start with hf://, s3://, gs://, az://, file://, or a path",
+            ));
         }
 
         Ok(Self(trimmed.to_string()))
@@ -238,15 +238,15 @@ impl SqlQuery {
         let trimmed = sql.trim();
 
         if trimmed.is_empty() {
-            return Err(AnalyticsValidationError::EmptySql);
+            return Err(AnalyticsValidationError::empty_sql());
         }
 
         let char_count = trimmed.chars().count();
         if char_count > SQL_QUERY_MAX_LENGTH {
-            return Err(AnalyticsValidationError::SqlTooLong {
-                max: SQL_QUERY_MAX_LENGTH,
-                actual: char_count,
-            });
+            return Err(AnalyticsValidationError::sql_too_long(
+                SQL_QUERY_MAX_LENGTH,
+                char_count,
+            ));
         }
 
         Ok(Self(trimmed.to_string()))
@@ -472,34 +472,34 @@ impl ChartConfig {
             ChartType::Pie => {
                 // Pie charts need a value column (y_axis used for this)
                 if self.y_axis.is_none() {
-                    return Err(AnalyticsValidationError::InvalidChartConfig {
-                        reason: "pie chart requires y_axis (value column)",
-                    });
+                    return Err(AnalyticsValidationError::invalid_chart_config(
+                        "pie chart requires y_axis (value column)",
+                    ));
                 }
             }
             ChartType::Line | ChartType::Bar | ChartType::Area | ChartType::Scatter => {
                 // These need both axes for meaningful display
                 if self.x_axis.is_none() || self.y_axis.is_none() {
-                    return Err(AnalyticsValidationError::InvalidChartConfig {
-                        reason: "chart requires both x_axis and y_axis",
-                    });
+                    return Err(AnalyticsValidationError::invalid_chart_config(
+                        "chart requires both x_axis and y_axis",
+                    ));
                 }
             }
             ChartType::Heatmap => {
                 // Heatmap needs x, y, and implicitly a value
                 if self.x_axis.is_none() || self.y_axis.is_none() {
-                    return Err(AnalyticsValidationError::InvalidChartConfig {
-                        reason: "heatmap requires x_axis and y_axis",
-                    });
+                    return Err(AnalyticsValidationError::invalid_chart_config(
+                        "heatmap requires x_axis and y_axis",
+                    ));
                 }
             }
             ChartType::Boxplot | ChartType::Candlestick => {
                 // These have specialized data requirements
                 // For now, just require x_axis
                 if self.x_axis.is_none() {
-                    return Err(AnalyticsValidationError::InvalidChartConfig {
-                        reason: "chart requires x_axis",
-                    });
+                    return Err(AnalyticsValidationError::invalid_chart_config(
+                        "chart requires x_axis",
+                    ));
                 }
             }
         }
@@ -597,21 +597,30 @@ mod tests {
         #[test]
         fn rejects_empty_string() {
             let result = DatasetRef::new("");
-            assert_eq!(result, Err(AnalyticsValidationError::EmptyDatasetRef));
+            assert!(result.is_err());
+            assert_eq!(
+                result.unwrap_err().kind(),
+                &AnalyticsValidationErrorKind::EmptyDatasetRef
+            );
         }
 
         #[test]
         fn rejects_whitespace_only() {
             let result = DatasetRef::new("   \t\n  ");
-            assert_eq!(result, Err(AnalyticsValidationError::EmptyDatasetRef));
+            assert!(result.is_err());
+            assert_eq!(
+                result.unwrap_err().kind(),
+                &AnalyticsValidationErrorKind::EmptyDatasetRef
+            );
         }
 
         #[test]
         fn rejects_invalid_prefix() {
             let result = DatasetRef::new("http://example.com/data");
+            assert!(result.is_err());
             assert!(matches!(
-                result,
-                Err(AnalyticsValidationError::InvalidDatasetRefFormat { .. })
+                result.unwrap_err().kind(),
+                AnalyticsValidationErrorKind::InvalidDatasetRefFormat { .. }
             ));
         }
 
@@ -619,9 +628,10 @@ mod tests {
         fn rejects_too_long() {
             let long_path = format!("hf://{}", "a".repeat(DATASET_REF_MAX_LENGTH));
             let result = DatasetRef::new(&long_path);
+            assert!(result.is_err());
             assert!(matches!(
-                result,
-                Err(AnalyticsValidationError::DatasetRefTooLong { .. })
+                result.unwrap_err().kind(),
+                AnalyticsValidationErrorKind::DatasetRefTooLong { .. }
             ));
         }
 
@@ -659,22 +669,31 @@ mod tests {
         #[test]
         fn rejects_empty_string() {
             let result = SqlQuery::new("");
-            assert_eq!(result, Err(AnalyticsValidationError::EmptySql));
+            assert!(result.is_err());
+            assert_eq!(
+                result.unwrap_err().kind(),
+                &AnalyticsValidationErrorKind::EmptySql
+            );
         }
 
         #[test]
         fn rejects_whitespace_only() {
             let result = SqlQuery::new("   \t\n  ");
-            assert_eq!(result, Err(AnalyticsValidationError::EmptySql));
+            assert!(result.is_err());
+            assert_eq!(
+                result.unwrap_err().kind(),
+                &AnalyticsValidationErrorKind::EmptySql
+            );
         }
 
         #[test]
         fn rejects_too_long() {
             let long_sql = "SELECT ".to_string() + &"a".repeat(SQL_QUERY_MAX_LENGTH);
             let result = SqlQuery::new(&long_sql);
+            assert!(result.is_err());
             assert!(matches!(
-                result,
-                Err(AnalyticsValidationError::SqlTooLong { .. })
+                result.unwrap_err().kind(),
+                AnalyticsValidationErrorKind::SqlTooLong { .. }
             ));
         }
 
