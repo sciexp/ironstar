@@ -392,8 +392,7 @@ mod tests {
                 chart_config: None,
             };
 
-            let events =
-                QuerySessionAggregate::handle_command(&state, cmd).unwrap();
+            let events = QuerySessionAggregate::handle_command(&state, cmd).unwrap();
 
             assert_eq!(events.len(), 1);
             assert!(matches!(events[0], QuerySessionEvent::QueryStarted { .. }));
@@ -442,8 +441,7 @@ mod tests {
             };
             let cmd = QuerySessionCommand::BeginExecution { query_id };
 
-            let events =
-                QuerySessionAggregate::handle_command(&state, cmd).unwrap();
+            let events = QuerySessionAggregate::handle_command(&state, cmd).unwrap();
 
             assert_eq!(events.len(), 1);
             assert!(matches!(
@@ -497,8 +495,7 @@ mod tests {
                 duration_ms: 1500,
             };
 
-            let events =
-                QuerySessionAggregate::handle_command(&state, cmd).unwrap();
+            let events = QuerySessionAggregate::handle_command(&state, cmd).unwrap();
 
             assert_eq!(events.len(), 1);
             assert!(matches!(
@@ -530,8 +527,7 @@ mod tests {
                 error: "Syntax error".to_string(),
             };
 
-            let events =
-                QuerySessionAggregate::handle_command(&state, cmd).unwrap();
+            let events = QuerySessionAggregate::handle_command(&state, cmd).unwrap();
 
             assert_eq!(events.len(), 1);
             assert!(matches!(
@@ -558,8 +554,7 @@ mod tests {
                 reason: Some("User cancelled".to_string()),
             };
 
-            let events =
-                QuerySessionAggregate::handle_command(&state, cmd).unwrap();
+            let events = QuerySessionAggregate::handle_command(&state, cmd).unwrap();
 
             assert_eq!(events.len(), 1);
             assert!(matches!(
@@ -581,8 +576,7 @@ mod tests {
             };
             let cmd = QuerySessionCommand::ResetSession;
 
-            let events =
-                QuerySessionAggregate::handle_command(&state, cmd).unwrap();
+            let events = QuerySessionAggregate::handle_command(&state, cmd).unwrap();
 
             assert_eq!(events.len(), 1);
             assert!(matches!(events[0], QuerySessionEvent::SessionReset { .. }));
@@ -593,8 +587,7 @@ mod tests {
             let state = QuerySessionState::default();
             let cmd = QuerySessionCommand::ResetSession;
 
-            let events =
-                QuerySessionAggregate::handle_command(&state, cmd).unwrap();
+            let events = QuerySessionAggregate::handle_command(&state, cmd).unwrap();
 
             // No events emitted for noop
             assert!(events.is_empty());
@@ -763,9 +756,7 @@ mod tests {
             assert_eq!(root.state().query_count, 1);
 
             // Reset
-            let events = root
-                .handle(QuerySessionCommand::ResetSession)
-                .unwrap();
+            let events = root.handle(QuerySessionCommand::ResetSession).unwrap();
             root.apply_all(events);
             assert_eq!(root.version(), 4);
             assert!(root.state().is_idle());
@@ -849,8 +840,7 @@ mod tests {
                 duration_ms: 2500,
             };
             let json = serde_json::to_string(&cmd).unwrap();
-            let parsed: QuerySessionCommand =
-                serde_json::from_str(&json).unwrap();
+            let parsed: QuerySessionCommand = serde_json::from_str(&json).unwrap();
 
             assert!(matches!(
                 parsed,

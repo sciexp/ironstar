@@ -8,7 +8,9 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use uuid::Uuid;
 
-use super::errors::{AnalyticsValidationError, AnalyticsValidationErrorKind};
+use super::errors::AnalyticsValidationError;
+#[cfg(test)]
+use super::errors::AnalyticsValidationErrorKind;
 
 /// Maximum length for SQL query strings in characters.
 pub const SQL_QUERY_MAX_LENGTH: usize = 10_000;

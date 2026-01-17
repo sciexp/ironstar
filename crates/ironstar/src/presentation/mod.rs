@@ -102,3 +102,7 @@
 //! - Database or network I/O (belongs in [`crate::infrastructure`])
 //! - Multi-step workflows (belongs in [`crate::application`])
 //! - Synchronous business logic (domain functions should be sync)
+
+pub mod error;
+
+pub use error::{AppError, AppErrorKind, ErrorResponse};

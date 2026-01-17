@@ -93,3 +93,7 @@
 //! - Request/response handling (belongs in [`crate::presentation`])
 //! - Orchestration of multiple services (belongs in [`crate::application`])
 //! - Synchronous functions (by design, everything here is async)
+
+pub mod error;
+
+pub use error::{InfrastructureError, InfrastructureErrorKind};

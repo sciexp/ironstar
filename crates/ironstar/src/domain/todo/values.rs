@@ -25,7 +25,9 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use uuid::Uuid;
 
-use super::errors::{TodoError, TodoErrorKind};
+use super::errors::TodoError;
+#[cfg(test)]
+use super::errors::TodoErrorKind;
 
 /// Maximum length for todo text in characters.
 pub const TODO_TEXT_MAX_LENGTH: usize = 500;

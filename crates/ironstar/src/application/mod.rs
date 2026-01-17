@@ -97,3 +97,7 @@
 //! - Database queries or HTTP calls (belongs in [`crate::infrastructure`])
 //! - HTTP routing or request parsing (belongs in [`crate::presentation`])
 //! - Async primitives in domain types (domain must remain sync)
+
+pub mod error;
+
+pub use error::AggregateError;

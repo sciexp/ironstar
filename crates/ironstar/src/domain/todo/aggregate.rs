@@ -38,7 +38,9 @@ use chrono::Utc;
 use crate::domain::aggregate::Aggregate;
 
 use super::commands::TodoCommand;
-use super::errors::{TodoError, TodoErrorKind};
+use super::errors::TodoError;
+#[cfg(test)]
+use super::errors::TodoErrorKind;
 use super::events::TodoEvent;
 use super::state::{TodoState, TodoStatus};
 use super::values::{TodoId, TodoText};
