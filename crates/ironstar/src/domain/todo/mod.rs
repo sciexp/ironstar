@@ -43,7 +43,7 @@ pub mod values;
 // Re-export public types for ergonomic imports
 pub use aggregate::TodoAggregate;
 pub use commands::TodoCommand;
-pub use errors::TodoError;
+pub use errors::{TodoError, TodoErrorKind};
 pub use events::TodoEvent;
 pub use state::{TodoState, TodoStatus};
 pub use values::{TODO_TEXT_MAX_LENGTH, TodoId, TodoText};
