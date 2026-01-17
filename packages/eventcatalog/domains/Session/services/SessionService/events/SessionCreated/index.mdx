@@ -11,7 +11,14 @@ producers:
 ## Description
 
 This event is emitted when an OAuth callback is successfully processed and a new user session is established.
-The event captures the session identifier, associated user, OAuth provider, and initial TTL expiration timestamp.
+The event captures the session identifier, associated user, OAuth provider, initial TTL expiration timestamp, and request metadata for security audit purposes.
+
+## Session metadata
+
+The metadata field captures request context at session creation time, enabling security audit capabilities:
+- IP address and User-Agent for login history review
+- Geolocation (populated at the boundary layer) for anomaly detection
+- Comparison with SessionRefreshed metadata to detect location changes during a session
 
 ## When emitted
 
