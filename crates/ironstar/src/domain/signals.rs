@@ -55,6 +55,7 @@ use uuid::Uuid;
 /// - Server → Browser: Initial state in `data-signals` attribute
 /// - Browser → Server: Request body via `ReadSignals<TodoSignals>`
 #[derive(Clone, Debug, Default, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
 #[ts(export, export_to = "web-components/types/signals/")]
 pub struct TodoSignals {
     /// Current input field value.
@@ -109,6 +110,7 @@ pub enum TodoFilter {
 /// This is a read-only projection derived from [`super::TodoState`],
 /// shaped for efficient list rendering via SSE updates.
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
 #[ts(export, export_to = "web-components/types/signals/")]
 pub struct TodoItemView {
     /// Unique identifier for this todo.
@@ -203,5 +205,31 @@ mod tests {
         assert!(json.contains("\"id\""));
         assert!(json.contains("\"text\""));
         assert!(json.contains("\"completed\""));
+    }
+
+    #[test]
+    fn todo_signals_uses_camel_case() {
+        let signals = TodoSignals {
+            input: None,
+            filter: TodoFilter::All,
+            editing_id: Some(Uuid::nil()),
+            loading: false,
+        };
+
+        let json = serde_json::to_string(&signals).unwrap();
+        // editing_id should serialize as editingId
+        assert!(json.contains("\"editingId\""));
+        assert!(!json.contains("\"editing_id\""));
+    }
+
+    #[test]
+    fn todo_signals_deserializes_camel_case() {
+        // JSON uses camelCase field names
+        let json = r#"{"filter": "active", "editingId": "00000000-0000-0000-0000-000000000000", "loading": true}"#;
+        let signals: TodoSignals = serde_json::from_str(json).unwrap();
+
+        assert_eq!(signals.filter, TodoFilter::Active);
+        assert_eq!(signals.editing_id, Some(Uuid::nil()));
+        assert!(signals.loading);
     }
 }
