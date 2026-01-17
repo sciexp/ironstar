@@ -8,6 +8,7 @@
 //!
 //! - [`aggregate`]: The `Aggregate` trait and `AggregateRoot` wrapper
 //! - [`analytics`]: Analytics value objects (QueryId, DatasetRef, SqlQuery, ChartConfig)
+//! - [`common`]: Shared value objects (BoundedString, DashboardTitle, TabTitle, GridSize)
 //! - [`query_session`]: QuerySession aggregate (commands, events, state, errors)
 //! - [`todo`]: Todo aggregate (commands, events, state, values, errors)
 //!
@@ -52,6 +53,7 @@
 
 pub mod aggregate;
 pub mod analytics;
+pub mod common;
 pub mod error;
 pub mod query_session;
 pub mod signals;
@@ -83,3 +85,10 @@ pub use signals::{ChartSelection, ChartSignals, TodoFilter, TodoItemView, TodoSi
 
 // Error re-exports
 pub use error::{DomainError, DomainErrorKind, ValidationError, ValidationErrorKind};
+
+// Common value object re-exports
+pub use common::{
+    BoundedString, DASHBOARD_TITLE_MAX_LENGTH, DASHBOARD_TITLE_MIN_LENGTH, DashboardTitle,
+    GRID_HEIGHT_MIN, GRID_WIDTH_MIN, GridSize, TAB_TITLE_MAX_LENGTH, TAB_TITLE_MIN_LENGTH,
+    TabTitle,
+};
