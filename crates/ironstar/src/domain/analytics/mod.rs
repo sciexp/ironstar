@@ -26,7 +26,9 @@ mod errors;
 mod values;
 
 // Re-export errors
-pub use errors::{AnalyticsValidationError, AnalyticsValidationErrorKind};
+pub use errors::{
+    AnalyticsError, AnalyticsErrorKind, AnalyticsValidationError, AnalyticsValidationErrorKind,
+};
 
 // Re-export values
 pub use values::{
