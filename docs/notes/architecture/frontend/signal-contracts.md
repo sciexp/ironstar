@@ -46,6 +46,35 @@ ts-rs solves this by generating TypeScript types from the authoritative Rust def
 
 ---
 
+## When to create signal types
+
+Signals represent client-side reactive state for Datastar's FRP model.
+They exist to enable two-way form binding, persist UI state across DOM morphs, and track loading indicators.
+
+**Signals derive from UI requirements, not aggregate structure.**
+Not every aggregate needs signal types.
+Create signals when the UI design requires them, not preemptively for each domain aggregate.
+
+| UI Requirement | Needs Signals? | Example |
+|----------------|----------------|---------|
+| Two-way form input binding | Yes | `data-bind:inputField` needs signal storage |
+| Filter/selection state | Yes | Client maintains which filter is active |
+| Loading indicators | Yes | Client tracks pending request state |
+| Editing mode (which item) | Yes | Client tracks which item is being edited |
+| Server-pushed HTML fragments | No | SSE sends HTML, client morphs DOM |
+| Display-only projections | No | Server renders, client displays |
+| Redirect-based flows (OAuth) | No | No client state to maintain |
+
+**Timing guidance:**
+- Create signal types when UI wireframes or component designs exist
+- Do not create signal issues for aggregates whose UI is not yet designed
+- Chart signals (ChartSignals, ChartSelection) exist because ECharts integration requires explicit state contracts
+- Simple bounded contexts (Session, QuerySession) may not need dedicated signal types if their UI is server-rendered
+
+This prevents premature abstraction and ensures signals match actual UI needs rather than hypothetical requirements.
+
+---
+
 ## Basic usage
 
 ### Defining signal types in Rust
