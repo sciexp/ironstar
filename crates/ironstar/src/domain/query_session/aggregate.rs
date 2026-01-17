@@ -204,12 +204,10 @@ fn handle_start_query(
     // Must be idle to start a new query
     if !state.is_idle() {
         if state.is_in_progress() {
-            return Err(QuerySessionError::QueryAlreadyInProgress);
+            return Err(QuerySessionError::query_already_in_progress());
         }
         // Terminal states need reset first
-        return Err(QuerySessionError::TerminalState {
-            state: state.status.state_name(),
-        });
+        return Err(QuerySessionError::terminal_state(state.status.state_name()));
     }
 
     Ok(vec![QuerySessionEvent::QueryStarted {
@@ -232,21 +230,18 @@ fn handle_begin_execution(
             ..
         } => {
             if *pending_id != query_id {
-                return Err(QuerySessionError::QueryIdMismatch {
-                    expected: *pending_id,
-                    actual: query_id,
-                });
+                return Err(QuerySessionError::query_id_mismatch(*pending_id, query_id));
             }
             Ok(vec![QuerySessionEvent::ExecutionBegan {
                 query_id,
                 began_at: Utc::now(),
             }])
         }
-        QuerySessionStatus::Idle => Err(QuerySessionError::NoQueryInProgress),
-        _ => Err(QuerySessionError::InvalidTransition {
-            action: "begin execution",
-            state: state.status.state_name(),
-        }),
+        QuerySessionStatus::Idle => Err(QuerySessionError::no_query_in_progress()),
+        _ => Err(QuerySessionError::invalid_transition(
+            "begin execution",
+            state.status.state_name(),
+        )),
     }
 }
 
@@ -263,10 +258,10 @@ fn handle_complete_query(
             ..
         } => {
             if *executing_id != query_id {
-                return Err(QuerySessionError::QueryIdMismatch {
-                    expected: *executing_id,
-                    actual: query_id,
-                });
+                return Err(QuerySessionError::query_id_mismatch(
+                    *executing_id,
+                    query_id,
+                ));
             }
             Ok(vec![QuerySessionEvent::QueryCompleted {
                 query_id,
@@ -275,11 +270,11 @@ fn handle_complete_query(
                 completed_at: Utc::now(),
             }])
         }
-        QuerySessionStatus::Idle => Err(QuerySessionError::NoQueryInProgress),
-        _ => Err(QuerySessionError::InvalidTransition {
-            action: "complete query",
-            state: state.status.state_name(),
-        }),
+        QuerySessionStatus::Idle => Err(QuerySessionError::no_query_in_progress()),
+        _ => Err(QuerySessionError::invalid_transition(
+            "complete query",
+            state.status.state_name(),
+        )),
     }
 }
 
@@ -295,10 +290,10 @@ fn handle_fail_query(
             ..
         } => {
             if *executing_id != query_id {
-                return Err(QuerySessionError::QueryIdMismatch {
-                    expected: *executing_id,
-                    actual: query_id,
-                });
+                return Err(QuerySessionError::query_id_mismatch(
+                    *executing_id,
+                    query_id,
+                ));
             }
             Ok(vec![QuerySessionEvent::QueryFailed {
                 query_id,
@@ -306,11 +301,11 @@ fn handle_fail_query(
                 failed_at: Utc::now(),
             }])
         }
-        QuerySessionStatus::Idle => Err(QuerySessionError::NoQueryInProgress),
-        _ => Err(QuerySessionError::InvalidTransition {
-            action: "fail query",
-            state: state.status.state_name(),
-        }),
+        QuerySessionStatus::Idle => Err(QuerySessionError::no_query_in_progress()),
+        _ => Err(QuerySessionError::invalid_transition(
+            "fail query",
+            state.status.state_name(),
+        )),
     }
 }
 
@@ -330,10 +325,7 @@ fn handle_cancel_query(
             ..
         } => {
             if *pending_id != query_id {
-                return Err(QuerySessionError::QueryIdMismatch {
-                    expected: *pending_id,
-                    actual: query_id,
-                });
+                return Err(QuerySessionError::query_id_mismatch(*pending_id, query_id));
             }
             Ok(vec![QuerySessionEvent::QueryCancelled {
                 query_id,
@@ -341,10 +333,8 @@ fn handle_cancel_query(
                 cancelled_at: Utc::now(),
             }])
         }
-        QuerySessionStatus::Idle => Err(QuerySessionError::NoQueryInProgress),
-        _ => Err(QuerySessionError::TerminalState {
-            state: state.status.state_name(),
-        }),
+        QuerySessionStatus::Idle => Err(QuerySessionError::no_query_in_progress()),
+        _ => Err(QuerySessionError::terminal_state(state.status.state_name())),
     }
 }
 
@@ -358,10 +348,10 @@ fn handle_reset_session(
             // Already idle, no-op (return empty events)
             return Ok(vec![]);
         }
-        return Err(QuerySessionError::InvalidTransition {
-            action: "reset session",
-            state: state.status.state_name(),
-        });
+        return Err(QuerySessionError::invalid_transition(
+            "reset session",
+            state.status.state_name(),
+        ));
     }
 
     Ok(vec![QuerySessionEvent::SessionReset {
@@ -375,6 +365,7 @@ fn handle_reset_session(
 
 #[cfg(test)]
 mod tests {
+    use super::super::errors::QuerySessionErrorKind;
     use super::*;
     use crate::domain::aggregate::AggregateRoot;
 
@@ -401,7 +392,8 @@ mod tests {
                 chart_config: None,
             };
 
-            let events = QuerySessionAggregate::handle_command(&state, cmd).unwrap();
+            let events =
+                QuerySessionAggregate::handle_command(&state, cmd).unwrap();
 
             assert_eq!(events.len(), 1);
             assert!(matches!(events[0], QuerySessionEvent::QueryStarted { .. }));
@@ -428,7 +420,11 @@ mod tests {
 
             let result = QuerySessionAggregate::handle_command(&state, cmd);
 
-            assert_eq!(result, Err(QuerySessionError::QueryAlreadyInProgress));
+            assert!(result.is_err());
+            assert_eq!(
+                result.unwrap_err().kind(),
+                &QuerySessionErrorKind::QueryAlreadyInProgress
+            );
         }
 
         #[test]
@@ -446,7 +442,8 @@ mod tests {
             };
             let cmd = QuerySessionCommand::BeginExecution { query_id };
 
-            let events = QuerySessionAggregate::handle_command(&state, cmd).unwrap();
+            let events =
+                QuerySessionAggregate::handle_command(&state, cmd).unwrap();
 
             assert_eq!(events.len(), 1);
             assert!(matches!(
@@ -473,9 +470,10 @@ mod tests {
 
             let result = QuerySessionAggregate::handle_command(&state, cmd);
 
+            assert!(result.is_err());
             assert!(matches!(
-                result,
-                Err(QuerySessionError::QueryIdMismatch { .. })
+                result.unwrap_err().kind(),
+                QuerySessionErrorKind::QueryIdMismatch { .. }
             ));
         }
 
@@ -499,7 +497,8 @@ mod tests {
                 duration_ms: 1500,
             };
 
-            let events = QuerySessionAggregate::handle_command(&state, cmd).unwrap();
+            let events =
+                QuerySessionAggregate::handle_command(&state, cmd).unwrap();
 
             assert_eq!(events.len(), 1);
             assert!(matches!(
@@ -531,7 +530,8 @@ mod tests {
                 error: "Syntax error".to_string(),
             };
 
-            let events = QuerySessionAggregate::handle_command(&state, cmd).unwrap();
+            let events =
+                QuerySessionAggregate::handle_command(&state, cmd).unwrap();
 
             assert_eq!(events.len(), 1);
             assert!(matches!(
@@ -558,7 +558,8 @@ mod tests {
                 reason: Some("User cancelled".to_string()),
             };
 
-            let events = QuerySessionAggregate::handle_command(&state, cmd).unwrap();
+            let events =
+                QuerySessionAggregate::handle_command(&state, cmd).unwrap();
 
             assert_eq!(events.len(), 1);
             assert!(matches!(
@@ -580,7 +581,8 @@ mod tests {
             };
             let cmd = QuerySessionCommand::ResetSession;
 
-            let events = QuerySessionAggregate::handle_command(&state, cmd).unwrap();
+            let events =
+                QuerySessionAggregate::handle_command(&state, cmd).unwrap();
 
             assert_eq!(events.len(), 1);
             assert!(matches!(events[0], QuerySessionEvent::SessionReset { .. }));
@@ -591,7 +593,8 @@ mod tests {
             let state = QuerySessionState::default();
             let cmd = QuerySessionCommand::ResetSession;
 
-            let events = QuerySessionAggregate::handle_command(&state, cmd).unwrap();
+            let events =
+                QuerySessionAggregate::handle_command(&state, cmd).unwrap();
 
             // No events emitted for noop
             assert!(events.is_empty());
@@ -614,9 +617,10 @@ mod tests {
 
             let result = QuerySessionAggregate::handle_command(&state, cmd);
 
+            assert!(result.is_err());
             assert!(matches!(
-                result,
-                Err(QuerySessionError::InvalidTransition { .. })
+                result.unwrap_err().kind(),
+                QuerySessionErrorKind::InvalidTransition { .. }
             ));
         }
     }
@@ -759,7 +763,9 @@ mod tests {
             assert_eq!(root.state().query_count, 1);
 
             // Reset
-            let events = root.handle(QuerySessionCommand::ResetSession).unwrap();
+            let events = root
+                .handle(QuerySessionCommand::ResetSession)
+                .unwrap();
             root.apply_all(events);
             assert_eq!(root.version(), 4);
             assert!(root.state().is_idle());
@@ -843,7 +849,8 @@ mod tests {
                 duration_ms: 2500,
             };
             let json = serde_json::to_string(&cmd).unwrap();
-            let parsed: QuerySessionCommand = serde_json::from_str(&json).unwrap();
+            let parsed: QuerySessionCommand =
+                serde_json::from_str(&json).unwrap();
 
             assert!(matches!(
                 parsed,
@@ -860,19 +867,17 @@ mod tests {
         #[test]
         fn error_messages_are_descriptive() {
             assert_eq!(
-                QuerySessionError::QueryAlreadyInProgress.to_string(),
+                QuerySessionError::query_already_in_progress().to_string(),
                 "query already in progress"
             );
 
             assert_eq!(
-                QuerySessionError::TerminalState { state: "completed" }.to_string(),
+                QuerySessionError::terminal_state("completed").to_string(),
                 "query is in terminal state: completed"
             );
 
-            let mismatch = QuerySessionError::QueryIdMismatch {
-                expected: sample_query_id(),
-                actual: sample_query_id(),
-            };
+            let mismatch =
+                QuerySessionError::query_id_mismatch(sample_query_id(), sample_query_id());
             assert!(mismatch.to_string().contains("query ID mismatch"));
         }
     }
