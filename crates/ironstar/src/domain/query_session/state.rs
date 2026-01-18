@@ -111,7 +111,7 @@ impl QuerySessionStatus {
 ///
 /// The state contains the current status and any metadata tracked
 /// across the session lifecycle.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct QuerySessionState {
     /// Current lifecycle status.
     pub status: QuerySessionStatus,
