@@ -106,9 +106,9 @@ impl TodoCommand {
         match self {
             Self::Create { id, .. }
             | Self::UpdateText { id, .. }
-            | Self::Complete { id }
-            | Self::Uncomplete { id }
-            | Self::Delete { id } => *id,
+            | Self::Complete { id, .. }
+            | Self::Uncomplete { id, .. }
+            | Self::Delete { id, .. } => *id,
         }
     }
 

@@ -33,14 +33,13 @@
 //! - Uncomplete when already Active
 //! - Delete when already Deleted
 
-use chrono::{DateTime, Utc};
 use fmodel_rust::decider::Decider;
 
 use super::commands::TodoCommand;
 use super::errors::TodoError;
 use super::events::TodoEvent;
 use super::state::{TodoState, TodoStatus};
-use super::values::{TodoId, TodoText};
+use super::values::TodoText;
 
 /// Type alias for the Todo Decider.
 ///
@@ -167,6 +166,9 @@ fn decide(command: &TodoCommand, state: &Option<TodoState>) -> Result<Vec<TodoEv
             Ok(vec![]) // Idempotent: already deleted
         }
         (TodoCommand::Delete { .. }, None) => Err(TodoError::cannot_delete()),
+        // Fallback for Any Some state not covered above (e.g., NotCreated status)
+        // This should never happen in normal operation but provides exhaustiveness
+        (TodoCommand::Delete { .. }, Some(_)) => Err(TodoError::cannot_delete()),
     }
 }
 
