@@ -52,6 +52,9 @@ pub enum AnalyticsValidationErrorKind {
 
     /// Chart configuration is invalid.
     InvalidChartConfig { reason: &'static str },
+
+    /// Schema compatibility error (column not found, type mismatch, etc.).
+    SchemaIncompatible { message: String },
 }
 
 impl AnalyticsValidationError {
@@ -110,6 +113,13 @@ impl AnalyticsValidationError {
     pub fn invalid_chart_config(reason: &'static str) -> Self {
         Self::new(AnalyticsValidationErrorKind::InvalidChartConfig { reason })
     }
+
+    /// Creates a `SchemaIncompatible` error.
+    pub fn schema_incompatible(message: impl Into<String>) -> Self {
+        Self::new(AnalyticsValidationErrorKind::SchemaIncompatible {
+            message: message.into(),
+        })
+    }
 }
 
 impl fmt::Display for AnalyticsValidationError {
@@ -133,6 +143,9 @@ impl fmt::Display for AnalyticsValidationError {
             }
             AnalyticsValidationErrorKind::InvalidChartConfig { reason } => {
                 write!(f, "invalid chart configuration: {reason}")
+            }
+            AnalyticsValidationErrorKind::SchemaIncompatible { message } => {
+                write!(f, "schema incompatible: {message}")
             }
         }
     }
