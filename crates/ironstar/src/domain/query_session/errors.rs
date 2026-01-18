@@ -128,6 +128,14 @@ impl fmt::Display for QuerySessionError {
 
 impl std::error::Error for QuerySessionError {}
 
+/// PartialEq compares errors by kind only, ignoring UUID and backtrace.
+/// This enables testing with DeciderTestSpecification::then_error().
+impl PartialEq for QuerySessionError {
+    fn eq(&self, other: &Self) -> bool {
+        self.kind == other.kind
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
