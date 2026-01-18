@@ -99,5 +99,7 @@
 //! - Async primitives in domain types (domain must remain sync)
 
 pub mod error;
+pub mod todo;
 
-pub use error::AggregateError;
+pub use error::{AggregateError, CommandPipelineError};
+pub use todo::handle_todo_command;
