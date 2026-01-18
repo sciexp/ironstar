@@ -28,6 +28,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use super::values::{TodoId, TodoText};
+use crate::domain::traits::{DeciderType, EventType, Identifier, IsFinal};
 
 /// Events emitted by the Todo aggregate.
 ///
@@ -127,6 +128,37 @@ impl TodoEvent {
     #[must_use]
     pub fn event_version(&self) -> &'static str {
         "1"
+    }
+}
+
+impl Identifier for TodoEvent {
+    fn identifier(&self) -> String {
+        self.aggregate_id().to_string()
+    }
+}
+
+impl EventType for TodoEvent {
+    fn event_type(&self) -> String {
+        match self {
+            Self::Created { .. } => "Created",
+            Self::TextUpdated { .. } => "TextUpdated",
+            Self::Completed { .. } => "Completed",
+            Self::Uncompleted { .. } => "Uncompleted",
+            Self::Deleted { .. } => "Deleted",
+        }
+        .to_string()
+    }
+}
+
+impl DeciderType for TodoEvent {
+    fn decider_type(&self) -> String {
+        "Todo".to_string()
+    }
+}
+
+impl IsFinal for TodoEvent {
+    fn is_final(&self) -> bool {
+        matches!(self, Self::Deleted { .. })
     }
 }
 
