@@ -95,6 +95,41 @@ impl<C, E> SqliteEventRepository<C, E>
 where
     E: DeserializeOwned + Clone,
 {
+    /// Fetch events by aggregate type and ID.
+    ///
+    /// This method provides direct access to events without requiring a command,
+    /// useful for query handlers that need to replay events through a View.
+    ///
+    /// Returns events ordered by global sequence (id), with each event
+    /// paired with its event_id (version).
+    pub async fn fetch_events_by_aggregate(
+        &self,
+        aggregate_type: &str,
+        aggregate_id: &str,
+    ) -> Result<Vec<(E, String)>, InfrastructureError> {
+        let rows = sqlx::query(
+            r#"
+            SELECT event_id, payload
+            FROM events
+            WHERE aggregate_type = ? AND aggregate_id = ?
+            ORDER BY id
+            "#,
+        )
+        .bind(aggregate_type)
+        .bind(aggregate_id)
+        .fetch_all(&self.pool)
+        .await?;
+
+        let mut events = Vec::with_capacity(rows.len());
+        for row in rows {
+            let event_id: String = row.get("event_id");
+            let payload: String = row.get("payload");
+            let event: E = serde_json::from_str(&payload)?;
+            events.push((event, event_id));
+        }
+        Ok(events)
+    }
+
     /// Query all events across all aggregates, ordered by global sequence.
     ///
     /// Used for projection rebuild on application startup.
