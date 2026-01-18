@@ -30,7 +30,7 @@ pub struct TodoError {
     backtrace: Backtrace,
 }
 
-/// Error variants for the Todo aggregate.
+/// Error variants for the Todo decider.
 ///
 /// These represent precondition failures when constructing value objects
 /// or processing commands. Each variant maps to a specific business rule.
@@ -41,6 +41,21 @@ pub enum TodoErrorKind {
 
     /// Todo text exceeds maximum length.
     TextTooLong { max: usize, actual: usize },
+
+    /// Todo already exists (create on existing).
+    AlreadyExists,
+
+    /// Todo not found (operation on non-existent).
+    NotFound,
+
+    /// Cannot complete (wrong state).
+    CannotComplete,
+
+    /// Cannot uncomplete (wrong state).
+    CannotUncomplete,
+
+    /// Cannot delete (wrong state).
+    CannotDelete,
 
     /// Attempted to complete an already-completed todo.
     AlreadyCompleted,
@@ -114,6 +129,31 @@ impl TodoError {
     pub fn invalid_transition(action: &'static str, state: &'static str) -> Self {
         Self::new(TodoErrorKind::InvalidTransition { action, state })
     }
+
+    /// Creates an `AlreadyExists` error.
+    pub fn already_exists() -> Self {
+        Self::new(TodoErrorKind::AlreadyExists)
+    }
+
+    /// Creates a `NotFound` error.
+    pub fn not_found() -> Self {
+        Self::new(TodoErrorKind::NotFound)
+    }
+
+    /// Creates a `CannotComplete` error.
+    pub fn cannot_complete() -> Self {
+        Self::new(TodoErrorKind::CannotComplete)
+    }
+
+    /// Creates a `CannotUncomplete` error.
+    pub fn cannot_uncomplete() -> Self {
+        Self::new(TodoErrorKind::CannotUncomplete)
+    }
+
+    /// Creates a `CannotDelete` error.
+    pub fn cannot_delete() -> Self {
+        Self::new(TodoErrorKind::CannotDelete)
+    }
 }
 
 impl fmt::Display for TodoError {
@@ -122,6 +162,17 @@ impl fmt::Display for TodoError {
             TodoErrorKind::EmptyText => write!(f, "todo text cannot be empty"),
             TodoErrorKind::TextTooLong { max, actual } => {
                 write!(f, "todo text cannot exceed {max} characters (got {actual})")
+            }
+            TodoErrorKind::AlreadyExists => write!(f, "todo already exists"),
+            TodoErrorKind::NotFound => write!(f, "todo not found"),
+            TodoErrorKind::CannotComplete => {
+                write!(f, "cannot complete todo: invalid state")
+            }
+            TodoErrorKind::CannotUncomplete => {
+                write!(f, "cannot uncomplete todo: invalid state")
+            }
+            TodoErrorKind::CannotDelete => {
+                write!(f, "cannot delete todo: invalid state")
             }
             TodoErrorKind::AlreadyCompleted => write!(f, "todo is already completed"),
             TodoErrorKind::NotCompleted => write!(f, "todo is not completed"),
@@ -132,6 +183,14 @@ impl fmt::Display for TodoError {
         }
     }
 }
+
+impl PartialEq for TodoError {
+    fn eq(&self, other: &Self) -> bool {
+        self.kind == other.kind
+    }
+}
+
+impl Eq for TodoError {}
 
 impl std::error::Error for TodoError {}
 
