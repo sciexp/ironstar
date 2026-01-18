@@ -51,9 +51,7 @@ pub struct TodoViewState {
 impl TodoViewState {
     /// Find a todo by ID, returning its index if present.
     fn find_index(&self, id: TodoId) -> Option<usize> {
-        self.todos
-            .iter()
-            .position(|t| t.id == id.into_inner())
+        self.todos.iter().position(|t| t.id == id.into_inner())
     }
 
     /// Count of active (non-completed) todos.

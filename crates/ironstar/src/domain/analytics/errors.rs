@@ -380,7 +380,10 @@ mod tests {
         let err = AnalyticsError::timeout(Uuid::new_v4(), 3000);
         assert!(matches!(
             err.kind(),
-            AnalyticsErrorKind::Timeout { elapsed_ms: 3000, .. }
+            AnalyticsErrorKind::Timeout {
+                elapsed_ms: 3000,
+                ..
+            }
         ));
     }
 

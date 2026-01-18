@@ -134,34 +134,30 @@ fn decide(
                 Err(QuerySessionError::query_already_in_progress())
             } else {
                 // Terminal state - need reset first
-                Err(QuerySessionError::terminal_state(
-                    state.status.state_name(),
-                ))
+                Err(QuerySessionError::terminal_state(state.status.state_name()))
             }
         }
 
         // BeginExecution: Pending → Executing
-        QuerySessionCommand::BeginExecution { query_id, began_at } => {
-            match &state.status {
-                QuerySessionStatus::Pending {
-                    query_id: pending_id,
-                    ..
-                } => {
-                    if *pending_id != *query_id {
-                        return Err(QuerySessionError::query_id_mismatch(*pending_id, *query_id));
-                    }
-                    Ok(vec![QuerySessionEvent::ExecutionBegan {
-                        query_id: *query_id,
-                        began_at: *began_at,
-                    }])
+        QuerySessionCommand::BeginExecution { query_id, began_at } => match &state.status {
+            QuerySessionStatus::Pending {
+                query_id: pending_id,
+                ..
+            } => {
+                if *pending_id != *query_id {
+                    return Err(QuerySessionError::query_id_mismatch(*pending_id, *query_id));
                 }
-                QuerySessionStatus::Idle => Err(QuerySessionError::no_query_in_progress()),
-                _ => Err(QuerySessionError::invalid_transition(
-                    "begin execution",
-                    state.status.state_name(),
-                )),
+                Ok(vec![QuerySessionEvent::ExecutionBegan {
+                    query_id: *query_id,
+                    began_at: *began_at,
+                }])
             }
-        }
+            QuerySessionStatus::Idle => Err(QuerySessionError::no_query_in_progress()),
+            _ => Err(QuerySessionError::invalid_transition(
+                "begin execution",
+                state.status.state_name(),
+            )),
+        },
 
         // CompleteQuery: Executing → Completed
         QuerySessionCommand::CompleteQuery {
@@ -247,9 +243,7 @@ fn decide(
                 }])
             }
             QuerySessionStatus::Idle => Err(QuerySessionError::no_query_in_progress()),
-            _ => Err(QuerySessionError::terminal_state(
-                state.status.state_name(),
-            )),
+            _ => Err(QuerySessionError::terminal_state(state.status.state_name())),
         },
 
         // ResetSession: Terminal → Idle (idempotent from Idle)
@@ -1142,10 +1136,7 @@ mod tests {
         .unwrap();
         assert_eq!(events.len(), 1);
         state = evolve(&state, &events[0]);
-        assert!(matches!(
-            state.status,
-            QuerySessionStatus::Executing { .. }
-        ));
+        assert!(matches!(state.status, QuerySessionStatus::Executing { .. }));
 
         // Complete
         let events = decide(
@@ -1164,11 +1155,7 @@ mod tests {
         assert_eq!(state.query_count, 1);
 
         // Reset
-        let events = decide(
-            &QuerySessionCommand::ResetSession { reset_at: ts },
-            &state,
-        )
-        .unwrap();
+        let events = decide(&QuerySessionCommand::ResetSession { reset_at: ts }, &state).unwrap();
         assert_eq!(events.len(), 1);
         state = evolve(&state, &events[0]);
         assert!(state.is_idle());
@@ -1255,10 +1242,7 @@ mod tests {
         .unwrap();
         state = evolve(&state, &events[0]);
 
-        assert!(matches!(
-            state.status,
-            QuerySessionStatus::Cancelled { .. }
-        ));
+        assert!(matches!(state.status, QuerySessionStatus::Cancelled { .. }));
         assert_eq!(state.query_count, 0); // Not incremented for cancel
     }
 }

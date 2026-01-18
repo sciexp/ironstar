@@ -27,9 +27,9 @@
 use crate::domain::traits::{DeciderType, EventType, Identifier, IsFinal};
 use crate::infrastructure::error::InfrastructureError;
 use fmodel_rust::aggregate::EventRepository;
-use serde::{de::DeserializeOwned, Serialize};
-use sqlx::sqlite::SqlitePool;
+use serde::{Serialize, de::DeserializeOwned};
 use sqlx::Row;
+use sqlx::sqlite::SqlitePool;
 use std::marker::PhantomData;
 use uuid::Uuid;
 

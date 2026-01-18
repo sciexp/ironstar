@@ -138,25 +138,19 @@ fn decide(command: &TodoCommand, state: &Option<TodoState>) -> Result<Vec<TodoEv
         (TodoCommand::Complete { .. }, _) => Err(TodoError::cannot_complete()),
 
         // Uncomplete: Completed → Active (idempotent if already Active)
-        (
-            TodoCommand::Uncomplete {
-                id,
-                uncompleted_at,
-            },
-            Some(s),
-        ) if s.is_completed() => Ok(vec![TodoEvent::Uncompleted {
-            id: *id,
-            uncompleted_at: *uncompleted_at,
-        }]),
+        (TodoCommand::Uncomplete { id, uncompleted_at }, Some(s)) if s.is_completed() => {
+            Ok(vec![TodoEvent::Uncompleted {
+                id: *id,
+                uncompleted_at: *uncompleted_at,
+            }])
+        }
         (TodoCommand::Uncomplete { .. }, Some(s)) if s.is_active() => {
             Ok(vec![]) // Idempotent: already active
         }
         (TodoCommand::Uncomplete { .. }, _) => Err(TodoError::cannot_uncomplete()),
 
         // Delete: Active/Completed → Deleted (idempotent if already Deleted)
-        (TodoCommand::Delete { id, deleted_at }, Some(s))
-            if s.is_active() || s.is_completed() =>
-        {
+        (TodoCommand::Delete { id, deleted_at }, Some(s)) if s.is_active() || s.is_completed() => {
             Ok(vec![TodoEvent::Deleted {
                 id: *id,
                 deleted_at: *deleted_at,
@@ -363,10 +357,7 @@ mod tests {
                     text: sample_text(),
                     created_at: ts,
                 },
-                TodoEvent::Deleted {
-                    id,
-                    deleted_at: ts,
-                },
+                TodoEvent::Deleted { id, deleted_at: ts },
             ])
             .when(TodoCommand::Complete {
                 id,
@@ -452,10 +443,7 @@ mod tests {
                     text: sample_text(),
                     created_at: ts,
                 },
-                TodoEvent::Deleted {
-                    id,
-                    deleted_at: ts,
-                },
+                TodoEvent::Deleted { id, deleted_at: ts },
             ])
             .when(TodoCommand::Uncomplete {
                 id,
@@ -494,10 +482,7 @@ mod tests {
                 created_at: ts,
             }])
             .when(TodoCommand::Delete { id, deleted_at: ts })
-            .then(vec![TodoEvent::Deleted {
-                id,
-                deleted_at: ts,
-            }]);
+            .then(vec![TodoEvent::Deleted { id, deleted_at: ts }]);
     }
 
     #[test]
@@ -519,10 +504,7 @@ mod tests {
                 },
             ])
             .when(TodoCommand::Delete { id, deleted_at: ts })
-            .then(vec![TodoEvent::Deleted {
-                id,
-                deleted_at: ts,
-            }]);
+            .then(vec![TodoEvent::Deleted { id, deleted_at: ts }]);
     }
 
     #[test]
@@ -538,10 +520,7 @@ mod tests {
                     text: sample_text(),
                     created_at: ts,
                 },
-                TodoEvent::Deleted {
-                    id,
-                    deleted_at: ts,
-                },
+                TodoEvent::Deleted { id, deleted_at: ts },
             ])
             .when(TodoCommand::Delete { id, deleted_at: ts })
             .then(vec![]); // Idempotent: no events
@@ -628,10 +607,7 @@ mod tests {
                     text: sample_text(),
                     created_at: ts,
                 },
-                TodoEvent::Deleted {
-                    id,
-                    deleted_at: ts,
-                },
+                TodoEvent::Deleted { id, deleted_at: ts },
             ])
             .when(TodoCommand::UpdateText {
                 id,
@@ -740,22 +716,26 @@ mod tests {
         assert!(state.as_ref().unwrap().is_deleted());
 
         // Verify terminal state: further operations fail or are idempotent
-        assert!(decide(
-            &TodoCommand::Complete {
-                id,
-                completed_at: ts
-            },
-            &state
-        )
-        .is_err());
-        assert!(decide(
-            &TodoCommand::Uncomplete {
-                id,
-                uncompleted_at: ts
-            },
-            &state
-        )
-        .is_err());
+        assert!(
+            decide(
+                &TodoCommand::Complete {
+                    id,
+                    completed_at: ts
+                },
+                &state
+            )
+            .is_err()
+        );
+        assert!(
+            decide(
+                &TodoCommand::Uncomplete {
+                    id,
+                    uncompleted_at: ts
+                },
+                &state
+            )
+            .is_err()
+        );
 
         // Delete is idempotent
         let events = decide(&TodoCommand::Delete { id, deleted_at: ts }, &state).unwrap();
