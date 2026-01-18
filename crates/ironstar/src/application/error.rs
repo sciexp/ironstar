@@ -115,6 +115,88 @@ impl AggregateError {
     }
 }
 
+// =============================================================================
+// CommandPipelineError: Unified error type for EventSourcedAggregate pipeline
+// =============================================================================
+
+use crate::domain::todo::TodoErrorKind;
+use crate::infrastructure::error::InfrastructureError;
+
+/// Error type for EventSourcedAggregate command pipeline.
+///
+/// Unifies domain and infrastructure failures for fmodel-rust type alignment.
+/// Each wired aggregate gets an explicit variant rather than a generic fallback,
+/// enabling exhaustive pattern matching and precise error handling.
+///
+/// # Design
+///
+/// The `EventSourcedAggregate::handle` method requires repository and decider to
+/// share the same error type. This enum bridges the gap:
+///
+/// - Domain errors (from Decider) are mapped via `map_error` before wiring
+/// - Infrastructure errors (from EventRepository) are wrapped via From impl
+///
+/// # Future aggregates
+///
+/// Add new variants as aggregates are wired:
+/// - `Session(SessionErrorKind)` for ironstar-507
+/// - `Workspace(WorkspaceErrorKind)` for ironstar-7a2
+#[derive(Debug)]
+pub enum CommandPipelineError {
+    /// Todo aggregate domain error.
+    Todo(TodoErrorKind),
+    // Session(SessionErrorKind),      // future: ironstar-507
+    // Workspace(WorkspaceErrorKind),  // future: ironstar-7a2
+    /// Infrastructure failure (from EventRepository adapter).
+    Infrastructure(InfrastructureError),
+}
+
+impl fmt::Display for CommandPipelineError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Todo(k) => write!(f, "Todo: {k}"),
+            Self::Infrastructure(e) => write!(f, "{e}"),
+        }
+    }
+}
+
+impl std::error::Error for CommandPipelineError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Todo(_) => None,
+            Self::Infrastructure(e) => Some(e),
+        }
+    }
+}
+
+impl From<InfrastructureError> for CommandPipelineError {
+    fn from(e: InfrastructureError) -> Self {
+        Self::Infrastructure(e)
+    }
+}
+
+impl fmt::Display for TodoErrorKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TodoErrorKind::EmptyText => write!(f, "todo text cannot be empty"),
+            TodoErrorKind::TextTooLong { max, actual } => {
+                write!(f, "todo text cannot exceed {max} characters (got {actual})")
+            }
+            TodoErrorKind::AlreadyExists => write!(f, "todo already exists"),
+            TodoErrorKind::NotFound => write!(f, "todo not found"),
+            TodoErrorKind::CannotComplete => write!(f, "cannot complete todo: invalid state"),
+            TodoErrorKind::CannotUncomplete => write!(f, "cannot uncomplete todo: invalid state"),
+            TodoErrorKind::CannotDelete => write!(f, "cannot delete todo: invalid state"),
+            TodoErrorKind::AlreadyCompleted => write!(f, "todo is already completed"),
+            TodoErrorKind::NotCompleted => write!(f, "todo is not completed"),
+            TodoErrorKind::Deleted => write!(f, "todo has been deleted"),
+            TodoErrorKind::InvalidTransition { action, state } => {
+                write!(f, "invalid state transition: cannot {action} when {state}")
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
