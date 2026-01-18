@@ -361,6 +361,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::infrastructure::error::InfrastructureErrorKind;
     use sqlx::sqlite::SqlitePoolOptions;
 
     // Test helpers - minimal event/command types for testing
@@ -540,4 +541,147 @@ mod tests {
         assert_eq!(repo.earliest_sequence().await.unwrap(), Some(1));
         assert_eq!(repo.latest_sequence().await.unwrap(), Some(1));
     }
+
+    // Test helper: event that marks aggregate as finalized
+    #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
+    struct FinalTestEvent {
+        id: String,
+        data: String,
+    }
+
+    impl Identifier for FinalTestEvent {
+        fn identifier(&self) -> String {
+            self.id.clone()
+        }
+    }
+
+    impl EventType for FinalTestEvent {
+        fn event_type(&self) -> String {
+            "FinalTestEvent".to_string()
+        }
+    }
+
+    impl DeciderType for FinalTestEvent {
+        fn decider_type(&self) -> String {
+            "Test".to_string()
+        }
+    }
+
+    impl IsFinal for FinalTestEvent {
+        fn is_final(&self) -> bool {
+            true
+        }
+    }
+
+    #[tokio::test]
+    async fn test_finalized_aggregate_rejects_new_events() {
+        // Tests the check_not_final trigger: once an aggregate has a final event,
+        // no further events can be appended to it.
+        let pool = create_test_pool().await;
+        let repo: SqliteEventRepository<TestCommand, FinalTestEvent> =
+            SqliteEventRepository::new(pool.clone());
+
+        // Save a final event
+        let final_event = FinalTestEvent {
+            id: "agg-final".to_string(),
+            data: "closing event".to_string(),
+        };
+        repo.save(&[final_event]).await.unwrap();
+
+        // Attempt to save another event to the same aggregate should fail
+        let another_event = FinalTestEvent {
+            id: "agg-final".to_string(),
+            data: "should not be allowed".to_string(),
+        };
+        let result = repo.save(&[another_event]).await;
+
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        let err_msg = err.to_string();
+        assert!(
+            err_msg.contains("finalized aggregate stream"),
+            "Expected trigger error message, got: {err_msg}"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_is_final_flag_round_trip() {
+        // Verify that is_final=true is correctly stored and retrieved via query_all()
+        let pool = create_test_pool().await;
+        let repo: SqliteEventRepository<TestCommand, FinalTestEvent> =
+            SqliteEventRepository::new(pool);
+
+        let final_event = FinalTestEvent {
+            id: "agg-final-rt".to_string(),
+            data: "terminal state".to_string(),
+        };
+        repo.save(&[final_event]).await.unwrap();
+
+        let stored_events = repo.query_all().await.unwrap();
+        assert_eq!(stored_events.len(), 1);
+        assert!(
+            stored_events[0].is_final,
+            "Expected is_final=true for FinalTestEvent"
+        );
+        assert_eq!(stored_events[0].event.data, "terminal state");
+    }
+
+    #[tokio::test]
+    async fn test_non_final_event_flag_round_trip() {
+        // Verify that is_final=false is correctly stored and retrieved
+        let pool = create_test_pool().await;
+        let repo: SqliteEventRepository<TestCommand, TestEvent> = SqliteEventRepository::new(pool);
+
+        let event = TestEvent {
+            id: "agg-normal".to_string(),
+            data: "regular event".to_string(),
+        };
+        repo.save(&[event]).await.unwrap();
+
+        let stored_events = repo.query_all().await.unwrap();
+        assert_eq!(stored_events.len(), 1);
+        assert!(
+            !stored_events[0].is_final,
+            "Expected is_final=false for TestEvent"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_optimistic_locking_conflict_error_variant() {
+        // Verify the OptimisticLockingConflict error variant can be constructed
+        // and produces correct error messages and codes.
+        //
+        // Note: Deterministically triggering a real optimistic locking conflict
+        // requires racing two transactions, which is difficult in a single-threaded
+        // test. The actual conflict detection is tested implicitly by the UNIQUE
+        // constraint on previous_id, combined with IMMEDIATE transaction isolation.
+        // This test verifies the error type is correctly structured.
+        let err = InfrastructureError::optimistic_locking_conflict("Todo", "todo-123");
+
+        assert_eq!(
+            err.to_string(),
+            "optimistic locking conflict for Todo/todo-123"
+        );
+
+        match err.kind() {
+            InfrastructureErrorKind::OptimisticLockingConflict {
+                aggregate_type,
+                aggregate_id,
+            } => {
+                assert_eq!(aggregate_type, "Todo");
+                assert_eq!(aggregate_id, "todo-123");
+            }
+            _ => panic!("Expected OptimisticLockingConflict variant"),
+        }
+    }
+
+    // Note: The check_previous_id_same_aggregate trigger provides defense-in-depth
+    // by preventing cross-aggregate previous_id references at the database level.
+    // This trigger is difficult to test through the public repository API because
+    // save_with_command() correctly chains events within the same aggregate.
+    // The trigger guards against potential bugs in the repository implementation
+    // or direct SQL manipulation. To test this trigger, one would need to bypass
+    // the repository and execute raw SQL with an invalid previous_id reference.
+    // This is intentionally not tested here as it would couple tests to internal
+    // implementation details rather than public behavior.
 }
