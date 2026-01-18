@@ -109,7 +109,7 @@ pub enum TodoFilter {
 ///
 /// This is a read-only projection derived from [`super::TodoState`],
 /// shaped for efficient list rendering via SSE updates.
-#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export, export_to = "web-components/types/signals/")]
 pub struct TodoItemView {
