@@ -58,9 +58,13 @@ pub mod error;
 pub mod query_session;
 pub mod signals;
 pub mod todo;
+pub mod traits;
 
 // Re-export key types for ergonomic imports
 pub use aggregate::{Aggregate, AggregateRoot};
+
+// Trait re-exports (Identifier re-exported from fmodel_rust via traits module)
+pub use traits::{DeciderType, EventType, IsFinal};
 
 // Todo re-exports (from todo/)
 pub use todo::{
