@@ -312,6 +312,70 @@ ironstar/
     └── ...
 ```
 
+## Workspace bounded context module organization
+
+The Workspace context contains 5 aggregates, each following the standard module structure.
+This section provides a concrete example of how the abstract Layer 1 domain structure is instantiated.
+
+### Directory layout
+
+```
+crates/ironstar/src/domain/
+├── mod.rs                      # Domain module root, re-exports
+├── traits.rs                   # Identifier, EventType, DeciderType, IsFinal
+├── common/                     # Shared value objects
+│   └── bounded_string.rs
+├── shared_kernel/              # Cross-context types (Shared Kernel pattern)
+│   ├── mod.rs
+│   └── user_id.rs              # UserId (shared with Session context)
+├── workspace/                  # WorkspaceAggregate
+│   ├── mod.rs
+│   ├── decider.rs
+│   ├── commands.rs
+│   ├── events.rs
+│   ├── state.rs
+│   ├── errors.rs
+│   └── values.rs               # WorkspaceId, WorkspaceName, Visibility
+├── workspace_preferences/      # WorkspacePreferences aggregate
+│   └── ...                     # Same structure
+├── dashboard/                  # Dashboard aggregate
+│   └── ...
+├── saved_query/                # SavedQuery aggregate
+│   └── ...
+├── user_preferences/           # UserPreferences aggregate
+│   └── ...
+└── views/                      # Read-side projections
+    ├── mod.rs
+    ├── todo.rs                 # TodoListView (reference)
+    └── workspace.rs            # WorkspaceListView, DashboardLayoutView, etc.
+```
+
+### Per-aggregate module structure
+
+Each aggregate follows this pattern:
+
+| File | Purpose | Key types |
+|------|---------|-----------|
+| `mod.rs` | Re-exports public API | `pub use` statements |
+| `decider.rs` | Pure Decider factory | `aggregate_decider()` function |
+| `commands.rs` | Command sum type | Enum with `Identifier`, `DeciderType` |
+| `events.rs` | Event sum type | Enum with `Identifier`, `EventType`, `IsFinal` |
+| `state.rs` | State + status enum | Struct with helper methods |
+| `errors.rs` | Error + ErrorKind | Struct with factory constructors |
+| `values.rs` | Value objects | Smart constructors, validation |
+
+### Aggregate ID patterns
+
+Each aggregate uses a hierarchical ID scheme for routing:
+
+| Aggregate | ID Pattern | Example |
+|-----------|------------|---------|
+| Workspace | `workspace_{uuid}` | `workspace_a1b2c3d4` |
+| WorkspacePreferences | `workspace_{uuid}/preferences` | `workspace_a1b2c3d4/preferences` |
+| Dashboard | `workspace_{uuid}/dashboard_{name}` | `workspace_a1b2c3d4/dashboard_main` |
+| SavedQuery | `workspace_{uuid}/query_{name}` | `workspace_a1b2c3d4/query_sales` |
+| UserPreferences | `user_{uuid}/preferences` | `user_x1y2z3/preferences` |
+
 ## Algebraic interpretation of layers
 
 The 8-layer crate structure corresponds to semantic boundaries in the algebraic model:
