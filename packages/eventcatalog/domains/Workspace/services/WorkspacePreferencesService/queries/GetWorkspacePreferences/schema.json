@@ -1,0 +1,59 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "GetWorkspacePreferences",
+	"type": "object",
+	"title": "GetWorkspacePreferences",
+	"description": "Retrieve workspace-scoped preferences including default catalog and layout defaults.",
+	"required": ["workspaceId"],
+	"properties": {
+		"workspaceId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "The workspace to retrieve preferences for"
+		},
+		"response": {
+			"type": "object",
+			"required": ["preferencesId", "workspaceId"],
+			"properties": {
+				"preferencesId": {
+					"type": "string",
+					"format": "uuid",
+					"description": "Preferences identifier"
+				},
+				"workspaceId": {
+					"type": "string",
+					"format": "uuid",
+					"description": "The workspace these preferences belong to"
+				},
+				"defaultCatalogUri": {
+					"type": "string",
+					"format": "uri",
+					"description": "Default catalog URI for this workspace if set"
+				},
+				"defaultCatalogName": {
+					"type": "string",
+					"description": "Human-readable name of default catalog"
+				},
+				"layoutDefaults": {
+					"type": "object",
+					"description": "Default layout configuration for dashboards in this workspace",
+					"properties": {
+						"columnCount": {
+							"type": "integer",
+							"description": "Default number of columns for dashboard layouts"
+						},
+						"rowHeight": {
+							"type": "integer",
+							"description": "Default row height in pixels"
+						}
+					}
+				},
+				"lastModifiedAt": {
+					"type": "string",
+					"format": "date-time",
+					"description": "When preferences were last modified"
+				}
+			}
+		}
+	}
+}

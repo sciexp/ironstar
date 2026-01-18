@@ -1,0 +1,19 @@
+---
+id: GetWorkspacePreferences
+name: Get Workspace Preferences
+version: 0.0.1
+summary: |
+  Query to retrieve workspace-scoped preferences including default catalog and layout defaults.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This query returns all preference settings for a specific workspace.
+Used for workspace settings pages and dashboard initialization.
+
+## Read Model
+
+Built from `WorkspacePreferencesInitialized`, `WorkspacePreferencesDefaultCatalogSet`, `WorkspacePreferencesDefaultCleared`, and `WorkspacePreferencesLayoutDefaultsSet` events.
