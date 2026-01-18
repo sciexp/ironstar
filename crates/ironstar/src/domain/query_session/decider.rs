@@ -984,7 +984,6 @@ mod tests {
     fn query_count_increments_on_completion() {
         let query_id = sample_query_id();
         let ts = sample_time();
-        let decider = query_session_decider();
 
         // Start with empty events
         let state = QuerySessionState::default();
@@ -1113,7 +1112,6 @@ mod tests {
     fn full_success_lifecycle() {
         let query_id = sample_query_id();
         let ts = sample_time();
-        let decider = query_session_decider();
 
         let mut state = QuerySessionState::default();
 
