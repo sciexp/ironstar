@@ -78,8 +78,8 @@ pub use analytics::{
 
 // QuerySession re-exports
 pub use query_session::{
-    QuerySessionAggregate, QuerySessionCommand, QuerySessionError, QuerySessionErrorKind,
-    QuerySessionEvent, QuerySessionState, QuerySessionStatus,
+    QuerySessionCommand, QuerySessionDecider, QuerySessionError, QuerySessionErrorKind,
+    QuerySessionEvent, QuerySessionState, QuerySessionStatus, query_session_decider,
 };
 
 // Signal re-exports
