@@ -31,6 +31,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use super::values::TodoId;
+use crate::domain::traits::{DeciderType, Identifier};
 
 /// Commands that can be sent to the Todo aggregate.
 ///
@@ -110,6 +111,18 @@ impl TodoCommand {
             Self::Uncomplete { .. } => "Uncomplete",
             Self::Delete { .. } => "Delete",
         }
+    }
+}
+
+impl Identifier for TodoCommand {
+    fn identifier(&self) -> String {
+        self.aggregate_id().to_string()
+    }
+}
+
+impl DeciderType for TodoCommand {
+    fn decider_type(&self) -> String {
+        "Todo".to_string()
     }
 }
 
