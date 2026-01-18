@@ -50,6 +50,9 @@ rkyv = { version = "0.8", features = ["bytecheck"] }
 # Event bus (distribution-ready pub/sub)
 zenoh = { version = "1.7", default-features = false, features = ["transport_tcp", "transport_tls"] }
 
+# Functional event sourcing (Decider pattern)
+fmodel-rust = { version = "0.9", features = ["not-send-futures"] }
+
 # Workspace-wide lints (adapted from Hyperswitch)
 # Per-crate Cargo.toml should include: [lints] workspace = true
 [workspace.lints.rust]

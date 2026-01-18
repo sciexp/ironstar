@@ -39,6 +39,9 @@ rkyv = { workspace = true }
 # Event bus
 zenoh = { workspace = true }
 
+# Functional event sourcing (Decider pattern)
+fmodel-rust = { workspace = true }
+
 [dev-dependencies]
 tokio = { workspace = true }
 
