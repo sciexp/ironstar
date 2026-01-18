@@ -1,0 +1,20 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "RemoveTab",
+	"type": "object",
+	"title": "RemoveTab",
+	"description": "Remove a tab from a dashboard. The tab must be empty (no charts) or charts must be relocated first.",
+	"required": ["dashboardId", "tabId"],
+	"properties": {
+		"dashboardId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "The dashboard containing the tab"
+		},
+		"tabId": {
+			"type": "string",
+			"format": "uuid",
+			"description": "The tab to remove"
+		}
+	}
+}

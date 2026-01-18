@@ -1,0 +1,25 @@
+---
+id: RemoveTab
+name: Remove Tab
+version: 0.0.1
+summary: |
+  Command to remove a tab from a dashboard.
+owners:
+  - engineering
+schemaPath: schema.json
+---
+
+## Description
+
+This command removes a tab from a dashboard.
+The tab must be empty (contain no charts) before removal, or charts must be relocated to another tab first.
+
+## Validation Rules
+
+- Dashboard must exist and be owned by the user
+- Tab must exist within the specified dashboard
+- Tab must be empty (no charts assigned to it)
+
+## Emits
+
+- `TabRemoved` on success
