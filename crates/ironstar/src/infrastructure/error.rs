@@ -53,6 +53,11 @@ pub enum InfrastructureErrorKind {
     Cache(String),
     /// Resource not found in infrastructure layer.
     NotFound { resource: String, id: String },
+    /// Optimistic locking conflict - concurrent modification detected.
+    OptimisticLockingConflict {
+        aggregate_type: String,
+        aggregate_id: String,
+    },
 }
 
 impl InfrastructureError {
@@ -92,6 +97,7 @@ impl InfrastructureError {
             InfrastructureErrorKind::EventBus(_) => ErrorCode::ServiceUnavailable,
             InfrastructureErrorKind::Cache(_) => ErrorCode::InternalError,
             InfrastructureErrorKind::NotFound { .. } => ErrorCode::NotFound,
+            InfrastructureErrorKind::OptimisticLockingConflict { .. } => ErrorCode::Conflict,
         }
     }
 
@@ -115,6 +121,18 @@ impl InfrastructureError {
             id: id.into(),
         })
     }
+
+    /// Create an optimistic locking conflict error.
+    #[must_use]
+    pub fn optimistic_locking_conflict(
+        aggregate_type: impl Into<String>,
+        aggregate_id: impl Into<String>,
+    ) -> Self {
+        Self::new(InfrastructureErrorKind::OptimisticLockingConflict {
+            aggregate_type: aggregate_type.into(),
+            aggregate_id: aggregate_id.into(),
+        })
+    }
 }
 
 impl fmt::Display for InfrastructureError {
@@ -126,6 +144,15 @@ impl fmt::Display for InfrastructureError {
             InfrastructureErrorKind::Cache(msg) => write!(f, "cache error: {msg}"),
             InfrastructureErrorKind::NotFound { resource, id } => {
                 write!(f, "{resource} {id} not found")
+            }
+            InfrastructureErrorKind::OptimisticLockingConflict {
+                aggregate_type,
+                aggregate_id,
+            } => {
+                write!(
+                    f,
+                    "optimistic locking conflict for {aggregate_type}/{aggregate_id}"
+                )
             }
         }
     }
