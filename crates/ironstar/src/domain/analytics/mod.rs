@@ -12,6 +12,15 @@
 //! - [`SqlQuery`]: Validated SQL query string
 //! - [`ChartConfig`]: Configuration for ECharts visualization
 //!
+//! # Workflow
+//!
+//! The [`workflow`] module provides a pure function pipeline for analytics
+//! operations using railway-oriented programming:
+//!
+//! - [`execute_workflow`]: Main entry point composing validation and execution
+//! - [`SchemaLoader`], [`QueryExecutor`]: Effect boundary traits for infrastructure
+//! - [`validate_schema_compatibility`], [`transform_for_chart`]: Pure functions
+//!
 //! # Example
 //!
 //! ```rust,ignore
@@ -24,6 +33,7 @@
 
 mod errors;
 mod values;
+pub mod workflow;
 
 // Re-export errors
 pub use errors::{
@@ -34,4 +44,10 @@ pub use errors::{
 pub use values::{
     ChartConfig, ChartType, DATASET_REF_MAX_LENGTH, DatasetRef, QueryId, SQL_QUERY_MAX_LENGTH,
     SqlQuery,
+};
+
+// Re-export workflow types and functions
+pub use workflow::{
+    ChartData, DatasetSchema, QueryExecutor, QueryResult, SchemaLoader, WorkflowResult,
+    execute_workflow, transform_for_chart, validate_schema_compatibility, validate_workflow_inputs,
 };
