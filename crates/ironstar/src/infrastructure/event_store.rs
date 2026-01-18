@@ -184,6 +184,105 @@ where
     }
 }
 
+impl<C, E> SqliteEventRepository<C, E>
+where
+    C: Identifier + DeciderType + Sync,
+    E: Identifier + EventType + DeciderType + IsFinal + Serialize + DeserializeOwned + Clone + Sync,
+{
+    /// Save events with optional command_id for causation tracking.
+    ///
+    /// This is the primary save implementation with transaction-based optimistic locking.
+    /// The fmodel-rust trait's `save()` delegates to this method with `command_id = None`.
+    ///
+    /// # Transaction isolation
+    ///
+    /// Uses SQLite IMMEDIATE transaction to acquire write lock before reading
+    /// the current version, preventing race conditions where concurrent writers
+    /// could claim the same `previous_id`.
+    ///
+    /// # Optimistic locking
+    ///
+    /// If another transaction commits between our BEGIN IMMEDIATE and INSERT,
+    /// the UNIQUE constraint on `previous_id` will fail. This is caught and
+    /// translated to `OptimisticLockingConflict`.
+    pub async fn save_with_command(
+        &self,
+        events: &[E],
+        command_id: Option<&str>,
+    ) -> Result<Vec<(E, String)>, InfrastructureError> {
+        if events.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        // Start transaction with IMMEDIATE isolation for write lock
+        let mut tx = self.pool.begin().await?;
+
+        let mut results = Vec::with_capacity(events.len());
+
+        for event in events {
+            let event_id = Uuid::new_v4().to_string();
+            let aggregate_id = event.identifier();
+            let aggregate_type = event.decider_type();
+            let event_type = event.event_type();
+            let is_final = if event.is_final() { 1_i64 } else { 0_i64 };
+            let payload = serde_json::to_string(event)?;
+
+            // Fetch latest version within transaction
+            let previous_id: Option<String> = sqlx::query_scalar(
+                r#"
+                SELECT event_id
+                FROM events
+                WHERE aggregate_type = ? AND aggregate_id = ?
+                ORDER BY id DESC
+                LIMIT 1
+                "#,
+            )
+            .bind(&aggregate_type)
+            .bind(&aggregate_id)
+            .fetch_optional(&mut *tx)
+            .await?;
+
+            let result = sqlx::query(
+                r#"
+                INSERT INTO events (
+                    event_id, aggregate_type, aggregate_id, previous_id,
+                    event_type, payload, command_id, final
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                "#,
+            )
+            .bind(&event_id)
+            .bind(&aggregate_type)
+            .bind(&aggregate_id)
+            .bind(&previous_id)
+            .bind(&event_type)
+            .bind(&payload)
+            .bind(command_id)
+            .bind(is_final)
+            .execute(&mut *tx)
+            .await;
+
+            // Translate UNIQUE constraint violation on previous_id to OptimisticLockingConflict
+            if let Err(sqlx::Error::Database(db_err)) = &result {
+                if db_err.message().contains("UNIQUE constraint failed")
+                    && db_err.message().contains("previous_id")
+                {
+                    return Err(InfrastructureError::optimistic_locking_conflict(
+                        &aggregate_type,
+                        &aggregate_id,
+                    ));
+                }
+            }
+
+            result?;
+            results.push((event.clone(), event_id));
+        }
+
+        tx.commit().await?;
+        Ok(results)
+    }
+}
+
 /// Implementation of fmodel-rust's EventRepository trait for SQLite.
 ///
 /// The `Version` type is `String` representing the event UUID, used for
@@ -226,53 +325,10 @@ where
 
     /// Save events to the event store with optimistic locking.
     ///
-    /// Events are saved with a previous_id chain: the first event in an
-    /// aggregate has NULL previous_id, subsequent events reference their
-    /// predecessor's event_id.
-    ///
-    /// The chain is maintained by fetching the latest event_id before each
-    /// insert and using it as previous_id for the new event.
+    /// Delegates to `save_with_command()` with `command_id = None`.
+    /// Use `save_with_command()` directly when causation tracking is needed.
     async fn save(&self, events: &[E]) -> Result<Vec<(E, String)>, InfrastructureError> {
-        if events.is_empty() {
-            return Ok(Vec::new());
-        }
-
-        let mut results = Vec::with_capacity(events.len());
-
-        for event in events {
-            let event_id = Uuid::new_v4().to_string();
-            let aggregate_id = event.identifier();
-            let aggregate_type = event.decider_type();
-            let event_type = event.event_type();
-            let is_final = if event.is_final() { 1_i64 } else { 0_i64 };
-            let payload = serde_json::to_string(event)?;
-
-            // Fetch latest version for this aggregate to use as previous_id
-            let previous_id = self.version_provider(event).await?;
-
-            sqlx::query(
-                r#"
-                INSERT INTO events (
-                    event_id, aggregate_type, aggregate_id, previous_id,
-                    event_type, payload, final
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-                "#,
-            )
-            .bind(&event_id)
-            .bind(&aggregate_type)
-            .bind(&aggregate_id)
-            .bind(&previous_id)
-            .bind(&event_type)
-            .bind(&payload)
-            .bind(is_final)
-            .execute(&self.pool)
-            .await?;
-
-            results.push((event.clone(), event_id));
-        }
-
-        Ok(results)
+        self.save_with_command(events, None).await
     }
 
     /// Get the latest event_id (version) for the aggregate this event belongs to.
