@@ -10,6 +10,7 @@
 //! - [`common`]: Shared value objects (BoundedString, DashboardTitle, TabTitle, GridSize)
 //! - [`query_session`]: QuerySession decider (commands, events, state, errors)
 //! - [`todo`]: Todo decider (commands, events, state, values, errors)
+//! - [`views`]: Read-side projections (View pattern for CQRS read models)
 //!
 //! # Design Principles
 //!
@@ -54,6 +55,7 @@ pub mod query_session;
 pub mod signals;
 pub mod todo;
 pub mod traits;
+pub mod views;
 
 // Trait re-exports (Identifier re-exported from fmodel_rust via traits module)
 pub use traits::{DeciderType, EventType, IsFinal};
@@ -89,3 +91,6 @@ pub use common::{
     GRID_HEIGHT_MIN, GRID_WIDTH_MIN, GridSize, TAB_TITLE_MAX_LENGTH, TAB_TITLE_MIN_LENGTH,
     TabTitle,
 };
+
+// View re-exports
+pub use views::{TodoView, TodoViewState, todo_view};
