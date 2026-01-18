@@ -224,7 +224,10 @@ fn evolve(state: &Option<TodoState>, event: &TodoEvent) -> Option<TodoState> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::{DateTime, Utc};
     use fmodel_rust::specification::DeciderTestSpecification;
+
+    use super::super::values::TodoId;
 
     fn sample_id() -> TodoId {
         TodoId::from_uuid(uuid::Uuid::nil())

@@ -23,9 +23,9 @@ pub enum TodoStatus {
 
 /// State of a single todo item, derived from events.
 ///
-/// All fields are `Option` because the aggregate starts empty (before the
+/// All fields are `Option` because the decider starts empty (before the
 /// `Created` event). After `Created`, the fields are guaranteed to be `Some`.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct TodoState {
     /// Unique identifier (set on Created).
     pub id: Option<TodoId>,
