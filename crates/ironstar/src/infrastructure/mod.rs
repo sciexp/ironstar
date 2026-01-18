@@ -95,5 +95,7 @@
 //! - Synchronous functions (by design, everything here is async)
 
 pub mod error;
+pub mod event_store;
 
 pub use error::{InfrastructureError, InfrastructureErrorKind};
+pub use event_store::{SqliteEventRepository, StoredEvent};
