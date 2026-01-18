@@ -16,6 +16,13 @@
 //! - `query_all()` — projection rebuild on startup
 //! - `query_since_sequence(since)` — SSE reconnection via Last-Event-ID
 //! - `earliest_sequence()` / `latest_sequence()` — stream bounds
+//!
+//! # Schema versioning
+//!
+//! All events are stored with `schema_version = 1` by default. When event
+//! schemas evolve, implement upcasters that transform older versions to the
+//! current schema during deserialization. The version column enables routing
+//! events to appropriate upcasters without modifying stored data.
 
 use crate::domain::traits::{DeciderType, EventType, Identifier, IsFinal};
 use crate::infrastructure::error::InfrastructureError;
@@ -39,7 +46,7 @@ pub struct StoredEvent<E> {
     pub aggregate_id: String,
     /// Event type name
     pub event_type: String,
-    /// Schema version for upcasting
+    /// Schema version for upcasting (currently always 1, see module docs)
     pub schema_version: i64,
     /// Deserialized event payload
     pub event: E,
