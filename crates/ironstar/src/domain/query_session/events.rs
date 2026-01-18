@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use super::super::analytics::{ChartConfig, DatasetRef, QueryId, SqlQuery};
+use crate::domain::traits::{DeciderType, EventType, Identifier, IsFinal};
 
 /// Events emitted by the QuerySession aggregate.
 ///
@@ -87,5 +88,38 @@ impl QuerySessionEvent {
             | Self::QueryCancelled { query_id, .. } => Some(*query_id),
             Self::SessionReset { .. } => None,
         }
+    }
+}
+
+impl Identifier for QuerySessionEvent {
+    fn identifier(&self) -> String {
+        // Singleton aggregate pattern - all events belong to the same session
+        "default-session".to_string()
+    }
+}
+
+impl EventType for QuerySessionEvent {
+    fn event_type(&self) -> String {
+        match self {
+            Self::QueryStarted { .. } => "QueryStarted",
+            Self::ExecutionBegan { .. } => "ExecutionBegan",
+            Self::QueryCompleted { .. } => "QueryCompleted",
+            Self::QueryFailed { .. } => "QueryFailed",
+            Self::QueryCancelled { .. } => "QueryCancelled",
+            Self::SessionReset { .. } => "SessionReset",
+        }
+        .to_string()
+    }
+}
+
+impl DeciderType for QuerySessionEvent {
+    fn decider_type(&self) -> String {
+        "QuerySession".to_string()
+    }
+}
+
+impl IsFinal for QuerySessionEvent {
+    fn is_final(&self) -> bool {
+        false // Session can always be reset, never truly terminal
     }
 }
