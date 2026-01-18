@@ -464,6 +464,58 @@ impl ChartConfig {
         self
     }
 
+    // ========================================================================
+    // Accessor methods for workflow compatibility
+    // ========================================================================
+
+    /// Get the chart type.
+    #[must_use]
+    pub fn chart_type(&self) -> ChartType {
+        self.chart_type
+    }
+
+    /// Get the x-axis column name, if configured.
+    #[must_use]
+    pub fn x_axis(&self) -> Option<&str> {
+        self.x_axis.as_deref()
+    }
+
+    /// Get the y-axis column name, if configured.
+    #[must_use]
+    pub fn y_axis(&self) -> Option<&str> {
+        self.y_axis.as_deref()
+    }
+
+    /// Get the chart title, if configured.
+    #[must_use]
+    pub fn title(&self) -> Option<&str> {
+        self.title.as_deref()
+    }
+
+    /// Get the series column name, if configured.
+    #[must_use]
+    pub fn series_column(&self) -> Option<&str> {
+        self.series_column.as_deref()
+    }
+
+    /// Get the data point limit, if configured.
+    #[must_use]
+    pub fn limit(&self) -> Option<usize> {
+        self.limit
+    }
+
+    /// Check if data zoom is enabled.
+    #[must_use]
+    pub fn zoom_enabled(&self) -> bool {
+        self.enable_zoom
+    }
+
+    /// Check if legend is shown.
+    #[must_use]
+    pub fn legend_shown(&self) -> bool {
+        self.show_legend
+    }
+
     /// Validate the configuration is complete enough for rendering.
     ///
     /// # Errors
