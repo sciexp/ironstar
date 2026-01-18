@@ -203,6 +203,11 @@ mod tests {
         TodoText::new("Buy groceries").unwrap()
     }
 
+    /// Helper to convert Vec<E> to Vec<&E> for compute_new_state.
+    fn as_refs<T>(events: &[T]) -> Vec<&T> {
+        events.iter().collect()
+    }
+
     // --- Initial state ---
 
     #[test]
@@ -227,7 +232,7 @@ mod tests {
             created_at: sample_time(),
         };
 
-        let state = view.compute_new_state(None, &[event]);
+        let state = view.compute_new_state(None, &[&event]);
 
         assert_eq!(state.todos.len(), 1);
         assert_eq!(state.count, 1);
@@ -253,7 +258,7 @@ mod tests {
             },
         ];
 
-        let state = view.compute_new_state(None, &events);
+        let state = view.compute_new_state(None, &as_refs(&events));
 
         assert_eq!(state.todos.len(), 2);
         assert_eq!(state.count, 2);
@@ -278,7 +283,7 @@ mod tests {
             },
         ];
 
-        let state = view.compute_new_state(None, &events);
+        let state = view.compute_new_state(None, &as_refs(&events));
 
         assert_eq!(state.todos[0].text, "Buy milk");
         assert_eq!(state.count, 1);
@@ -293,7 +298,7 @@ mod tests {
             updated_at: sample_time(),
         }];
 
-        let state = view.compute_new_state(None, &events);
+        let state = view.compute_new_state(None, &as_refs(&events));
 
         assert!(state.todos.is_empty());
         assert_eq!(state.count, 0);
@@ -316,7 +321,7 @@ mod tests {
             },
         ];
 
-        let state = view.compute_new_state(None, &events);
+        let state = view.compute_new_state(None, &as_refs(&events));
 
         assert!(state.todos[0].completed);
         assert_eq!(state.completed_count, 1);
@@ -342,7 +347,7 @@ mod tests {
             },
         ];
 
-        let state = view.compute_new_state(None, &events);
+        let state = view.compute_new_state(None, &as_refs(&events));
 
         assert_eq!(state.completed_count, 1);
     }
@@ -368,7 +373,7 @@ mod tests {
             },
         ];
 
-        let state = view.compute_new_state(None, &events);
+        let state = view.compute_new_state(None, &as_refs(&events));
 
         assert!(!state.todos[0].completed);
         assert_eq!(state.completed_count, 0);
@@ -390,7 +395,7 @@ mod tests {
             },
         ];
 
-        let state = view.compute_new_state(None, &events);
+        let state = view.compute_new_state(None, &as_refs(&events));
 
         assert_eq!(state.completed_count, 0);
     }
@@ -412,7 +417,7 @@ mod tests {
             },
         ];
 
-        let state = view.compute_new_state(None, &events);
+        let state = view.compute_new_state(None, &as_refs(&events));
 
         assert!(state.todos.is_empty());
         assert_eq!(state.count, 0);
@@ -438,7 +443,7 @@ mod tests {
             },
         ];
 
-        let state = view.compute_new_state(None, &events);
+        let state = view.compute_new_state(None, &as_refs(&events));
 
         assert_eq!(state.count, 0);
         assert_eq!(state.completed_count, 0);
@@ -452,7 +457,7 @@ mod tests {
             deleted_at: sample_time(),
         }];
 
-        let state = view.compute_new_state(None, &events);
+        let state = view.compute_new_state(None, &as_refs(&events));
 
         assert!(state.todos.is_empty());
         assert_eq!(state.count, 0);
@@ -502,7 +507,7 @@ mod tests {
             },
         ];
 
-        let state = view.compute_new_state(None, &events);
+        let state = view.compute_new_state(None, &as_refs(&events));
 
         assert_eq!(state.todos.len(), 1);
         assert_eq!(state.count, 1);
@@ -536,7 +541,7 @@ mod tests {
             created_at: ts,
         }];
 
-        let state = view.compute_new_state(Some(initial), &events);
+        let state = view.compute_new_state(Some(initial), &as_refs(&events));
 
         assert_eq!(state.todos.len(), 2);
         assert_eq!(state.count, 2);
