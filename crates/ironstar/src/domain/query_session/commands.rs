@@ -1,5 +1,6 @@
 //! Commands for the QuerySession aggregate.
 
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
@@ -11,6 +12,9 @@ use crate::domain::traits::{DeciderType, Identifier};
 /// Commands represent requests to change state. They carry the data needed
 /// for validation and event emission. The aggregate validates commands
 /// against current state and either rejects them or emits events.
+///
+/// All commands include timestamp fields for pure decision-making. Timestamps
+/// are injected by the application layer; the decider never calls `Utc::now()`.
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export, export_to = "domain/")]
 #[serde(tag = "type")]
@@ -27,6 +31,8 @@ pub enum QuerySessionCommand {
         /// Optional chart configuration for visualization.
         #[serde(skip_serializing_if = "Option::is_none")]
         chart_config: Option<ChartConfig>,
+        /// Timestamp when the query was started (injected by application layer).
+        started_at: DateTime<Utc>,
     },
 
     /// Mark query execution as started (called by application layer).
@@ -34,6 +40,8 @@ pub enum QuerySessionCommand {
     BeginExecution {
         /// Must match the pending query ID.
         query_id: QueryId,
+        /// Timestamp when execution began (injected by application layer).
+        began_at: DateTime<Utc>,
     },
 
     /// Complete a query successfully. Transitions Executing → Completed.
@@ -44,6 +52,8 @@ pub enum QuerySessionCommand {
         row_count: usize,
         /// Execution duration in milliseconds.
         duration_ms: u64,
+        /// Timestamp when the query completed (injected by application layer).
+        completed_at: DateTime<Utc>,
     },
 
     /// Mark a query as failed. Transitions Executing → Failed.
@@ -52,6 +62,8 @@ pub enum QuerySessionCommand {
         query_id: QueryId,
         /// Error message describing the failure.
         error: String,
+        /// Timestamp when the query failed (injected by application layer).
+        failed_at: DateTime<Utc>,
     },
 
     /// Cancel a pending or executing query. Transitions to Cancelled.
@@ -61,10 +73,15 @@ pub enum QuerySessionCommand {
         /// Optional reason for cancellation.
         #[serde(skip_serializing_if = "Option::is_none")]
         reason: Option<String>,
+        /// Timestamp when the query was cancelled (injected by application layer).
+        cancelled_at: DateTime<Utc>,
     },
 
     /// Reset the session to idle state (only from terminal states).
-    ResetSession,
+    ResetSession {
+        /// Timestamp when the session was reset (injected by application layer).
+        reset_at: DateTime<Utc>,
+    },
 }
 
 impl QuerySessionCommand {
@@ -73,11 +90,11 @@ impl QuerySessionCommand {
     pub fn query_id(&self) -> Option<QueryId> {
         match self {
             Self::StartQuery { query_id, .. }
-            | Self::BeginExecution { query_id }
+            | Self::BeginExecution { query_id, .. }
             | Self::CompleteQuery { query_id, .. }
             | Self::FailQuery { query_id, .. }
             | Self::CancelQuery { query_id, .. } => Some(*query_id),
-            Self::ResetSession => None,
+            Self::ResetSession { .. } => None,
         }
     }
 }
