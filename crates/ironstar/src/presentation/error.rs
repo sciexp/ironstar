@@ -26,9 +26,10 @@
 //! }
 //! ```
 
-use crate::application::error::AggregateError;
+use crate::application::error::{AggregateError, CommandPipelineError};
 use crate::common::ErrorCode;
-use crate::domain::error::{DomainError, ValidationError};
+use crate::domain::error::{DomainError, DomainErrorKind, ValidationError, ValidationErrorKind};
+use crate::domain::todo::TodoErrorKind;
 use crate::infrastructure::error::InfrastructureError;
 use axum::Json;
 use axum::http::StatusCode;
@@ -218,6 +219,68 @@ impl From<AggregateError> for AppError {
 impl From<InfrastructureError> for AppError {
     fn from(e: InfrastructureError) -> Self {
         Self::new(AppErrorKind::Infrastructure(e))
+    }
+}
+
+impl From<CommandPipelineError> for AppError {
+    fn from(e: CommandPipelineError) -> Self {
+        match e {
+            CommandPipelineError::Todo(kind) => {
+                // Map TodoErrorKind to HTTP-semantic AppErrorKind
+                match kind {
+                    // Validation-like errors → ValidationError
+                    TodoErrorKind::EmptyText => Self::new(AppErrorKind::Validation(
+                        ValidationError::new(ValidationErrorKind::EmptyField {
+                            field: "text".to_string(),
+                        }),
+                    )),
+                    TodoErrorKind::TextTooLong { max, actual } => {
+                        Self::new(AppErrorKind::Validation(ValidationError::new(
+                            ValidationErrorKind::TooLong {
+                                field: "text".to_string(),
+                                max_length: max,
+                                actual_length: actual,
+                            },
+                        )))
+                    }
+                    // NotFound → DomainError::NotFound
+                    TodoErrorKind::NotFound => Self::new(AppErrorKind::Domain(DomainError::new(
+                        DomainErrorKind::NotFound {
+                            aggregate_type: "Todo".to_string(),
+                            aggregate_id: "unknown".to_string(),
+                        },
+                    ))),
+                    // State conflict errors → DomainError with appropriate kind
+                    TodoErrorKind::AlreadyExists => {
+                        Self::new(AppErrorKind::Domain(DomainError::new(
+                            DomainErrorKind::AlreadyExists {
+                                aggregate_type: "Todo".to_string(),
+                                aggregate_id: "unknown".to_string(),
+                            },
+                        )))
+                    }
+                    // State transition errors → DomainError::InvalidTransition
+                    TodoErrorKind::CannotComplete
+                    | TodoErrorKind::CannotUncomplete
+                    | TodoErrorKind::CannotDelete
+                    | TodoErrorKind::AlreadyCompleted
+                    | TodoErrorKind::NotCompleted
+                    | TodoErrorKind::Deleted
+                    | TodoErrorKind::InvalidTransition { .. } => {
+                        Self::new(AppErrorKind::Domain(DomainError::new(
+                            DomainErrorKind::InvalidTransition {
+                                from: "current".to_string(),
+                                to: format!("{kind}"),
+                            },
+                        )))
+                    }
+                }
+            }
+            CommandPipelineError::Infrastructure(infra) => {
+                // Delegate to existing InfrastructureError mapping
+                Self::from(infra)
+            }
+        }
     }
 }
 
