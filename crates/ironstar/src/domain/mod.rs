@@ -6,11 +6,10 @@
 //!
 //! # Module Organization
 //!
-//! - [`aggregate`]: The `Aggregate` trait and `AggregateRoot` wrapper
 //! - [`analytics`]: Analytics value objects (QueryId, DatasetRef, SqlQuery, ChartConfig)
 //! - [`common`]: Shared value objects (BoundedString, DashboardTitle, TabTitle, GridSize)
-//! - [`query_session`]: QuerySession aggregate (commands, events, state, errors)
-//! - [`todo`]: Todo aggregate (commands, events, state, values, errors)
+//! - [`query_session`]: QuerySession decider (commands, events, state, errors)
+//! - [`todo`]: Todo decider (commands, events, state, values, errors)
 //!
 //! # Design Principles
 //!
@@ -48,7 +47,6 @@
 //! assert_eq!(events.len(), 1);
 //! ```
 
-pub mod aggregate;
 pub mod analytics;
 pub mod common;
 pub mod error;
@@ -56,9 +54,6 @@ pub mod query_session;
 pub mod signals;
 pub mod todo;
 pub mod traits;
-
-// Re-export key types for ergonomic imports
-pub use aggregate::{Aggregate, AggregateRoot};
 
 // Trait re-exports (Identifier re-exported from fmodel_rust via traits module)
 pub use traits::{DeciderType, EventType, IsFinal};
