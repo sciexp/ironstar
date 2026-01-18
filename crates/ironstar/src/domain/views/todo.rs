@@ -160,17 +160,22 @@ fn evolve(state: &TodoViewState, event: &TodoEvent) -> TodoViewState {
         }
 
         TodoEvent::Deleted { id, .. } => {
-            let mut todos = state.todos.clone();
-            let mut was_completed = false;
             if let Some(idx) = state.find_index(*id) {
-                was_completed = todos[idx].completed;
+                let mut todos = state.todos.clone();
+                let was_completed = todos[idx].completed;
                 todos.remove(idx);
-            }
-            let completed_delta = if was_completed { 1 } else { 0 };
-            TodoViewState {
-                todos,
-                count: state.count.saturating_sub(1),
-                completed_count: state.completed_count.saturating_sub(completed_delta),
+                TodoViewState {
+                    todos,
+                    count: state.count.saturating_sub(1),
+                    completed_count: if was_completed {
+                        state.completed_count.saturating_sub(1)
+                    } else {
+                        state.completed_count
+                    },
+                }
+            } else {
+                // Item not found — true no-op, preserve invariants
+                state.clone()
             }
         }
     }
@@ -461,6 +466,36 @@ mod tests {
 
         assert!(state.todos.is_empty());
         assert_eq!(state.count, 0);
+    }
+
+    #[test]
+    fn deleted_for_nonexistent_preserves_count_invariant() {
+        // Regression test: count must equal todos.len() after deleting non-existent ID
+        let view = todo_view();
+        let existing_id = sample_id();
+        let nonexistent_id = sample_id_2();
+
+        // Create one item
+        let setup = vec![TodoEvent::Created {
+            id: existing_id,
+            text: TodoText::new("existing").unwrap(),
+            created_at: sample_time(),
+        }];
+        let state = view.compute_new_state(None, &as_refs(&setup));
+        assert_eq!(state.count, 1);
+        assert_eq!(state.todos.len(), 1);
+
+        // Delete a different ID that doesn't exist
+        let delete_nonexistent = vec![TodoEvent::Deleted {
+            id: nonexistent_id,
+            deleted_at: sample_time(),
+        }];
+        let state = view.compute_new_state(Some(state), &as_refs(&delete_nonexistent));
+
+        // Invariant: count == todos.len()
+        assert_eq!(state.todos.len(), 1, "item should not be removed");
+        assert_eq!(state.count, 1, "count must equal todos.len()");
+        assert_eq!(state.count, state.todos.len(), "count invariant broken");
     }
 
     // --- Full lifecycle ---
