@@ -29,26 +29,23 @@
 //! # Example
 //!
 //! ```rust,ignore
-//! use ironstar::domain::{
-//!     aggregate::AggregateRoot,
-//!     TodoCommand,
-//!     TodoAggregate,
-//!     TodoId,
-//! };
+//! use fmodel_rust::decider::EventComputation;
+//! use ironstar::domain::{todo_decider, TodoCommand, TodoId};
+//! use chrono::Utc;
 //!
-//! // Create an aggregate root (tracks state + version)
-//! let mut root = AggregateRoot::<TodoAggregate>::new();
+//! // Create the decider (pure function, no state)
+//! let decider = todo_decider();
+//! let id = TodoId::new();
+//! let now = Utc::now();
 //!
-//! // Handle a command - returns events or error
-//! let events = root.handle(TodoCommand::Create {
-//!     id: TodoId::new(),
-//!     text: "Buy groceries".to_string(),
-//! })?;
+//! // Compute new events from command
+//! let events = decider.compute_new_events(
+//!     &[],
+//!     &TodoCommand::Create { id, text: "Buy groceries".to_string(), created_at: now }
+//! )?;
 //!
-//! // Apply events to update state (normally done after persistence)
-//! root.apply_all(events);
-//!
-//! assert!(root.state().is_active());
+//! // Events are returned; state is computed by folding events
+//! assert_eq!(events.len(), 1);
 //! ```
 
 pub mod aggregate;
@@ -68,8 +65,8 @@ pub use traits::{DeciderType, EventType, IsFinal};
 
 // Todo re-exports (from todo/)
 pub use todo::{
-    TODO_TEXT_MAX_LENGTH, TodoAggregate, TodoCommand, TodoError, TodoErrorKind, TodoEvent, TodoId,
-    TodoState, TodoStatus, TodoText,
+    TODO_TEXT_MAX_LENGTH, TodoCommand, TodoDecider, TodoError, TodoErrorKind, TodoEvent, TodoId,
+    TodoState, TodoStatus, TodoText, todo_decider,
 };
 
 // Analytics re-exports
