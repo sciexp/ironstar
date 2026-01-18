@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use super::super::analytics::{ChartConfig, DatasetRef, QueryId, SqlQuery};
+use crate::domain::traits::{DeciderType, Identifier};
 
 /// Commands for the QuerySession aggregate.
 ///
@@ -78,5 +79,18 @@ impl QuerySessionCommand {
             | Self::CancelQuery { query_id, .. } => Some(*query_id),
             Self::ResetSession => None,
         }
+    }
+}
+
+impl Identifier for QuerySessionCommand {
+    fn identifier(&self) -> String {
+        // Singleton aggregate pattern - all commands target the same session
+        "default-session".to_string()
+    }
+}
+
+impl DeciderType for QuerySessionCommand {
+    fn decider_type(&self) -> String {
+        "QuerySession".to_string()
     }
 }
