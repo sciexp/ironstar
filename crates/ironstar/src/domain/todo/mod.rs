@@ -1,11 +1,8 @@
-//! Todo aggregate implementation.
+//! Todo domain implementation using fmodel-rust Decider pattern.
 //!
-//! The Todo aggregate manages the lifecycle of a single todo item.
-//! It demonstrates the core event sourcing patterns:
-//!
-//! - Pure command handling with validation
-//! - State derived from event stream
-//! - Type-safe transitions via the Aggregate trait
+//! The Todo decider is a pure function that embodies the state machine
+//! for managing todo item lifecycles. It implements the patterns from
+//! `spec/Todo/Todo.idr`.
 //!
 //! # State Machine
 //!
@@ -21,7 +18,7 @@
 //!                    │Completed │─────────┘
 //!                    └────┬─────┘
 //!                         │
-//!                      Delete
+//!                      Delete (also from Active)
 //!                         │
 //!                         ▼
 //!                    ┌──────────┐
@@ -32,17 +29,24 @@
 //! - `Active`: Initial state, can be completed or deleted
 //! - `Completed`: Marked done, can be uncompleted or deleted
 //! - `Deleted`: Terminal state, no further operations allowed
+//!
+//! # Idempotency
+//!
+//! Operations that would result in the same state return `Ok(vec![])`:
+//! - Complete when already Completed
+//! - Uncomplete when already Active
+//! - Delete when already Deleted
 
-pub mod aggregate;
 pub mod commands;
+pub mod decider;
 pub mod errors;
 pub mod events;
 pub mod state;
 pub mod values;
 
 // Re-export public types for ergonomic imports
-pub use aggregate::TodoAggregate;
 pub use commands::TodoCommand;
+pub use decider::{TodoDecider, todo_decider};
 pub use errors::{TodoError, TodoErrorKind};
 pub use events::TodoEvent;
 pub use state::{TodoState, TodoStatus};
