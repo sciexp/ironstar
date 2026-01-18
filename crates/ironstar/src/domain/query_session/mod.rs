@@ -1,15 +1,16 @@
-//! QuerySession aggregate module.
+//! QuerySession Decider module.
 //!
-//! The QuerySession aggregate manages the lifecycle of an analytics query session.
-//! Unlike the Todo aggregate (which is synchronous end-to-end), QuerySession
-//! demonstrates the **spawn-after-persist** pattern where long-running async
-//! work (DuckDB query execution) happens AFTER event persistence.
+//! The QuerySession Decider manages the lifecycle of an analytics query session
+//! using the fmodel-rust Decider pattern. Unlike the Todo aggregate (which is
+//! synchronous end-to-end), QuerySession demonstrates the **spawn-after-persist**
+//! pattern where long-running async work (DuckDB query execution) happens AFTER
+//! event persistence.
 //!
 //! # Module organization
 //!
-//! - `aggregate`: QuerySessionAggregate implementation and command handlers
-//! - `commands`: QuerySessionCommand enum
-//! - `errors`: QuerySessionError enum
+//! - `decider`: Pure QuerySession Decider (fmodel-rust pattern)
+//! - `commands`: QuerySessionCommand enum with timestamp fields
+//! - `errors`: QuerySessionError enum with factory methods
 //! - `events`: QuerySessionEvent enum
 //! - `state`: QuerySessionState and QuerySessionStatus
 //!
@@ -19,7 +20,8 @@
 //!
 //! ```no_run
 //! use ironstar::domain::query_session::{
-//!     QuerySessionAggregate,
+//!     QuerySessionDecider,
+//!     query_session_decider,
 //!     QuerySessionCommand,
 //!     QuerySessionError,
 //!     QuerySessionEvent,
@@ -28,15 +30,15 @@
 //! };
 //! ```
 
-mod aggregate;
 mod commands;
+mod decider;
 mod errors;
 mod events;
 mod state;
 
 // Re-export all public types
-pub use aggregate::QuerySessionAggregate;
 pub use commands::QuerySessionCommand;
+pub use decider::{QuerySessionDecider, query_session_decider};
 pub use errors::{QuerySessionError, QuerySessionErrorKind};
 pub use events::QuerySessionEvent;
 pub use state::{QuerySessionState, QuerySessionStatus};
