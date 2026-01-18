@@ -112,6 +112,191 @@ The evaluation of cqrs-es, esrs, and sqlite-es informed ironstar's architecture,
 
 ---
 
+## Boundary injection pattern — timestamps and UUIDs
+
+Timestamps and UUIDs are side effects that must be isolated at system boundaries to preserve Decider purity.
+
+### The problem
+
+Pure `decide()` functions cannot call `Utc::now()` or `Uuid::new_v4()` because:
+
+- Non-deterministic output breaks testability
+- Side effects violate referential transparency
+- Replay semantics become undefined
+
+### The solution
+
+Inject time and identity at the HTTP handler layer:
+
+```rust
+// In handler (application/http layer)
+pub async fn create_todo(
+    State(aggregate): State<Arc<TodoAggregate>>,
+    Json(payload): Json<CreateTodoPayload>,
+) -> Result<impl IntoResponse, AppError> {
+    let now = Utc::now();           // Inject timestamp here
+    let id = TodoId::new();         // Inject UUID here
+
+    let command = TodoCommand::Create {
+        id,
+        text: payload.text,
+        created_at: now,            // Pass to command
+    };
+
+    let events = aggregate.handle(&command).await?;
+    Ok(Json(events))
+}
+
+// In domain (pure, no side effects)
+fn decide(command: &TodoCommand, state: &Option<TodoState>) -> Result<Vec<TodoEvent>, TodoError> {
+    match command {
+        TodoCommand::Create { id, text, created_at } => {
+            // Use injected values as-is
+            Ok(vec![TodoEvent::Created {
+                id: *id,
+                text: validated_text,
+                created_at: *created_at,
+            }])
+        }
+    }
+}
+```
+
+### Idris2 spec convention
+
+The Idris2 specifications use holes (`?newWsId`, `?now`) to mark boundary injection points:
+
+```idris
+(CreateWorkspace wsName ownerId vis, Nothing) =>
+  Right [WorkspaceCreated ?newWsId wsName ownerId vis ?now]
+```
+
+These holes document that the values come from outside the pure function.
+
+### Benefits
+
+- **Deterministic testing**: Fixed timestamps in tests
+- **Time travel**: Replay events with original timestamps
+- **Audit trails**: Timestamps reflect actual request time, not processing time
+
+---
+
+## Error handling in Deciders
+
+ironstar uses `Err(DomainError)` for all domain rejections, not failure events.
+
+### The decision
+
+| Approach | When to use |
+|----------|-------------|
+| `Err(DomainError)` | Precondition violations, validation failures, business rule rejections |
+| `Ok(vec![])` | Idempotent no-ops (already in target state) |
+| `Ok(vec![Event])` | Successful state transitions |
+
+This diverges from the fmodel-rust idiom shown in its examples, which returns empty event vectors for invalid commands.
+ironstar chooses explicit errors for domain rejections to enable proper HTTP status code mapping and clearer test assertions.
+
+### Rationale
+
+**Why not failure events?**
+
+Some event sourcing implementations emit `OperationFailed` events to capture rejections in the event log.
+ironstar does not follow this pattern because:
+
+1. **Event log purity**: Events represent facts that happened, not attempts that failed
+2. **Simpler replay**: No need to handle failure events during projection
+3. **Clear error semantics**: Errors surface immediately to HTTP layer for proper status codes
+4. **Testing clarity**: `then_error()` in DeciderTestSpecification is unambiguous
+
+**Why not empty vectors for rejections?**
+
+While fmodel-rust examples use `Ok(vec![])` for business rule violations, ironstar uses `Err()` because:
+
+1. **Distinguishable outcomes**: Empty vec could mean "no-op" (idempotent success) or "rejected" (business rule violation) — these have different HTTP semantics
+2. **HTTP mapping**: `Err(DomainError)` maps to 4xx responses; `Ok(vec![])` would require additional context to determine response code
+3. **Test assertions**: `then_error(expected)` is clearer than `then_expect_events(vec![])`
+
+**Implementation pattern:**
+
+```rust
+fn decide(command: &TodoCommand, state: &Option<TodoState>) -> Result<Vec<TodoEvent>, TodoError> {
+    match (command, state) {
+        // Validation failure → Err
+        (TodoCommand::Create { text, .. }, _) if text.is_empty() => {
+            Err(TodoError::empty_text())
+        }
+
+        // Business rule violation → Err
+        (TodoCommand::Create { .. }, Some(_)) => {
+            Err(TodoError::already_exists())
+        }
+
+        // Idempotent no-op → Ok(vec![])
+        (TodoCommand::Complete { .. }, Some(TodoState { status: Completed, .. })) => {
+            Ok(vec![])
+        }
+
+        // Successful transition → Ok(vec![event])
+        (TodoCommand::Complete { id, completed_at }, Some(state)) => {
+            Ok(vec![TodoEvent::Completed { id: *id, completed_at: *completed_at }])
+        }
+
+        // Missing state when required → Err
+        (TodoCommand::Complete { .. }, None) => {
+            Err(TodoError::not_found())
+        }
+    }
+}
+```
+
+### Error type design
+
+Each aggregate defines its own error type with:
+- UUID for distributed tracing
+- ErrorKind enum for pattern matching
+- Factory constructors for common cases
+
+```rust
+pub struct TodoError {
+    id: Uuid,
+    kind: TodoErrorKind,
+    backtrace: Backtrace,
+}
+
+pub enum TodoErrorKind {
+    EmptyText,
+    AlreadyExists,
+    NotFound,
+    InvalidTransition { from: Status, to: Status },
+}
+
+impl TodoError {
+    pub fn empty_text() -> Self { Self::new(TodoErrorKind::EmptyText) }
+    pub fn already_exists() -> Self { Self::new(TodoErrorKind::AlreadyExists) }
+    pub fn not_found() -> Self { Self::new(TodoErrorKind::NotFound) }
+}
+```
+
+### HTTP response mapping
+
+Command handlers translate domain errors to appropriate HTTP status codes:
+
+```rust
+impl IntoResponse for TodoError {
+    fn into_response(self) -> Response {
+        let status = match self.kind {
+            TodoErrorKind::EmptyText => StatusCode::BAD_REQUEST,
+            TodoErrorKind::AlreadyExists => StatusCode::CONFLICT,
+            TodoErrorKind::NotFound => StatusCode::NOT_FOUND,
+            TodoErrorKind::InvalidTransition { .. } => StatusCode::UNPROCESSABLE_ENTITY,
+        };
+        (status, Json(self.to_error_response())).into_response()
+    }
+}
+```
+
+---
+
 ## Event schema evolution — upcaster pattern
 
 For long-lived systems, event schemas evolve.
