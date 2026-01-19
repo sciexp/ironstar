@@ -6,6 +6,7 @@ target/
 
 # build output
 dist/
+web-components/styles/processed.css
 # generated types
 .astro/
 
