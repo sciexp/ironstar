@@ -194,6 +194,7 @@ pub async fn publish_events_fire_and_forget<'a, E, B>(
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used, clippy::panic)]
 mod tests {
     use super::*;
     use crate::domain::traits::{DeciderType, Identifier};

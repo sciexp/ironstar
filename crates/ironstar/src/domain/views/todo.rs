@@ -180,6 +180,7 @@ fn evolve(state: &TodoViewState, event: &TodoEvent) -> TodoViewState {
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used, clippy::panic)]
 mod tests {
     use super::*;
     use chrono::{DateTime, Utc};

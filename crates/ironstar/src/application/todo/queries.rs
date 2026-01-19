@@ -123,6 +123,7 @@ pub async fn query_todo_state<C>(
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used, clippy::panic)]
 mod tests {
     use super::*;
     use crate::application::todo::handle_todo_command;
