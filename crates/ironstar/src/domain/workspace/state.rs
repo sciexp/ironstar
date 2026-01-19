@@ -2,9 +2,7 @@
 //!
 //! State is derived from events and represents the current status of a workspace.
 
-use chrono::DateTime;
-#[cfg(test)]
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use super::values::{Visibility, WorkspaceId, WorkspaceName};
