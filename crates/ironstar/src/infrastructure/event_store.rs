@@ -364,8 +364,16 @@ where
 /// optimistic locking via the previous_id chain.
 impl<C, E> EventRepository<C, E, String, InfrastructureError> for SqliteEventRepository<C, E>
 where
-    C: Identifier + DeciderType + Sync,
-    E: Identifier + EventType + DeciderType + IsFinal + Serialize + DeserializeOwned + Clone + Sync,
+    C: Identifier + DeciderType + Sync + Send,
+    E: Identifier
+        + EventType
+        + DeciderType
+        + IsFinal
+        + Serialize
+        + DeserializeOwned
+        + Clone
+        + Sync
+        + Send,
 {
     /// Fetch all events for the aggregate identified by the command.
     ///
