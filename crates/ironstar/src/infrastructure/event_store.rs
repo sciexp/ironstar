@@ -95,6 +95,40 @@ impl<C, E> SqliteEventRepository<C, E>
 where
     E: DeserializeOwned + Clone,
 {
+    /// Fetch all events for a given aggregate type.
+    ///
+    /// This method retrieves events across all aggregate instances of the specified type,
+    /// useful for building list-oriented read models that aggregate data from multiple
+    /// aggregate instances (e.g., listing all todos from all TodoId aggregates).
+    ///
+    /// Returns events ordered by global sequence (id), with each event
+    /// paired with its event_id (version).
+    pub async fn fetch_all_events_by_type(
+        &self,
+        aggregate_type: &str,
+    ) -> Result<Vec<(E, String)>, InfrastructureError> {
+        let rows = sqlx::query(
+            r#"
+            SELECT event_id, payload
+            FROM events
+            WHERE aggregate_type = ?
+            ORDER BY id
+            "#,
+        )
+        .bind(aggregate_type)
+        .fetch_all(&self.pool)
+        .await?;
+
+        let mut events = Vec::with_capacity(rows.len());
+        for row in rows {
+            let event_id: String = row.get("event_id");
+            let payload: String = row.get("payload");
+            let event: E = serde_json::from_str(&payload)?;
+            events.push((event, event_id));
+        }
+        Ok(events)
+    }
+
     /// Fetch events by aggregate type and ID.
     ///
     /// This method provides direct access to events without requiring a command,
