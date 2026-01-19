@@ -53,6 +53,10 @@ zenoh = { version = "1.7", default-features = false, features = ["transport_tcp"
 # Functional event sourcing (Decider pattern)
 fmodel-rust = { version = "0.9", features = ["not-send-futures"] }
 
+# Async stream utilities
+futures = { version = "0.3" }
+tokio-stream = { version = "0.1", features = ["time"] }
+
 # Testing utilities
 tower = { version = "0.5" }
 
