@@ -83,6 +83,19 @@ impl TodoError {
         }
     }
 
+    /// Creates a `TodoError` with a preserved error ID from a lower layer.
+    ///
+    /// Use this when converting from lower-layer errors to preserve UUID tracking
+    /// for distributed tracing correlation. A fresh backtrace is captured at this point.
+    #[must_use]
+    pub fn with_id(id: Uuid, kind: TodoErrorKind) -> Self {
+        Self {
+            id,
+            kind,
+            backtrace: Backtrace::capture(),
+        }
+    }
+
     /// Returns the unique error identifier for distributed tracing.
     pub fn error_id(&self) -> Uuid {
         self.id
