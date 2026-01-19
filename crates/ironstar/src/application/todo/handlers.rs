@@ -12,7 +12,7 @@
 
 use crate::application::error::CommandPipelineError;
 use crate::domain::todo::{TodoCommand, TodoEvent, todo_decider};
-use crate::infrastructure::event_bus::{EventBus, publish_events_fire_and_forget};
+use crate::infrastructure::event_bus::{EventBus, ZenohEventBus, publish_events_fire_and_forget};
 use crate::infrastructure::event_store::SqliteEventRepository;
 use fmodel_rust::aggregate::{EventRepository, EventSourcedAggregate};
 use std::sync::Arc;
@@ -109,6 +109,39 @@ impl EventRepository<TodoCommand, TodoEvent, String, CommandPipelineError>
 pub async fn handle_todo_command<B: EventBus>(
     event_repository: Arc<SqliteEventRepository<TodoCommand, TodoEvent>>,
     event_bus: Option<&B>,
+    command: TodoCommand,
+) -> Result<Vec<(TodoEvent, String)>, CommandPipelineError> {
+    // Wrap repository to map infrastructure errors
+    let repo_adapter = TodoEventRepositoryAdapter::new(event_repository);
+
+    // Map decider errors from TodoError to CommandPipelineError
+    let mapped_decider = todo_decider().map_error(|e| CommandPipelineError::Todo(e.kind().clone()));
+
+    // Create the EventSourcedAggregate
+    let aggregate = EventSourcedAggregate::new(repo_adapter, mapped_decider);
+
+    // Handle the command
+    let saved_events = aggregate.handle(&command).await?;
+
+    // Publish events to event bus (fire-and-forget)
+    if let Some(bus) = event_bus {
+        publish_events_fire_and_forget(bus, &saved_events).await;
+    }
+
+    Ok(saved_events)
+}
+
+/// Handle a Todo command with Zenoh event bus support.
+///
+/// This is a concrete (non-generic) version of `handle_todo_command` that
+/// specifically uses `ZenohEventBus`. This inlines the implementation to ensure
+/// the future type is fully monomorphized, allowing axum to verify `Send` bounds.
+///
+/// Use this function in HTTP handlers. Use the generic `handle_todo_command`
+/// for testing with mock event buses or other implementations.
+pub async fn handle_todo_command_zenoh(
+    event_repository: Arc<SqliteEventRepository<TodoCommand, TodoEvent>>,
+    event_bus: Option<&ZenohEventBus>,
     command: TodoCommand,
 ) -> Result<Vec<(TodoEvent, String)>, CommandPipelineError> {
     // Wrap repository to map infrastructure errors
