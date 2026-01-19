@@ -441,7 +441,7 @@ jobs:
         uses: ./.github/actions/cached-ci-job
         with:
           check-name: nix (${{ matrix.category }}, ${{ matrix.system }})
-          hash-sources: '**/*.nix flake.lock justfile packages/**/*.ts packages/**/*.tsx packages/**/*.js packages/**/*.jsx **/*.config.ts **/*.config.js package.json **/*.lock .github/actions/**/*'
+          hash-sources: '**/*.nix flake.lock justfile packages/**/*.ts packages/**/*.tsx packages/**/*.js packages/**/*.jsx **/*.config.ts **/*.config.js package.json **/*.lock .github/actions/**/* crates/**/*.rs **/Cargo.toml Cargo.lock clippy.toml'
           force-run: ${{ inputs.force_run || 'false' }}
 
       - name: Setup Nix
