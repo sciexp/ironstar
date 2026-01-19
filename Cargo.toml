@@ -60,6 +60,11 @@ tokio-stream = { version = "0.1", features = ["time"] }
 # Testing utilities
 tower = { version = "0.5" }
 
+# HTTP utilities for static file serving
+tower-http = { version = "0.6", features = ["fs"] }
+mime_guess = "2"
+http = "1"
+
 # Workspace-wide lints (adapted from Hyperswitch)
 # Per-crate Cargo.toml should include: [lints] workspace = true
 [workspace.lints.rust]
