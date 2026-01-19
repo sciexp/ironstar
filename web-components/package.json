@@ -2,21 +2,24 @@
 	"name": "ironstar-web",
 	"type": "module",
 	"scripts": {
-		"dev": "rolldown --watch",
-		"build": "rolldown",
+		"build:css": "postcss styles/main.css -o styles/processed.css",
+		"dev": "npm run build:css && rolldown --watch",
+		"build": "npm run build:css && rolldown",
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
 		"open-props": "^2.0.0-beta.5"
 	},
 	"devDependencies": {
-		"rolldown": "^1.0.0-beta.1",
-		"rollup-plugin-output-manifest": "^2.0.0",
-		"postcss": "^8.5.0",
-		"postcss-import": "^16.1.0",
-		"postcss-custom-media": "^11.0.0",
 		"autoprefixer": "^10.4.0",
 		"cssnano": "^7.0.0",
+		"postcss": "^8.5.0",
+		"postcss-cli": "^11.0.0",
+		"postcss-custom-media": "^11.0.0",
+		"postcss-import": "^16.1.0",
+		"postcss-preset-env": "^10.1.0",
+		"rolldown": "^1.0.0-beta.1",
+		"rollup-plugin-output-manifest": "^2.0.0",
 		"typescript": "^5.7.0"
 	}
 }
