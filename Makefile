@@ -77,16 +77,16 @@ bootstrap: install-nix install-direnv
 .PHONY: install-nix
 # Download platform-specific binary directly from GitHub Releases.
 # This bypasses both the Fastly CDN (HTTP 618 errors) and the shell wrapper.
-# https://github.com/NixOS/experimental-nix-installer/releases
+# https://github.com/NixOS/nix-installer/releases
 #
-# The experimental-nix-installer defaults include:
+# The nix-installer defaults include:
 #   --extra-conf "experimental-features = nix-command flakes"
 #   --extra-conf "auto-optimise-store = true"
 #   --extra-conf "always-allow-substitutes = true"
 #   --extra-conf "max-jobs = auto"
 #
 # We add trusted-users to allow flake-specified substituters and public keys.
-NIX_INSTALLER_VERSION := 3.11.3
+NIX_INSTALLER_VERSION := 2.33.0
 install-nix: ## Install Nix using the NixOS community installer
 	@echo "Installing Nix..."
 	@if command -v nix >/dev/null 2>&1; then \
@@ -99,7 +99,7 @@ install-nix: ## Install Nix using the NixOS community installer
 			Darwin-arm64)  PLATFORM="aarch64-darwin" ;; \
 			*) echo "Unsupported platform: $$(uname -s)-$$(uname -m)"; exit 1 ;; \
 		esac; \
-		INSTALLER_URL="https://github.com/NixOS/experimental-nix-installer/releases/download/$(NIX_INSTALLER_VERSION)/nix-installer-$$PLATFORM"; \
+		INSTALLER_URL="https://github.com/NixOS/nix-installer/releases/download/$(NIX_INSTALLER_VERSION)/nix-installer-$$PLATFORM"; \
 		echo "Platform: $$PLATFORM"; \
 		echo "Downloading from: $$INSTALLER_URL"; \
 		max_attempts=3; \
