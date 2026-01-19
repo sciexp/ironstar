@@ -33,6 +33,7 @@
 use crate::domain::traits::{DeciderType, Identifier};
 use crate::infrastructure::error::InfrastructureError;
 use serde::Serialize;
+use std::future::Future;
 use std::sync::Arc;
 use tracing::warn;
 use zenoh::Session;
@@ -53,7 +54,7 @@ pub trait EventBus: Send + Sync {
     ///
     /// Returns `Ok(())` on success, or an error that should be logged but
     /// not propagated to fail the command.
-    fn publish<E>(&self, event: &E) -> impl std::future::Future<Output = Result<(), InfrastructureError>> + Send
+    fn publish<E>(&self, event: &E) -> impl Future<Output = Result<(), InfrastructureError>> + Send
     where
         E: Identifier + DeciderType + Serialize + Sync;
 }
@@ -173,11 +174,11 @@ pub async fn open_embedded_session() -> Result<Session, InfrastructureError> {
 ///
 /// * `event_bus` - The event bus to publish to
 /// * `events` - Iterator of (event, version) tuples from the event store
-pub async fn publish_events_fire_and_forget<E, B>(
+pub async fn publish_events_fire_and_forget<'a, E, B>(
     event_bus: &B,
-    events: impl IntoIterator<Item = &(E, String)>,
+    events: impl IntoIterator<Item = &'a (E, String)>,
 ) where
-    E: Identifier + DeciderType + Serialize + Sync,
+    E: Identifier + DeciderType + Serialize + Sync + 'a,
     B: EventBus,
 {
     for (event, _version) in events {
@@ -217,7 +218,10 @@ mod tests {
         }
     }
 
-    #[tokio::test]
+    // Zenoh requires multi-threaded runtime for its internal task scheduling.
+    // Use `flavor = "multi_thread"` with `worker_threads = 1` for minimal overhead.
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
     async fn zenoh_embedded_config_creates_valid_config() {
         let config = zenoh_embedded_config();
         // Config should be usable to open a session
@@ -225,7 +229,7 @@ mod tests {
         assert!(session.is_ok(), "Should create valid session from embedded config");
     }
 
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
     async fn publish_and_subscribe_roundtrip() {
         let session = Arc::new(open_embedded_session().await.expect("session should open"));
         let event_bus = ZenohEventBus::new(Arc::clone(&session));
@@ -262,7 +266,7 @@ mod tests {
         assert_eq!(received, test_event);
     }
 
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
     async fn key_expression_filtering_works() {
         let session = Arc::new(open_embedded_session().await.expect("session should open"));
         let event_bus = ZenohEventBus::new(Arc::clone(&session));
@@ -290,7 +294,7 @@ mod tests {
         assert!(result.is_err(), "Should timeout - event was filtered out");
     }
 
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
     async fn fire_and_forget_logs_errors_but_continues() {
         // This test verifies the publish_events_fire_and_forget function
         // doesn't panic on errors and processes all events
