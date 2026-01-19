@@ -15,11 +15,19 @@
 //! - `DELETE /api/todos/:id` - Delete a todo
 
 use axum::Json;
+use axum::Router;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
-use axum::response::IntoResponse;
+use axum::response::{
+    Html, IntoResponse,
+    sse::{Event, Sse},
+};
+use axum::routing::{delete as route_delete, get, post};
 use chrono::Utc;
+use futures::stream;
+use hypertext::Renderable;
 use serde::Deserialize;
+use std::convert::Infallible;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -28,9 +36,11 @@ use crate::domain::signals::TodoItemView;
 use crate::domain::todo::commands::TodoCommand;
 use crate::domain::todo::events::TodoEvent;
 use crate::domain::todo::values::TodoId;
+use crate::infrastructure::assets::AssetManifest;
 use crate::infrastructure::event_bus::ZenohEventBus;
 use crate::infrastructure::event_store::SqliteEventRepository;
 use crate::presentation::error::AppError;
+use crate::presentation::todo_templates::todo_page;
 
 /// Application state for Todo handlers.
 ///
@@ -45,6 +55,64 @@ pub struct TodoAppState {
     /// When `None`, events are persisted but not published to subscribers.
     /// Use `None` in tests that don't require event bus integration.
     pub event_bus: Option<Arc<ZenohEventBus>>,
+}
+
+// =============================================================================
+// Route configuration
+// =============================================================================
+
+/// Creates the Todo feature router with all endpoints.
+///
+/// # Routes
+///
+/// - `GET /` - Render todo page (HTML)
+/// - `GET /api` - List todos (JSON)
+/// - `GET /api/:id` - Get single todo (JSON)
+/// - `POST /api` - Create todo (JSON)
+/// - `POST /api/:id/complete` - Complete todo (JSON)
+/// - `DELETE /api/:id` - Delete todo (JSON)
+/// - `GET /api/feed` - SSE feed (placeholder)
+pub fn routes() -> Router<TodoAppState> {
+    Router::new()
+        // HTML page endpoint
+        .route("/", get(todo_page_handler))
+        // JSON API endpoints (separate routes for each method)
+        .route("/api", get(list_todos))
+        .route("/api", post(create_todo))
+        .route("/api/{id}", get(get_todo))
+        .route("/api/{id}", route_delete(delete_todo))
+        .route("/api/{id}/complete", post(complete_todo))
+        // SSE feed endpoint (placeholder for now)
+        .route("/api/feed", get(todo_feed_handler))
+}
+
+/// GET / - Render the todo page with current todos.
+async fn todo_page_handler(
+    State(state): State<TodoAppState>,
+) -> Result<impl IntoResponse, AppError> {
+    // Query current todos
+    let view_state = query_all_todos(&state.repo).await?;
+
+    // Render page with default manifest (will be enhanced later)
+    let manifest = AssetManifest::default();
+    let html = todo_page(&manifest, &view_state.todos).render();
+
+    Ok(Html(html.into_inner()))
+}
+
+/// GET /api/feed - SSE stream for real-time todo updates.
+///
+/// Placeholder implementation that sends a single "connected" event.
+/// Full implementation will subscribe to Zenoh and stream updates.
+async fn todo_feed_handler() -> Sse<impl futures::Stream<Item = Result<Event, Infallible>>> {
+    // Placeholder: single connected event, then keep-alive
+    let stream = stream::once(async {
+        Ok(Event::default()
+            .event("connected")
+            .data("Todo feed connected"))
+    });
+
+    Sse::new(stream)
 }
 
 /// Response type for the todo list endpoint.
