@@ -11,7 +11,7 @@
 //! updates while ensuring the event store remains the source of truth.
 
 use crate::application::error::CommandPipelineError;
-use crate::domain::todo::{TodoCommand, TodoEvent, todo_decider};
+use crate::domain::todo::{TodoCommand, TodoError, TodoEvent, todo_decider};
 use crate::infrastructure::event_bus::{EventBus, ZenohEventBus, publish_events_fire_and_forget};
 use crate::infrastructure::event_store::SqliteEventRepository;
 use fmodel_rust::aggregate::{EventRepository, EventSourcedAggregate};
@@ -111,8 +111,11 @@ pub async fn handle_todo_command<B: EventBus>(
     // Wrap repository to map infrastructure errors
     let repo_adapter = TodoEventRepositoryAdapter::new(event_repository);
 
-    // Map decider errors from TodoError to CommandPipelineError
-    let mapped_decider = todo_decider().map_error(|e| CommandPipelineError::Todo(e.kind().clone()));
+    // Map decider errors from TodoError to CommandPipelineError, preserving UUID.
+    // Use closure to satisfy higher-ranked trait bound requirements.
+    let mapped_decider = todo_decider().map_error(|e: &TodoError| {
+        CommandPipelineError::Todo(TodoError::with_id(e.error_id(), e.kind().clone()))
+    });
 
     // Create the EventSourcedAggregate
     let aggregate = EventSourcedAggregate::new(repo_adapter, mapped_decider);
@@ -144,8 +147,11 @@ pub async fn handle_todo_command_zenoh(
     // Wrap repository to map infrastructure errors
     let repo_adapter = TodoEventRepositoryAdapter::new(event_repository);
 
-    // Map decider errors from TodoError to CommandPipelineError
-    let mapped_decider = todo_decider().map_error(|e| CommandPipelineError::Todo(e.kind().clone()));
+    // Map decider errors from TodoError to CommandPipelineError, preserving UUID.
+    // Use closure to satisfy higher-ranked trait bound requirements.
+    let mapped_decider = todo_decider().map_error(|e: &TodoError| {
+        CommandPipelineError::Todo(TodoError::with_id(e.error_id(), e.kind().clone()))
+    });
 
     // Create the EventSourcedAggregate
     let aggregate = EventSourcedAggregate::new(repo_adapter, mapped_decider);
@@ -235,7 +241,7 @@ mod tests {
         assert!(result.is_err());
 
         match result.expect_err("duplicate create should fail") {
-            CommandPipelineError::Todo(TodoErrorKind::AlreadyExists) => {}
+            CommandPipelineError::Todo(ref e) if *e.kind() == TodoErrorKind::AlreadyExists => {}
             other => panic!("Expected AlreadyExists, got: {other:?}"),
         }
     }
@@ -254,7 +260,7 @@ mod tests {
         assert!(result.is_err());
 
         match result.expect_err("complete nonexistent should fail") {
-            CommandPipelineError::Todo(TodoErrorKind::CannotComplete) => {}
+            CommandPipelineError::Todo(ref e) if *e.kind() == TodoErrorKind::CannotComplete => {}
             other => panic!("Expected CannotComplete, got: {other:?}"),
         }
     }
