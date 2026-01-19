@@ -9,7 +9,7 @@ set -euo pipefail
 
 # Script metadata
 readonly VERSION="1.0.0"
-readonly NIX_INSTALLER_VERSION="3.11.3"
+readonly NIX_INSTALLER_VERSION="2.33.0"
 SCRIPT_NAME=""
 SCRIPT_NAME="$(basename "$0")"
 readonly SCRIPT_NAME
@@ -348,9 +348,9 @@ check_nix() {
   fi
 }
 
-# install_nix: Install Nix using the experimental-nix-installer
+# install_nix: Install Nix using the nix-installer
 install_nix() {
-  local installer_url="https://github.com/NixOS/experimental-nix-installer/releases/download/${NIX_INSTALLER_VERSION}/nix-installer-${NIX_PLATFORM}"
+  local installer_url="https://github.com/NixOS/nix-installer/releases/download/${NIX_INSTALLER_VERSION}/nix-installer-${NIX_PLATFORM}"
   local installer_path="/tmp/nix-installer-${NIX_PLATFORM}"
 
   info "Installing Nix ${NIX_INSTALLER_VERSION} for ${NIX_PLATFORM}"
