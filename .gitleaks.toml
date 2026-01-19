@@ -1,0 +1,13 @@
+# Gitleaks configuration for ironstar
+# https://github.com/gitleaks/gitleaks
+
+[extend]
+# Use default rules as base
+useDefault = true
+
+[allowlist]
+description = "Allowlist for false positives"
+
+regexes = [
+    '''scouting/gossip/enabled''',   # Zenoh config key path (not a secret)
+]
