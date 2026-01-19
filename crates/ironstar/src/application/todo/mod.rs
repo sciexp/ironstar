@@ -16,5 +16,5 @@
 mod handlers;
 mod queries;
 
-pub use handlers::handle_todo_command;
+pub use handlers::{handle_todo_command, handle_todo_command_zenoh};
 pub use queries::{query_all_todos, query_todo_state};
