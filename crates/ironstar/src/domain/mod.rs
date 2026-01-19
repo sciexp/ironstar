@@ -9,6 +9,7 @@
 //! - [`analytics`]: Analytics value objects (QueryId, DatasetRef, SqlQuery, ChartConfig)
 //! - [`common`]: Shared value objects (BoundedString, DashboardTitle, TabTitle, GridSize)
 //! - [`query_session`]: QuerySession decider (commands, events, state, errors)
+//! - [`session`]: Session decider for authentication lifecycle (Shared Kernel: UserId)
 //! - [`todo`]: Todo decider (commands, events, state, values, errors)
 //! - [`views`]: Read-side projections (View pattern for CQRS read models)
 //!
@@ -52,6 +53,7 @@ pub mod analytics;
 pub mod common;
 pub mod error;
 pub mod query_session;
+pub mod session;
 pub mod signals;
 pub mod todo;
 pub mod traits;
@@ -94,3 +96,9 @@ pub use common::{
 
 // View re-exports
 pub use views::{TodoView, TodoViewState, todo_view};
+
+// Session re-exports (from session/)
+pub use session::{
+    OAuthProvider, SessionCommand, SessionDecider, SessionError, SessionErrorKind, SessionEvent,
+    SessionId, SessionMetadata, SessionState, SessionStatus, UserId, session_decider,
+};
