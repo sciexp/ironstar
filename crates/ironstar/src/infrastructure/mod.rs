@@ -97,6 +97,7 @@
 pub mod error;
 pub mod event_bus;
 pub mod event_store;
+pub mod key_expr;
 
 pub use error::{InfrastructureError, InfrastructureErrorKind};
 pub use event_bus::{
@@ -104,3 +105,8 @@ pub use event_bus::{
     zenoh_embedded_config,
 };
 pub use event_store::{SqliteEventRepository, StoredEvent};
+pub use key_expr::{
+    ALL_EVENTS, DOUBLE_WILD, EVENTS_ROOT, EventKeyExpr, ParseError as KeyExprParseError,
+    SINGLE_WILD, aggregate_instance_pattern, aggregate_type_pattern, event_key,
+    event_key_without_sequence,
+};
