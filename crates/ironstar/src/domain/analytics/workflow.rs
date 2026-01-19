@@ -99,39 +99,42 @@ pub fn validate_schema_compatibility(
     chart_config: &ChartConfig,
 ) -> Result<(), AnalyticsError> {
     // Verify x_axis column exists
-    if let Some(x_col) = chart_config.x_axis() {
-        if !schema.columns.contains_key(x_col) {
-            return Err(AnalyticsError::validation(
-                AnalyticsValidationError::schema_incompatible(format!(
-                    "x_axis column '{}' not found in schema",
-                    x_col
-                )),
-            ));
-        }
+    if let Some(x_col) = chart_config
+        .x_axis()
+        .filter(|col| !schema.columns.contains_key(*col))
+    {
+        return Err(AnalyticsError::validation(
+            AnalyticsValidationError::schema_incompatible(format!(
+                "x_axis column '{}' not found in schema",
+                x_col
+            )),
+        ));
     }
 
     // Verify y_axis column exists
-    if let Some(y_col) = chart_config.y_axis() {
-        if !schema.columns.contains_key(y_col) {
-            return Err(AnalyticsError::validation(
-                AnalyticsValidationError::schema_incompatible(format!(
-                    "y_axis column '{}' not found in schema",
-                    y_col
-                )),
-            ));
-        }
+    if let Some(y_col) = chart_config
+        .y_axis()
+        .filter(|col| !schema.columns.contains_key(*col))
+    {
+        return Err(AnalyticsError::validation(
+            AnalyticsValidationError::schema_incompatible(format!(
+                "y_axis column '{}' not found in schema",
+                y_col
+            )),
+        ));
     }
 
     // Verify series column exists if specified
-    if let Some(series_col) = chart_config.series_column() {
-        if !schema.columns.contains_key(series_col) {
-            return Err(AnalyticsError::validation(
-                AnalyticsValidationError::schema_incompatible(format!(
-                    "series column '{}' not found in schema",
-                    series_col
-                )),
-            ));
-        }
+    if let Some(series_col) = chart_config
+        .series_column()
+        .filter(|col| !schema.columns.contains_key(*col))
+    {
+        return Err(AnalyticsError::validation(
+            AnalyticsValidationError::schema_incompatible(format!(
+                "series column '{}' not found in schema",
+                series_col
+            )),
+        ));
     }
 
     Ok(())

@@ -22,11 +22,14 @@ use uuid::Uuid;
 ///
 /// This struct wraps [`AnalyticsValidationErrorKind`] variants with a unique
 /// identifier for distributed tracing correlation and a backtrace for debugging.
+///
+/// The backtrace is boxed to reduce struct size (Backtrace is ~128 bytes).
+/// This keeps `Result<T, AnalyticsValidationError>` small for efficient returns.
 #[derive(Debug)]
 pub struct AnalyticsValidationError {
     id: Uuid,
     kind: AnalyticsValidationErrorKind,
-    backtrace: Backtrace,
+    backtrace: Box<Backtrace>,
 }
 
 /// Error variants for analytics validation failures.
@@ -63,7 +66,7 @@ impl AnalyticsValidationError {
         Self {
             id: Uuid::new_v4(),
             kind,
-            backtrace: Backtrace::capture(),
+            backtrace: Box::new(Backtrace::capture()),
         }
     }
 
@@ -165,11 +168,14 @@ impl std::error::Error for AnalyticsValidationError {}
 ///
 /// Each error instance carries a unique UUID for distributed tracing correlation
 /// and a backtrace for debugging.
+///
+/// The backtrace is boxed to reduce struct size (Backtrace is ~128 bytes).
+/// This keeps `Result<T, AnalyticsError>` small for efficient returns.
 #[derive(Debug)]
 pub struct AnalyticsError {
     id: Uuid,
     kind: AnalyticsErrorKind,
-    backtrace: Backtrace,
+    backtrace: Box<Backtrace>,
 }
 
 /// Operational error variants for analytics workflows.
@@ -200,7 +206,7 @@ impl AnalyticsError {
         Self {
             id: Uuid::new_v4(),
             kind,
-            backtrace: Backtrace::capture(),
+            backtrace: Box::new(Backtrace::capture()),
         }
     }
 
