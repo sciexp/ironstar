@@ -712,7 +712,6 @@ mod tests {
     fn evolve_expired_event_transitions_to_expired() {
         let sid = sample_session_id();
         let uid = sample_user_id();
-        let ts = sample_time();
         let exp = sample_expires();
 
         let active_state = SessionState::Active {
