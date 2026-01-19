@@ -17,4 +17,4 @@ mod handlers;
 mod queries;
 
 pub use handlers::handle_todo_command;
-pub use queries::query_todo_state;
+pub use queries::{query_all_todos, query_todo_state};

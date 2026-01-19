@@ -102,4 +102,4 @@ pub mod error;
 pub mod todo;
 
 pub use error::{AggregateError, CommandPipelineError};
-pub use todo::{handle_todo_command, query_todo_state};
+pub use todo::{handle_todo_command, query_all_todos, query_todo_state};

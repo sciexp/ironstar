@@ -21,6 +21,54 @@ use crate::domain::views::{TodoViewState, todo_view};
 use crate::infrastructure::error::InfrastructureError;
 use crate::infrastructure::event_store::SqliteEventRepository;
 
+/// Query the complete state across all Todo aggregates.
+///
+/// This function implements compute-on-demand state materialization for the entire
+/// Todo bounded context by fetching all events with aggregate_type "Todo" and folding
+/// them through the View.
+///
+/// # Arguments
+///
+/// * `repo` - The event repository to fetch events from
+///
+/// # Returns
+///
+/// The complete `TodoViewState` containing all non-deleted todos across all aggregates.
+///
+/// # Errors
+///
+/// Returns `InfrastructureError` if event fetching fails (database error, deserialization error).
+///
+/// # Example
+///
+/// ```rust,ignore
+/// use ironstar::application::todo::query_all_todos;
+///
+/// let state = query_all_todos(&repo).await?;
+/// println!("Total todos: {}", state.count);
+/// for todo in &state.todos {
+///     println!("- {} ({})", todo.text, if todo.completed { "done" } else { "active" });
+/// }
+/// ```
+pub async fn query_all_todos<C>(
+    repo: &SqliteEventRepository<C, TodoEvent>,
+) -> Result<TodoViewState, InfrastructureError> {
+    // Fetch all Todo events across all aggregates
+    let events = repo.fetch_all_events_by_type("Todo").await?;
+
+    // Create the View and compute state by folding events
+    let view = todo_view();
+    let initial_state = (view.initial_state)();
+
+    let state = events
+        .iter()
+        .fold(initial_state, |state, (event, _version)| {
+            (view.evolve)(&state, event)
+        });
+
+    Ok(state)
+}
+
 /// Query the current state of a Todo aggregate by replaying events through the View.
 ///
 /// This function implements compute-on-demand state materialization:
@@ -200,5 +248,121 @@ mod tests {
         let state = query_todo_state(&repo, &id).await.unwrap();
         assert!(state.todos.is_empty());
         assert_eq!(state.count, 0);
+    }
+
+    // --- query_all_todos tests ---
+
+    #[tokio::test]
+    async fn query_all_empty_returns_empty_state() {
+        let pool = create_test_pool().await;
+        let repo: SqliteEventRepository<TodoCommand, TodoEvent> =
+            SqliteEventRepository::new(pool);
+
+        let state = query_all_todos(&repo).await.unwrap();
+
+        assert!(state.todos.is_empty());
+        assert_eq!(state.count, 0);
+        assert_eq!(state.completed_count, 0);
+    }
+
+    #[tokio::test]
+    async fn query_all_returns_todos_from_multiple_aggregates() {
+        let pool = create_test_pool().await;
+        let repo = Arc::new(SqliteEventRepository::new(pool));
+        let now = Utc::now();
+
+        // Create todos in different aggregates (different TodoIds)
+        let id1 = TodoId::new();
+        let id2 = TodoId::new();
+        let id3 = TodoId::new();
+
+        let cmd1 = TodoCommand::Create {
+            id: id1,
+            text: "First todo".to_string(),
+            created_at: now,
+        };
+        let cmd2 = TodoCommand::Create {
+            id: id2,
+            text: "Second todo".to_string(),
+            created_at: now,
+        };
+        let cmd3 = TodoCommand::Create {
+            id: id3,
+            text: "Third todo".to_string(),
+            created_at: now,
+        };
+
+        handle_todo_command(Arc::clone(&repo), cmd1).await.unwrap();
+        handle_todo_command(Arc::clone(&repo), cmd2).await.unwrap();
+        handle_todo_command(Arc::clone(&repo), cmd3).await.unwrap();
+
+        // Complete one todo
+        let complete = TodoCommand::Complete {
+            id: id2,
+            completed_at: now,
+        };
+        handle_todo_command(Arc::clone(&repo), complete).await.unwrap();
+
+        let state = query_all_todos(&repo).await.unwrap();
+
+        assert_eq!(state.todos.len(), 3);
+        assert_eq!(state.count, 3);
+        assert_eq!(state.completed_count, 1);
+
+        // Verify all todos are present
+        let texts: Vec<&str> = state.todos.iter().map(|t| t.text.as_str()).collect();
+        assert!(texts.contains(&"First todo"));
+        assert!(texts.contains(&"Second todo"));
+        assert!(texts.contains(&"Third todo"));
+    }
+
+    #[tokio::test]
+    async fn query_all_excludes_deleted_todos() {
+        let pool = create_test_pool().await;
+        let repo = Arc::new(SqliteEventRepository::new(pool));
+        let now = Utc::now();
+
+        let id1 = TodoId::new();
+        let id2 = TodoId::new();
+
+        // Create two todos
+        handle_todo_command(
+            Arc::clone(&repo),
+            TodoCommand::Create {
+                id: id1,
+                text: "Keep this".to_string(),
+                created_at: now,
+            },
+        )
+        .await
+        .unwrap();
+
+        handle_todo_command(
+            Arc::clone(&repo),
+            TodoCommand::Create {
+                id: id2,
+                text: "Delete this".to_string(),
+                created_at: now,
+            },
+        )
+        .await
+        .unwrap();
+
+        // Delete one
+        handle_todo_command(
+            Arc::clone(&repo),
+            TodoCommand::Delete {
+                id: id2,
+                deleted_at: now,
+            },
+        )
+        .await
+        .unwrap();
+
+        let state = query_all_todos(&repo).await.unwrap();
+
+        assert_eq!(state.todos.len(), 1);
+        assert_eq!(state.count, 1);
+        assert_eq!(state.todos[0].text, "Keep this");
     }
 }
