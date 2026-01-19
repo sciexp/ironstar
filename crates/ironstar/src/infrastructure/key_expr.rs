@@ -166,24 +166,25 @@ impl EventKeyExpr {
     pub fn parse(key_expr: &str) -> Result<Self, ParseError> {
         let parts: Vec<&str> = key_expr.split('/').collect();
 
-        // Validate minimum structure: events/{type}/{id}
-        if parts.len() < 3 {
-            return Err(ParseError::TooFewSegments {
-                expected: 3,
-                found: parts.len(),
-            });
-        }
+        // Destructure with pattern matching for safe access
+        let (root, aggregate_type, aggregate_id, sequence_part) = match parts.as_slice() {
+            [root, agg_type, agg_id] => (*root, *agg_type, *agg_id, None),
+            [root, agg_type, agg_id, seq, ..] => (*root, *agg_type, *agg_id, Some(*seq)),
+            _ => {
+                return Err(ParseError::TooFewSegments {
+                    expected: 3,
+                    found: parts.len(),
+                });
+            }
+        };
 
         // Validate root namespace
-        if parts[0] != EVENTS_ROOT {
+        if root != EVENTS_ROOT {
             return Err(ParseError::InvalidRoot {
                 expected: EVENTS_ROOT.to_string(),
-                found: parts[0].to_string(),
+                found: root.to_string(),
             });
         }
-
-        let aggregate_type = parts[1].to_string();
-        let aggregate_id = parts[2].to_string();
 
         // Validate non-empty components
         if aggregate_type.is_empty() {
@@ -194,21 +195,21 @@ impl EventKeyExpr {
         }
 
         // Parse optional sequence
-        let sequence = if parts.len() >= 4 && !parts[3].is_empty() {
-            Some(
-                parts[3]
-                    .parse::<u64>()
-                    .map_err(|_| ParseError::InvalidSequence {
-                        value: parts[3].to_string(),
-                    })?,
-            )
-        } else {
-            None
+        let sequence = match sequence_part {
+            Some(seq) if !seq.is_empty() => {
+                Some(
+                    seq.parse::<u64>()
+                        .map_err(|_| ParseError::InvalidSequence {
+                            value: seq.to_string(),
+                        })?,
+                )
+            }
+            _ => None,
         };
 
         Ok(Self {
-            aggregate_type,
-            aggregate_id,
+            aggregate_type: aggregate_type.to_string(),
+            aggregate_id: aggregate_id.to_string(),
             sequence,
         })
     }
