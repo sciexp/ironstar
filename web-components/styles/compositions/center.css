@@ -1,0 +1,8 @@
+/* Center: Horizontal centering with max-width */
+
+.center {
+  box-sizing: content-box;
+  max-inline-size: var(--center-max, var(--size-content-3));
+  margin-inline: auto;
+  padding-inline: var(--center-gutters, var(--size-3));
+}
