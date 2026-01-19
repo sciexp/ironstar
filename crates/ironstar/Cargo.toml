@@ -44,6 +44,11 @@ zenoh = { workspace = true }
 # Functional event sourcing (Decider pattern)
 fmodel-rust = { workspace = true }
 
+# HTTP utilities for static file serving
+tower-http = { workspace = true }
+mime_guess = { workspace = true }
+http = { workspace = true }
+
 [dev-dependencies]
 tokio = { workspace = true }
 tower = { workspace = true }
