@@ -94,12 +94,14 @@
 //! - Orchestration of multiple services (belongs in [`crate::application`])
 //! - Synchronous functions (by design, everything here is async)
 
+pub mod assets;
 pub mod error;
 pub mod event_bus;
 pub mod event_store;
 pub mod key_expr;
 pub mod sse_stream;
 
+pub use assets::AssetManifest;
 pub use error::{InfrastructureError, InfrastructureErrorKind};
 pub use event_bus::{
     EventBus, ZenohEventBus, open_embedded_session, publish_events_fire_and_forget,
