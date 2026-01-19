@@ -32,6 +32,7 @@
 
 use crate::domain::traits::{DeciderType, Identifier};
 use crate::infrastructure::error::InfrastructureError;
+use crate::infrastructure::key_expr::event_key_without_sequence;
 use serde::Serialize;
 use std::future::Future;
 use std::sync::Arc;
@@ -49,6 +50,22 @@ use zenoh::Session;
 /// - `Identifier`: Provides the aggregate ID for key expression routing
 /// - `DeciderType`: Provides the aggregate type for key expression routing
 /// - `Serialize`: Enables JSON payload serialization
+///
+/// # Design: publish-only interface
+///
+/// This trait intentionally omits a `subscribe` method. Zenoh's `Subscriber` type
+/// has its lifecycle tied to its `Drop` implementation — when dropped, the subscription
+/// ends. This ownership model doesn't translate cleanly to a trait abstraction where
+/// the returned subscriber would need to be a concrete type or boxed trait object.
+///
+/// Instead, implementations expose their underlying session (e.g., [`ZenohEventBus::session`])
+/// for direct subscription access. This design:
+/// - Preserves Zenoh's zero-copy efficiency and type-safe key expressions
+/// - Allows subscribers to leverage Zenoh-specific features like key expression wildcards
+/// - Keeps the trait focused on the common publish interface across implementations
+///
+/// For subscription patterns, see the [`key_expr`](super::key_expr) module which provides
+/// helper functions for constructing subscription patterns.
 pub trait EventBus: Send + Sync {
     /// Publish an event to the event bus.
     ///
@@ -85,7 +102,42 @@ impl ZenohEventBus {
 
     /// Get a reference to the underlying Zenoh session.
     ///
-    /// Useful for creating subscribers or other Zenoh operations.
+    /// This method exposes the Zenoh session for creating subscribers and other
+    /// Zenoh-specific operations that don't fit the [`EventBus`] trait abstraction.
+    ///
+    /// # Why subscription is via session, not the trait
+    ///
+    /// Zenoh's `Subscriber` type has its lifecycle tied to `Drop` — the subscription
+    /// automatically ends when the subscriber is dropped. This ownership model requires
+    /// callers to hold the `Subscriber` value, which doesn't fit cleanly into a trait
+    /// method that would need to return an abstract type.
+    ///
+    /// Direct session access provides:
+    /// - Full access to Zenoh's key expression wildcards (`events/Todo/**`)
+    /// - Zero-copy message handling via Zenoh's `Sample` type
+    /// - Natural Rust ownership semantics for subscription lifecycle
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// use crate::infrastructure::{ZenohEventBus, aggregate_type_pattern};
+    ///
+    /// let event_bus = ZenohEventBus::new(session);
+    ///
+    /// // Subscribe to all Todo events using key expression pattern
+    /// let subscriber = event_bus.session()
+    ///     .declare_subscriber(aggregate_type_pattern("Todo"))
+    ///     .await?;
+    ///
+    /// // Subscriber lives until dropped
+    /// while let Ok(sample) = subscriber.recv_async().await {
+    ///     // Process event...
+    /// }
+    /// ```
+    ///
+    /// See [`aggregate_type_pattern`](super::key_expr::aggregate_type_pattern) and
+    /// [`aggregate_instance_pattern`](super::key_expr::aggregate_instance_pattern)
+    /// for subscription pattern helpers.
     #[must_use]
     pub fn session(&self) -> &Arc<Session> {
         &self.session
@@ -99,7 +151,7 @@ impl EventBus for ZenohEventBus {
     {
         let aggregate_type = event.decider_type();
         let aggregate_id = event.identifier();
-        let key_expr = format!("events/{aggregate_type}/{aggregate_id}");
+        let key_expr = event_key_without_sequence(&aggregate_type, &aggregate_id);
 
         let payload = serde_json::to_vec(event)?;
 
