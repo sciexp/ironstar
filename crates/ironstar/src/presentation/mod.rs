@@ -109,8 +109,10 @@ pub mod error;
 pub mod health;
 pub mod layout;
 pub mod todo;
+pub mod todo_templates;
 
 pub use components::{button, checkbox, icon, loading_spinner, text_field};
 pub use error::{AppError, AppErrorKind, ErrorResponse};
 pub use health::{HealthChecks, HealthResponse, HealthState, HealthStatus, health_router};
 pub use todo::{TodoAppState, TodoListResponse, get_todo, list_todos};
+pub use todo_templates::{todo_app, todo_item, todo_list, todo_page};
