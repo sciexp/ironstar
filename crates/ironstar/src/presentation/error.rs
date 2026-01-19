@@ -88,6 +88,19 @@ impl AppError {
         }
     }
 
+    /// Create an application error with a preserved error ID from a lower layer.
+    ///
+    /// Use this when converting from lower-layer errors to preserve UUID tracking
+    /// for distributed tracing correlation.
+    #[must_use]
+    pub fn with_id(id: Uuid, kind: AppErrorKind) -> Self {
+        Self {
+            id,
+            kind,
+            backtrace: Backtrace::capture(),
+        }
+    }
+
     /// Get the unique error ID for tracing correlation.
     #[must_use]
     pub fn error_id(&self) -> Uuid {
@@ -218,45 +231,57 @@ impl From<AggregateError> for AppError {
 
 impl From<InfrastructureError> for AppError {
     fn from(e: InfrastructureError) -> Self {
-        Self::new(AppErrorKind::Infrastructure(e))
+        // Preserve error_id from infrastructure layer
+        let id = e.error_id();
+        Self::with_id(id, AppErrorKind::Infrastructure(e))
     }
 }
 
 impl From<CommandPipelineError> for AppError {
     fn from(e: CommandPipelineError) -> Self {
+        // Preserve error_id from the source layer for distributed tracing
+        let error_id = e.error_id();
+
         match e {
-            CommandPipelineError::Todo(kind) => {
-                // Map TodoErrorKind to HTTP-semantic AppErrorKind
+            CommandPipelineError::Todo(todo_err) => {
+                // Map TodoError to HTTP-semantic AppErrorKind, preserving error_id
+                let kind = todo_err.kind().clone();
                 match kind {
                     // Validation-like errors → ValidationError
-                    TodoErrorKind::EmptyText => Self::new(AppErrorKind::Validation(
-                        ValidationError::new(ValidationErrorKind::EmptyField {
-                            field: "text".to_string(),
-                        }),
-                    )),
-                    TodoErrorKind::TextTooLong { max, actual } => {
-                        Self::new(AppErrorKind::Validation(ValidationError::new(
+                    TodoErrorKind::EmptyText => Self::with_id(
+                        error_id,
+                        AppErrorKind::Validation(ValidationError::new(
+                            ValidationErrorKind::EmptyField {
+                                field: "text".to_string(),
+                            },
+                        )),
+                    ),
+                    TodoErrorKind::TextTooLong { max, actual } => Self::with_id(
+                        error_id,
+                        AppErrorKind::Validation(ValidationError::new(
                             ValidationErrorKind::TooLong {
                                 field: "text".to_string(),
                                 max_length: max,
                                 actual_length: actual,
                             },
-                        )))
-                    }
+                        )),
+                    ),
                     // NotFound → DomainError::NotFound
-                    TodoErrorKind::NotFound => Self::new(AppErrorKind::Domain(DomainError::new(
-                        DomainErrorKind::NotFound {
+                    TodoErrorKind::NotFound => Self::with_id(
+                        error_id,
+                        AppErrorKind::Domain(DomainError::new(DomainErrorKind::NotFound {
                             aggregate_type: "Todo".to_string(),
                             aggregate_id: "unknown".to_string(),
-                        },
-                    ))),
+                        })),
+                    ),
                     // State conflict errors → DomainError with appropriate kind
-                    TodoErrorKind::AlreadyExists => Self::new(AppErrorKind::Domain(
-                        DomainError::new(DomainErrorKind::AlreadyExists {
+                    TodoErrorKind::AlreadyExists => Self::with_id(
+                        error_id,
+                        AppErrorKind::Domain(DomainError::new(DomainErrorKind::AlreadyExists {
                             aggregate_type: "Todo".to_string(),
                             aggregate_id: "unknown".to_string(),
-                        }),
-                    )),
+                        })),
+                    ),
                     // State transition errors → DomainError::InvalidTransition
                     TodoErrorKind::CannotComplete
                     | TodoErrorKind::CannotUncomplete
@@ -264,17 +289,20 @@ impl From<CommandPipelineError> for AppError {
                     | TodoErrorKind::AlreadyCompleted
                     | TodoErrorKind::NotCompleted
                     | TodoErrorKind::Deleted
-                    | TodoErrorKind::InvalidTransition { .. } => Self::new(AppErrorKind::Domain(
-                        DomainError::new(DomainErrorKind::InvalidTransition {
-                            from: "current".to_string(),
-                            to: format!("{kind}"),
-                        }),
-                    )),
+                    | TodoErrorKind::InvalidTransition { .. } => Self::with_id(
+                        error_id,
+                        AppErrorKind::Domain(DomainError::new(
+                            DomainErrorKind::InvalidTransition {
+                                from: "current".to_string(),
+                                to: format!("{kind:?}"),
+                            },
+                        )),
+                    ),
                 }
             }
             CommandPipelineError::Infrastructure(infra) => {
-                // Delegate to existing InfrastructureError mapping
-                Self::from(infra)
+                // Preserve error_id from infrastructure layer
+                Self::with_id(error_id, AppErrorKind::Infrastructure(infra))
             }
         }
     }
@@ -331,5 +359,47 @@ mod tests {
         assert!(json.contains("\"code\":\"NOT_FOUND\""));
         assert!(json.contains("\"errorId\""));
         assert!(json.contains("Todo 123 not found"));
+    }
+
+    #[test]
+    fn command_pipeline_error_preserves_error_id() {
+        use crate::domain::todo::{TodoError, TodoErrorKind};
+
+        // Create a TodoError with a known UUID
+        let todo_err = TodoError::new(TodoErrorKind::NotFound);
+        let original_id = todo_err.error_id();
+
+        // Convert to CommandPipelineError
+        let pipeline_err = CommandPipelineError::Todo(todo_err);
+
+        // Verify error_id is preserved
+        assert_eq!(pipeline_err.error_id(), original_id);
+
+        // Convert to AppError
+        let app_err: AppError = pipeline_err.into();
+
+        // Verify error_id is still preserved through the full pipeline
+        assert_eq!(app_err.error_id(), original_id);
+    }
+
+    #[test]
+    fn infrastructure_error_preserves_error_id() {
+        use crate::infrastructure::error::InfrastructureError;
+
+        // Create an InfrastructureError with a known UUID
+        let infra_err = InfrastructureError::not_found("Event", "123");
+        let original_id = infra_err.error_id();
+
+        // Convert to CommandPipelineError
+        let pipeline_err = CommandPipelineError::Infrastructure(infra_err);
+
+        // Verify error_id is preserved
+        assert_eq!(pipeline_err.error_id(), original_id);
+
+        // Convert to AppError
+        let app_err: AppError = pipeline_err.into();
+
+        // Verify error_id is still preserved through the full pipeline
+        assert_eq!(app_err.error_id(), original_id);
     }
 }
