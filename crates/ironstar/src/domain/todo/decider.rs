@@ -659,7 +659,7 @@ mod tests {
     fn full_lifecycle_create_complete_uncomplete_delete() {
         let id = sample_id();
         let ts = sample_time();
-        let decider = todo_decider();
+        let _decider = todo_decider();
 
         // Create
         let events = decide(
