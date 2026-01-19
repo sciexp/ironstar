@@ -4,27 +4,64 @@
 //! and their hierarchical relationships. It depends on the Session context's
 //! `UserId` as a Shared Kernel type for ownership attribution.
 //!
+//! # State Machine
+//!
+//! ```text
+//!                    ┌──────────────┐
+//!     Create ───────►│    Active    │
+//!                    └──────┬───────┘
+//!                           │
+//!            ┌──────────────┼──────────────┐
+//!            │              │              │
+//!         Rename     SetVisibility    (future: Delete)
+//!            │              │              │
+//!            └──────────────┴──────────────┘
+//!                           │
+//!                           ▼
+//!                    ┌──────────────┐
+//!                    │    Active    │ (same state, updated fields)
+//!                    └──────────────┘
+//! ```
+//!
 //! # Shared Kernel Pattern
 //!
 //! `UserId` is imported from the parent domain module (defined in Session context).
 //! This establishes the cross-context dependency through explicit imports rather
 //! than tight coupling between bounded contexts.
 //!
+//! # Idempotency
+//!
+//! Operations that would result in the same state return `Ok(vec![])`:
+//! - Rename with the same name
+//! - SetVisibility with the same visibility
+//!
 //! # Module Organization
 //!
-//! - [`values`]: Value objects (WorkspaceId, etc.)
-//!
-//! Additional modules (commands, events, state, decider) will be added as
-//! the Workspace aggregate implementation progresses (see 7a2 epic).
+//! - [`commands`]: WorkspaceCommand enum
+//! - [`decider`]: workspace_decider() factory with pure decide/evolve
+//! - [`errors`]: WorkspaceError with UUID tracking
+//! - [`events`]: WorkspaceEvent enum with audit trail
+//! - [`state`]: WorkspaceState and WorkspaceStatus
+//! - [`values`]: Value objects (WorkspaceId, WorkspaceName, Visibility)
 
+pub mod commands;
+pub mod decider;
+pub mod errors;
+pub mod events;
+pub mod state;
 pub mod values;
 
 // Re-export UserId from Shared Kernel (Session context)
 // This demonstrates the shared kernel pattern: Workspace depends on Session's UserId
 pub use crate::domain::UserId;
 
-// Re-export workspace-specific types
-pub use values::WorkspaceId;
+// Re-export public types for ergonomic imports
+pub use commands::WorkspaceCommand;
+pub use decider::{WorkspaceDecider, workspace_decider};
+pub use errors::{WorkspaceError, WorkspaceErrorKind};
+pub use events::WorkspaceEvent;
+pub use state::{WorkspaceState, WorkspaceStatus};
+pub use values::{WORKSPACE_NAME_MAX_LENGTH, Visibility, WorkspaceId, WorkspaceName};
 
 #[cfg(test)]
 mod tests {
