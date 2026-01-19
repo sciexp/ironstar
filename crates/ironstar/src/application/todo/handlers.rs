@@ -162,6 +162,7 @@ pub async fn handle_todo_command_zenoh(
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used, clippy::panic)]
 mod tests {
     use super::*;
     use crate::domain::todo::{TodoErrorKind, TodoId};

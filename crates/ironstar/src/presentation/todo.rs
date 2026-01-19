@@ -289,6 +289,7 @@ pub async fn delete_todo(
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used, clippy::panic)]
 mod tests {
     use super::*;
     use crate::application::todo::handle_todo_command;
