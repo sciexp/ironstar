@@ -1,0 +1,48 @@
+/* web-components/styles/theme.css */
+/* Application-level design tokens wrapping Open Props primitives */
+
+:root {
+  /* Enable light-dark() function by declaring supported color schemes */
+  color-scheme: light dark;
+
+  /* Primary color derived from Open Props */
+  --primary: var(--blue-7);
+  --primary-light: var(--blue-5);
+  --primary-dark: var(--blue-9);
+
+  /* Accent colors */
+  --accent: var(--orange-6);
+  --accent-light: var(--orange-4);
+  --accent-dark: var(--orange-8);
+
+  /* Surface colors using light-dark() function */
+  --surface-default: light-dark(var(--gray-0), var(--gray-9));
+  --surface-elevated: light-dark(var(--gray-1), var(--gray-8));
+  --surface-overlay: light-dark(var(--gray-2), var(--gray-7));
+
+  /* Text colors */
+  --text-primary: light-dark(var(--gray-9), var(--gray-1));
+  --text-secondary: light-dark(var(--gray-7), var(--gray-3));
+  --text-tertiary: light-dark(var(--gray-6), var(--gray-4));
+
+  /* Border colors */
+  --border-default: light-dark(var(--gray-3), var(--gray-7));
+  --border-emphasis: light-dark(var(--gray-4), var(--gray-6));
+
+  /* Shadows using Open Props */
+  --shadow-card: var(--shadow-2);
+  --shadow-elevated: var(--shadow-4);
+  --shadow-dialog: var(--shadow-6);
+
+  /* Border radius */
+  --radius-default: var(--radius-2);
+  --radius-large: var(--radius-3);
+  --radius-full: var(--radius-round);
+
+  /* Animation easings */
+  --ease-in-out: var(--ease-3);
+  --ease-spring: var(--ease-spring-3);
+}
+
+/* Dark mode handled automatically by light-dark() function - no JavaScript needed */
+/* Browser respects prefers-color-scheme and/or color-scheme meta tag */
