@@ -44,7 +44,7 @@ impl AssetManifest {
     /// assert_eq!(manifest.resolve("bundle.js"), "bundle-abc123.js");
     /// assert_eq!(manifest.resolve("unknown.js"), "unknown.js"); // fallback
     /// ```
-    pub fn resolve(&self, entry: &str) -> &str {
+    pub fn resolve<'a>(&'a self, entry: &'a str) -> &'a str {
         self.0.get(entry).map(|s| s.as_str()).unwrap_or(entry)
     }
 
