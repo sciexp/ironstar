@@ -104,11 +104,13 @@
 //! - Multi-step workflows (belongs in [`crate::application`])
 //! - Synchronous business logic (domain functions should be sync)
 
+pub mod components;
 pub mod error;
 pub mod health;
 pub mod layout;
 pub mod todo;
 
+pub use components::{button, checkbox, icon, loading_spinner, text_field};
 pub use error::{AppError, AppErrorKind, ErrorResponse};
 pub use health::{HealthChecks, HealthResponse, HealthState, HealthStatus, health_router};
 pub use todo::{TodoAppState, TodoListResponse, get_todo, list_todos};
