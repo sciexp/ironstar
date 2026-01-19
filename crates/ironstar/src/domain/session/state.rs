@@ -35,9 +35,10 @@ use super::values::{SessionId, UserId};
 ///
 /// Represents the current state of a session, derived from events.
 /// The state machine is: NoSession → Active → (Expired | Invalidated)
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum SessionState {
     /// Initial state: no session exists.
+    #[default]
     NoSession,
 
     /// Session is active and valid.
@@ -61,12 +62,6 @@ pub enum SessionState {
         /// Session that was invalidated.
         session_id: SessionId,
     },
-}
-
-impl Default for SessionState {
-    fn default() -> Self {
-        Self::NoSession
-    }
 }
 
 impl SessionState {

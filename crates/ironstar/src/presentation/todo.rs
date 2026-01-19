@@ -452,7 +452,7 @@ mod tests {
         let response = app
             .oneshot(
                 Request::builder()
-                    .uri(&format!("/api/todos/{}", id.into_inner()))
+                    .uri(format!("/api/todos/{}", id.into_inner()))
                     .body(Body::empty())
                     .expect("request body"),
             )
@@ -480,7 +480,7 @@ mod tests {
         let response = app
             .oneshot(
                 Request::builder()
-                    .uri(&format!("/api/todos/{}", nonexistent_id))
+                    .uri(format!("/api/todos/{}", nonexistent_id))
                     .body(Body::empty())
                     .expect("request body"),
             )
@@ -525,7 +525,7 @@ mod tests {
         let response = app
             .oneshot(
                 Request::builder()
-                    .uri(&format!("/api/todos/{}", id.into_inner()))
+                    .uri(format!("/api/todos/{}", id.into_inner()))
                     .body(Body::empty())
                     .expect("request body"),
             )

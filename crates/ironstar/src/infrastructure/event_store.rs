@@ -515,7 +515,7 @@ mod tests {
         };
 
         // Save event
-        let saved = repo.save(&[event.clone()]).await.unwrap();
+        let saved = repo.save(std::slice::from_ref(&event)).await.unwrap();
         assert_eq!(saved.len(), 1);
         assert_eq!(saved[0].0, event);
 
