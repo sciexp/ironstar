@@ -15,6 +15,7 @@ All dependencies with local source code available for reference.
 | async-duckdb | `~/projects/rust-workspace/async-duckdb` | Async DuckDB wrapper with connection pooling |
 | duckdb-rs | `~/projects/omicslake-workspace/duckdb-rs` | DuckDB Rust bindings (wrapped by async-duckdb) |
 | ts-rs | `~/projects/rust-workspace/ts-rs` | TypeScript type generation from Rust structs |
+| rust-embed | `~/projects/rust-workspace/rust-embed` | Static asset embedding at compile time |
 | fmodel-rust | `~/projects/rust-workspace/fmodel-rust` | Functional domain modeling with Decider pattern (primary ES abstraction) |
 
 ## fmodel ecosystem
@@ -140,6 +141,7 @@ See their TodoMVC implementations for SSE formatting and signal parsing patterns
 | process-compose | `~/projects/nix-workspace/process-compose` | Process orchestration |
 | process-compose-flake | `~/projects/nix-workspace/process-compose-flake` | Nix flake integration |
 | rolldown | `~/projects/rust-workspace/rolldown` | Rust-native JS/CSS bundler |
+| rollup-plugin-output-manifest | `~/projects/rust-workspace/rollup-plugin-output-manifest` | Rolldown manifest.json generation (maps entry names to hashed filenames) |
 | zenoh | `~/projects/rust-workspace/zenoh` | Distributed pub/sub + storage (future) |
 
 ## CSS and styling
