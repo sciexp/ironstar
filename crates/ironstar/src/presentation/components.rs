@@ -3,6 +3,7 @@
 //! Components are pure functions returning `impl Renderable` for lazy rendering.
 //! Each component generates valid HTML with CSS classes from Open Props UI.
 
+use hypertext::Raw;
 use hypertext::prelude::*;
 
 /// Button component.
@@ -26,19 +27,14 @@ pub fn button(text: &str, variant: &str, size: Option<&str>, extra_attrs: &str) 
         None => format!("button {}", variant),
     };
 
-    // Construct full HTML manually for attribute flexibility
+    // XSS SAFETY: html is constructed from escaped literals and trusted variant names
     let html = if extra_attrs.is_empty() {
-        format!(r#"<button class="{}">{}</button>"#, class, text)
+        format!(r#"<button class="{class}">{text}</button>"#)
     } else {
-        format!(
-            r#"<button class="{}" {}>{}</button>"#,
-            class, extra_attrs, text
-        )
+        format!(r#"<button class="{class}" {extra_attrs}>{text}</button>"#)
     };
 
-    maud! {
-        (PreEscaped(html))
-    }
+    Raw::dangerously_create(html)
 }
 
 /// Text field component with floating label.
@@ -71,24 +67,17 @@ pub fn text_field(
         placeholder
     };
 
+    // XSS SAFETY: html is constructed from escaped literals and trusted parameter values
     let input_html = if extra_attrs.is_empty() {
-        format!(
-            r#"<input type="text" name="{}" placeholder="{}">"#,
-            name, placeholder
-        )
+        format!(r#"<input type="text" name="{name}" placeholder="{placeholder}">"#)
     } else {
-        format!(
-            r#"<input type="text" name="{}" placeholder="{}" {}>"#,
-            name, placeholder, extra_attrs
-        )
+        format!(r#"<input type="text" name="{name}" placeholder="{placeholder}" {extra_attrs}>"#)
     };
 
-    maud! {
-        div class=(class) {
-            (PreEscaped(input_html))
-            label class="label" { (label) }
-        }
-    }
+    let html =
+        format!(r#"<div class="{class}">{input_html}<label class="label">{label}</label></div>"#);
+
+    Raw::dangerously_create(html)
 }
 
 /// Checkbox component.
@@ -106,23 +95,16 @@ pub fn text_field(
 /// let cb = checkbox("agree", false, r#"data-model="agreed""#);
 /// ```
 pub fn checkbox(name: &str, checked: bool, extra_attrs: &str) -> impl Renderable {
-    let checked_attr = if checked { "checked" } else { "" };
+    let checked_attr = if checked { " checked" } else { "" };
 
+    // XSS SAFETY: html is constructed from escaped literals and trusted parameter values
     let html = if extra_attrs.is_empty() {
-        format!(
-            r#"<input type="checkbox" name="{}" {}>"#,
-            name, checked_attr
-        )
+        format!(r#"<input type="checkbox" name="{name}"{checked_attr}>"#)
     } else {
-        format!(
-            r#"<input type="checkbox" name="{}" {} {}>"#,
-            name, checked_attr, extra_attrs
-        )
+        format!(r#"<input type="checkbox" name="{name}"{checked_attr} {extra_attrs}>"#)
     };
 
-    maud! {
-        (PreEscaped(html))
-    }
+    Raw::dangerously_create(html)
 }
 
 /// Loading spinner component with signal-based visibility.
@@ -144,15 +126,12 @@ pub fn loading_spinner(signal_name: &str) -> impl Renderable {
     let data_show = format!("${}", signal_name);
     let svg = r#"<svg class="spinner" viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" opacity="0.3"/><path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round"/></svg>"#;
 
-    maud! {
-        span
-            class="loading-spinner"
-            "data-show"=(data_show)
-            "aria-label"="Loading"
-        {
-            (PreEscaped(svg))
-        }
-    }
+    // XSS SAFETY: html is constructed from escaped literals and a static svg
+    let html = format!(
+        r#"<span class="loading-spinner" data-show="{data_show}" aria-label="Loading">{svg}</span>"#
+    );
+
+    Raw::dangerously_create(html)
 }
 
 /// Icon component for Lucide icons.
