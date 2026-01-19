@@ -9,7 +9,7 @@ license = "MIT"
 
 [workspace.dependencies]
 # Web framework and async runtime
-axum = { version = "0.8", features = ["default"] }
+axum = { version = "0.8", features = ["default", "macros"] }
 tokio = { version = "1.48", features = ["full"] }
 hypertext = { version = "0.12" }
 
@@ -51,7 +51,8 @@ rkyv = { version = "0.8", features = ["bytecheck"] }
 zenoh = { version = "1.7", default-features = false, features = ["transport_tcp", "transport_tls"] }
 
 # Functional event sourcing (Decider pattern)
-fmodel-rust = { version = "0.9", features = ["not-send-futures"] }
+# Default features require Send bounds, enabling axum multi-threaded handler compatibility
+fmodel-rust = { version = "0.9" }
 
 # Async stream utilities
 futures = { version = "0.3" }
