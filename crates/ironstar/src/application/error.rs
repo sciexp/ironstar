@@ -119,8 +119,9 @@ impl AggregateError {
 // CommandPipelineError: Unified error type for EventSourcedAggregate pipeline
 // =============================================================================
 
-use crate::domain::todo::TodoErrorKind;
+use crate::domain::todo::TodoError;
 use crate::infrastructure::error::InfrastructureError;
+use uuid::Uuid;
 
 /// Error type for EventSourcedAggregate command pipeline.
 ///
@@ -136,25 +137,45 @@ use crate::infrastructure::error::InfrastructureError;
 /// - Domain errors (from Decider) are mapped via `map_error` before wiring
 /// - Infrastructure errors (from EventRepository) are wrapped via From impl
 ///
+/// # UUID tracking
+///
+/// All variants preserve error_id from the source layer for distributed tracing.
+/// The `error_id()` method returns the original error ID, enabling correlation
+/// across async operations and service boundaries.
+///
 /// # Future aggregates
 ///
 /// Add new variants as aggregates are wired:
-/// - `Session(SessionErrorKind)` for ironstar-507
-/// - `Workspace(WorkspaceErrorKind)` for ironstar-7a2
+/// - `Session(SessionError)` for ironstar-507
+/// - `Workspace(WorkspaceError)` for ironstar-7a2
 #[derive(Debug)]
 pub enum CommandPipelineError {
-    /// Todo aggregate domain error.
-    Todo(TodoErrorKind),
-    // Session(SessionErrorKind),      // future: ironstar-507
-    // Workspace(WorkspaceErrorKind),  // future: ironstar-7a2
+    /// Todo aggregate domain error (preserves UUID from TodoError).
+    Todo(TodoError),
+    // Session(SessionError),      // future: ironstar-507
+    // Workspace(WorkspaceError),  // future: ironstar-7a2
     /// Infrastructure failure (from EventRepository adapter).
     Infrastructure(InfrastructureError),
+}
+
+impl CommandPipelineError {
+    /// Get the unique error ID for tracing correlation.
+    ///
+    /// Returns the error_id from the underlying error type, preserving
+    /// the original UUID from domain or infrastructure layer.
+    #[must_use]
+    pub fn error_id(&self) -> Uuid {
+        match self {
+            Self::Todo(e) => e.error_id(),
+            Self::Infrastructure(e) => e.error_id(),
+        }
+    }
 }
 
 impl fmt::Display for CommandPipelineError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Todo(k) => write!(f, "Todo: {k}"),
+            Self::Todo(e) => write!(f, "Todo: {e}"),
             Self::Infrastructure(e) => write!(f, "{e}"),
         }
     }
@@ -163,7 +184,7 @@ impl fmt::Display for CommandPipelineError {
 impl std::error::Error for CommandPipelineError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
-            Self::Todo(_) => None,
+            Self::Todo(e) => Some(e),
             Self::Infrastructure(e) => Some(e),
         }
     }
@@ -175,25 +196,20 @@ impl From<InfrastructureError> for CommandPipelineError {
     }
 }
 
-impl fmt::Display for TodoErrorKind {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::EmptyText => write!(f, "todo text cannot be empty"),
-            Self::TextTooLong { max, actual } => {
-                write!(f, "todo text cannot exceed {max} characters (got {actual})")
-            }
-            Self::AlreadyExists => write!(f, "todo already exists"),
-            Self::NotFound => write!(f, "todo not found"),
-            Self::CannotComplete => write!(f, "cannot complete todo: invalid state"),
-            Self::CannotUncomplete => write!(f, "cannot uncomplete todo: invalid state"),
-            Self::CannotDelete => write!(f, "cannot delete todo: invalid state"),
-            Self::AlreadyCompleted => write!(f, "todo is already completed"),
-            Self::NotCompleted => write!(f, "todo is not completed"),
-            Self::Deleted => write!(f, "todo has been deleted"),
-            Self::InvalidTransition { action, state } => {
-                write!(f, "invalid state transition: cannot {action} when {state}")
-            }
-        }
+impl From<TodoError> for CommandPipelineError {
+    fn from(e: TodoError) -> Self {
+        Self::Todo(e)
+    }
+}
+
+/// Conversion from `&TodoError` for fmodel-rust's `map_error` which passes references.
+///
+/// This creates a new `TodoError` with the same kind, preserving the error_id from the
+/// original. Since `TodoError` contains non-Clone fields (Backtrace), we create a fresh
+/// backtrace but preserve the UUID for distributed tracing correlation.
+impl From<&TodoError> for CommandPipelineError {
+    fn from(e: &TodoError) -> Self {
+        Self::Todo(TodoError::with_id(e.error_id(), e.kind().clone()))
     }
 }
 
