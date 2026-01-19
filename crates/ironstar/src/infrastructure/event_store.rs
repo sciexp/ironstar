@@ -339,15 +339,14 @@ where
             .await;
 
             // Translate UNIQUE constraint violation on previous_id to OptimisticLockingConflict
-            if let Err(sqlx::Error::Database(db_err)) = &result {
-                if db_err.message().contains("UNIQUE constraint failed")
-                    && db_err.message().contains("previous_id")
-                {
-                    return Err(InfrastructureError::optimistic_locking_conflict(
-                        &aggregate_type,
-                        &aggregate_id,
-                    ));
-                }
+            if let Err(sqlx::Error::Database(db_err)) = &result
+                && db_err.message().contains("UNIQUE constraint failed")
+                && db_err.message().contains("previous_id")
+            {
+                return Err(InfrastructureError::optimistic_locking_conflict(
+                    &aggregate_type,
+                    &aggregate_id,
+                ));
             }
 
             result?;
