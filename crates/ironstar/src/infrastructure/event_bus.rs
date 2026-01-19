@@ -127,6 +127,7 @@ impl EventBus for ZenohEventBus {
 ///
 /// Panics if JSON configuration insertion fails, which indicates a bug
 /// in the configuration keys.
+#[allow(clippy::expect_used)] // Panic on invalid config keys is documented programming bug
 #[must_use]
 pub fn zenoh_embedded_config() -> zenoh::Config {
     let mut config = zenoh::Config::default();
