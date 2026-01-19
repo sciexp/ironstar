@@ -3,9 +3,16 @@
 //! This module provides the `handle_todo_command` function that creates an
 //! EventSourcedAggregate from the Todo Decider and SQLite event repository,
 //! unifying domain and infrastructure errors via `CommandPipelineError`.
+//!
+//! # Event publishing
+//!
+//! After successful persistence, events are published to the event bus using
+//! fire-and-forget semantics. This enables SSE subscribers to receive real-time
+//! updates while ensuring the event store remains the source of truth.
 
 use crate::application::error::CommandPipelineError;
 use crate::domain::todo::{TodoCommand, TodoEvent, todo_decider};
+use crate::infrastructure::event_bus::{EventBus, publish_events_fire_and_forget};
 use crate::infrastructure::event_store::SqliteEventRepository;
 use fmodel_rust::aggregate::{EventRepository, EventSourcedAggregate};
 use std::sync::Arc;
@@ -63,16 +70,24 @@ impl EventRepository<TodoCommand, TodoEvent, String, CommandPipelineError>
 /// 2. Maps decider errors from `TodoError` to `CommandPipelineError::Todo`
 /// 3. Creates an `EventSourcedAggregate` combining both
 /// 4. Handles the command and returns saved events with their versions
+/// 5. Publishes saved events to the event bus (fire-and-forget)
 ///
 /// # Arguments
 ///
 /// * `event_repository` - Shared SQLite event repository
+/// * `event_bus` - Optional event bus for post-persist notification
 /// * `command` - The Todo command to handle
 ///
 /// # Returns
 ///
 /// On success, returns the saved events paired with their event IDs (versions).
 /// On failure, returns a `CommandPipelineError` from either domain or infrastructure.
+///
+/// # Event publishing
+///
+/// When an event bus is provided, saved events are published after successful
+/// persistence using fire-and-forget semantics. Publish errors are logged but
+/// do not fail the command, as the event store is the source of truth.
 ///
 /// # Example
 ///
@@ -82,16 +97,18 @@ impl EventRepository<TodoCommand, TodoEvent, String, CommandPipelineError>
 /// use chrono::Utc;
 ///
 /// let repo = Arc::new(SqliteEventRepository::new(pool));
+/// let event_bus = ZenohEventBus::new(session);
 /// let command = TodoCommand::Create {
 ///     id: TodoId::new(),
 ///     text: "Buy groceries".to_string(),
 ///     created_at: Utc::now(),
 /// };
 ///
-/// let events = handle_todo_command(repo, command).await?;
+/// let events = handle_todo_command(repo, Some(&event_bus), command).await?;
 /// ```
-pub async fn handle_todo_command(
+pub async fn handle_todo_command<B: EventBus>(
     event_repository: Arc<SqliteEventRepository<TodoCommand, TodoEvent>>,
+    event_bus: Option<&B>,
     command: TodoCommand,
 ) -> Result<Vec<(TodoEvent, String)>, CommandPipelineError> {
     // Wrap repository to map infrastructure errors
@@ -104,13 +121,21 @@ pub async fn handle_todo_command(
     let aggregate = EventSourcedAggregate::new(repo_adapter, mapped_decider);
 
     // Handle the command
-    aggregate.handle(&command).await
+    let saved_events = aggregate.handle(&command).await?;
+
+    // Publish events to event bus (fire-and-forget)
+    if let Some(bus) = event_bus {
+        publish_events_fire_and_forget(bus, &saved_events).await;
+    }
+
+    Ok(saved_events)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::domain::todo::{TodoErrorKind, TodoId};
+    use crate::infrastructure::event_bus::ZenohEventBus;
     use chrono::Utc;
     use sqlx::sqlite::SqlitePoolOptions;
 
@@ -129,6 +154,9 @@ mod tests {
         pool
     }
 
+    // Type alias for None event bus to satisfy generic constraint
+    const NO_EVENT_BUS: Option<&ZenohEventBus> = None;
+
     #[tokio::test]
     async fn create_todo_succeeds() {
         let pool = create_test_pool().await;
@@ -142,9 +170,9 @@ mod tests {
             created_at: now,
         };
 
-        let result = handle_todo_command(repo, command).await;
+        let result = handle_todo_command(repo, NO_EVENT_BUS, command).await;
         assert!(result.is_ok());
-        let events = result.unwrap();
+        let events = result.expect("command should succeed");
         assert_eq!(events.len(), 1);
     }
 
@@ -162,7 +190,9 @@ mod tests {
             text: "Test todo".to_string(),
             created_at: now,
         };
-        let _ = handle_todo_command(Arc::clone(&repo), command1).await.unwrap();
+        let _ = handle_todo_command(Arc::clone(&repo), NO_EVENT_BUS, command1)
+            .await
+            .expect("first create should succeed");
 
         // Second create fails with AlreadyExists
         let command2 = TodoCommand::Create {
@@ -170,10 +200,10 @@ mod tests {
             text: "Duplicate".to_string(),
             created_at: now,
         };
-        let result = handle_todo_command(repo, command2).await;
+        let result = handle_todo_command(repo, NO_EVENT_BUS, command2).await;
         assert!(result.is_err());
 
-        match result.unwrap_err() {
+        match result.expect_err("duplicate create should fail") {
             CommandPipelineError::Todo(TodoErrorKind::AlreadyExists) => {}
             other => panic!("Expected AlreadyExists, got: {other:?}"),
         }
@@ -189,10 +219,10 @@ mod tests {
             completed_at: Utc::now(),
         };
 
-        let result = handle_todo_command(repo, command).await;
+        let result = handle_todo_command(repo, NO_EVENT_BUS, command).await;
         assert!(result.is_err());
 
-        match result.unwrap_err() {
+        match result.expect_err("complete nonexistent should fail") {
             CommandPipelineError::Todo(TodoErrorKind::CannotComplete) => {}
             other => panic!("Expected CannotComplete, got: {other:?}"),
         }
@@ -212,14 +242,18 @@ mod tests {
             text: "Lifecycle test".to_string(),
             created_at: now,
         };
-        let _ = handle_todo_command(Arc::clone(&repo), create).await.unwrap();
+        let _ = handle_todo_command(Arc::clone(&repo), NO_EVENT_BUS, create)
+            .await
+            .expect("create should succeed");
 
         // Complete
         let complete = TodoCommand::Complete {
             id,
             completed_at: now,
         };
-        let events = handle_todo_command(Arc::clone(&repo), complete).await.unwrap();
+        let events = handle_todo_command(Arc::clone(&repo), NO_EVENT_BUS, complete)
+            .await
+            .expect("complete should succeed");
         assert_eq!(events.len(), 1);
 
         // Uncomplete
@@ -227,7 +261,9 @@ mod tests {
             id,
             uncompleted_at: now,
         };
-        let events = handle_todo_command(Arc::clone(&repo), uncomplete).await.unwrap();
+        let events = handle_todo_command(Arc::clone(&repo), NO_EVENT_BUS, uncomplete)
+            .await
+            .expect("uncomplete should succeed");
         assert_eq!(events.len(), 1);
 
         // Delete
@@ -235,7 +271,9 @@ mod tests {
             id,
             deleted_at: now,
         };
-        let events = handle_todo_command(Arc::clone(&repo), delete).await.unwrap();
+        let events = handle_todo_command(Arc::clone(&repo), NO_EVENT_BUS, delete)
+            .await
+            .expect("delete should succeed");
         assert_eq!(events.len(), 1);
 
         // Delete again (idempotent)
@@ -243,7 +281,9 @@ mod tests {
             id,
             deleted_at: now,
         };
-        let events = handle_todo_command(repo, delete_again).await.unwrap();
+        let events = handle_todo_command(repo, NO_EVENT_BUS, delete_again)
+            .await
+            .expect("idempotent delete should succeed");
         assert!(events.is_empty()); // Idempotent: no new events
     }
 }
