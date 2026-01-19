@@ -31,6 +31,7 @@ shared:
     - author!=renovate[bot]
     - author!=mergify[bot]
     - author!=github-actions[bot]
+    - "author!=sciexp-flake-updater[bot]"
     - label!=flake-update
 
   bot_author_conditions: &bot_author_conditions
@@ -38,6 +39,7 @@ shared:
         - author=renovate[bot]
         - author=mergify[bot]
         - author=github-actions[bot]
+        - "author=sciexp-flake-updater[bot]"
         - label=flake-update
 
 pull_request_rules:
@@ -58,6 +60,7 @@ pull_request_rules:
   #       - author=renovate[bot]
   #       - author=mergify[bot]
   #       - author=github-actions[bot]
+  #       - author=sciexp-flake-updater[bot]
   #   actions:
   #     review:
   #       type: APPROVE
