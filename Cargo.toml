@@ -26,7 +26,7 @@ async-duckdb = { version = "0.3", features = ["bundled", "parquet", "json", "chr
 ts-rs = { version = "11.1", features = ["serde-compat", "uuid-impl", "chrono-impl", "no-serde-warnings"] }
 
 # Asset embedding
-rust-embed = { version = "8", features = ["include-exclude"] }
+rust-embed = { version = "8", features = ["include-exclude", "interpolate-folder-path"] }
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
