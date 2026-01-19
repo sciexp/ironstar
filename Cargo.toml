@@ -53,6 +53,9 @@ zenoh = { version = "1.7", default-features = false, features = ["transport_tcp"
 # Functional event sourcing (Decider pattern)
 fmodel-rust = { version = "0.9", features = ["not-send-futures"] }
 
+# Testing utilities
+tower = { version = "0.5" }
+
 # Workspace-wide lints (adapted from Hyperswitch)
 # Per-crate Cargo.toml should include: [lints] workspace = true
 [workspace.lints.rust]

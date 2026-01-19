@@ -104,5 +104,7 @@
 //! - Synchronous business logic (domain functions should be sync)
 
 pub mod error;
+pub mod todo;
 
 pub use error::{AppError, AppErrorKind, ErrorResponse};
+pub use todo::{TodoAppState, TodoListResponse, get_todo, list_todos};
