@@ -1,0 +1,11 @@
+/* Stack: Vertical spacing via owl selector */
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.stack > * + * {
+  margin-block-start: var(--stack-space, var(--size-3));
+}
