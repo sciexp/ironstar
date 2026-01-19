@@ -1,0 +1,7 @@
+/* Box: Padded container */
+
+.box {
+  padding: var(--box-padding, var(--size-3));
+  border: var(--box-border, 0) solid;
+  background-color: inherit;
+}
