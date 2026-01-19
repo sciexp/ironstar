@@ -101,7 +101,7 @@ pub mod event_store;
 pub mod key_expr;
 pub mod sse_stream;
 
-pub use assets::AssetManifest;
+pub use assets::{AssetManifest, StaticAssets, create_static_router, static_file_handler};
 pub use error::{InfrastructureError, InfrastructureErrorKind};
 pub use event_bus::{
     EventBus, ZenohEventBus, open_embedded_session, publish_events_fire_and_forget,

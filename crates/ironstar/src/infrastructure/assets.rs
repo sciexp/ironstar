@@ -1,11 +1,36 @@
-//! Asset manifest for resolving content-hashed filenames.
+//! Asset manifest and static file serving.
 //!
-//! Rolldown generates a manifest.json mapping logical entry names to their
-//! content-hashed output filenames. This module parses that manifest and
-//! provides lookup for templates to reference assets with cache-busting URLs.
+//! Dual-mode asset serving:
+//! - Development: ServeDir from filesystem with no-cache headers
+//! - Production: rust-embed with immutable cache headers for hashed assets
 
+#[cfg(not(debug_assertions))]
+use axum::routing::get;
+use axum::{
+    Router,
+    body::Body,
+    extract::Path,
+    response::{IntoResponse, Response},
+};
+use http::{StatusCode, header};
+use mime_guess::from_path;
+use rust_embed::RustEmbed;
 use serde::Deserialize;
 use std::collections::HashMap;
+
+/// Embedded static assets from static/dist/.
+///
+/// In release builds, files are embedded at compile time.
+/// Use `StaticAssets::get(path)` to retrieve file contents.
+#[derive(RustEmbed)]
+#[folder = "$CARGO_MANIFEST_DIR/../../static/dist"]
+#[include = "*.js"]
+#[include = "*.css"]
+#[include = "*.json"]
+#[include = "*.svg"]
+#[include = "*.woff2"]
+#[exclude = "*.map"]
+pub struct StaticAssets;
 
 /// Asset manifest mapping entry names to hashed filenames.
 ///
@@ -15,14 +40,17 @@ use std::collections::HashMap;
 pub struct AssetManifest(HashMap<String, String>);
 
 impl AssetManifest {
-    /// Load manifest from the embedded static/dist/manifest.json.
+    /// Load manifest from embedded static/dist/manifest.json.
     ///
-    /// In production, this uses `include_str!` to embed the manifest at compile time.
-    /// Returns an empty manifest if the file doesn't exist (development without build).
+    /// Returns empty manifest if file doesn't exist (pre-build state).
     pub fn load() -> Self {
-        // For now, return empty manifest - ny3.13 will add rust-embed integration
-        // and conditional loading based on build mode
-        Self(HashMap::new())
+        match StaticAssets::get("manifest.json") {
+            Some(file) => {
+                let json = std::str::from_utf8(&file.data).unwrap_or("{}");
+                Self::from_json(json).unwrap_or_default()
+            }
+            None => Self::default(),
+        }
     }
 
     /// Parse manifest from JSON string.
@@ -65,6 +93,72 @@ impl Default for AssetManifest {
     }
 }
 
+/// Handler for serving embedded static files.
+///
+/// Returns file with appropriate Content-Type and Cache-Control headers.
+/// Hashed filenames get immutable caching; others get short TTL.
+pub async fn static_file_handler(Path(path): Path<String>) -> impl IntoResponse {
+    match StaticAssets::get(&path) {
+        Some(file) => {
+            let mime = from_path(&path).first_or_octet_stream();
+
+            // Hashed files (contain content hash) get immutable caching
+            let cache_control = if is_hashed_filename(&path) {
+                "public, max-age=31536000, immutable"
+            } else {
+                "public, max-age=3600"
+            };
+
+            Response::builder()
+                .status(StatusCode::OK)
+                .header(header::CONTENT_TYPE, mime.as_ref())
+                .header(header::CACHE_CONTROL, cache_control)
+                .body(Body::from(file.data.into_owned()))
+                .unwrap_or_else(|_| {
+                    Response::builder()
+                        .status(StatusCode::INTERNAL_SERVER_ERROR)
+                        .body(Body::from("Failed to build response"))
+                        .expect("static error response")
+                })
+        }
+        None => Response::builder()
+            .status(StatusCode::NOT_FOUND)
+            .header(header::CACHE_CONTROL, "no-store")
+            .body(Body::from("Not Found"))
+            .expect("static 404 response"),
+    }
+}
+
+/// Check if filename appears to be content-hashed.
+///
+/// Hashed filenames match pattern: name.[hash].ext (e.g., bundle.a1b2c3d4.js)
+fn is_hashed_filename(path: &str) -> bool {
+    let parts: Vec<&str> = path.split('.').collect();
+    // At least 3 parts: name, hash, extension
+    // Hash is typically 8+ hex/base64 characters
+    parts.len() >= 3 && parts[parts.len() - 2].len() >= 8
+}
+
+/// Create router for static asset serving.
+///
+/// In debug builds, serves from filesystem for hot reload.
+/// In release builds, serves embedded assets.
+pub fn create_static_router() -> Router {
+    #[cfg(debug_assertions)]
+    {
+        use tower_http::services::ServeDir;
+        Router::new().nest_service(
+            "/static",
+            ServeDir::new("static/dist").append_index_html_on_directories(false),
+        )
+    }
+
+    #[cfg(not(debug_assertions))]
+    {
+        Router::new().route("/static/{*path}", get(static_file_handler))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -72,7 +166,7 @@ mod tests {
     #[test]
     fn test_parse_manifest() {
         let json = r#"{"bundle.js": "bundle-abc123.js", "bundle.css": "bundle-def456.css"}"#;
-        let manifest = AssetManifest::from_json(json).unwrap();
+        let manifest = AssetManifest::from_json(json).expect("valid JSON");
 
         assert_eq!(manifest.resolve("bundle.js"), "bundle-abc123.js");
         assert_eq!(manifest.resolve("bundle.css"), "bundle-def456.css");
@@ -89,5 +183,14 @@ mod tests {
         let manifest = AssetManifest::default();
         assert!(manifest.is_empty());
         assert!(!manifest.contains("bundle.js"));
+    }
+
+    #[test]
+    fn test_is_hashed_filename() {
+        assert!(is_hashed_filename("bundle.a1b2c3d4.js"));
+        assert!(is_hashed_filename("styles.abc12345.css"));
+        assert!(!is_hashed_filename("manifest.json"));
+        assert!(!is_hashed_filename("index.html"));
+        assert!(!is_hashed_filename("short.ab.js")); // hash too short
     }
 }
