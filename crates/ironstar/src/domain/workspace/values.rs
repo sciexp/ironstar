@@ -99,7 +99,9 @@ impl WorkspaceName {
         let trimmed = name.trim();
 
         if trimmed.is_empty() {
-            return Err(WorkspaceError::invalid_name("workspace name cannot be empty"));
+            return Err(WorkspaceError::invalid_name(
+                "workspace name cannot be empty",
+            ));
         }
 
         let char_count = trimmed.chars().count();

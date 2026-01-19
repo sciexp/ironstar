@@ -61,7 +61,7 @@ pub use decider::{WorkspaceDecider, workspace_decider};
 pub use errors::{WorkspaceError, WorkspaceErrorKind};
 pub use events::WorkspaceEvent;
 pub use state::{WorkspaceState, WorkspaceStatus};
-pub use values::{WORKSPACE_NAME_MAX_LENGTH, Visibility, WorkspaceId, WorkspaceName};
+pub use values::{Visibility, WORKSPACE_NAME_MAX_LENGTH, WorkspaceId, WorkspaceName};
 
 #[cfg(test)]
 mod tests {

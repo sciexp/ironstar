@@ -251,14 +251,12 @@ impl From<CommandPipelineError> for AppError {
                         },
                     ))),
                     // State conflict errors → DomainError with appropriate kind
-                    TodoErrorKind::AlreadyExists => {
-                        Self::new(AppErrorKind::Domain(DomainError::new(
-                            DomainErrorKind::AlreadyExists {
-                                aggregate_type: "Todo".to_string(),
-                                aggregate_id: "unknown".to_string(),
-                            },
-                        )))
-                    }
+                    TodoErrorKind::AlreadyExists => Self::new(AppErrorKind::Domain(
+                        DomainError::new(DomainErrorKind::AlreadyExists {
+                            aggregate_type: "Todo".to_string(),
+                            aggregate_id: "unknown".to_string(),
+                        }),
+                    )),
                     // State transition errors → DomainError::InvalidTransition
                     TodoErrorKind::CannotComplete
                     | TodoErrorKind::CannotUncomplete
@@ -266,14 +264,12 @@ impl From<CommandPipelineError> for AppError {
                     | TodoErrorKind::AlreadyCompleted
                     | TodoErrorKind::NotCompleted
                     | TodoErrorKind::Deleted
-                    | TodoErrorKind::InvalidTransition { .. } => {
-                        Self::new(AppErrorKind::Domain(DomainError::new(
-                            DomainErrorKind::InvalidTransition {
-                                from: "current".to_string(),
-                                to: format!("{kind}"),
-                            },
-                        )))
-                    }
+                    | TodoErrorKind::InvalidTransition { .. } => Self::new(AppErrorKind::Domain(
+                        DomainError::new(DomainErrorKind::InvalidTransition {
+                            from: "current".to_string(),
+                            to: format!("{kind}"),
+                        }),
+                    )),
                 }
             }
             CommandPipelineError::Infrastructure(infra) => {

@@ -697,15 +697,17 @@ mod tests {
         assert!(!state.is_active());
 
         // Further operations fail
-        assert!(decide(
-            &SessionCommand::Refresh {
-                session_id: sid,
-                refreshed_at: ts,
-                new_expires_at: new_exp,
-            },
-            &state,
-        )
-        .is_err());
+        assert!(
+            decide(
+                &SessionCommand::Refresh {
+                    session_id: sid,
+                    refreshed_at: ts,
+                    new_expires_at: new_exp,
+                },
+                &state,
+            )
+            .is_err()
+        );
     }
 
     #[test]

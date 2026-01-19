@@ -209,7 +209,9 @@ mod tests {
 
         let cmd: WorkspaceCommand = serde_json::from_str(json).unwrap();
 
-        assert!(matches!(cmd, WorkspaceCommand::Create { name, .. } if name == "  Trim this name  "));
+        assert!(
+            matches!(cmd, WorkspaceCommand::Create { name, .. } if name == "  Trim this name  ")
+        );
         // Note: name is NOT trimmed here - that's the decider's job
     }
 }

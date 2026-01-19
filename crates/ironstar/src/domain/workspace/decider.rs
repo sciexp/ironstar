@@ -310,7 +310,9 @@ mod tests {
                 visibility: Visibility::Private,
                 created_at: ts,
             })
-            .then_error(WorkspaceError::invalid_name("workspace name cannot be empty"));
+            .then_error(WorkspaceError::invalid_name(
+                "workspace name cannot be empty",
+            ));
     }
 
     // --- Rename transitions ---
@@ -402,7 +404,9 @@ mod tests {
                 new_name: "".to_string(), // Invalid
                 renamed_at: ts,
             })
-            .then_error(WorkspaceError::invalid_name("workspace name cannot be empty"));
+            .then_error(WorkspaceError::invalid_name(
+                "workspace name cannot be empty",
+            ));
     }
 
     // --- SetVisibility transitions ---
@@ -499,10 +503,7 @@ mod tests {
         // Apply create
         let state = evolve(&WorkspaceState::default(), &events[0]);
         assert!(state.is_active());
-        assert_eq!(
-            state.name.as_ref().unwrap().as_str(),
-            "Initial Name"
-        );
+        assert_eq!(state.name.as_ref().unwrap().as_str(), "Initial Name");
 
         // Rename
         let events = decide(

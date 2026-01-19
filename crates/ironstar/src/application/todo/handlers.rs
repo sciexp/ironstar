@@ -54,10 +54,7 @@ impl EventRepository<TodoCommand, TodoEvent, String, CommandPipelineError>
         &self,
         event: &TodoEvent,
     ) -> Result<Option<String>, CommandPipelineError> {
-        self.inner
-            .version_provider(event)
-            .await
-            .map_err(Into::into)
+        self.inner.version_provider(event).await.map_err(Into::into)
     }
 }
 

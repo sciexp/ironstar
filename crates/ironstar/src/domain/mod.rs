@@ -107,7 +107,7 @@ pub use session::{
 
 // Workspace re-exports (from workspace/)
 pub use workspace::{
-    WORKSPACE_NAME_MAX_LENGTH, Visibility, WorkspaceCommand, WorkspaceDecider, WorkspaceError,
+    Visibility, WORKSPACE_NAME_MAX_LENGTH, WorkspaceCommand, WorkspaceDecider, WorkspaceError,
     WorkspaceErrorKind, WorkspaceEvent, WorkspaceId, WorkspaceName, WorkspaceState,
     WorkspaceStatus, workspace_decider,
 };

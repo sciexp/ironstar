@@ -226,7 +226,10 @@ mod tests {
         let config = zenoh_embedded_config();
         // Config should be usable to open a session
         let session = zenoh::open(config).await;
-        assert!(session.is_ok(), "Should create valid session from embedded config");
+        assert!(
+            session.is_ok(),
+            "Should create valid session from embedded config"
+        );
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 1)]

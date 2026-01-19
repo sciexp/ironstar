@@ -94,7 +94,9 @@ impl fmt::Display for WorkspaceError {
         match &self.kind {
             WorkspaceErrorKind::AlreadyExists => write!(f, "workspace already exists"),
             WorkspaceErrorKind::NotFound => write!(f, "workspace not found"),
-            WorkspaceErrorKind::InvalidName(reason) => write!(f, "invalid workspace name: {reason}"),
+            WorkspaceErrorKind::InvalidName(reason) => {
+                write!(f, "invalid workspace name: {reason}")
+            }
         }
     }
 }

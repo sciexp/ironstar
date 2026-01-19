@@ -14,10 +14,10 @@
 //! - `POST /api/todos/:id/complete` - Complete a todo
 //! - `DELETE /api/todos/:id` - Delete a todo
 
+use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::Json;
 use chrono::Utc;
 use serde::Deserialize;
 use std::sync::Arc;
@@ -84,9 +84,7 @@ pub struct TodoListResponse {
 ///   "activeCount": 1
 /// }
 /// ```
-pub async fn list_todos(
-    State(state): State<TodoAppState>,
-) -> Result<impl IntoResponse, AppError> {
+pub async fn list_todos(State(state): State<TodoAppState>) -> Result<impl IntoResponse, AppError> {
     let view_state = query_all_todos(&state.repo).await?;
 
     let active_count = view_state.active_count();
@@ -295,10 +293,10 @@ mod tests {
     use super::*;
     use crate::application::todo::handle_todo_command;
     use crate::infrastructure::event_bus::ZenohEventBus;
+    use axum::Router;
     use axum::body::Body;
     use axum::http::Request;
     use axum::routing::get;
-    use axum::Router;
     use chrono::Utc;
     use sqlx::sqlite::SqlitePoolOptions;
     use tower::ServiceExt;

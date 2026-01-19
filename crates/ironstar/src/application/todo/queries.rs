@@ -153,8 +153,7 @@ mod tests {
     #[tokio::test]
     async fn query_nonexistent_returns_empty_state() {
         let pool = create_test_pool().await;
-        let repo: SqliteEventRepository<TodoCommand, TodoEvent> =
-            SqliteEventRepository::new(pool);
+        let repo: SqliteEventRepository<TodoCommand, TodoEvent> = SqliteEventRepository::new(pool);
 
         let state = query_todo_state(&repo, &TodoId::new())
             .await
@@ -180,7 +179,9 @@ mod tests {
             .await
             .expect("create should succeed");
 
-        let state = query_todo_state(&repo, &id).await.expect("query should succeed");
+        let state = query_todo_state(&repo, &id)
+            .await
+            .expect("query should succeed");
 
         assert_eq!(state.todos.len(), 1);
         assert_eq!(state.count, 1);
@@ -216,7 +217,9 @@ mod tests {
             .expect("complete should succeed");
 
         // Query should show completed state
-        let state = query_todo_state(&repo, &id).await.expect("query should succeed");
+        let state = query_todo_state(&repo, &id)
+            .await
+            .expect("query should succeed");
         assert_eq!(state.count, 1);
         assert_eq!(state.completed_count, 1);
         assert!(state.todos[0].completed);
@@ -231,7 +234,9 @@ mod tests {
             .expect("uncomplete should succeed");
 
         // Query should show active state
-        let state = query_todo_state(&repo, &id).await.expect("query should succeed");
+        let state = query_todo_state(&repo, &id)
+            .await
+            .expect("query should succeed");
         assert_eq!(state.completed_count, 0);
         assert!(!state.todos[0].completed);
     }
@@ -263,7 +268,9 @@ mod tests {
             .expect("delete should succeed");
 
         // Query should show empty state (todo removed from list)
-        let state = query_todo_state(&repo, &id).await.expect("query should succeed");
+        let state = query_todo_state(&repo, &id)
+            .await
+            .expect("query should succeed");
         assert!(state.todos.is_empty());
         assert_eq!(state.count, 0);
     }
@@ -273,8 +280,7 @@ mod tests {
     #[tokio::test]
     async fn query_all_empty_returns_empty_state() {
         let pool = create_test_pool().await;
-        let repo: SqliteEventRepository<TodoCommand, TodoEvent> =
-            SqliteEventRepository::new(pool);
+        let repo: SqliteEventRepository<TodoCommand, TodoEvent> = SqliteEventRepository::new(pool);
 
         let state = query_all_todos(&repo).await.expect("query should succeed");
 
