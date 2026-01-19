@@ -10,9 +10,18 @@
 @import "../node_modules/open-props/open-props.min.css" layer(openprops);
 @import "./theme.css" layer(theme);
 
+/* CUBE CSS composition primitives */
+@import "./compositions/stack.css" layer(compositions);
+@import "./compositions/box.css" layer(compositions);
+@import "./compositions/center.css" layer(compositions);
+@import "./compositions/cluster.css" layer(compositions);
+@import "./compositions/sidebar.css" layer(compositions);
+@import "./compositions/switcher.css" layer(compositions);
+@import "./compositions/cover.css" layer(compositions);
+@import "./compositions/grid.css" layer(compositions);
+
 /* Remaining layers populated by subsequent issues:
    - normalize: CSS reset (future)
-   - compositions: CUBE CSS layout primitives (ny3.18)
    - components: Open Props UI component styles (ny3.6)
    - utilities: Single-purpose utility classes (future)
    - app: Application-specific overrides (future)
