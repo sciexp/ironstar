@@ -70,8 +70,8 @@ pub type WorkspaceDecider<'a> =
 /// ```
 pub fn workspace_decider<'a>() -> WorkspaceDecider<'a> {
     Decider {
-        decide: Box::new(|command, state| decide(command, state)),
-        evolve: Box::new(|state, event| evolve(state, event)),
+        decide: Box::new(decide),
+        evolve: Box::new(evolve),
         initial_state: Box::new(WorkspaceState::default),
     }
 }

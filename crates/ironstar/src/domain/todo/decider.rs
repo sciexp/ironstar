@@ -73,8 +73,8 @@ pub type TodoDecider<'a> = Decider<'a, TodoCommand, Option<TodoState>, TodoEvent
 /// ```
 pub fn todo_decider<'a>() -> TodoDecider<'a> {
     Decider {
-        decide: Box::new(|command, state| decide(command, state)),
-        evolve: Box::new(|state, event| evolve(state, event)),
+        decide: Box::new(decide),
+        evolve: Box::new(evolve),
         initial_state: Box::new(|| None),
     }
 }

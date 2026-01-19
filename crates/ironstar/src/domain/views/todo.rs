@@ -86,7 +86,7 @@ pub type TodoView<'a> = View<'a, TodoViewState, TodoEvent>;
 /// ```
 pub fn todo_view<'a>() -> TodoView<'a> {
     View {
-        evolve: Box::new(|state, event| evolve(state, event)),
+        evolve: Box::new(evolve),
         initial_state: Box::new(TodoViewState::default),
     }
 }

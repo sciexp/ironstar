@@ -68,8 +68,8 @@ pub type SessionDecider<'a> = Decider<'a, SessionCommand, SessionState, SessionE
 /// ```
 pub fn session_decider<'a>() -> SessionDecider<'a> {
     Decider {
-        decide: Box::new(|command, state| decide(command, state)),
-        evolve: Box::new(|state, event| evolve(state, event)),
+        decide: Box::new(decide),
+        evolve: Box::new(evolve),
         initial_state: Box::new(|| SessionState::NoSession),
     }
 }

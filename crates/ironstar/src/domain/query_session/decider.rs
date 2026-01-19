@@ -99,8 +99,8 @@ pub type QuerySessionDecider<'a> =
 /// ```
 pub fn query_session_decider<'a>() -> QuerySessionDecider<'a> {
     Decider {
-        decide: Box::new(|command, state| decide(command, state)),
-        evolve: Box::new(|state, event| evolve(state, event)),
+        decide: Box::new(decide),
+        evolve: Box::new(evolve),
         initial_state: Box::new(QuerySessionState::default),
     }
 }
