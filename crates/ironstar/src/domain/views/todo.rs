@@ -26,7 +26,6 @@ use fmodel_rust::view::View;
 
 use crate::domain::signals::TodoItemView;
 use crate::domain::todo::events::TodoEvent;
-use crate::domain::todo::values::TodoId;
 
 /// State materialized by the Todo View.
 ///
@@ -49,11 +48,6 @@ pub struct TodoViewState {
 }
 
 impl TodoViewState {
-    /// Find a todo by ID, returning its index if present.
-    fn find_index(&self, id: TodoId) -> Option<usize> {
-        self.todos.iter().position(|t| t.id == id.into_inner())
-    }
-
     /// Count of active (non-completed) todos.
     #[must_use]
     pub fn active_count(&self) -> usize {
@@ -115,8 +109,8 @@ fn evolve(state: &TodoViewState, event: &TodoEvent) -> TodoViewState {
 
         TodoEvent::TextUpdated { id, text, .. } => {
             let mut todos = state.todos.clone();
-            if let Some(idx) = state.find_index(*id) {
-                todos[idx].text = text.to_string();
+            if let Some(todo) = todos.iter_mut().find(|t| t.id == id.into_inner()) {
+                todo.text = text.to_string();
             }
             TodoViewState {
                 todos,
@@ -128,11 +122,11 @@ fn evolve(state: &TodoViewState, event: &TodoEvent) -> TodoViewState {
         TodoEvent::Completed { id, .. } => {
             let mut todos = state.todos.clone();
             let mut completed_delta = 0;
-            if let Some(idx) = state.find_index(*id) {
-                if !todos[idx].completed {
-                    todos[idx].completed = true;
-                    completed_delta = 1;
-                }
+            if let Some(todo) = todos.iter_mut().find(|t| t.id == id.into_inner())
+                && !todo.completed
+            {
+                todo.completed = true;
+                completed_delta = 1;
             }
             TodoViewState {
                 todos,
@@ -144,11 +138,11 @@ fn evolve(state: &TodoViewState, event: &TodoEvent) -> TodoViewState {
         TodoEvent::Uncompleted { id, .. } => {
             let mut todos = state.todos.clone();
             let mut completed_delta = 0;
-            if let Some(idx) = state.find_index(*id) {
-                if todos[idx].completed {
-                    todos[idx].completed = false;
-                    completed_delta = 1;
-                }
+            if let Some(todo) = todos.iter_mut().find(|t| t.id == id.into_inner())
+                && todo.completed
+            {
+                todo.completed = false;
+                completed_delta = 1;
             }
             TodoViewState {
                 todos,
@@ -158,9 +152,10 @@ fn evolve(state: &TodoViewState, event: &TodoEvent) -> TodoViewState {
         }
 
         TodoEvent::Deleted { id, .. } => {
-            if let Some(idx) = state.find_index(*id) {
+            let target_id = id.into_inner();
+            if let Some(idx) = state.todos.iter().position(|t| t.id == target_id) {
                 let mut todos = state.todos.clone();
-                let was_completed = todos[idx].completed;
+                let was_completed = todos.get(idx).is_some_and(|t| t.completed);
                 todos.remove(idx);
                 TodoViewState {
                     todos,
@@ -187,7 +182,7 @@ mod tests {
     use fmodel_rust::view::ViewStateComputation;
     use uuid::Uuid;
 
-    use crate::domain::todo::values::TodoText;
+    use crate::domain::todo::values::{TodoId, TodoText};
 
     fn sample_id() -> TodoId {
         TodoId::from_uuid(Uuid::nil())
