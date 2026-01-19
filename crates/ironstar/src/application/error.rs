@@ -178,19 +178,19 @@ impl From<InfrastructureError> for CommandPipelineError {
 impl fmt::Display for TodoErrorKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            TodoErrorKind::EmptyText => write!(f, "todo text cannot be empty"),
-            TodoErrorKind::TextTooLong { max, actual } => {
+            Self::EmptyText => write!(f, "todo text cannot be empty"),
+            Self::TextTooLong { max, actual } => {
                 write!(f, "todo text cannot exceed {max} characters (got {actual})")
             }
-            TodoErrorKind::AlreadyExists => write!(f, "todo already exists"),
-            TodoErrorKind::NotFound => write!(f, "todo not found"),
-            TodoErrorKind::CannotComplete => write!(f, "cannot complete todo: invalid state"),
-            TodoErrorKind::CannotUncomplete => write!(f, "cannot uncomplete todo: invalid state"),
-            TodoErrorKind::CannotDelete => write!(f, "cannot delete todo: invalid state"),
-            TodoErrorKind::AlreadyCompleted => write!(f, "todo is already completed"),
-            TodoErrorKind::NotCompleted => write!(f, "todo is not completed"),
-            TodoErrorKind::Deleted => write!(f, "todo has been deleted"),
-            TodoErrorKind::InvalidTransition { action, state } => {
+            Self::AlreadyExists => write!(f, "todo already exists"),
+            Self::NotFound => write!(f, "todo not found"),
+            Self::CannotComplete => write!(f, "cannot complete todo: invalid state"),
+            Self::CannotUncomplete => write!(f, "cannot uncomplete todo: invalid state"),
+            Self::CannotDelete => write!(f, "cannot delete todo: invalid state"),
+            Self::AlreadyCompleted => write!(f, "todo is already completed"),
+            Self::NotCompleted => write!(f, "todo is not completed"),
+            Self::Deleted => write!(f, "todo has been deleted"),
+            Self::InvalidTransition { action, state } => {
                 write!(f, "invalid state transition: cannot {action} when {state}")
             }
         }
