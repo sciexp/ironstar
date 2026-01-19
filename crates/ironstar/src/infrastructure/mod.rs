@@ -98,6 +98,7 @@ pub mod error;
 pub mod event_bus;
 pub mod event_store;
 pub mod key_expr;
+pub mod sse_stream;
 
 pub use error::{InfrastructureError, InfrastructureErrorKind};
 pub use event_bus::{
@@ -109,4 +110,8 @@ pub use key_expr::{
     ALL_EVENTS, DOUBLE_WILD, EVENTS_ROOT, EventKeyExpr, ParseError as KeyExprParseError,
     SINGLE_WILD, aggregate_instance_pattern, aggregate_type_pattern, event_key,
     event_key_without_sequence,
+};
+pub use sse_stream::{
+    DEFAULT_KEEP_ALIVE_SECS, KEEP_ALIVE_COMMENT, KeepAliveStream, SseStreamBuilder,
+    event_with_sequence, stored_events_to_stream, zenoh_to_sse_stream,
 };
