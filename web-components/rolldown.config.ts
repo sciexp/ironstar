@@ -1,6 +1,10 @@
 // web-components/rolldown.config.ts
+import { createRequire } from "node:module";
 import { defineConfig } from "rolldown";
-import outputManifest from "rollup-plugin-output-manifest";
+
+// CJS interop for rollup plugin
+const require = createRequire(import.meta.url);
+const outputManifest = require("rollup-plugin-output-manifest").default;
 
 export default defineConfig({
 	input: {
