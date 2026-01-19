@@ -95,6 +95,7 @@
 //! - HTML template functions (hypertext/maud)
 //! - Static asset serving configuration
 //! - Error response formatting
+//! - Health check endpoints for infrastructure probes
 //!
 //! # What does NOT belong here
 //!
@@ -104,7 +105,9 @@
 //! - Synchronous business logic (domain functions should be sync)
 
 pub mod error;
+pub mod health;
 pub mod todo;
 
 pub use error::{AppError, AppErrorKind, ErrorResponse};
+pub use health::{HealthChecks, HealthResponse, HealthState, HealthStatus, health_router};
 pub use todo::{TodoAppState, TodoListResponse, get_todo, list_todos};
