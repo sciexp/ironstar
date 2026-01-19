@@ -1,5 +1,19 @@
 /* web-components/styles/main.css */
 /* Entry point for CSS cascade */
 
-@import "../node_modules/open-props/open-props.min.css";
-@import "./theme.css";
+/* Cascade layer ordering declaration - later layers override earlier ones.
+   See docs/notes/architecture/frontend/css-architecture.md for layer semantics.
+   Uses layer() function in @import for postcss-import compatibility. */
+@layer openprops, normalize, theme, compositions, components, utilities, app;
+
+/* Layer imports using the layer() function syntax */
+@import "../node_modules/open-props/open-props.min.css" layer(openprops);
+@import "./theme.css" layer(theme);
+
+/* Remaining layers populated by subsequent issues:
+   - normalize: CSS reset (future)
+   - compositions: CUBE CSS layout primitives (ny3.18)
+   - components: Open Props UI component styles (ny3.6)
+   - utilities: Single-purpose utility classes (future)
+   - app: Application-specific overrides (future)
+*/
