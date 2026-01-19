@@ -12,6 +12,7 @@
 //! - [`session`]: Session decider for authentication lifecycle (Shared Kernel: UserId)
 //! - [`todo`]: Todo decider (commands, events, state, values, errors)
 //! - [`views`]: Read-side projections (View pattern for CQRS read models)
+//! - [`workspace`]: Workspace decider for user workspaces (imports UserId from session)
 //!
 //! # Design Principles
 //!
@@ -58,6 +59,7 @@ pub mod signals;
 pub mod todo;
 pub mod traits;
 pub mod views;
+pub mod workspace;
 
 // Trait re-exports (Identifier re-exported from fmodel_rust via traits module)
 pub use traits::{DeciderType, EventType, IsFinal};
@@ -102,3 +104,6 @@ pub use session::{
     OAuthProvider, SessionCommand, SessionDecider, SessionError, SessionErrorKind, SessionEvent,
     SessionId, SessionMetadata, SessionState, SessionStatus, UserId, session_decider,
 };
+
+// Workspace re-exports (from workspace/)
+pub use workspace::WorkspaceId;
