@@ -127,6 +127,7 @@ mod tests {
     use super::*;
     use crate::application::todo::handle_todo_command;
     use crate::domain::todo::commands::TodoCommand;
+    use crate::infrastructure::event_bus::ZenohEventBus;
     use chrono::Utc;
     use sqlx::sqlite::SqlitePoolOptions;
     use std::sync::Arc;
@@ -146,13 +147,18 @@ mod tests {
         pool
     }
 
+    // Type alias for None event bus to satisfy generic constraint
+    const NO_EVENT_BUS: Option<&ZenohEventBus> = None;
+
     #[tokio::test]
     async fn query_nonexistent_returns_empty_state() {
         let pool = create_test_pool().await;
         let repo: SqliteEventRepository<TodoCommand, TodoEvent> =
             SqliteEventRepository::new(pool);
 
-        let state = query_todo_state(&repo, &TodoId::new()).await.unwrap();
+        let state = query_todo_state(&repo, &TodoId::new())
+            .await
+            .expect("query should succeed");
 
         assert!(state.todos.is_empty());
         assert_eq!(state.count, 0);
@@ -170,9 +176,11 @@ mod tests {
             text: "Test todo".to_string(),
             created_at: Utc::now(),
         };
-        handle_todo_command(Arc::clone(&repo), command).await.unwrap();
+        handle_todo_command(Arc::clone(&repo), NO_EVENT_BUS, command)
+            .await
+            .expect("create should succeed");
 
-        let state = query_todo_state(&repo, &id).await.unwrap();
+        let state = query_todo_state(&repo, &id).await.expect("query should succeed");
 
         assert_eq!(state.todos.len(), 1);
         assert_eq!(state.count, 1);
@@ -194,17 +202,21 @@ mod tests {
             text: "Lifecycle test".to_string(),
             created_at: now,
         };
-        handle_todo_command(Arc::clone(&repo), create).await.unwrap();
+        handle_todo_command(Arc::clone(&repo), NO_EVENT_BUS, create)
+            .await
+            .expect("create should succeed");
 
         // Complete
         let complete = TodoCommand::Complete {
             id,
             completed_at: now,
         };
-        handle_todo_command(Arc::clone(&repo), complete).await.unwrap();
+        handle_todo_command(Arc::clone(&repo), NO_EVENT_BUS, complete)
+            .await
+            .expect("complete should succeed");
 
         // Query should show completed state
-        let state = query_todo_state(&repo, &id).await.unwrap();
+        let state = query_todo_state(&repo, &id).await.expect("query should succeed");
         assert_eq!(state.count, 1);
         assert_eq!(state.completed_count, 1);
         assert!(state.todos[0].completed);
@@ -214,10 +226,12 @@ mod tests {
             id,
             uncompleted_at: now,
         };
-        handle_todo_command(Arc::clone(&repo), uncomplete).await.unwrap();
+        handle_todo_command(Arc::clone(&repo), NO_EVENT_BUS, uncomplete)
+            .await
+            .expect("uncomplete should succeed");
 
         // Query should show active state
-        let state = query_todo_state(&repo, &id).await.unwrap();
+        let state = query_todo_state(&repo, &id).await.expect("query should succeed");
         assert_eq!(state.completed_count, 0);
         assert!(!state.todos[0].completed);
     }
@@ -236,16 +250,20 @@ mod tests {
             text: "To be deleted".to_string(),
             created_at: now,
         };
-        handle_todo_command(Arc::clone(&repo), create).await.unwrap();
+        handle_todo_command(Arc::clone(&repo), NO_EVENT_BUS, create)
+            .await
+            .expect("create should succeed");
 
         let delete = TodoCommand::Delete {
             id,
             deleted_at: now,
         };
-        handle_todo_command(Arc::clone(&repo), delete).await.unwrap();
+        handle_todo_command(Arc::clone(&repo), NO_EVENT_BUS, delete)
+            .await
+            .expect("delete should succeed");
 
         // Query should show empty state (todo removed from list)
-        let state = query_todo_state(&repo, &id).await.unwrap();
+        let state = query_todo_state(&repo, &id).await.expect("query should succeed");
         assert!(state.todos.is_empty());
         assert_eq!(state.count, 0);
     }
@@ -258,7 +276,7 @@ mod tests {
         let repo: SqliteEventRepository<TodoCommand, TodoEvent> =
             SqliteEventRepository::new(pool);
 
-        let state = query_all_todos(&repo).await.unwrap();
+        let state = query_all_todos(&repo).await.expect("query should succeed");
 
         assert!(state.todos.is_empty());
         assert_eq!(state.count, 0);
@@ -292,18 +310,26 @@ mod tests {
             created_at: now,
         };
 
-        handle_todo_command(Arc::clone(&repo), cmd1).await.unwrap();
-        handle_todo_command(Arc::clone(&repo), cmd2).await.unwrap();
-        handle_todo_command(Arc::clone(&repo), cmd3).await.unwrap();
+        handle_todo_command(Arc::clone(&repo), NO_EVENT_BUS, cmd1)
+            .await
+            .expect("create first should succeed");
+        handle_todo_command(Arc::clone(&repo), NO_EVENT_BUS, cmd2)
+            .await
+            .expect("create second should succeed");
+        handle_todo_command(Arc::clone(&repo), NO_EVENT_BUS, cmd3)
+            .await
+            .expect("create third should succeed");
 
         // Complete one todo
         let complete = TodoCommand::Complete {
             id: id2,
             completed_at: now,
         };
-        handle_todo_command(Arc::clone(&repo), complete).await.unwrap();
+        handle_todo_command(Arc::clone(&repo), NO_EVENT_BUS, complete)
+            .await
+            .expect("complete should succeed");
 
-        let state = query_all_todos(&repo).await.unwrap();
+        let state = query_all_todos(&repo).await.expect("query should succeed");
 
         assert_eq!(state.todos.len(), 3);
         assert_eq!(state.count, 3);
@@ -328,6 +354,7 @@ mod tests {
         // Create two todos
         handle_todo_command(
             Arc::clone(&repo),
+            NO_EVENT_BUS,
             TodoCommand::Create {
                 id: id1,
                 text: "Keep this".to_string(),
@@ -335,10 +362,11 @@ mod tests {
             },
         )
         .await
-        .unwrap();
+        .expect("create first should succeed");
 
         handle_todo_command(
             Arc::clone(&repo),
+            NO_EVENT_BUS,
             TodoCommand::Create {
                 id: id2,
                 text: "Delete this".to_string(),
@@ -346,20 +374,21 @@ mod tests {
             },
         )
         .await
-        .unwrap();
+        .expect("create second should succeed");
 
         // Delete one
         handle_todo_command(
             Arc::clone(&repo),
+            NO_EVENT_BUS,
             TodoCommand::Delete {
                 id: id2,
                 deleted_at: now,
             },
         )
         .await
-        .unwrap();
+        .expect("delete should succeed");
 
-        let state = query_all_todos(&repo).await.unwrap();
+        let state = query_all_todos(&repo).await.expect("query should succeed");
 
         assert_eq!(state.todos.len(), 1);
         assert_eq!(state.count, 1);

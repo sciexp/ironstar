@@ -124,6 +124,7 @@ pub async fn get_todo(
 mod tests {
     use super::*;
     use crate::application::todo::handle_todo_command;
+    use crate::infrastructure::event_bus::ZenohEventBus;
     use axum::body::Body;
     use axum::http::Request;
     use axum::routing::get;
@@ -154,6 +155,9 @@ mod tests {
             .with_state(TodoAppState { repo })
     }
 
+    // Type alias for None event bus to satisfy generic constraint
+    const NO_EVENT_BUS: Option<&ZenohEventBus> = None;
+
     #[tokio::test]
     async fn list_todos_empty() {
         let pool = create_test_pool().await;
@@ -165,17 +169,17 @@ mod tests {
                 Request::builder()
                     .uri("/api/todos")
                     .body(Body::empty())
-                    .unwrap(),
+                    .expect("request body"),
             )
             .await
-            .unwrap();
+            .expect("request should succeed");
 
         assert_eq!(response.status(), StatusCode::OK);
 
         let body = axum::body::to_bytes(response.into_body(), usize::MAX)
             .await
-            .unwrap();
-        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+            .expect("body read");
+        let json: serde_json::Value = serde_json::from_slice(&body).expect("json parse");
 
         assert_eq!(json["todos"], serde_json::json!([]));
         assert_eq!(json["count"], 0);
@@ -195,6 +199,7 @@ mod tests {
 
         handle_todo_command(
             Arc::clone(&repo),
+            NO_EVENT_BUS,
             TodoCommand::Create {
                 id: id1,
                 text: "First".to_string(),
@@ -202,10 +207,11 @@ mod tests {
             },
         )
         .await
-        .unwrap();
+        .expect("create first todo");
 
         handle_todo_command(
             Arc::clone(&repo),
+            NO_EVENT_BUS,
             TodoCommand::Create {
                 id: id2,
                 text: "Second".to_string(),
@@ -213,17 +219,18 @@ mod tests {
             },
         )
         .await
-        .unwrap();
+        .expect("create second todo");
 
         handle_todo_command(
             Arc::clone(&repo),
+            NO_EVENT_BUS,
             TodoCommand::Complete {
                 id: id1,
                 completed_at: now,
             },
         )
         .await
-        .unwrap();
+        .expect("complete first todo");
 
         let app = create_router(repo);
 
@@ -232,17 +239,17 @@ mod tests {
                 Request::builder()
                     .uri("/api/todos")
                     .body(Body::empty())
-                    .unwrap(),
+                    .expect("request body"),
             )
             .await
-            .unwrap();
+            .expect("request should succeed");
 
         assert_eq!(response.status(), StatusCode::OK);
 
         let body = axum::body::to_bytes(response.into_body(), usize::MAX)
             .await
-            .unwrap();
-        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+            .expect("body read");
+        let json: serde_json::Value = serde_json::from_slice(&body).expect("json parse");
 
         assert_eq!(json["count"], 2);
         assert_eq!(json["completedCount"], 1);
@@ -258,6 +265,7 @@ mod tests {
         let id = TodoId::new();
         handle_todo_command(
             Arc::clone(&repo),
+            NO_EVENT_BUS,
             TodoCommand::Create {
                 id,
                 text: "Test todo".to_string(),
@@ -265,7 +273,7 @@ mod tests {
             },
         )
         .await
-        .unwrap();
+        .expect("create todo");
 
         let app = create_router(repo);
 
@@ -274,17 +282,17 @@ mod tests {
                 Request::builder()
                     .uri(&format!("/api/todos/{}", id.into_inner()))
                     .body(Body::empty())
-                    .unwrap(),
+                    .expect("request body"),
             )
             .await
-            .unwrap();
+            .expect("request should succeed");
 
         assert_eq!(response.status(), StatusCode::OK);
 
         let body = axum::body::to_bytes(response.into_body(), usize::MAX)
             .await
-            .unwrap();
-        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+            .expect("body read");
+        let json: serde_json::Value = serde_json::from_slice(&body).expect("json parse");
 
         assert_eq!(json["text"], "Test todo");
         assert_eq!(json["completed"], false);
@@ -302,10 +310,10 @@ mod tests {
                 Request::builder()
                     .uri(&format!("/api/todos/{}", nonexistent_id))
                     .body(Body::empty())
-                    .unwrap(),
+                    .expect("request body"),
             )
             .await
-            .unwrap();
+            .expect("request should succeed");
 
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
     }
@@ -319,6 +327,7 @@ mod tests {
         let id = TodoId::new();
         handle_todo_command(
             Arc::clone(&repo),
+            NO_EVENT_BUS,
             TodoCommand::Create {
                 id,
                 text: "To be deleted".to_string(),
@@ -326,17 +335,18 @@ mod tests {
             },
         )
         .await
-        .unwrap();
+        .expect("create todo");
 
         handle_todo_command(
             Arc::clone(&repo),
+            NO_EVENT_BUS,
             TodoCommand::Delete {
                 id,
                 deleted_at: now,
             },
         )
         .await
-        .unwrap();
+        .expect("delete todo");
 
         let app = create_router(repo);
 
@@ -345,10 +355,10 @@ mod tests {
                 Request::builder()
                     .uri(&format!("/api/todos/{}", id.into_inner()))
                     .body(Body::empty())
-                    .unwrap(),
+                    .expect("request body"),
             )
             .await
-            .unwrap();
+            .expect("request should succeed");
 
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
     }
