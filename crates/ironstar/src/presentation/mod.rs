@@ -106,6 +106,7 @@
 
 pub mod error;
 pub mod health;
+pub mod layout;
 pub mod todo;
 
 pub use error::{AppError, AppErrorKind, ErrorResponse};
