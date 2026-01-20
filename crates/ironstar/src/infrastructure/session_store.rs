@@ -405,13 +405,17 @@ mod tests {
         let session = store.create(None).await.unwrap();
         let original_last_seen = session.last_seen_at;
 
-        // Small delay to ensure timestamp difference
-        tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        // Wait for at least 1 second since SQLite TEXT timestamps have second precision
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 
         store.touch(&session.id).await.unwrap();
 
         let fetched = store.get(&session.id).await.unwrap().unwrap();
-        assert!(fetched.last_seen_at >= original_last_seen);
+        // With 1 second delay, last_seen should be strictly greater
+        assert!(
+            fetched.last_seen_at > original_last_seen,
+            "last_seen_at should be updated after touch"
+        );
     }
 
     #[tokio::test]
