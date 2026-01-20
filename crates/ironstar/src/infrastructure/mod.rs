@@ -99,6 +99,7 @@ pub mod error;
 pub mod event_bus;
 pub mod event_store;
 pub mod key_expr;
+pub mod session_store;
 pub mod sse_stream;
 
 pub use assets::{AssetManifest, StaticAssets, create_static_router, static_file_handler};
@@ -108,6 +109,7 @@ pub use event_bus::{
     zenoh_embedded_config,
 };
 pub use event_store::{SqliteEventRepository, StoredEvent};
+pub use session_store::{Session, SessionStore, SqliteSessionStore, generate_session_id};
 pub use key_expr::{
     ALL_EVENTS, DOUBLE_WILD, EVENTS_ROOT, EventKeyExpr, ParseError as KeyExprParseError,
     SINGLE_WILD, aggregate_instance_pattern, aggregate_type_pattern, event_key,
