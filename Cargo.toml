@@ -11,6 +11,7 @@ license = "MIT"
 # Web framework and async runtime
 axum = { version = "0.8", features = ["default", "macros"] }
 axum-extra = { version = "0.10", features = ["cookie"] }
+cookie = { version = "0.18" }
 tokio = { version = "1.48", features = ["full", "test-util"] }
 hypertext = { version = "0.12" }
 
