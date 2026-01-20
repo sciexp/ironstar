@@ -3,8 +3,11 @@
 // This creates datastar.js as its own entry in the manifest,
 // allowing proper cache invalidation independent of other bundles.
 //
-// We import from dist/bundles/datastar.js which includes:
-// - Full engine with all plugins (GET, POST, Bind, On, Show, etc.)
-// - Auto-initialization via load() and apply()
+// Vendored from official jsDelivr CDN distribution.
+// Update via: just download-datastar
+// Version tracked in justfile variable: datastar-version
+//
+// Includes full engine with all plugins (GET, POST, Bind, On, Show, etc.)
+// and auto-initialization via load() and apply().
 
-import "@lufrai/datastar/bundles/datastar";
+import "./vendor/datastar.js";
