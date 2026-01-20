@@ -46,6 +46,7 @@ use crate::infrastructure::assets::AssetManifest;
 /// ```
 pub fn base_layout(manifest: &AssetManifest, content: impl Renderable) -> impl Renderable {
     let css_href = format!("/static/{}", manifest.resolve("bundle.css"));
+    let datastar_src = format!("/static/{}", manifest.resolve("datastar.js"));
 
     maud! {
         !DOCTYPE
@@ -54,7 +55,7 @@ pub fn base_layout(manifest: &AssetManifest, content: impl Renderable) -> impl R
                 meta charset="utf-8";
                 meta name="viewport" content="width=device-width, initial-scale=1";
                 link rel="stylesheet" href=(css_href);
-                script defer type="module" src="/static/dist/datastar.js" {}
+                script defer type="module" src=(datastar_src) {}
             }
             body {
                 @if cfg!(debug_assertions) {
@@ -155,5 +156,17 @@ mod tests {
         let body = html.as_inner();
 
         assert!(body.contains("bundle-abc12345.css"));
+    }
+
+    #[test]
+    #[allow(clippy::expect_used)]
+    fn base_layout_uses_manifest_resolved_datastar() {
+        let json = r#"{"datastar.js": "datastar-def67890.js"}"#;
+        let manifest = AssetManifest::from_json(json).expect("valid JSON");
+        let content = maud! { main { "test" } };
+        let html = base_layout(&manifest, content).render();
+        let body = html.as_inner();
+
+        assert!(body.contains("datastar-def67890.js"));
     }
 }
