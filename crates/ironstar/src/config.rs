@@ -10,7 +10,7 @@
 //! | Variable | Default | Description |
 //! |----------|---------|-------------|
 //! | `IRONSTAR_PORT` | 3000 | HTTP server port |
-//! | `IRONSTAR_DATABASE_URL` | `./data/ironstar.db` | SQLite database path |
+//! | `IRONSTAR_DATABASE_URL` | `sqlite:./data/ironstar.db?mode=rwc` | SQLite database path |
 //! | `IRONSTAR_ENABLE_ZENOH` | true | Enable Zenoh event bus |
 //! | `IRONSTAR_SHUTDOWN_TIMEOUT_SECS` | 30 | Graceful shutdown timeout |
 //!
@@ -69,8 +69,8 @@ impl Config {
             })
             .unwrap_or(3000);
 
-        let database_url =
-            env::var("IRONSTAR_DATABASE_URL").unwrap_or_else(|_| "./data/ironstar.db".to_string());
+        let database_url = env::var("IRONSTAR_DATABASE_URL")
+            .unwrap_or_else(|_| "sqlite:./data/ironstar.db?mode=rwc".to_string());
 
         let enable_zenoh = env::var("IRONSTAR_ENABLE_ZENOH")
             .map(|s| !matches!(s.to_lowercase().as_str(), "false" | "0" | "no"))
@@ -130,7 +130,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             port: 3000,
-            database_url: "./data/ironstar.db".to_string(),
+            database_url: "sqlite:./data/ironstar.db?mode=rwc".to_string(),
             enable_zenoh: true,
             shutdown_timeout: Duration::from_secs(30),
         }
@@ -145,7 +145,7 @@ mod tests {
     fn default_config_values() {
         let config = Config::default();
         assert_eq!(config.port, 3000);
-        assert_eq!(config.database_url, "./data/ironstar.db");
+        assert_eq!(config.database_url, "sqlite:./data/ironstar.db?mode=rwc");
         assert!(config.enable_zenoh);
         assert_eq!(config.shutdown_timeout, Duration::from_secs(30));
     }
