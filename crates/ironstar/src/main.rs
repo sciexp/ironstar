@@ -73,11 +73,11 @@ async fn main() -> Result<(), StartupError> {
     );
 
     // 3. Create parent directories if needed
-    if let Some(dir) = config.database_dir() {
-        if !dir.exists() {
-            tracing::info!(path = %dir.display(), "Creating database directory");
-            std::fs::create_dir_all(&dir)?;
-        }
+    if let Some(dir) = config.database_dir()
+        && !dir.exists()
+    {
+        tracing::info!(path = %dir.display(), "Creating database directory");
+        std::fs::create_dir_all(&dir)?;
     }
 
     // 4. Create SQLite pool
@@ -141,7 +141,7 @@ async fn main() -> Result<(), StartupError> {
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal(config.shutdown_timeout))
         .await
-        .map_err(|e| StartupError::Bind(e.into()))?;
+        .map_err(StartupError::Bind)?;
 
     tracing::info!("Shutdown complete");
     Ok(())
@@ -187,6 +187,7 @@ fn compose_router(state: AppState) -> Router {
 ///
 /// Returns when a shutdown signal is received, then waits for the configured
 /// timeout to allow in-flight requests to complete.
+#[expect(clippy::expect_used, reason = "signal handlers must succeed or panic")]
 async fn shutdown_signal(timeout: std::time::Duration) {
     let ctrl_c = async {
         signal::ctrl_c()
