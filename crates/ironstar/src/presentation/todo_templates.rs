@@ -34,7 +34,7 @@ pub fn todo_app(todos: &[TodoItemView]) -> impl Renderable {
         div
             id="todo-app"
             class="card stack"
-            "data-on-load"="@get('/api/todos/feed')"
+            "data-on-load"="@get('/todos/api/feed')"
         {
             (add_todo_form())
 
@@ -52,7 +52,7 @@ fn add_todo_form() -> impl Renderable {
     maud! {
         form
             class="cluster"
-            "data-on:submit.prevent"="@post('/api/todos', {body: {text: $input}}); $input = ''"
+            "data-on:submit.prevent"="@post('/todos/api', {body: {text: $input}}); $input = ''"
         {
             (text_field(
                 "input",
@@ -89,12 +89,12 @@ pub fn todo_item(todo: &TodoItemView) -> impl Renderable {
     let indicator_signal = format!("fetching_{}", todo.id);
 
     let checkbox_attrs = format!(
-        r#"data-on:change="@post('/api/todos/{}/complete')" data-indicator="{}""#,
+        r#"data-on:change="@post('/todos/api/{}/complete')" data-indicator="{}""#,
         id, indicator_signal
     );
 
     let delete_attrs = format!(
-        r#"data-on:click="@delete('/api/todos/{}')" data-indicator="{}""#,
+        r#"data-on:click="@delete('/todos/api/{}')" data-indicator="{}""#,
         id, indicator_signal
     );
 
@@ -149,7 +149,7 @@ fn todo_footer(active: usize, completed: usize) -> impl Renderable {
                     "Clear completed",
                     "outlined",
                     Some("small"),
-                    r#"data-on:click="@delete('/api/todos/completed')""#
+                    r#"data-on:click="@delete('/todos/api/completed')""#
                 ))
             }
         }

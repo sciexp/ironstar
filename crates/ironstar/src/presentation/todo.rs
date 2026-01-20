@@ -41,6 +41,7 @@ use crate::infrastructure::event_bus::ZenohEventBus;
 use crate::infrastructure::event_store::SqliteEventRepository;
 use crate::presentation::error::AppError;
 use crate::presentation::todo_templates::todo_page;
+use crate::state::AppState;
 
 /// Application state for Todo handlers.
 ///
@@ -72,7 +73,7 @@ pub struct TodoAppState {
 /// - `POST /api/:id/complete` - Complete todo (JSON)
 /// - `DELETE /api/:id` - Delete todo (JSON)
 /// - `GET /api/feed` - SSE feed (placeholder)
-pub fn routes() -> Router<TodoAppState> {
+pub fn routes() -> Router<AppState> {
     Router::new()
         // HTML page endpoint
         .route("/", get(todo_page_handler))
@@ -89,12 +90,12 @@ pub fn routes() -> Router<TodoAppState> {
 /// GET / - Render the todo page with current todos.
 async fn todo_page_handler(
     State(state): State<TodoAppState>,
+    State(manifest): State<AssetManifest>,
 ) -> Result<impl IntoResponse, AppError> {
     // Query current todos
     let view_state = query_all_todos(&state.repo).await?;
 
-    // Render page with default manifest (will be enhanced later)
-    let manifest = AssetManifest::default();
+    // Render page with manifest-resolved asset paths
     let html = todo_page(&manifest, &view_state.todos).render();
 
     Ok(Html(html.into_inner()))

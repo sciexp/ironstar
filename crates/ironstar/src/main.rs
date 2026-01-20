@@ -159,11 +159,9 @@ async fn main() -> Result<(), StartupError> {
 fn compose_router(state: AppState) -> Router {
     use axum::extract::FromRef;
     use ironstar::presentation::health::HealthState;
-    use ironstar::presentation::todo::TodoAppState;
 
     // Extract domain-specific states via FromRef
     let health_state = HealthState::from_ref(&state);
-    let todo_state = TodoAppState::from_ref(&state);
 
     // Health endpoints with HealthState
     let health_routes = Router::new()
@@ -172,8 +170,8 @@ fn compose_router(state: AppState) -> Router {
         .route("/health/live", get(live))
         .with_state(health_state);
 
-    // Todo routes with TodoAppState
-    let todo_routes = todo_routes().with_state(todo_state);
+    // Todo routes with AppState (handlers extract via FromRef)
+    let todo_routes = todo_routes().with_state(state.clone());
 
     // Static asset serving (stateless)
     let static_routes = create_static_router();
