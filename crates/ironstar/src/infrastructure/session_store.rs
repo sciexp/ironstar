@@ -15,6 +15,8 @@ use serde::{Deserialize, Serialize};
 use sqlx::Row;
 use sqlx::sqlite::SqlitePool;
 use std::future::Future;
+use std::sync::Arc;
+use tokio::time::interval;
 
 /// Session data stored in SQLite.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -336,6 +338,46 @@ fn parse_sqlite_datetime(s: &str) -> Result<DateTime<Utc>, InfrastructureError> 
     Ok(naive.and_utc())
 }
 
+/// Spawn a background task that periodically cleans up expired sessions.
+///
+/// This function spawns a tokio task that runs indefinitely, calling
+/// `cleanup_expired` on the session store at the specified interval.
+/// The task logs cleanup results at appropriate levels:
+/// - `info` when sessions are deleted (includes count)
+/// - `trace` when no sessions were expired
+/// - `error` when cleanup fails
+///
+/// # Arguments
+///
+/// * `session_store` - Arc-wrapped session store to clean up
+/// * `cleanup_interval` - How often to run the cleanup task
+///
+/// # Returns
+///
+/// A `JoinHandle` for the spawned task, allowing the caller to abort or join.
+pub fn spawn_session_cleanup(
+    session_store: Arc<SqliteSessionStore>,
+    cleanup_interval: std::time::Duration,
+) -> tokio::task::JoinHandle<()> {
+    tokio::spawn(async move {
+        let mut ticker = interval(cleanup_interval);
+        loop {
+            ticker.tick().await;
+            match session_store.cleanup_expired().await {
+                Ok(count) if count > 0 => {
+                    tracing::info!(deleted = count, "Cleaned up expired sessions");
+                }
+                Ok(_) => {
+                    tracing::trace!("Session cleanup ran, no expired sessions");
+                }
+                Err(e) => {
+                    tracing::error!(error = ?e, "Session cleanup failed");
+                }
+            }
+        }
+    })
+}
+
 #[cfg(test)]
 #[allow(clippy::expect_used, clippy::panic, clippy::unwrap_used)]
 mod tests {
@@ -487,5 +529,41 @@ mod tests {
         assert!(!id.contains('+'));
         assert!(!id.contains('/'));
         assert!(!id.contains('='));
+    }
+
+    #[tokio::test]
+    async fn spawn_cleanup_removes_expired_sessions() {
+        let pool = create_test_pool().await;
+        let store_expired = SqliteSessionStore::new(pool.clone(), Duration::days(-1));
+        let store_valid = Arc::new(SqliteSessionStore::with_default_ttl(pool.clone()));
+
+        // Create 2 expired sessions and 1 valid session
+        store_expired.create(None).await.unwrap();
+        store_expired.create(None).await.unwrap();
+        store_valid.create(None).await.unwrap();
+
+        // Count all sessions before cleanup (should be 3)
+        let count_before: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM sessions")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+        assert_eq!(count_before.0, 3);
+
+        // Spawn cleanup task with 10ms interval for fast testing
+        let handle =
+            spawn_session_cleanup(store_valid.clone(), std::time::Duration::from_millis(10));
+
+        // Wait for cleanup to run (tokio::time::interval ticks immediately on first call)
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+
+        // Count all sessions after cleanup (should be 1 - only the valid one remains)
+        let count_after: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM sessions")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+        assert_eq!(count_after.0, 1);
+
+        // Abort the cleanup task to prevent it from running forever
+        handle.abort();
     }
 }
