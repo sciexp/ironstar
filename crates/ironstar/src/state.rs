@@ -146,7 +146,7 @@ impl AppState {
 
 impl FromRef<AppState> for TodoAppState {
     fn from_ref(app_state: &AppState) -> Self {
-        TodoAppState {
+        Self {
             repo: Arc::clone(&app_state.todo_repo),
             event_bus: app_state.event_bus.clone(),
         }
@@ -155,7 +155,7 @@ impl FromRef<AppState> for TodoAppState {
 
 impl FromRef<AppState> for HealthState {
     fn from_ref(app_state: &AppState) -> Self {
-        HealthState {
+        Self {
             db_pool: app_state.db_pool.clone(),
         }
     }
@@ -178,6 +178,7 @@ mod tests {
     use super::*;
     use sqlx::sqlite::SqlitePoolOptions;
 
+    #[expect(clippy::expect_used, reason = "test helper function")]
     async fn create_test_pool() -> SqlitePool {
         SqlitePoolOptions::new()
             .max_connections(1)
