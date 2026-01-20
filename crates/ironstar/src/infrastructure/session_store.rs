@@ -41,7 +41,7 @@ pub struct Session {
 pub fn generate_session_id() -> String {
     let mut bytes = [0u8; 24];
     rand::rng().fill(&mut bytes);
-    URL_SAFE_NO_PAD.encode(&bytes)
+    URL_SAFE_NO_PAD.encode(bytes)
 }
 
 /// Session store trait for authentication and SSE scoping.
