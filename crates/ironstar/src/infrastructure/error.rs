@@ -45,6 +45,8 @@ pub struct InfrastructureError {
 pub enum InfrastructureErrorKind {
     /// Database operation failed (sqlx error).
     Database(sqlx::Error),
+    /// Database operation failed (message-based).
+    DatabaseMessage(String),
     /// JSON serialization/deserialization failed.
     Serialization(serde_json::Error),
     /// Event bus operation failed.
@@ -92,13 +94,20 @@ impl InfrastructureError {
     #[must_use]
     pub fn error_code(&self) -> ErrorCode {
         match &self.kind {
-            InfrastructureErrorKind::Database(_) => ErrorCode::DatabaseError,
+            InfrastructureErrorKind::Database(_)
+            | InfrastructureErrorKind::DatabaseMessage(_) => ErrorCode::DatabaseError,
             InfrastructureErrorKind::Serialization(_) => ErrorCode::InternalError,
             InfrastructureErrorKind::EventBus(_) => ErrorCode::ServiceUnavailable,
             InfrastructureErrorKind::Cache(_) => ErrorCode::InternalError,
             InfrastructureErrorKind::NotFound { .. } => ErrorCode::NotFound,
             InfrastructureErrorKind::OptimisticLockingConflict { .. } => ErrorCode::Conflict,
         }
+    }
+
+    /// Create a database error with a message.
+    #[must_use]
+    pub fn database(message: impl Into<String>) -> Self {
+        Self::new(InfrastructureErrorKind::DatabaseMessage(message.into()))
     }
 
     /// Create an event bus error.
@@ -139,6 +148,7 @@ impl fmt::Display for InfrastructureError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.kind {
             InfrastructureErrorKind::Database(e) => write!(f, "database error: {e}"),
+            InfrastructureErrorKind::DatabaseMessage(msg) => write!(f, "database error: {msg}"),
             InfrastructureErrorKind::Serialization(e) => write!(f, "serialization error: {e}"),
             InfrastructureErrorKind::EventBus(msg) => write!(f, "event bus error: {msg}"),
             InfrastructureErrorKind::Cache(msg) => write!(f, "cache error: {msg}"),
