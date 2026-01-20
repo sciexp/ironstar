@@ -43,6 +43,10 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 uuid = { version = "1.19", features = ["serde", "v4"] }
 chrono = { version = "0.4", features = ["serde"] }
 
+# Session ID generation
+rand = { version = "0.9", features = ["std_rng"] }
+base64 = "0.22"
+
 # Analytics caching (from architecture-decisions.md)
 moka = { version = "0.12", features = ["future"] }
 rkyv = { version = "0.8", features = ["bytecheck"] }
