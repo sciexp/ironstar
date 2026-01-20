@@ -94,8 +94,9 @@ impl InfrastructureError {
     #[must_use]
     pub fn error_code(&self) -> ErrorCode {
         match &self.kind {
-            InfrastructureErrorKind::Database(_)
-            | InfrastructureErrorKind::DatabaseMessage(_) => ErrorCode::DatabaseError,
+            InfrastructureErrorKind::Database(_) | InfrastructureErrorKind::DatabaseMessage(_) => {
+                ErrorCode::DatabaseError
+            }
             InfrastructureErrorKind::Serialization(_) => ErrorCode::InternalError,
             InfrastructureErrorKind::EventBus(_) => ErrorCode::ServiceUnavailable,
             InfrastructureErrorKind::Cache(_) => ErrorCode::InternalError,
