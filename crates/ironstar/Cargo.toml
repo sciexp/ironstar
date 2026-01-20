@@ -16,6 +16,7 @@ doctest = false
 
 [dependencies]
 axum = { workspace = true }
+axum-extra = { workspace = true }
 tokio = { workspace = true }
 hypertext = { workspace = true }
 datastar = { workspace = true }
