@@ -8,12 +8,12 @@
 //! Session IDs use 192 bits of entropy (24 bytes) encoded as URL-safe base64.
 
 use crate::infrastructure::error::InfrastructureError;
-use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
+use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
 use chrono::{DateTime, Duration, Utc};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
-use sqlx::sqlite::SqlitePool;
 use sqlx::Row;
+use sqlx::sqlite::SqlitePool;
 use std::future::Future;
 
 /// Session data stored in SQLite.
