@@ -115,7 +115,7 @@ pub mod todo_templates;
 pub use components::{button, checkbox, icon, loading_spinner, text_field};
 pub use error::{AppError, AppErrorKind, ErrorResponse};
 pub use extractors::{
-    SessionExtractor, SessionRejection, SESSION_COOKIE_NAME, clear_session_cookie, session_cookie,
+    SESSION_COOKIE_NAME, SessionExtractor, SessionRejection, clear_session_cookie, session_cookie,
 };
 pub use health::{HealthChecks, HealthResponse, HealthState, HealthStatus, health_router};
 pub use todo::{TodoAppState, TodoListResponse, get_todo, list_todos};

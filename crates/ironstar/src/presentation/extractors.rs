@@ -112,10 +112,7 @@ impl IntoResponse for SessionRejection {
             ),
             Self::NoCookie => (StatusCode::UNAUTHORIZED, "Session required"),
             Self::SessionNotFound => (StatusCode::UNAUTHORIZED, "Session expired or invalid"),
-            Self::StoreError(_) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "Session lookup failed",
-            ),
+            Self::StoreError(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Session lookup failed"),
         };
 
         (status, message).into_response()
@@ -290,10 +287,7 @@ mod tests {
             SessionRejection::NoSessionStore.to_string(),
             "session store not configured"
         );
-        assert_eq!(
-            SessionRejection::NoCookie.to_string(),
-            "no session cookie"
-        );
+        assert_eq!(SessionRejection::NoCookie.to_string(), "no session cookie");
         assert_eq!(
             SessionRejection::SessionNotFound.to_string(),
             "session not found or expired"
@@ -348,12 +342,7 @@ mod tests {
             .with_state(state);
 
         let response = app
-            .oneshot(
-                Request::builder()
-                    .uri("/test")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
+            .oneshot(Request::builder().uri("/test").body(Body::empty()).unwrap())
             .await
             .unwrap();
 
@@ -373,7 +362,10 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .uri("/test")
-                    .header("Cookie", format!("{}=nonexistent-session-id", SESSION_COOKIE_NAME))
+                    .header(
+                        "Cookie",
+                        format!("{}=nonexistent-session-id", SESSION_COOKIE_NAME),
+                    )
                     .body(Body::empty())
                     .unwrap(),
             )
