@@ -28,7 +28,7 @@
 use crate::domain::todo::commands::TodoCommand;
 use crate::domain::todo::events::TodoEvent;
 use crate::infrastructure::{
-    AssetManifest, Session, SessionStore, SqliteEventRepository, ZenohEventBus,
+    AssetManifest, SqliteEventRepository, SqliteSessionStore, ZenohEventBus,
 };
 use crate::presentation::health::HealthState;
 use crate::presentation::todo::TodoAppState;
@@ -68,7 +68,7 @@ pub struct AppState {
     /// Optional session store for authentication.
     ///
     /// When `None`, authentication is disabled.
-    pub session_store: Option<Arc<dyn SessionStore>>,
+    pub session_store: Option<Arc<SqliteSessionStore>>,
 
     /// Optional DuckDB pool for analytics queries.
     ///
@@ -109,7 +109,7 @@ impl AppState {
 
     /// Set the session store.
     #[must_use]
-    pub fn with_session_store(mut self, session_store: Arc<dyn SessionStore>) -> Self {
+    pub fn with_session_store(mut self, session_store: Arc<SqliteSessionStore>) -> Self {
         self.session_store = Some(session_store);
         self
     }
