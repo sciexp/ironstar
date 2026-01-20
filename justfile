@@ -2,8 +2,12 @@
 default:
     @just --list
 
+# Datastar version for vendor downloads
+datastar-version := "v1.0.0-RC.7"
+
 # Contents
 ## D2 Diagrams
+## Datastar
 ## Workspace
 ## CI/CD
 ## Cloudflare
@@ -102,6 +106,16 @@ svg-to-png-dir dir zoom="1" optimize="false":
     fi
     fd -e svg . "$dir" -x just svg-to-png {} "$zoom" "$optimize"
     echo "Done. $svg_count PNG files generated."
+
+## Datastar
+
+# Download datastar.js and source map from jsDelivr CDN
+[group('datastar')]
+download-datastar:
+    mkdir -p web-components/vendor
+    curl -sS -o web-components/vendor/datastar.js "https://cdn.jsdelivr.net/gh/starfederation/datastar@{{ datastar-version }}/bundles/datastar.js"
+    curl -sS -o web-components/vendor/datastar.js.map "https://cdn.jsdelivr.net/gh/starfederation/datastar@{{ datastar-version }}/bundles/datastar.js.map"
+    @echo "Downloaded datastar {{ datastar-version }} to web-components/vendor/"
 
 ## Workspace
 
