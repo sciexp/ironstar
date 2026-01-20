@@ -9,6 +9,7 @@ const outputManifest = require("rollup-plugin-output-manifest").default;
 export default defineConfig({
 	input: {
 		bundle: "./index.ts",
+		datastar: "./datastar.ts",
 	},
 	output: {
 		dir: "../static/dist",
