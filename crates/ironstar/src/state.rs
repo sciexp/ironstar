@@ -27,20 +27,17 @@
 
 use crate::domain::todo::commands::TodoCommand;
 use crate::domain::todo::events::TodoEvent;
-use crate::infrastructure::{AssetManifest, SqliteEventRepository, ZenohEventBus};
+use crate::infrastructure::{
+    AssetManifest, Session, SessionStore, SqliteEventRepository, ZenohEventBus,
+};
 use crate::presentation::health::HealthState;
 use crate::presentation::todo::TodoAppState;
 use axum::extract::FromRef;
 use sqlx::sqlite::SqlitePool;
 use std::sync::Arc;
 
-/// Session store trait for authentication.
-///
-/// This is a placeholder for the future session store implementation.
-/// Implementations will provide session creation, lookup, and invalidation.
-pub trait SessionStore: Send + Sync {
-    // Future: session methods
-}
+// Re-export Session for convenience.
+pub use crate::infrastructure::Session;
 
 /// DuckDB pool wrapper for analytics queries.
 ///
