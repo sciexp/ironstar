@@ -114,7 +114,9 @@ pub use key_expr::{
     SINGLE_WILD, aggregate_instance_pattern, aggregate_type_pattern, event_key,
     event_key_without_sequence,
 };
-pub use session_store::{Session, SessionStore, SqliteSessionStore, generate_session_id};
+pub use session_store::{
+    Session, SessionStore, SqliteSessionStore, generate_session_id, spawn_session_cleanup,
+};
 pub use sse_stream::{
     DEFAULT_KEEP_ALIVE_SECS, KEEP_ALIVE_COMMENT, KeepAliveStream, SseStreamBuilder,
     event_with_sequence, stored_events_to_stream, zenoh_to_sse_stream,
