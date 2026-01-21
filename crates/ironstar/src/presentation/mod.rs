@@ -105,6 +105,7 @@
 //! - Synchronous business logic (domain functions should be sync)
 
 pub mod bar_chart_transformer;
+pub mod chart;
 pub mod chart_templates;
 pub mod chart_transformer;
 pub mod components;
@@ -125,6 +126,7 @@ pub use extractors::{
     SESSION_COOKIE_NAME, SessionExtractor, SessionRejection, clear_session_cookie, session_cookie,
 };
 pub use health::{HealthChecks, HealthResponse, HealthState, HealthStatus, health_router};
+pub use chart::{astronauts_chart_page, astronauts_chart_sse, routes as chart_routes};
 pub use chart_templates::{chart_page, echarts_chart, echarts_chart_with_feedback};
 pub use todo::{TodoAppState, TodoListResponse, get_todo, list_todos};
 pub use todo_templates::{todo_app, todo_item, todo_list, todo_page};
