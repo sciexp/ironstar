@@ -12,9 +12,10 @@
 //! 4. Run database migrations
 //! 5. Load asset manifest (graceful fallback)
 //! 6. Initialize Zenoh event bus (optional, graceful fallback)
-//! 7. Construct AppState
-//! 8. Compose router
-//! 9. Start server with graceful shutdown
+//! 7. Initialize DuckDB analytics pool (optional, graceful fallback)
+//! 8. Construct AppState
+//! 9. Compose router
+//! 10. Start server with graceful shutdown
 
 use ironstar::config::Config;
 use ironstar::infrastructure::{
@@ -68,6 +69,7 @@ async fn main() -> Result<(), StartupError> {
         port = config.port,
         database_url = %config.database_url,
         enable_zenoh = config.enable_zenoh,
+        enable_analytics = config.enable_analytics,
         shutdown_timeout_secs = config.shutdown_timeout.as_secs(),
         "Starting ironstar"
     );
@@ -123,16 +125,48 @@ async fn main() -> Result<(), StartupError> {
         None
     };
 
-    // 8. Construct AppState
+    // 8. Initialize DuckDB analytics pool (optional)
+    let analytics = if config.enable_analytics {
+        let mut builder =
+            async_duckdb::PoolBuilder::new().num_conns(config.analytics_num_conns);
+        if let Some(ref path) = config.analytics_database_path {
+            builder = builder.path(path);
+        }
+        match builder.open().await {
+            Ok(pool) => {
+                tracing::info!(
+                    num_conns = config.analytics_num_conns,
+                    path = ?config.analytics_database_path,
+                    "DuckDB analytics pool initialized"
+                );
+                Some(pool)
+            }
+            Err(e) => {
+                tracing::warn!(
+                    error = %e,
+                    "Failed to initialize DuckDB analytics pool, continuing without analytics"
+                );
+                None
+            }
+        }
+    } else {
+        tracing::info!("DuckDB analytics disabled by configuration");
+        None
+    };
+
+    // 9. Construct AppState
     let mut app_state = AppState::new(db_pool.clone(), assets);
     if let Some(bus) = event_bus {
         app_state = app_state.with_event_bus(bus);
     }
+    if let Some(pool) = analytics {
+        app_state = app_state.with_analytics(pool);
+    }
 
-    // 9. Compose router
+    // 10. Compose router
     let app = compose_router(app_state);
 
-    // 10. Start server with graceful shutdown
+    // 11. Start server with graceful shutdown
     let addr = config.socket_addr();
     tracing::info!(addr = %addr, "Listening");
 
