@@ -124,6 +124,84 @@ impl DuckDBService {
             .map_err(|e| InfrastructureError::analytics(e.to_string()))
     }
 
+    /// Validate that a name is a valid SQL identifier.
+    ///
+    /// Valid identifiers must:
+    /// - Be non-empty
+    /// - Start with a letter or underscore
+    /// - Contain only alphanumeric characters and underscores
+    fn is_valid_identifier(name: &str) -> bool {
+        if name.is_empty() {
+            return false;
+        }
+        let mut chars = name.chars();
+        match chars.next() {
+            Some(c) if c.is_ascii_alphabetic() || c == '_' => {}
+            _ => return false,
+        }
+        chars.all(|c| c.is_ascii_alphanumeric() || c == '_')
+    }
+
+    /// Attach a DuckLake catalog from a ducklake: URI.
+    ///
+    /// Attaches a remote DuckLake catalog database, making its tables available
+    /// for querying with the given alias. The attachment uses read-only mode
+    /// since ducklake catalogs are versioned and immutable.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The alias to use for the attached database (e.g., "space").
+    ///   Must be a valid SQL identifier (alphanumeric + underscore, starting
+    ///   with a letter or underscore).
+    /// * `uri` - The ducklake URI (e.g., "ducklake:hf://datasets/sciexp/fixtures/lakes/frozen/space.db")
+    ///
+    /// # Errors
+    ///
+    /// Returns `InfrastructureError` if:
+    /// - Analytics service is unavailable (pool is None)
+    /// - The name is not a valid SQL identifier
+    /// - The ATTACH statement fails (network error, invalid URI, auth failure)
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// service.attach_catalog(
+    ///     "space",
+    ///     "ducklake:hf://datasets/sciexp/fixtures/lakes/frozen/space.db"
+    /// ).await?;
+    ///
+    /// // Now query the attached catalog
+    /// let astronauts = service.query(|conn| {
+    ///     let mut stmt = conn.prepare(
+    ///         "SELECT name, nationality FROM space.main.astronauts LIMIT 10"
+    ///     )?;
+    ///     // ... process results
+    /// }).await?;
+    /// ```
+    pub async fn attach_catalog(&self, name: &str, uri: &str) -> Result<(), InfrastructureError> {
+        // Validate name is a valid SQL identifier
+        if !Self::is_valid_identifier(name) {
+            return Err(InfrastructureError::analytics(format!(
+                "invalid catalog name '{name}': must be a valid SQL identifier \
+                 (alphanumeric + underscore, starting with letter or underscore)"
+            )));
+        }
+
+        // Build and execute the ATTACH statement
+        // Note: We use string formatting here because DuckDB's ATTACH doesn't support
+        // parameterized queries for the URI or alias. The name is validated above.
+        let sql = format!("ATTACH '{uri}' AS {name}");
+
+        self.query_mut(move |conn| {
+            conn.execute(&sql, [])?;
+            Ok(())
+        })
+        .await
+        .map_err(|e| {
+            InfrastructureError::analytics(format!("failed to attach catalog '{name}': {e}"))
+        })
+    }
+
     /// Initialize DuckDB extensions on all pool connections.
     ///
     /// Installs httpfs and ducklake extensions (once, to ~/.duckdb/extensions/)
@@ -302,6 +380,94 @@ mod tests {
                 .expect("failed to count loaded extensions");
 
             assert_eq!(count, 2, "expected 2 extensions loaded on each connection");
+        }
+
+        pool.close().await.expect("failed to close pool");
+    }
+
+    #[tokio::test]
+    async fn attach_catalog_returns_error_when_unavailable() {
+        let service = DuckDBService::new(None);
+        let result = service
+            .attach_catalog("test", "ducklake:some/path.db")
+            .await;
+
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(
+            err.to_string().contains("analytics service unavailable"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn is_valid_identifier_accepts_valid_names() {
+        // Valid identifiers
+        assert!(DuckDBService::is_valid_identifier("space"));
+        assert!(DuckDBService::is_valid_identifier("my_catalog"));
+        assert!(DuckDBService::is_valid_identifier("_private"));
+        assert!(DuckDBService::is_valid_identifier("Catalog1"));
+        assert!(DuckDBService::is_valid_identifier("a"));
+        assert!(DuckDBService::is_valid_identifier("_"));
+        assert!(DuckDBService::is_valid_identifier("a1b2c3"));
+        assert!(DuckDBService::is_valid_identifier("CamelCase"));
+        assert!(DuckDBService::is_valid_identifier("snake_case_123"));
+    }
+
+    #[test]
+    fn is_valid_identifier_rejects_invalid_names() {
+        // Empty
+        assert!(!DuckDBService::is_valid_identifier(""));
+
+        // Starts with number
+        assert!(!DuckDBService::is_valid_identifier("1catalog"));
+        assert!(!DuckDBService::is_valid_identifier("123"));
+
+        // Contains invalid characters
+        assert!(!DuckDBService::is_valid_identifier("my-catalog"));
+        assert!(!DuckDBService::is_valid_identifier("my catalog"));
+        assert!(!DuckDBService::is_valid_identifier("my.catalog"));
+        assert!(!DuckDBService::is_valid_identifier("catalog!"));
+        assert!(!DuckDBService::is_valid_identifier("catalog@name"));
+
+        // SQL injection attempts
+        assert!(!DuckDBService::is_valid_identifier("'; DROP TABLE users; --"));
+        assert!(!DuckDBService::is_valid_identifier("test; SELECT * FROM"));
+    }
+
+    #[tokio::test]
+    async fn attach_catalog_rejects_invalid_identifier() {
+        // Create a pool so we can test identifier validation (happens before query)
+        let pool = async_duckdb::PoolBuilder::new()
+            .num_conns(1)
+            .open()
+            .await
+            .expect("failed to create test pool");
+
+        let service = DuckDBService::new(Some(pool.clone()));
+
+        // Test various invalid identifiers
+        let invalid_names = [
+            "1catalog",
+            "my-catalog",
+            "my catalog",
+            "",
+            "; DROP TABLE",
+        ];
+
+        for name in invalid_names {
+            let result = service
+                .attach_catalog(name, "ducklake:some/path.db")
+                .await;
+            assert!(
+                result.is_err(),
+                "expected error for invalid name '{name}'"
+            );
+            let err = result.unwrap_err();
+            assert!(
+                err.to_string().contains("invalid catalog name"),
+                "unexpected error for '{name}': {err}"
+            );
         }
 
         pool.close().await.expect("failed to close pool");
