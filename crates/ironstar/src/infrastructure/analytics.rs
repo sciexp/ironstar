@@ -33,6 +33,9 @@
 use crate::infrastructure::InfrastructureError;
 use crate::state::DuckDbPool;
 
+// Re-export duckdb types from async_duckdb for public API consumers.
+pub use async_duckdb::duckdb;
+
 /// DuckDB analytics service wrapper.
 ///
 /// Provides a clean async interface for analytics queries, handling the
