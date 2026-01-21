@@ -104,6 +104,8 @@
 //! - Multi-step workflows (belongs in [`crate::application`])
 //! - Synchronous business logic (domain functions should be sync)
 
+pub mod bar_chart_transformer;
+pub mod chart_templates;
 pub mod chart_transformer;
 pub mod components;
 pub mod error;
@@ -113,6 +115,7 @@ pub mod layout;
 pub mod todo;
 pub mod todo_templates;
 
+pub use bar_chart_transformer::BarChartTransformer;
 pub use chart_transformer::{
     ChartConfig, ChartTransformer, ChartType, ColumnMetadata, QueryResult, TransformError,
 };
@@ -122,5 +125,6 @@ pub use extractors::{
     SESSION_COOKIE_NAME, SessionExtractor, SessionRejection, clear_session_cookie, session_cookie,
 };
 pub use health::{HealthChecks, HealthResponse, HealthState, HealthStatus, health_router};
+pub use chart_templates::{chart_page, echarts_chart, echarts_chart_with_feedback};
 pub use todo::{TodoAppState, TodoListResponse, get_todo, list_todos};
 pub use todo_templates::{todo_app, todo_item, todo_list, todo_page};
