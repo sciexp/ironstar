@@ -53,6 +53,8 @@ pub enum InfrastructureErrorKind {
     EventBus(String),
     /// Cache operation failed.
     Cache(String),
+    /// Analytics query failed (DuckDB).
+    Analytics(String),
     /// Resource not found in infrastructure layer.
     NotFound { resource: String, id: String },
     /// Optimistic locking conflict - concurrent modification detected.
@@ -100,6 +102,7 @@ impl InfrastructureError {
             InfrastructureErrorKind::Serialization(_) => ErrorCode::InternalError,
             InfrastructureErrorKind::EventBus(_) => ErrorCode::ServiceUnavailable,
             InfrastructureErrorKind::Cache(_) => ErrorCode::InternalError,
+            InfrastructureErrorKind::Analytics(_) => ErrorCode::ServiceUnavailable,
             InfrastructureErrorKind::NotFound { .. } => ErrorCode::NotFound,
             InfrastructureErrorKind::OptimisticLockingConflict { .. } => ErrorCode::Conflict,
         }
@@ -121,6 +124,12 @@ impl InfrastructureError {
     #[must_use]
     pub fn cache(message: impl Into<String>) -> Self {
         Self::new(InfrastructureErrorKind::Cache(message.into()))
+    }
+
+    /// Create an analytics error.
+    #[must_use]
+    pub fn analytics(message: impl Into<String>) -> Self {
+        Self::new(InfrastructureErrorKind::Analytics(message.into()))
     }
 
     /// Create a not found error.
@@ -153,6 +162,7 @@ impl fmt::Display for InfrastructureError {
             InfrastructureErrorKind::Serialization(e) => write!(f, "serialization error: {e}"),
             InfrastructureErrorKind::EventBus(msg) => write!(f, "event bus error: {msg}"),
             InfrastructureErrorKind::Cache(msg) => write!(f, "cache error: {msg}"),
+            InfrastructureErrorKind::Analytics(msg) => write!(f, "analytics error: {msg}"),
             InfrastructureErrorKind::NotFound { resource, id } => {
                 write!(f, "{resource} {id} not found")
             }
@@ -213,6 +223,10 @@ mod tests {
             ErrorCode::InternalError
         );
         assert_eq!(
+            InfrastructureError::analytics("test").error_code(),
+            ErrorCode::ServiceUnavailable
+        );
+        assert_eq!(
             InfrastructureError::not_found("Event", "123").error_code(),
             ErrorCode::NotFound
         );
@@ -225,5 +239,8 @@ mod tests {
 
         let err = InfrastructureError::event_bus("zenoh connection failed");
         assert_eq!(err.to_string(), "event bus error: zenoh connection failed");
+
+        let err = InfrastructureError::analytics("query timeout");
+        assert_eq!(err.to_string(), "analytics error: query timeout");
     }
 }
