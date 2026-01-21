@@ -182,6 +182,13 @@ pub struct ChartSignals {
     /// True while chart data is being fetched, enabling loading UI.
     #[serde(default)]
     pub loading: bool,
+
+    /// Error message when chart loading fails.
+    ///
+    /// Set via SSE signal update when query fails. None when no error.
+    #[ts(optional)]
+    #[serde(default)]
+    pub error: Option<String>,
 }
 
 #[cfg(test)]
@@ -345,6 +352,7 @@ mod tests {
                 value: serde_json::json!(20),
             }),
             loading: false,
+            error: None,
         };
 
         let json = serde_json::to_string(&signals).unwrap();
@@ -353,6 +361,7 @@ mod tests {
         assert_eq!(parsed.chart_option, signals.chart_option);
         assert_eq!(parsed.selected, signals.selected);
         assert_eq!(parsed.loading, signals.loading);
+        assert_eq!(parsed.error, signals.error);
     }
 
     #[test]
@@ -361,6 +370,7 @@ mod tests {
             chart_option: serde_json::json!({}),
             selected: None,
             loading: true,
+            error: None,
         };
 
         let json = serde_json::to_string(&signals).unwrap();
@@ -386,6 +396,31 @@ mod tests {
         let signals: ChartSignals = serde_json::from_str(json).unwrap();
 
         assert!(!signals.loading);
+    }
+
+    #[test]
+    fn chart_signals_error_roundtrip() {
+        // Error field should serialize and deserialize correctly
+        let signals = ChartSignals {
+            chart_option: serde_json::json!({}),
+            selected: None,
+            loading: false,
+            error: Some("Query timeout after 30s".to_string()),
+        };
+
+        let json = serde_json::to_string(&signals).unwrap();
+        let parsed: ChartSignals = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(parsed.error, Some("Query timeout after 30s".to_string()));
+    }
+
+    #[test]
+    fn chart_signals_error_defaults_to_none() {
+        // Error should default to None when omitted from JSON
+        let json = r#"{"chartOption": {}}"#;
+        let signals: ChartSignals = serde_json::from_str(json).unwrap();
+
+        assert_eq!(signals.error, None);
     }
 
     #[test]
