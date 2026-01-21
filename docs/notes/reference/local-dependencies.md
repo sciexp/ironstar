@@ -182,6 +182,30 @@ See their TodoMVC implementations for SSE formatting and signal parsing patterns
 These patterns enable the axum backend to query remote datasets (HuggingFace Hub, S3-compatible storage) via DuckDB's httpfs extension, serving data for ECharts/Vega visualizations without local data ingestion.
 See "Remote data sources via httpfs" in `docs/notes/architecture/core/architecture-decisions.md` section 6 for implementation details.
 
+### Analytics test fixtures
+
+The `sciexp-fixtures` repository provides the canonical DuckLake catalog for ironstar analytics development and testing.
+
+| Property | Value |
+|----------|-------|
+| Local path | `~/projects/omicslake-workspace/sciexp-fixtures` |
+| HuggingFace URL | `hf://datasets/sciexp/fixtures` |
+| Catalog file | `lakes/frozen/space.db` (git-lfs, Xet-backed) |
+| Query examples | `queries/space.sql` |
+
+**Attachment pattern**:
+
+```sql
+INSTALL httpfs; INSTALL ducklake;
+LOAD httpfs; LOAD ducklake;
+ATTACH 'ducklake:hf://datasets/sciexp/fixtures/lakes/frozen/space.db' AS space;
+SHOW TABLES FROM space.main;  -- astronauts, missions, mission_crew, spacecraft
+```
+
+The catalog contains absolute `hf://datasets/sciexp/fixtures/...` paths, so queries resolve data files from HuggingFace Hub.
+
+Use this dataset for validating 9b1 (httpfs extension), c7z (DuckLake/hf:// integration), and 753.4 (ds-echarts backend).
+
 ## Visualization libraries
 
 | Library | Local Path | Description |
