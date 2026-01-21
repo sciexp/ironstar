@@ -145,6 +145,28 @@ async fn main() -> Result<(), StartupError> {
                 match service.initialize_extensions().await {
                     Ok(()) => {
                         tracing::info!("DuckDB extensions loaded (httpfs, ducklake)");
+
+                        // Attach demo DuckLake catalog from HuggingFace
+                        // This provides example data for development and testing
+                        let catalog_uri =
+                            "ducklake:hf://datasets/sciexp/fixtures/lakes/frozen/space.db";
+                        match service.attach_catalog("space", catalog_uri).await {
+                            Ok(()) => {
+                                tracing::info!(
+                                    catalog = "space",
+                                    source = "sciexp/fixtures",
+                                    "Attached DuckLake catalog"
+                                );
+                            }
+                            Err(e) => {
+                                tracing::warn!(
+                                    error = %e,
+                                    catalog = "space",
+                                    "Failed to attach DuckLake catalog, continuing without demo data"
+                                );
+                            }
+                        }
+
                         Some(pool)
                     }
                     Err(e) => {
