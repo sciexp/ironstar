@@ -22,6 +22,7 @@ use ironstar::infrastructure::{
     AssetManifest, DuckDBService, ZenohEventBus, create_static_router, open_embedded_session,
 };
 use ironstar::presentation::health::{health, live, ready};
+use ironstar::presentation::chart_routes;
 use ironstar::presentation::todo::routes as todo_routes;
 use ironstar::state::AppState;
 
@@ -244,6 +245,9 @@ fn compose_router(state: AppState) -> Router {
     // Todo routes with AppState (handlers extract via FromRef)
     let todo_routes = todo_routes().with_state(state.clone());
 
+    // Chart routes with AppState
+    let chart_routes = chart_routes().with_state(state.clone());
+
     // Static asset serving (stateless)
     let static_routes = create_static_router();
 
@@ -251,6 +255,7 @@ fn compose_router(state: AppState) -> Router {
     Router::new()
         .merge(health_routes)
         .nest("/todos", todo_routes)
+        .nest("/charts", chart_routes)
         .merge(static_routes)
 }
 
