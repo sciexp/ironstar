@@ -19,7 +19,7 @@
 
 use ironstar::config::Config;
 use ironstar::infrastructure::{
-    AssetManifest, ZenohEventBus, create_static_router, open_embedded_session,
+    AssetManifest, DuckDBService, ZenohEventBus, create_static_router, open_embedded_session,
 };
 use ironstar::presentation::health::{health, live, ready};
 use ironstar::presentation::todo::routes as todo_routes;
@@ -139,7 +139,22 @@ async fn main() -> Result<(), StartupError> {
                     path = ?config.analytics_database_path,
                     "DuckDB analytics pool initialized"
                 );
-                Some(pool)
+
+                // Load httpfs and ducklake extensions on all connections
+                let service = DuckDBService::new(Some(pool.clone()));
+                match service.initialize_extensions().await {
+                    Ok(()) => {
+                        tracing::info!("DuckDB extensions loaded (httpfs, ducklake)");
+                        Some(pool)
+                    }
+                    Err(e) => {
+                        tracing::warn!(
+                            error = %e,
+                            "Failed to load DuckDB extensions, continuing without analytics"
+                        );
+                        None
+                    }
+                }
             }
             Err(e) => {
                 tracing::warn!(
