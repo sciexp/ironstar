@@ -106,6 +106,15 @@
       # Single cargoArtifacts derivation shared by all crane outputs
       # Note: buildDepsOnly automatically appends "-deps" suffix to pname
       cargoArtifacts = crane-lib.buildDepsOnly commonArgs;
+
+      # Release profile artifacts for optimized builds (strip, lto, opt-level=z)
+      # Separate from dev to preserve fast iteration on default package
+      cargoArtifactsRelease = crane-lib.buildDepsOnly (
+        commonArgs
+        // {
+          CARGO_PROFILE = "release";
+        }
+      );
     in
     {
       # Configure rust-project toolchain (no per-crate defaults needed)
@@ -126,6 +135,13 @@
       packages = {
         default = self'.packages.ironstar;
         ironstar = crane-lib.buildPackage (commonArgs // { inherit cargoArtifacts; });
+        ironstar-release = crane-lib.buildPackage (
+          commonArgs
+          // {
+            cargoArtifacts = cargoArtifactsRelease;
+            CARGO_PROFILE = "release";
+          }
+        );
         # Exposed for isolated testing: `nix build .#frontendAssets`
         inherit frontendAssets;
       };
