@@ -9,7 +9,7 @@
 //!
 //! - `event_bus: Option<Arc<ZenohEventBus>>` — pub/sub for SSE feeds
 //! - `session_store: Option<Arc<dyn SessionStore>>` — authentication sessions
-//! - `analytics: Option<Arc<DuckDbPool>>` — OLAP queries
+//! - `analytics: Option<DuckDbPool>` — OLAP queries (Pool is Clone internally)
 //!
 //! This allows the application to start with reduced functionality when some
 //! infrastructure is unavailable or disabled.
@@ -39,13 +39,11 @@ use std::sync::Arc;
 // Re-export Session for convenience.
 pub use crate::infrastructure::Session;
 
-/// DuckDB pool wrapper for analytics queries.
+/// Type alias for the DuckDB connection pool.
 ///
-/// This is a placeholder for the future analytics implementation.
-/// Will wrap async-duckdb for OLAP query execution.
-pub struct DuckDbPool {
-    // Future: async-duckdb pool
-}
+/// The async-duckdb Pool is internally Arc-wrapped and Clone, so no need for
+/// additional Arc wrapping. This alias provides documentation clarity.
+pub type DuckDbPool = async_duckdb::Pool;
 
 /// Central application state container.
 ///
@@ -73,7 +71,8 @@ pub struct AppState {
     /// Optional DuckDB pool for analytics queries.
     ///
     /// When `None`, analytics endpoints return 503 Service Unavailable.
-    pub analytics: Option<Arc<DuckDbPool>>,
+    /// Pool is Clone (internally Arc-wrapped), so no additional Arc needed.
+    pub analytics: Option<DuckDbPool>,
 
     /// Shared Todo event repository.
     ///
@@ -116,7 +115,7 @@ impl AppState {
 
     /// Set the analytics pool.
     #[must_use]
-    pub fn with_analytics(mut self, analytics: Arc<DuckDbPool>) -> Self {
+    pub fn with_analytics(mut self, analytics: DuckDbPool) -> Self {
         self.analytics = Some(analytics);
         self
     }
