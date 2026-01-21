@@ -123,6 +123,55 @@ impl DuckDBService {
             .await
             .map_err(|e| InfrastructureError::analytics(e.to_string()))
     }
+
+    /// Initialize DuckDB extensions on all pool connections.
+    ///
+    /// Installs httpfs and ducklake extensions (once, to ~/.duckdb/extensions/)
+    /// and loads them on every connection in the pool. This enables:
+    /// - `httpfs`: HTTP/HTTPS/S3 remote file access
+    /// - `ducklake`: DuckLake catalog integration for versioned analytics
+    ///
+    /// # Errors
+    ///
+    /// Returns `InfrastructureError` if:
+    /// - Analytics service is unavailable (pool is None)
+    /// - Extension installation fails
+    /// - Extension loading fails on any connection
+    pub async fn initialize_extensions(&self) -> Result<(), InfrastructureError> {
+        let pool = self
+            .pool
+            .as_ref()
+            .ok_or_else(|| InfrastructureError::analytics("analytics service unavailable"))?;
+
+        // INSTALL runs once per extension (idempotent, writes to ~/.duckdb/extensions/)
+        pool.conn(|conn| {
+            conn.execute("INSTALL httpfs", [])?;
+            conn.execute("INSTALL ducklake", [])?;
+            Ok(())
+        })
+        .await
+        .map_err(|e| InfrastructureError::analytics(format!("extension install failed: {e}")))?;
+
+        // LOAD must run on every connection in the pool
+        let results = pool
+            .conn_for_each(|conn| {
+                conn.execute("LOAD httpfs", [])?;
+                conn.execute("LOAD ducklake", [])?;
+                Ok(())
+            })
+            .await;
+
+        // Check all connections loaded successfully
+        for (i, result) in results.into_iter().enumerate() {
+            result.map_err(|e| {
+                InfrastructureError::analytics(format!(
+                    "extension load failed on connection {i}: {e}"
+                ))
+            })?;
+        }
+
+        Ok(())
+    }
 }
 
 /// State container for analytics handlers.
@@ -173,5 +222,88 @@ mod tests {
         assert!(err.to_string().contains("analytics service unavailable"));
     }
 
-    // Integration tests with actual DuckDB pool would go in tests/
+    #[tokio::test]
+    async fn initialize_extensions_returns_error_when_unavailable() {
+        let service = DuckDBService::new(None);
+        let result = service.initialize_extensions().await;
+
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(err.to_string().contains("analytics service unavailable"));
+    }
+
+    #[tokio::test]
+    async fn initialize_extensions_succeeds_with_pool() {
+        // Create an in-memory DuckDB pool for testing
+        let pool = async_duckdb::PoolBuilder::new()
+            .num_conns(2)
+            .open()
+            .await
+            .expect("failed to create test pool");
+
+        let service = DuckDBService::new(Some(pool.clone()));
+
+        // Initialize extensions
+        let result = service.initialize_extensions().await;
+        assert!(result.is_ok(), "initialize_extensions failed: {result:?}");
+
+        // Verify extensions are loaded by querying duckdb_extensions()
+        let loaded_extensions: Vec<String> = service
+            .query(|conn| {
+                let mut stmt = conn.prepare(
+                    "SELECT extension_name FROM duckdb_extensions() \
+                     WHERE extension_name IN ('httpfs', 'ducklake') AND loaded",
+                )?;
+                let rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
+                rows.collect::<Result<Vec<_>, _>>()
+            })
+            .await
+            .expect("failed to query extensions");
+
+        assert!(
+            loaded_extensions.contains(&"httpfs".to_string()),
+            "httpfs not loaded, found: {loaded_extensions:?}"
+        );
+        assert!(
+            loaded_extensions.contains(&"ducklake".to_string()),
+            "ducklake not loaded, found: {loaded_extensions:?}"
+        );
+
+        pool.close().await.expect("failed to close pool");
+    }
+
+    #[tokio::test]
+    async fn initialize_extensions_loads_on_all_connections() {
+        // Create pool with multiple connections to verify all get loaded
+        let pool = async_duckdb::PoolBuilder::new()
+            .num_conns(3)
+            .open()
+            .await
+            .expect("failed to create test pool");
+
+        let service = DuckDBService::new(Some(pool.clone()));
+        service
+            .initialize_extensions()
+            .await
+            .expect("initialize_extensions failed");
+
+        // Query each connection multiple times to ensure round-robin hits all
+        // The pool uses round-robin, so 3 queries on 3 connections covers all
+        for _ in 0..3 {
+            let count: i64 = service
+                .query(|conn| {
+                    let mut stmt = conn.prepare(
+                        "SELECT COUNT(*) FROM duckdb_extensions() \
+                         WHERE extension_name IN ('httpfs', 'ducklake') AND loaded",
+                    )?;
+                    stmt.query_row([], |row| row.get(0))
+                })
+                .await
+                .expect("failed to count loaded extensions");
+
+            assert_eq!(count, 2, "expected 2 extensions loaded on each connection");
+        }
+
+        pool.close().await.expect("failed to close pool");
+    }
 }
