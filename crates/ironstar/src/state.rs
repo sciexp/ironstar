@@ -28,7 +28,8 @@
 use crate::domain::todo::commands::TodoCommand;
 use crate::domain::todo::events::TodoEvent;
 use crate::infrastructure::{
-    AssetManifest, SqliteEventRepository, SqliteSessionStore, ZenohEventBus,
+    AnalyticsState, AssetManifest, DuckDBService, SqliteEventRepository, SqliteSessionStore,
+    ZenohEventBus,
 };
 use crate::presentation::health::HealthState;
 use crate::presentation::todo::TodoAppState;
@@ -172,6 +173,12 @@ impl FromRef<AppState> for SqlitePool {
     }
 }
 
+impl FromRef<AppState> for AnalyticsState {
+    fn from_ref(app_state: &AppState) -> Self {
+        AnalyticsState::new(DuckDBService::new(app_state.analytics.clone()))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -218,5 +225,16 @@ mod tests {
 
         let _health_state: HealthState = HealthState::from_ref(&state);
         // HealthState successfully extracted
+    }
+
+    #[tokio::test]
+    async fn from_ref_analytics_state_unavailable() {
+        let pool = create_test_pool().await;
+        let assets = AssetManifest::default();
+        let state = AppState::new(pool, assets);
+
+        // Without analytics pool, service should be unavailable
+        let analytics: AnalyticsState = AnalyticsState::from_ref(&state);
+        assert!(!analytics.service.is_available());
     }
 }
