@@ -61,8 +61,9 @@
         chmod -R u+w $out
         mkdir -p $out/static
         cp -r ${frontendAssets} $out/static/dist
-        mkdir -p $out/crates/ironstar
-        cp -r ${inputs.self + "/crates/ironstar/migrations"} $out/crates/ironstar/migrations
+        # Remove any empty migrations dir from cleaned source, then copy real migrations
+        rm -rf $out/crates/ironstar/migrations
+        cp -r ${inputs.self + "/crates/ironstar/migrations"} $out/crates/ironstar/
       '';
 
       # WORKAROUND: libduckdb-sys build.rs emits rerun-if-changed with absolute
