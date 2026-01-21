@@ -17,6 +17,54 @@
       rustToolchainVersion = "1.92.0";
       inherit (config.rust-project) crane-lib src;
 
+      # Frontend assets built from web-components/ via Rolldown.
+      # Produces static/dist/ contents for rust-embed at compile time.
+      frontendAssets = pkgs.stdenvNoCC.mkDerivation (finalAttrs: {
+        pname = "ironstar-frontend";
+        version = "0.1.0";
+        src = inputs.self + "/web-components";
+
+        nativeBuildInputs = [
+          pkgs.nodejs
+          pkgs.pnpmConfigHook
+          pkgs.pnpm
+        ];
+
+        pnpmDeps = pkgs.fetchPnpmDeps {
+          inherit (finalAttrs) pname version src;
+          fetcherVersion = 2;
+          hash = "sha256-eeHzVYvyZgVEuVBPXo24LQX1aXbsCQnvPRbz7Pj42xw=";
+        };
+
+        buildPhase = ''
+          runHook preBuild
+          # Rolldown outputs to ../static/dist relative to web-components/
+          mkdir -p ../static
+          pnpm build
+          runHook postBuild
+        '';
+
+        installPhase = ''
+          runHook preInstall
+          cp -r ../static/dist $out
+          runHook postInstall
+        '';
+      });
+
+      # Combined source: Rust source + frontend assets + migrations.
+      # Crane's cleanCargoSource filters non-Rust files, so we must explicitly
+      # include directories needed by compile-time macros:
+      # - static/dist/ for rust-embed
+      # - crates/ironstar/migrations/ for include_str! in sqlx queries
+      combinedSrc = pkgs.runCommand "ironstar-src" { } ''
+        cp -r ${src} $out
+        chmod -R u+w $out
+        mkdir -p $out/static
+        cp -r ${frontendAssets} $out/static/dist
+        mkdir -p $out/crates/ironstar
+        cp -r ${inputs.self + "/crates/ironstar/migrations"} $out/crates/ironstar/migrations
+      '';
+
       # WORKAROUND: libduckdb-sys build.rs emits rerun-if-changed with absolute
       # OUT_DIR path. On nix, each derivation has unique sandbox path, causing
       # cargo to see the path as "missing" and rebuild libduckdb-sys (~7 min).
@@ -43,7 +91,8 @@
       # Pure crane pattern: single commonArgs shared by all derivations.
       # See: nix-cargo-crane/docs/faq/constant-rebuilds.md
       commonArgs = {
-        inherit src cargoVendorDir;
+        src = combinedSrc; # Includes frontend assets for rust-embed
+        inherit cargoVendorDir;
         pname = "ironstar";
         strictDeps = true;
         # Use dev profile for faster compilation during development.
@@ -76,6 +125,8 @@
       packages = {
         default = self'.packages.ironstar;
         ironstar = crane-lib.buildPackage (commonArgs // { inherit cargoArtifacts; });
+        # Exposed for isolated testing: `nix build .#frontendAssets`
+        inherit frontendAssets;
       };
 
       # Manual wiring: checks
