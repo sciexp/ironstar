@@ -104,6 +104,7 @@
 //! - Multi-step workflows (belongs in [`crate::application`])
 //! - Synchronous business logic (domain functions should be sync)
 
+pub mod chart_transformer;
 pub mod components;
 pub mod error;
 pub mod extractors;
@@ -112,6 +113,9 @@ pub mod layout;
 pub mod todo;
 pub mod todo_templates;
 
+pub use chart_transformer::{
+    ChartConfig, ChartTransformer, ChartType, ColumnMetadata, QueryResult, TransformError,
+};
 pub use components::{button, checkbox, icon, loading_spinner, text_field};
 pub use error::{AppError, AppErrorKind, ErrorResponse};
 pub use extractors::{
