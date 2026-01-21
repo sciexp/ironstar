@@ -94,6 +94,7 @@
 //! - Orchestration of multiple services (belongs in [`crate::application`])
 //! - Synchronous functions (by design, everything here is async)
 
+pub mod analytics;
 pub mod assets;
 pub mod error;
 pub mod event_bus;
@@ -102,6 +103,7 @@ pub mod key_expr;
 pub mod session_store;
 pub mod sse_stream;
 
+pub use analytics::{AnalyticsState, DuckDBService};
 pub use assets::{AssetManifest, StaticAssets, create_static_router, static_file_handler};
 pub use error::{InfrastructureError, InfrastructureErrorKind};
 pub use event_bus::{
