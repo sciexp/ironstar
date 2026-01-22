@@ -5,7 +5,9 @@
 		"build:css": "postcss styles/main.css -o styles/processed.css",
 		"dev": "npm run build:css && rolldown -c --watch",
 		"build": "npm run build:css && rolldown -c",
-		"typecheck": "tsc --noEmit"
+		"typecheck": "tsc --noEmit",
+		"test": "vitest",
+		"test:coverage": "vitest --coverage"
 	},
 	"dependencies": {
 		"echarts": "^6.0.0",
