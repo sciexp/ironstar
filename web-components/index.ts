@@ -4,5 +4,7 @@
 
 import "./styles/processed.css";
 
-// Web components will be registered here (ny3.8, ny3.14)
+// Web components
+export * from './components/ds-echarts';
+
 // Type exports will be added here (ny3.10)
