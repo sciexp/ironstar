@@ -3,7 +3,10 @@
 //! These tests require network access to HuggingFace and are marked with `#[ignore]`.
 //! Run with: `cargo test -p ironstar --ignored`
 
-#![expect(clippy::expect_used, reason = "test file with standard test assertions")]
+#![expect(
+    clippy::expect_used,
+    reason = "test file with standard test assertions"
+)]
 #![expect(clippy::print_stderr, reason = "test output for manual verification")]
 
 use ironstar::infrastructure::DuckDBService;
