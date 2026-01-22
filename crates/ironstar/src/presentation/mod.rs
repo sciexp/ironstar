@@ -127,6 +127,32 @@ pub use error::{AppError, AppErrorKind, ErrorResponse};
 pub use extractors::{
     SESSION_COOKIE_NAME, SessionExtractor, SessionRejection, clear_session_cookie, session_cookie,
 };
-pub use health::{HealthChecks, HealthResponse, HealthState, HealthStatus, health_router};
+pub use health::{HealthChecks, HealthResponse, HealthState, HealthStatus, health_router, routes as health_routes};
 pub use todo::{TodoAppState, TodoListResponse, get_todo, list_todos};
 pub use todo_templates::{todo_app, todo_item, todo_list, todo_page};
+
+use crate::infrastructure::create_static_router;
+use crate::state::AppState;
+use axum::Router;
+
+/// Compose the application router from all feature routers.
+///
+/// Router composition follows a clear hierarchy:
+/// - Health endpoints at root (/health/*)
+/// - Todo feature at /todos
+/// - Chart feature at /charts
+/// - Static assets at /static
+///
+/// Each feature router uses `Router<AppState>` and handlers extract
+/// domain-specific state via `FromRef`.
+pub fn app_router(state: AppState) -> Router {
+    // Compose stateful feature routers and apply state
+    let stateful = Router::new()
+        .merge(health::routes())
+        .nest("/todos", todo::routes())
+        .nest("/charts", chart::routes())
+        .with_state(state);
+
+    // Merge stateless static router after state is applied
+    stateful.merge(create_static_router())
+}
