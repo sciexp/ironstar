@@ -198,7 +198,7 @@ impl SseStreamBuilder {
         &self,
         replay: R,
         live: L,
-    ) -> impl Stream<Item = Result<Event, Infallible>> + Send
+    ) -> impl Stream<Item = Result<Event, Infallible>> + Send + use<R, L>
     where
         R: Stream<Item = Result<Event, Infallible>> + Send + 'static,
         L: Stream<Item = Result<Event, Infallible>> + Send + 'static,
@@ -217,7 +217,7 @@ impl SseStreamBuilder {
     pub fn build_live_only<L>(
         &self,
         live: L,
-    ) -> impl Stream<Item = Result<Event, Infallible>> + Send
+    ) -> impl Stream<Item = Result<Event, Infallible>> + Send + use<L>
     where
         L: Stream<Item = Result<Event, Infallible>> + Send + 'static,
     {
