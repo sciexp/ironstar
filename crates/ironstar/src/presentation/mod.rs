@@ -127,7 +127,9 @@ pub use error::{AppError, AppErrorKind, ErrorResponse};
 pub use extractors::{
     SESSION_COOKIE_NAME, SessionExtractor, SessionRejection, clear_session_cookie, session_cookie,
 };
-pub use health::{HealthChecks, HealthResponse, HealthState, HealthStatus, health_router, routes as health_routes};
+pub use health::{
+    HealthChecks, HealthResponse, HealthState, HealthStatus, health_router, routes as health_routes,
+};
 pub use todo::{TodoAppState, TodoListResponse, get_todo, list_todos};
 pub use todo_templates::{todo_app, todo_item, todo_list, todo_page};
 

@@ -18,7 +18,9 @@
 //! 10. Start server with graceful shutdown
 
 use ironstar::config::Config;
-use ironstar::infrastructure::{AssetManifest, DuckDBService, ZenohEventBus, open_embedded_session};
+use ironstar::infrastructure::{
+    AssetManifest, DuckDBService, ZenohEventBus, open_embedded_session,
+};
 use ironstar::presentation::app_router;
 use ironstar::state::AppState;
 use sqlx::sqlite::SqlitePoolOptions;
