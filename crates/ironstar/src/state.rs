@@ -175,7 +175,7 @@ impl FromRef<AppState> for SqlitePool {
 
 impl FromRef<AppState> for AnalyticsState {
     fn from_ref(app_state: &AppState) -> Self {
-        AnalyticsState::new(DuckDBService::new(app_state.analytics.clone()))
+        Self::new(DuckDBService::new(app_state.analytics.clone()))
     }
 }
 
