@@ -49,6 +49,8 @@ use axum::routing::get;
 use serde::Serialize;
 use sqlx::sqlite::SqlitePool;
 
+use crate::state::AppState;
+
 /// Application state for health check handlers.
 ///
 /// Contains references to infrastructure components that need to be checked
@@ -202,6 +204,22 @@ async fn check_database(pool: &SqlitePool) -> CheckStatus {
         Ok(_) => CheckStatus::Ok,
         Err(_) => CheckStatus::Failed,
     }
+}
+
+/// Creates the health feature router with all endpoints.
+///
+/// # Routes
+///
+/// - `GET /health` - Combined health status (JSON)
+/// - `GET /health/ready` - Readiness probe
+/// - `GET /health/live` - Liveness probe
+///
+/// Handlers extract `HealthState` via `FromRef<AppState>`.
+pub fn routes() -> Router<AppState> {
+    Router::new()
+        .route("/health", get(health))
+        .route("/health/ready", get(ready))
+        .route("/health/live", get(live))
 }
 
 /// Create a router with health check endpoints.
