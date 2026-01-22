@@ -282,7 +282,7 @@ mod tests {
 
     /// Helper to create a test pool (panic on failure is acceptable in tests).
     #[expect(clippy::expect_used, reason = "test helper function")]
-    async fn create_test_pool(num_conns: u32) -> async_duckdb::Pool {
+    async fn create_test_pool(num_conns: usize) -> async_duckdb::Pool {
         async_duckdb::PoolBuilder::new()
             .num_conns(num_conns)
             .open()
