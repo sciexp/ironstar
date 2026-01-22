@@ -18,16 +18,9 @@
 //! 10. Start server with graceful shutdown
 
 use ironstar::config::Config;
-use ironstar::infrastructure::{
-    AssetManifest, DuckDBService, ZenohEventBus, create_static_router, open_embedded_session,
-};
-use ironstar::presentation::chart_routes;
-use ironstar::presentation::health::{health, live, ready};
-use ironstar::presentation::todo::routes as todo_routes;
+use ironstar::infrastructure::{AssetManifest, DuckDBService, ZenohEventBus, open_embedded_session};
+use ironstar::presentation::app_router;
 use ironstar::state::AppState;
-
-use axum::Router;
-use axum::routing::get;
 use sqlx::sqlite::SqlitePoolOptions;
 use std::sync::Arc;
 use tokio::net::TcpListener;
@@ -201,7 +194,7 @@ async fn main() -> Result<(), StartupError> {
     }
 
     // 10. Compose router
-    let app = compose_router(app_state);
+    let app = app_router(app_state);
 
     // 11. Start server with graceful shutdown
     let addr = config.socket_addr();
@@ -216,46 +209,6 @@ async fn main() -> Result<(), StartupError> {
 
     tracing::info!("Shutdown complete");
     Ok(())
-}
-
-/// Compose the application router from all feature routers.
-///
-/// Router composition follows a clear hierarchy:
-/// - Health endpoints at root (/health/*)
-/// - Todo feature at /todos
-/// - Static assets at /static
-///
-/// Each feature router is composed with its own state type derived from AppState
-/// via FromRef, then converted to a stateless router for merging.
-fn compose_router(state: AppState) -> Router {
-    use axum::extract::FromRef;
-    use ironstar::presentation::health::HealthState;
-
-    // Extract domain-specific states via FromRef
-    let health_state = HealthState::from_ref(&state);
-
-    // Health endpoints with HealthState
-    let health_routes = Router::new()
-        .route("/health", get(health))
-        .route("/health/ready", get(ready))
-        .route("/health/live", get(live))
-        .with_state(health_state);
-
-    // Todo routes with AppState (handlers extract via FromRef)
-    let todo_routes = todo_routes().with_state(state.clone());
-
-    // Chart routes with AppState
-    let chart_routes = chart_routes().with_state(state.clone());
-
-    // Static asset serving (stateless)
-    let static_routes = create_static_router();
-
-    // Merge all routes into the final router
-    Router::new()
-        .merge(health_routes)
-        .nest("/todos", todo_routes)
-        .nest("/charts", chart_routes)
-        .merge(static_routes)
 }
 
 /// Wait for shutdown signal (SIGINT or SIGTERM).
