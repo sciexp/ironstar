@@ -27,6 +27,7 @@ use axum::{
     routing::get,
 };
 
+use crate::infrastructure::assets::AssetManifest;
 use crate::state::AppState;
 use futures::stream::{self, Stream};
 use hypertext::Renderable;
@@ -58,6 +59,19 @@ use crate::presentation::chart_transformer::{
 ///
 /// Query or transformation errors are communicated via the `error` signal field
 /// rather than HTTP error codes, allowing the chart UI to display error state.
+///
+/// # SSE pattern
+///
+/// This endpoint uses `stream::once()` for one-shot delivery rather than
+/// `SseStreamBuilder` with keep-alive. This is intentional:
+///
+/// - Chart data is computed once from a DuckDB query
+/// - No real-time updates are needed for this chart
+/// - The client receives the data and renders immediately
+///
+/// For charts requiring live updates (e.g., real-time metrics), use
+/// `SseStreamBuilder` with Zenoh subscription for continuous streaming.
+/// See `infrastructure/sse_stream.rs` for the streaming pattern.
 pub async fn astronauts_chart_sse(
     State(analytics): State<AnalyticsState>,
 ) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
@@ -150,10 +164,13 @@ pub async fn astronauts_chart_sse(
 /// # Route
 ///
 /// GET /charts/astronauts
-pub async fn astronauts_chart_page() -> impl IntoResponse {
+pub async fn astronauts_chart_page(
+    State(manifest): State<AssetManifest>,
+) -> impl IntoResponse {
     use crate::presentation::chart_templates::chart_page;
 
     let html = chart_page(
+        &manifest,
         "Astronaut Demographics",
         "astronauts",
         "/charts/api/astronauts/data",
