@@ -41,7 +41,9 @@ use crate::infrastructure::assets::AssetManifest;
 use crate::infrastructure::event_bus::ZenohEventBus;
 use crate::infrastructure::event_store::{SqliteEventRepository, StoredEvent};
 use crate::infrastructure::key_expr::aggregate_type_pattern;
-use crate::infrastructure::sse_stream::{SseStreamBuilder, stored_events_to_stream, zenoh_to_sse_stream};
+use crate::infrastructure::sse_stream::{
+    SseStreamBuilder, stored_events_to_stream, zenoh_to_sse_stream,
+};
 use crate::presentation::error::AppError;
 use crate::presentation::todo_templates::todo_page;
 use crate::state::AppState;
