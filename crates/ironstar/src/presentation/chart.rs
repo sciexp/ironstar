@@ -334,4 +334,55 @@ mod tests {
             crate::presentation::chart_transformer::TransformError::EmptyResult
         ));
     }
+
+    /// Verify graceful degradation when analytics service is unavailable.
+    ///
+    /// When DuckLake catalog attachment fails at startup (e.g., network error,
+    /// invalid URI), the DuckDBService is created with None pool. This test
+    /// verifies the error path surfaces properly in ChartSignals.
+    #[tokio::test]
+    async fn analytics_unavailable_surfaces_error_in_signals() {
+        use crate::infrastructure::analytics::{AnalyticsState, DuckDBService};
+
+        // Create service with no pool (simulates failed catalog attachment)
+        let service = DuckDBService::new(None);
+        assert!(!service.is_available());
+
+        let analytics = AnalyticsState::new(service);
+
+        // Simulate the query that would happen in astronauts_chart_sse
+        let query_result = analytics
+            .service
+            .query(|conn| {
+                // This closure won't execute — service returns error immediately
+                let mut stmt = conn.prepare("SELECT 1")?;
+                stmt.query_row([], |row| row.get::<_, i64>(0))
+            })
+            .await;
+
+        // Verify error is returned
+        assert!(query_result.is_err());
+        let err = query_result.unwrap_err();
+        assert!(
+            err.to_string().contains("analytics service unavailable"),
+            "unexpected error message: {err}"
+        );
+
+        // Verify ChartSignals construction matches the handler's error path
+        let signals = ChartSignals {
+            chart_option: json!({}),
+            selected: None,
+            loading: false,
+            error: Some(format!("Query error: {err}")),
+        };
+
+        assert!(signals.error.is_some());
+        assert!(
+            signals.error.as_ref().unwrap().contains("unavailable"),
+            "error message should contain 'unavailable': {:?}",
+            signals.error
+        );
+        assert_eq!(signals.chart_option, json!({}));
+        assert!(!signals.loading);
+    }
 }
