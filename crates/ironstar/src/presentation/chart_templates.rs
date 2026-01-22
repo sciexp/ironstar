@@ -38,19 +38,25 @@
 //! let html = echarts_chart("my-chart", &signals, "400px").render();
 //! ```
 
+use hypertext::prelude::*;
 use hypertext::Raw;
 
 use crate::domain::signals::ChartSignals;
+use crate::infrastructure::assets::AssetManifest;
+use crate::presentation::layout::base_layout;
 
-/// Escapes a string for safe use in HTML attribute context.
+/// Renders the ds-echarts custom element with Datastar attributes.
 ///
-/// This escapes `<`, `>`, `&`, `"`, and `'` to their HTML entity equivalents.
-fn escape_html_attr(s: &str) -> String {
-    s.replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-        .replace('"', "&quot;")
-        .replace('\'', "&#x27;")
+/// Custom elements with hyphens in their names cannot be expressed directly
+/// in maud syntax, so we construct the element as raw HTML. The height
+/// parameter must be pre-escaped by the caller.
+fn ds_echarts_element(height: &str) -> Raw<String> {
+    // XSS SAFETY: height is interpolated into a style attribute; callers must
+    // ensure it contains only safe CSS values. The other attributes are static.
+    let html = format!(
+        r#"<ds-echarts data-ignore-morph="true" data-attr:option="JSON.stringify($chartOption)" data-on:chart-ready="console.log('Chart ready:', evt.detail)" data-on:chart-click="$selected = evt.detail" data-on:chart-error="$error = evt.detail.message" style="height: {height}; width: 100%; display: block;"></ds-echarts>"#
+    );
+    Raw::dangerously_create(html)
 }
 
 /// Renders a ds-echarts component with Datastar signal bindings.
@@ -70,39 +76,36 @@ fn escape_html_attr(s: &str) -> String {
 ///
 /// # XSS safety
 ///
-/// The chart ID and height are HTML-escaped before interpolation.
-/// The `data-signals` attribute embeds JSON which is also HTML-escaped.
-pub fn echarts_chart(
-    id: &str,
-    signals: &ChartSignals,
-    height: &str,
-) -> Raw<String> {
+/// maud automatically escapes all interpolated values for XSS safety.
+/// The ds-echarts custom element is rendered via a helper function since
+/// custom element names with hyphens cannot be expressed in maud syntax.
+pub fn echarts_chart(id: &str, signals: &ChartSignals, height: &str) -> impl Renderable {
     let signals_json = serde_json::to_string(signals).unwrap_or_else(|_| "{}".to_string());
-    let escaped_id = escape_html_attr(id);
-    let escaped_height = escape_html_attr(height);
-    let escaped_signals = escape_html_attr(&signals_json);
 
-    let html = format!(
-        r##"<div id="{escaped_id}" class="chart-container" data-signals="{escaped_signals}">
-    <div class="chart-loading" style="display: none;" data-show="$loading">
-        <span class="loading-spinner"></span>
-        Loading...
-    </div>
-    <div class="chart-error" style="display: none;" data-show="$error">
-        <span data-text="$error"></span>
-    </div>
-    <ds-echarts
-        data-ignore-morph="true"
-        data-attr:option="JSON.stringify($chartOption)"
-        data-on:chart-ready="console.log('Chart ready:', evt.detail)"
-        data-on:chart-click="$selected = evt.detail"
-        data-on:chart-error="$error = evt.detail.message"
-        style="height: {escaped_height}; width: 100%; display: block;">
-    </ds-echarts>
-</div>"##
-    );
-
-    Raw::dangerously_create(html)
+    maud! {
+        div
+            id=(id)
+            class="chart-container"
+            "data-signals"=(signals_json)
+        {
+            div
+                class="chart-loading"
+                style="display: none;"
+                "data-show"="$loading"
+            {
+                span class="loading-spinner" {}
+                "Loading..."
+            }
+            div
+                class="chart-error"
+                style="display: none;"
+                "data-show"="$error"
+            {
+                span "data-text"="$error" {}
+            }
+            (ds_echarts_element(height))
+        }
+    }
 }
 
 /// Renders a chart page with SSE connection for data streaming.
@@ -113,6 +116,7 @@ pub fn echarts_chart(
 ///
 /// # Arguments
 ///
+/// * `manifest` - Asset manifest for CSS/JS paths
 /// * `title` - Page title displayed as h1
 /// * `chart_id` - ID for the chart container (used in DOM targeting)
 /// * `sse_endpoint` - SSE endpoint path (e.g., "/api/charts/astronauts/data")
@@ -122,21 +126,29 @@ pub fn echarts_chart(
 /// The `data-on-load` directive triggers a GET request to the SSE endpoint
 /// when the page loads. The server responds with signal updates containing
 /// the chart configuration.
-pub fn chart_page(title: &str, chart_id: &str, sse_endpoint: &str) -> Raw<String> {
-    let escaped_title = escape_html_attr(title);
-    let escaped_chart_id = escape_html_attr(chart_id);
-    let escaped_endpoint = escape_html_attr(sse_endpoint);
+pub fn chart_page(
+    manifest: &AssetManifest,
+    title: &str,
+    chart_id: &str,
+    sse_endpoint: &str,
+) -> impl Renderable {
+    let on_load = format!("@get('{}')", sse_endpoint);
+    let container_id = format!("{}-container", chart_id);
 
-    let html = format!(
-        r##"<main class="chart-page" style="max-width: var(--size-content-3); margin-inline: auto; padding: var(--size-4);" data-on-load="@get('{escaped_endpoint}')">
-    <h1>{escaped_title}</h1>
-    <div id="{escaped_chart_id}-container">
-        <p class="loading-placeholder">Loading chart...</p>
-    </div>
-</main>"##
-    );
+    let content = maud! {
+        main
+            class="chart-page"
+            style="max-width: var(--size-content-3); margin-inline: auto; padding: var(--size-4);"
+            "data-on-load"=(on_load)
+        {
+            h1 { (title) }
+            div id=(container_id) {
+                p class="loading-placeholder" { "Loading chart..." }
+            }
+        }
+    };
 
-    Raw::dangerously_create(html)
+    base_layout(manifest, content)
 }
 
 /// Renders a chart with selection feedback section.
@@ -159,39 +171,43 @@ pub fn echarts_chart_with_feedback(
     id: &str,
     signals: &ChartSignals,
     height: &str,
-) -> Raw<String> {
+) -> impl Renderable {
     let signals_json = serde_json::to_string(signals).unwrap_or_else(|_| "{}".to_string());
-    let escaped_id = escape_html_attr(id);
-    let escaped_height = escape_html_attr(height);
-    let escaped_signals = escape_html_attr(&signals_json);
 
-    let html = format!(
-        r##"<div id="{escaped_id}" class="chart-with-feedback" data-signals="{escaped_signals}">
-    <div class="chart-loading" style="display: none;" data-show="$loading">
-        <span class="loading-spinner"></span>
-        Loading...
-    </div>
-    <div class="chart-error" style="display: none;" data-show="$error">
-        <span data-text="$error"></span>
-    </div>
-    <ds-echarts
-        data-ignore-morph="true"
-        data-attr:option="JSON.stringify($chartOption)"
-        data-on:chart-ready="console.log('Chart ready:', evt.detail)"
-        data-on:chart-click="$selected = evt.detail"
-        data-on:chart-error="$error = evt.detail.message"
-        style="height: {escaped_height}; width: 100%; display: block;">
-    </ds-echarts>
-    <div class="selection-feedback" style="margin-top: var(--size-3); padding: var(--size-3); background: var(--surface-2); border-radius: var(--radius-2);" data-show="$selected">
-        <p>
-            <strong>Selected: </strong>
-            <span data-text="$selected ? $selected.name + ': ' + $selected.value : ''"></span>
-        </p>
-    </div>
-</div>"##
-    );
-
-    Raw::dangerously_create(html)
+    maud! {
+        div
+            id=(id)
+            class="chart-with-feedback"
+            "data-signals"=(signals_json)
+        {
+            div
+                class="chart-loading"
+                style="display: none;"
+                "data-show"="$loading"
+            {
+                span class="loading-spinner" {}
+                "Loading..."
+            }
+            div
+                class="chart-error"
+                style="display: none;"
+                "data-show"="$error"
+            {
+                span "data-text"="$error" {}
+            }
+            (ds_echarts_element(height))
+            div
+                class="selection-feedback"
+                style="margin-top: var(--size-3); padding: var(--size-3); background: var(--surface-2); border-radius: var(--radius-2);"
+                "data-show"="$selected"
+            {
+                p {
+                    strong { "Selected: " }
+                    span "data-text"="$selected ? $selected.name + ': ' + $selected.value : ''" {}
+                }
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -299,9 +315,14 @@ mod tests {
         assert!(body.contains("&lt;script&gt;"));
     }
 
+    fn test_manifest() -> AssetManifest {
+        AssetManifest::default()
+    }
+
     #[test]
     fn chart_page_renders_with_sse_endpoint() {
-        let raw = chart_page("Test Chart", "astronauts", "/api/charts/astronauts/data");
+        let manifest = test_manifest();
+        let raw = chart_page(&manifest, "Test Chart", "astronauts", "/api/charts/astronauts/data");
         let html = raw.render();
         let body = html.as_inner();
 
@@ -311,7 +332,8 @@ mod tests {
 
     #[test]
     fn chart_page_renders_title() {
-        let raw = chart_page("Astronaut Statistics", "astronauts", "/api/data");
+        let manifest = test_manifest();
+        let raw = chart_page(&manifest, "Astronaut Statistics", "astronauts", "/api/data");
         let html = raw.render();
         let body = html.as_inner();
 
@@ -321,7 +343,8 @@ mod tests {
 
     #[test]
     fn chart_page_renders_container_with_id() {
-        let raw = chart_page("Test", "my-chart", "/api/data");
+        let manifest = test_manifest();
+        let raw = chart_page(&manifest, "Test", "my-chart", "/api/data");
         let html = raw.render();
         let body = html.as_inner();
 
@@ -330,13 +353,28 @@ mod tests {
 
     #[test]
     fn chart_page_escapes_xss_in_title() {
-        let raw = chart_page("<script>alert(1)</script>", "test", "/api/data");
+        let manifest = test_manifest();
+        let raw = chart_page(&manifest, "<script>alert(1)</script>", "test", "/api/data");
         let html = raw.render();
         let body = html.as_inner();
 
         // Script tag should be escaped in the title
         assert!(!body.contains("<script>alert(1)</script>"));
         assert!(body.contains("&lt;script&gt;"));
+    }
+
+    #[test]
+    fn chart_page_renders_full_html_document() {
+        let manifest = test_manifest();
+        let raw = chart_page(&manifest, "Test Chart", "test", "/api/data");
+        let html = raw.render();
+        let body = html.as_inner();
+
+        // Should have full HTML document structure from base_layout
+        assert!(body.starts_with("<!DOCTYPE html>"));
+        assert!(body.contains("<html"));
+        assert!(body.contains("<head>"));
+        assert!(body.contains("<body>"));
     }
 
     #[test]
@@ -398,20 +436,4 @@ mod tests {
         assert!(body.contains("&lt;script&gt;"));
     }
 
-    #[test]
-    fn escape_html_attr_escapes_all_dangerous_chars() {
-        let dangerous = r#"<script>"'&</script>"#;
-        let escaped = escape_html_attr(dangerous);
-
-        assert!(!escaped.contains('<'));
-        assert!(!escaped.contains('>'));
-        assert!(!escaped.contains('"'));
-        assert!(!escaped.contains('\''));
-        // Original & should be escaped, but we shouldn't have raw &
-        assert!(escaped.contains("&lt;"));
-        assert!(escaped.contains("&gt;"));
-        assert!(escaped.contains("&quot;"));
-        assert!(escaped.contains("&#x27;"));
-        assert!(escaped.contains("&amp;"));
-    }
 }
