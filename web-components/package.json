@@ -10,7 +10,7 @@
 		"test:coverage": "vitest --coverage"
 	},
 	"dependencies": {
-		"echarts": "^6.0.0",
+		"echarts": "^5.5.0",
 		"lit": "^3.3.2",
 		"open-props": "^2.0.0-beta.5"
 	},
