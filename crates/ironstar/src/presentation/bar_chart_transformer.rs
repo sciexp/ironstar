@@ -277,10 +277,10 @@ mod tests {
         };
 
         let err = transformer.transform(&result, &config).unwrap_err();
-        match err {
-            TransformError::MissingColumn(col) => assert_eq!(col, "nonexistent"),
-            _ => panic!("expected MissingColumn error"),
-        }
+        assert!(
+            matches!(&err, TransformError::MissingColumn(col) if col == "nonexistent"),
+            "expected MissingColumn error, got {err:?}"
+        );
     }
 
     #[test]
@@ -295,10 +295,10 @@ mod tests {
         };
 
         let err = transformer.transform(&result, &config).unwrap_err();
-        match err {
-            TransformError::MissingColumn(col) => assert_eq!(col, "missing_column"),
-            _ => panic!("expected MissingColumn error"),
-        }
+        assert!(
+            matches!(&err, TransformError::MissingColumn(col) if col == "missing_column"),
+            "expected MissingColumn error, got {err:?}"
+        );
     }
 
     #[test]
@@ -320,10 +320,10 @@ mod tests {
         let config = astronaut_config();
 
         let err = transformer.transform(&result, &config).unwrap_err();
-        match err {
-            TransformError::EmptyResult => {}
-            _ => panic!("expected EmptyResult error"),
-        }
+        assert!(
+            matches!(err, TransformError::EmptyResult),
+            "expected EmptyResult error, got {err:?}"
+        );
     }
 
     #[test]
@@ -338,13 +338,14 @@ mod tests {
         };
 
         let err = transformer.transform(&result, &config).unwrap_err();
-        match err {
-            TransformError::TransformFailed(msg) => {
-                assert!(msg.contains("BarChartTransformer requires ChartType::Bar"));
-                assert!(msg.contains("Line"));
-            }
-            _ => panic!("expected TransformFailed error"),
-        }
+        assert!(
+            matches!(
+                &err,
+                TransformError::TransformFailed(msg)
+                if msg.contains("BarChartTransformer requires ChartType::Bar") && msg.contains("Line")
+            ),
+            "expected TransformFailed error with correct message, got {err:?}"
+        );
     }
 
     #[test]
