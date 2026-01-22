@@ -171,10 +171,10 @@ impl ChartType {
     #[must_use]
     pub fn echarts_type(&self) -> &'static str {
         match self {
-            ChartType::Bar => "bar",
-            ChartType::Line => "line",
-            ChartType::Pie => "pie",
-            ChartType::Scatter => "scatter",
+            Self::Bar => "bar",
+            Self::Line => "line",
+            Self::Pie => "pie",
+            Self::Scatter => "scatter",
         }
     }
 }
