@@ -73,8 +73,14 @@ async fn attach_and_query_ducklake_catalog() {
         !nationality.is_empty(),
         "astronaut nationality should not be empty"
     );
-    assert!(*space_days > 0, "top astronaut should have positive space days");
-    assert!(*flights > 0, "top astronaut should have at least one flight");
+    assert!(
+        *space_days > 0,
+        "top astronaut should have positive space days"
+    );
+    assert!(
+        *flights > 0,
+        "top astronaut should have at least one flight"
+    );
 
     // Log the top astronaut for manual verification
     eprintln!(

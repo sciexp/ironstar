@@ -82,9 +82,8 @@ async fn duckdb_query_executes_successfully() {
 
     let result: Vec<(String, i64)> = service
         .query(|conn| {
-            let mut stmt = conn.prepare(
-                "SELECT nationality, count FROM astronauts ORDER BY count DESC",
-            )?;
+            let mut stmt =
+                conn.prepare("SELECT nationality, count FROM astronauts ORDER BY count DESC")?;
             let rows = stmt
                 .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
                 .collect::<Result<Vec<_>, _>>()?;

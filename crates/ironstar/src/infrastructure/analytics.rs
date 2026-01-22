@@ -431,7 +431,9 @@ mod tests {
         assert!(!DuckDBService::is_valid_identifier("catalog@name"));
 
         // SQL injection attempts
-        assert!(!DuckDBService::is_valid_identifier("'; DROP TABLE users; --"));
+        assert!(!DuckDBService::is_valid_identifier(
+            "'; DROP TABLE users; --"
+        ));
         assert!(!DuckDBService::is_valid_identifier("test; SELECT * FROM"));
     }
 
@@ -447,22 +449,11 @@ mod tests {
         let service = DuckDBService::new(Some(pool.clone()));
 
         // Test various invalid identifiers
-        let invalid_names = [
-            "1catalog",
-            "my-catalog",
-            "my catalog",
-            "",
-            "; DROP TABLE",
-        ];
+        let invalid_names = ["1catalog", "my-catalog", "my catalog", "", "; DROP TABLE"];
 
         for name in invalid_names {
-            let result = service
-                .attach_catalog(name, "ducklake:some/path.db")
-                .await;
-            assert!(
-                result.is_err(),
-                "expected error for invalid name '{name}'"
-            );
+            let result = service.attach_catalog(name, "ducklake:some/path.db").await;
+            assert!(result.is_err(), "expected error for invalid name '{name}'");
             let err = result.unwrap_err();
             assert!(
                 err.to_string().contains("invalid catalog name"),

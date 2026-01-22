@@ -21,8 +21,8 @@ use ironstar::config::Config;
 use ironstar::infrastructure::{
     AssetManifest, DuckDBService, ZenohEventBus, create_static_router, open_embedded_session,
 };
-use ironstar::presentation::health::{health, live, ready};
 use ironstar::presentation::chart_routes;
+use ironstar::presentation::health::{health, live, ready};
 use ironstar::presentation::todo::routes as todo_routes;
 use ironstar::state::AppState;
 
@@ -128,8 +128,7 @@ async fn main() -> Result<(), StartupError> {
 
     // 8. Initialize DuckDB analytics pool (optional)
     let analytics = if config.enable_analytics {
-        let mut builder =
-            async_duckdb::PoolBuilder::new().num_conns(config.analytics_num_conns);
+        let mut builder = async_duckdb::PoolBuilder::new().num_conns(config.analytics_num_conns);
         if let Some(ref path) = config.analytics_database_path {
             builder = builder.path(path);
         }

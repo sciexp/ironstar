@@ -38,8 +38,8 @@
 //! let html = echarts_chart("my-chart", &signals, "400px").render();
 //! ```
 
-use hypertext::prelude::*;
 use hypertext::Raw;
+use hypertext::prelude::*;
 
 use crate::domain::signals::ChartSignals;
 use crate::infrastructure::assets::AssetManifest;
@@ -322,7 +322,12 @@ mod tests {
     #[test]
     fn chart_page_renders_with_sse_endpoint() {
         let manifest = test_manifest();
-        let raw = chart_page(&manifest, "Test Chart", "astronauts", "/api/charts/astronauts/data");
+        let raw = chart_page(
+            &manifest,
+            "Test Chart",
+            "astronauts",
+            "/api/charts/astronauts/data",
+        );
         let html = raw.render();
         let body = html.as_inner();
 
@@ -435,5 +440,4 @@ mod tests {
         // The angle brackets should be escaped as HTML entities
         assert!(body.contains("&lt;script&gt;"));
     }
-
 }

@@ -164,9 +164,7 @@ pub async fn astronauts_chart_sse(
 /// # Route
 ///
 /// GET /charts/astronauts
-pub async fn astronauts_chart_page(
-    State(manifest): State<AssetManifest>,
-) -> impl IntoResponse {
+pub async fn astronauts_chart_page(State(manifest): State<AssetManifest>) -> impl IntoResponse {
     use crate::presentation::chart_templates::chart_page;
 
     let html = chart_page(

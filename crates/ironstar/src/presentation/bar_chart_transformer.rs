@@ -190,10 +190,7 @@ mod tests {
 
         // Verify xAxis
         assert_eq!(option["xAxis"]["type"], "category");
-        assert_eq!(
-            option["xAxis"]["data"],
-            json!(["USA", "Russia", "China"])
-        );
+        assert_eq!(option["xAxis"]["data"], json!(["USA", "Russia", "China"]));
 
         // Verify yAxis
         assert_eq!(option["yAxis"]["type"], "value");
