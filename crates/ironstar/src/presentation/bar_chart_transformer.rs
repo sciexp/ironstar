@@ -136,9 +136,14 @@ impl ChartTransformer for BarChartTransformer {
 
         // Add title if provided
         if let Some(title) = &config.title {
-            option["title"] = serde_json::json!({
-                "text": title
-            });
+            if let Some(obj) = option.as_object_mut() {
+                obj.insert(
+                    "title".to_string(),
+                    serde_json::json!({
+                        "text": title
+                    }),
+                );
+            }
         }
 
         Ok(option)
