@@ -2,6 +2,9 @@
 //!
 //! These tests verify the full stack: DuckDB -> Transformer -> SSE.
 
+#![expect(clippy::expect_used, reason = "test file with standard test assertions")]
+#![expect(clippy::print_stdout, reason = "test output for manual verification")]
+
 use ironstar::infrastructure::analytics::DuckDBService;
 use ironstar::presentation::bar_chart_transformer::BarChartTransformer;
 use ironstar::presentation::chart_transformer::{
