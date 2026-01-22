@@ -280,6 +280,22 @@ mod tests {
         assert!(!service.is_available());
     }
 
+    /// Helper to create a test pool (panic on failure is acceptable in tests).
+    #[expect(clippy::expect_used, reason = "test helper function")]
+    async fn create_test_pool(num_conns: u32) -> async_duckdb::Pool {
+        async_duckdb::PoolBuilder::new()
+            .num_conns(num_conns)
+            .open()
+            .await
+            .expect("failed to create test pool")
+    }
+
+    /// Helper to close test pool (panic on failure is acceptable in tests).
+    #[expect(clippy::expect_used, reason = "test cleanup")]
+    async fn close_pool(pool: async_duckdb::Pool) {
+        pool.close().await.expect("failed to close pool");
+    }
+
     #[tokio::test]
     async fn query_returns_error_when_unavailable() {
         let service = DuckDBService::new(None);
@@ -311,13 +327,10 @@ mod tests {
     }
 
     #[tokio::test]
+    #[expect(clippy::expect_used, reason = "test assertions")]
     async fn initialize_extensions_succeeds_with_pool() {
         // Create an in-memory DuckDB pool for testing
-        let pool = async_duckdb::PoolBuilder::new()
-            .num_conns(2)
-            .open()
-            .await
-            .expect("failed to create test pool");
+        let pool = create_test_pool(2).await;
 
         let service = DuckDBService::new(Some(pool.clone()));
 
@@ -347,17 +360,14 @@ mod tests {
             "ducklake not loaded, found: {loaded_extensions:?}"
         );
 
-        pool.close().await.expect("failed to close pool");
+        close_pool(pool).await;
     }
 
     #[tokio::test]
+    #[expect(clippy::expect_used, reason = "test assertions")]
     async fn initialize_extensions_loads_on_all_connections() {
         // Create pool with multiple connections to verify all get loaded
-        let pool = async_duckdb::PoolBuilder::new()
-            .num_conns(3)
-            .open()
-            .await
-            .expect("failed to create test pool");
+        let pool = create_test_pool(3).await;
 
         let service = DuckDBService::new(Some(pool.clone()));
         service
@@ -382,7 +392,7 @@ mod tests {
             assert_eq!(count, 2, "expected 2 extensions loaded on each connection");
         }
 
-        pool.close().await.expect("failed to close pool");
+        close_pool(pool).await;
     }
 
     #[tokio::test]
@@ -440,11 +450,7 @@ mod tests {
     #[tokio::test]
     async fn attach_catalog_rejects_invalid_identifier() {
         // Create a pool so we can test identifier validation (happens before query)
-        let pool = async_duckdb::PoolBuilder::new()
-            .num_conns(1)
-            .open()
-            .await
-            .expect("failed to create test pool");
+        let pool = create_test_pool(1).await;
 
         let service = DuckDBService::new(Some(pool.clone()));
 
@@ -461,6 +467,6 @@ mod tests {
             );
         }
 
-        pool.close().await.expect("failed to close pool");
+        close_pool(pool).await;
     }
 }
