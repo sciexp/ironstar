@@ -17,18 +17,19 @@
 use axum::Json;
 use axum::Router;
 use axum::extract::{Path, State};
-use axum::http::StatusCode;
+use axum::http::{HeaderMap, StatusCode};
 use axum::response::{
     Html, IntoResponse,
     sse::{Event, Sse},
 };
 use axum::routing::{delete as route_delete, get, post};
 use chrono::Utc;
-use futures::stream;
+use futures::Stream;
 use hypertext::Renderable;
 use serde::Deserialize;
 use std::convert::Infallible;
 use std::sync::Arc;
+use tracing::warn;
 use uuid::Uuid;
 
 use crate::application::todo::{handle_todo_command_zenoh, query_all_todos, query_todo_state};
@@ -38,7 +39,9 @@ use crate::domain::todo::events::TodoEvent;
 use crate::domain::todo::values::TodoId;
 use crate::infrastructure::assets::AssetManifest;
 use crate::infrastructure::event_bus::ZenohEventBus;
-use crate::infrastructure::event_store::SqliteEventRepository;
+use crate::infrastructure::event_store::{SqliteEventRepository, StoredEvent};
+use crate::infrastructure::key_expr::aggregate_type_pattern;
+use crate::infrastructure::sse_stream::{SseStreamBuilder, stored_events_to_stream, zenoh_to_sse_stream};
 use crate::presentation::error::AppError;
 use crate::presentation::todo_templates::todo_page;
 use crate::state::AppState;
@@ -103,17 +106,121 @@ async fn todo_page_handler(
 
 /// GET /api/feed - SSE stream for real-time todo updates.
 ///
-/// Placeholder implementation that sends a single "connected" event.
-/// Full implementation will subscribe to Zenoh and stream updates.
-async fn todo_feed_handler() -> Sse<impl futures::Stream<Item = Result<Event, Infallible>>> {
-    // Placeholder: single connected event, then keep-alive
-    let stream = stream::once(async {
-        Ok(Event::default()
-            .event("connected")
-            .data("Todo feed connected"))
-    });
+/// Provides a type-scoped SSE feed for all Todo events. The feed:
+///
+/// 1. Supports reconnection via `Last-Event-ID` header
+/// 2. Replays historical events since the client's last known position
+/// 3. Streams live events as they occur
+/// 4. Sends keep-alive comments every 15 seconds
+///
+/// # Critical invariant: subscribe-before-replay
+///
+/// The Zenoh subscription is established **before** querying historical events.
+/// This prevents race conditions where events arrive during replay and get missed.
+///
+/// # Response
+///
+/// - `200 OK` with `text/event-stream` content type
+/// - `503 Service Unavailable` if event bus is not configured
+///
+/// # SSE event format
+///
+/// Each event includes:
+/// - `id`: Global sequence number (for Last-Event-ID reconnection)
+/// - `event`: Event type name (e.g., "Created", "Completed")
+/// - `data`: JSON-serialized event payload
+///
+/// # Example
+///
+/// ```text
+/// id: 42
+/// event: Created
+/// data: {"type":"Created","id":"550e8400-...","text":"Buy groceries","created_at":"2024-01-15T10:30:00Z"}
+///
+/// id: 43
+/// event: Completed
+/// data: {"type":"Completed","id":"550e8400-...","completed_at":"2024-01-15T11:00:00Z"}
+///
+/// : keepalive
+/// ```
+async fn todo_feed_handler(
+    State(state): State<TodoAppState>,
+    headers: HeaderMap,
+) -> Result<Sse<impl Stream<Item = Result<Event, Infallible>> + Send>, StatusCode> {
+    // Require event bus for SSE feed
+    let event_bus = state.event_bus.as_ref().ok_or_else(|| {
+        warn!("Todo feed requested but event bus not configured");
+        StatusCode::SERVICE_UNAVAILABLE
+    })?;
 
-    Sse::new(stream)
+    // Extract Last-Event-ID for reconnection support
+    let last_event_id: i64 = headers
+        .get("Last-Event-ID")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(0);
+
+    // CRITICAL INVARIANT: Subscribe BEFORE loading historical events.
+    // This prevents race conditions where events arrive during replay and get missed.
+    // Events published while we query historical data are buffered by the subscriber.
+    let subscriber = event_bus
+        .session()
+        .declare_subscriber(aggregate_type_pattern("Todo"))
+        .await
+        .map_err(|e| {
+            warn!(error = %e, "Failed to create Zenoh subscriber for Todo feed");
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    // Query historical events AFTER subscribing
+    let historical_events = state
+        .repo
+        .query_since_sequence(last_event_id)
+        .await
+        .map_err(|e| {
+            warn!(error = %e, "Failed to query historical events for Todo feed");
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    // Create replay stream from historical events
+    let replay_stream = stored_events_to_stream(historical_events, stored_todo_event_to_sse);
+
+    // Create live stream from Zenoh subscriber
+    let live_stream = zenoh_to_sse_stream(subscriber, live_todo_event_to_sse);
+
+    // Build combined stream with 15-second keep-alive
+    let builder = SseStreamBuilder::new().with_keep_alive_secs(15);
+    let stream = builder.build_with_streams(replay_stream, live_stream);
+
+    Ok(Sse::new(stream))
+}
+
+/// Convert a stored Todo event to an SSE event.
+///
+/// Uses the global sequence as the SSE event ID to support Last-Event-ID reconnection.
+fn stored_todo_event_to_sse(stored: StoredEvent<TodoEvent>) -> Event {
+    Event::default()
+        .id(stored.sequence.to_string())
+        .event(stored.event_type)
+        .data(serde_json::to_string(&stored.event).unwrap_or_else(|e| {
+            warn!(error = %e, "Failed to serialize stored TodoEvent");
+            "{}".to_string()
+        }))
+}
+
+/// Convert a live Todo event (from Zenoh) to an SSE event.
+///
+/// Live events from Zenoh don't have sequence numbers (those are assigned by the event store).
+/// The SSE stream will show these as events without IDs, which is acceptable since:
+/// - Clients can still process the event data
+/// - On reconnection, clients will get the canonical sequence from replay
+fn live_todo_event_to_sse(event: TodoEvent) -> Event {
+    Event::default()
+        .event(event.event_type())
+        .data(serde_json::to_string(&event).unwrap_or_else(|e| {
+            warn!(error = %e, "Failed to serialize live TodoEvent");
+            "{}".to_string()
+        }))
 }
 
 /// Response type for the todo list endpoint.
