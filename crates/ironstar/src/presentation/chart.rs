@@ -28,6 +28,7 @@ use axum::{
 };
 
 use crate::infrastructure::assets::AssetManifest;
+use crate::infrastructure::{cache_key, embedded_cache_key_prefix};
 use crate::state::AppState;
 use futures::stream::{self, Stream};
 use hypertext::Renderable;
@@ -75,7 +76,46 @@ use crate::presentation::chart_transformer::{
 pub async fn astronauts_chart_sse(
     State(analytics): State<AnalyticsState>,
 ) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
-    // Query DuckDB for astronaut nationality counts
+    let signals = astronauts_chart_signals(&analytics).await;
+
+    // Render chart template with embedded signals
+    let html = echarts_chart("astronauts-chart", &signals, "400px").render();
+
+    // Create SSE event with Datastar merge-fragments format
+    let event = Event::default()
+        .event("datastar-merge-fragments")
+        .data(html.into_inner());
+
+    Sse::new(stream::once(async move { Ok(event) }))
+}
+
+/// Produce chart signals for the astronaut nationality chart.
+///
+/// Uses the cached analytics service when available to memoize the DuckDB
+/// query result as JSON bytes.
+/// On cache hit, the cached JSON is deserialized directly without querying DuckDB.
+/// On cache miss, the query executes, the result is cached, and signals are returned.
+async fn astronauts_chart_signals(analytics: &AnalyticsState) -> ChartSignals {
+    let key = cache_key(
+        &embedded_cache_key_prefix("space", "astronauts"),
+        &"nationality_counts_top10",
+    );
+
+    // Try cached path first.
+    if let Some(cached) = &analytics.cached {
+        if let Some(bytes) = cached.cache().get(&key).await {
+            if let Ok(chart_option) = serde_json::from_slice::<serde_json::Value>(&bytes) {
+                return ChartSignals {
+                    chart_option,
+                    selected: None,
+                    loading: false,
+                    error: None,
+                };
+            }
+        }
+    }
+
+    // Cache miss or no cache: execute query.
     let query_result = analytics
         .service
         .query(|conn| {
@@ -112,8 +152,7 @@ pub async fn astronauts_chart_sse(
         })
         .await;
 
-    // Handle query result and transform to chart signals
-    let signals = match query_result {
+    match query_result {
         Ok(result) => {
             let config = ChartConfig {
                 chart_type: ChartType::Bar,
@@ -123,12 +162,20 @@ pub async fn astronauts_chart_sse(
             };
 
             match BarChartTransformer.transform(&result, &config) {
-                Ok(chart_option) => ChartSignals {
-                    chart_option,
-                    selected: None,
-                    loading: false,
-                    error: None,
-                },
+                Ok(chart_option) => {
+                    // Cache the chart option as JSON bytes.
+                    if let Some(cached) = &analytics.cached {
+                        if let Ok(bytes) = serde_json::to_vec(&chart_option) {
+                            cached.cache().insert(key, bytes).await;
+                        }
+                    }
+                    ChartSignals {
+                        chart_option,
+                        selected: None,
+                        loading: false,
+                        error: None,
+                    }
+                }
                 Err(e) => ChartSignals {
                     chart_option: serde_json::json!({}),
                     selected: None,
@@ -143,17 +190,7 @@ pub async fn astronauts_chart_sse(
             loading: false,
             error: Some(format!("Query error: {e}")),
         },
-    };
-
-    // Render chart template with embedded signals
-    let html = echarts_chart("astronauts-chart", &signals, "400px").render();
-
-    // Create SSE event with Datastar merge-fragments format
-    let event = Event::default()
-        .event("datastar-merge-fragments")
-        .data(html.into_inner());
-
-    Sse::new(stream::once(async move { Ok(event) }))
+    }
 }
 
 /// Page handler for astronaut chart demo.
