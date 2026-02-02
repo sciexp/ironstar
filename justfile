@@ -1103,6 +1103,12 @@ rust-doc:
 rust-build:
   cargo build --workspace --release
 
+# Update Cargo.lock to latest compatible versions within semver constraints
+[group('rust')]
+rust-update:
+  cargo update
+  @echo "Cargo.lock updated. Run 'just rust-check' to verify."
+
 # Run all Rust checks (fmt, clippy, test)
 [group('rust')]
 rust-check: rust-fmt-check rust-clippy rust-test
