@@ -27,7 +27,7 @@
 //! let should_invalidate = dep.matches("events/Todo/abc-123/5");
 //! ```
 
-use crate::infrastructure::key_expr::{DOUBLE_WILD, EVENTS_ROOT, SINGLE_WILD};
+use crate::infrastructure::key_expr::EVENTS_ROOT;
 
 /// Maps a cache key to the Zenoh key expression patterns it depends on.
 ///
@@ -57,7 +57,7 @@ impl CacheDependency {
     /// published for any instance of the given aggregate type.
     #[must_use]
     pub fn depends_on_aggregate(mut self, aggregate_type: &str) -> Self {
-        let pattern = format!("{EVENTS_ROOT}/{aggregate_type}/{DOUBLE_WILD}");
+        let pattern = format!("{EVENTS_ROOT}/{aggregate_type}/**");
         self.depends_on.push(pattern);
         self
     }
@@ -68,7 +68,7 @@ impl CacheDependency {
     /// at any sequence number for the given instance, but not sub-aggregates.
     #[must_use]
     pub fn depends_on_instance(mut self, aggregate_type: &str, id: &str) -> Self {
-        let pattern = format!("{EVENTS_ROOT}/{aggregate_type}/{id}/{SINGLE_WILD}");
+        let pattern = format!("{EVENTS_ROOT}/{aggregate_type}/{id}/*");
         self.depends_on.push(pattern);
         self
     }
@@ -98,16 +98,14 @@ impl CacheDependency {
 /// methods on [`CacheDependency`].
 #[must_use]
 pub fn matches_key_expression(pattern: &str, key: &str) -> bool {
-    if let Some(prefix) = pattern.strip_suffix(&format!("/{DOUBLE_WILD}")) {
+    if let Some(prefix) = pattern.strip_suffix("/**") {
         // Double wild: key must start with prefix, then either end or continue with '/'.
-        key == prefix || key.starts_with(&format!("{prefix}/"))
-    } else if let Some(prefix) = pattern.strip_suffix(&format!("/{SINGLE_WILD}")) {
+        key == prefix || key.strip_prefix(prefix).is_some_and(|rest| rest.starts_with('/'))
+    } else if let Some(prefix) = pattern.strip_suffix("/*") {
         // Single wild: key must have exactly one more segment after prefix.
-        if let Some(remainder) = key.strip_prefix(&format!("{prefix}/")) {
-            !remainder.is_empty() && !remainder.contains('/')
-        } else {
-            false
-        }
+        key.strip_prefix(prefix)
+            .and_then(|rest| rest.strip_prefix('/'))
+            .is_some_and(|remainder| !remainder.is_empty() && !remainder.contains('/'))
     } else {
         // Exact match.
         pattern == key
