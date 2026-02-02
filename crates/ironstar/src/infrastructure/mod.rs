@@ -98,6 +98,7 @@ pub mod analytics;
 pub mod analytics_cache;
 pub mod assets;
 pub mod cache_dependency;
+pub mod embedded_catalogs;
 pub mod error;
 pub mod event_bus;
 pub mod event_store;
@@ -109,6 +110,7 @@ pub use analytics::{AnalyticsState, DuckDBService};
 pub use analytics_cache::AnalyticsCache;
 pub use assets::{AssetManifest, StaticAssets, create_static_router, static_file_handler};
 pub use cache_dependency::{CacheDependency, matches_key_expression};
+pub use embedded_catalogs::{DuckLakeCatalogs, embedded_cache_key_prefix};
 pub use error::{InfrastructureError, InfrastructureErrorKind};
 pub use event_bus::{
     EventBus, ZenohEventBus, open_embedded_session, publish_events_fire_and_forget,
