@@ -187,19 +187,34 @@ impl DuckDBService {
             )));
         }
 
-        // Build and execute the ATTACH statement
-        // Note: We use string formatting here because DuckDB's ATTACH doesn't support
-        // parameterized queries for the URI or alias. The name is validated above.
-        let sql = format!("ATTACH '{uri}' AS {name}");
+        let pool = self
+            .pool
+            .as_ref()
+            .ok_or_else(|| InfrastructureError::analytics("analytics service unavailable"))?;
 
-        self.query_mut(move |conn| {
-            conn.execute(&sql, [])?;
-            Ok(())
-        })
-        .await
-        .map_err(|e| {
-            InfrastructureError::analytics(format!("failed to attach catalog '{name}': {e}"))
-        })
+        // ATTACH must run on every connection in the pool so all connections
+        // can query the attached catalog. Uses conn_for_each like initialize_extensions.
+        // Note: We use string formatting because DuckDB's ATTACH doesn't support
+        // parameterized queries for the URI or alias. The name is validated above.
+        let uri = uri.to_string();
+        let name = name.to_string();
+        let results = pool
+            .conn_for_each(move |conn| {
+                let sql = format!("ATTACH '{uri}' AS {name}");
+                conn.execute(&sql, [])?;
+                Ok(())
+            })
+            .await;
+
+        for (i, result) in results.into_iter().enumerate() {
+            result.map_err(|e| {
+                InfrastructureError::analytics(format!(
+                    "failed to attach catalog on connection {i}: {e}"
+                ))
+            })?;
+        }
+
+        Ok(())
     }
 
     /// Initialize DuckDB extensions on all pool connections.
