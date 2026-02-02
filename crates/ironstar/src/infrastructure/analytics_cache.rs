@@ -150,7 +150,8 @@ impl AnalyticsCache {
     where
         F: Fn(&String, &Vec<u8>) -> bool + Send + Sync + 'static,
     {
-        let _ = self.cache
+        let _ = self
+            .cache
             .invalidate_entries_if(move |k, v| predicate(k, v));
     }
 
@@ -177,12 +178,12 @@ impl AnalyticsCache {
     pub fn serialize<T>(value: &T) -> Result<Vec<u8>, InfrastructureError>
     where
         T: for<'a> rkyv::Serialize<
-            rkyv::api::high::HighSerializer<
-                rkyv::util::AlignedVec,
-                rkyv::ser::allocator::ArenaHandle<'a>,
-                rkyv::rancor::Error,
+                rkyv::api::high::HighSerializer<
+                    rkyv::util::AlignedVec,
+                    rkyv::ser::allocator::ArenaHandle<'a>,
+                    rkyv::rancor::Error,
+                >,
             >,
-        >,
     {
         let aligned = rkyv::to_bytes::<rkyv::rancor::Error>(value)
             .map_err(|e| InfrastructureError::cache(format!("rkyv serialization failed: {e}")))?;
@@ -197,8 +198,9 @@ impl AnalyticsCache {
     pub fn deserialize<T>(bytes: &[u8]) -> Result<T, InfrastructureError>
     where
         T: rkyv::Archive,
-        T::Archived: for<'a> rkyv::bytecheck::CheckBytes<rkyv::api::high::HighValidator<'a, rkyv::rancor::Error>>
-            + rkyv::Deserialize<T, rkyv::rancor::Strategy<rkyv::de::Pool, rkyv::rancor::Error>>,
+        T::Archived: for<'a> rkyv::bytecheck::CheckBytes<
+                rkyv::api::high::HighValidator<'a, rkyv::rancor::Error>,
+            > + rkyv::Deserialize<T, rkyv::rancor::Strategy<rkyv::de::Pool, rkyv::rancor::Error>>,
     {
         rkyv::from_bytes::<T, rkyv::rancor::Error>(bytes)
             .map_err(|e| InfrastructureError::cache(format!("rkyv deserialization failed: {e}")))
@@ -216,9 +218,7 @@ impl Default for AnalyticsCache {
 mod tests {
     use super::*;
 
-    #[derive(
-        Debug, Clone, PartialEq, rkyv::Archive, rkyv::Serialize, rkyv::Deserialize,
-    )]
+    #[derive(Debug, Clone, PartialEq, rkyv::Archive, rkyv::Serialize, rkyv::Deserialize)]
     #[rkyv(compare(PartialEq))]
     struct TestResult {
         count: u64,
@@ -233,11 +233,8 @@ mod tests {
 
     #[test]
     fn cache_creation_with_custom_config() {
-        let cache = AnalyticsCache::with_config(
-            500,
-            Duration::from_secs(60),
-            Duration::from_secs(10),
-        );
+        let cache =
+            AnalyticsCache::with_config(500, Duration::from_secs(60), Duration::from_secs(10));
         assert_eq!(cache.entry_count(), 0);
     }
 
@@ -422,11 +419,8 @@ mod tests {
     async fn ttl_expiration() {
         // Use real time with short TTL for expiration testing.
         // moka uses std::time::Instant internally, requiring real elapsed time.
-        let cache = AnalyticsCache::with_config(
-            100,
-            Duration::from_millis(200),
-            Duration::from_secs(60),
-        );
+        let cache =
+            AnalyticsCache::with_config(100, Duration::from_millis(200), Duration::from_secs(60));
 
         let bytes = AnalyticsCache::serialize(&TestResult {
             count: 1,
@@ -448,11 +442,8 @@ mod tests {
     async fn tti_expiration() {
         // Use real time with short TTI for expiration testing.
         // moka uses std::time::Instant internally, requiring real elapsed time.
-        let cache = AnalyticsCache::with_config(
-            100,
-            Duration::from_secs(60),
-            Duration::from_millis(200),
-        );
+        let cache =
+            AnalyticsCache::with_config(100, Duration::from_secs(60), Duration::from_millis(200));
 
         let bytes = AnalyticsCache::serialize(&TestResult {
             count: 1,
