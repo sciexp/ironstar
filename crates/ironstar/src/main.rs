@@ -20,6 +20,7 @@
 use ironstar::config::Config;
 use ironstar::infrastructure::{
     AssetManifest, DuckDBService, ZenohEventBus, open_embedded_session,
+    embedded_catalogs,
 };
 use ironstar::presentation::app_router;
 use ironstar::state::AppState;
@@ -141,23 +142,42 @@ async fn main() -> Result<(), StartupError> {
                     Ok(()) => {
                         tracing::info!("DuckDB extensions loaded (httpfs, ducklake)");
 
-                        // Attach demo DuckLake catalog from HuggingFace
-                        // This provides example data for development and testing
-                        let catalog_uri =
-                            "ducklake:hf://datasets/sciexp/fixtures/lakes/frozen/space.db";
-                        match service.attach_catalog("space", catalog_uri).await {
-                            Ok(()) => {
+                        // Attach embedded DuckLake catalogs (zero-latency, from binary)
+                        match embedded_catalogs::attach_all(&service).await {
+                            Ok(names) if !names.is_empty() => {
                                 tracing::info!(
-                                    catalog = "space",
-                                    source = "sciexp/fixtures",
-                                    "Attached DuckLake catalog"
+                                    catalogs = ?names,
+                                    source = "embedded",
+                                    "Attached embedded DuckLake catalogs"
                                 );
+                            }
+                            Ok(_) => {
+                                // No embedded catalogs — fall back to network ATTACH
+                                tracing::debug!("No embedded catalogs, trying network ATTACH");
+                                let catalog_uri =
+                                    "ducklake:hf://datasets/sciexp/fixtures/lakes/frozen/space.db";
+                                match service.attach_catalog("space", catalog_uri).await {
+                                    Ok(()) => {
+                                        tracing::info!(
+                                            catalog = "space",
+                                            source = "hf://sciexp/fixtures",
+                                            "Attached DuckLake catalog via network"
+                                        );
+                                    }
+                                    Err(e) => {
+                                        tracing::warn!(
+                                            error = %e,
+                                            catalog = "space",
+                                            "Failed to attach DuckLake catalog, \
+                                             continuing without demo data"
+                                        );
+                                    }
+                                }
                             }
                             Err(e) => {
                                 tracing::warn!(
                                     error = %e,
-                                    catalog = "space",
-                                    "Failed to attach DuckLake catalog, continuing without demo data"
+                                    "Failed to attach embedded catalogs"
                                 );
                             }
                         }
