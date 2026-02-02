@@ -96,6 +96,7 @@
 
 pub mod analytics;
 pub mod assets;
+pub mod cache_dependency;
 pub mod error;
 pub mod event_bus;
 pub mod event_store;
@@ -105,6 +106,7 @@ pub mod sse_stream;
 
 pub use analytics::{AnalyticsState, DuckDBService};
 pub use assets::{AssetManifest, StaticAssets, create_static_router, static_file_handler};
+pub use cache_dependency::{CacheDependency, matches_key_expression};
 pub use error::{InfrastructureError, InfrastructureErrorKind};
 pub use event_bus::{
     EventBus, ZenohEventBus, open_embedded_session, publish_events_fire_and_forget,
