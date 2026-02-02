@@ -36,9 +36,23 @@ use crate::infrastructure::key_expr::EVENTS_ROOT;
 #[derive(Debug, Clone)]
 pub struct CacheDependency {
     /// Cache key identifying the cached entry.
-    pub cache_key: String,
+    cache_key: String,
     /// Zenoh key expression patterns this cache entry depends on.
-    pub depends_on: Vec<String>,
+    depends_on: Vec<String>,
+}
+
+impl CacheDependency {
+    /// Returns the cache key identifying this cached entry.
+    #[must_use]
+    pub fn cache_key(&self) -> &str {
+        &self.cache_key
+    }
+
+    /// Returns the Zenoh key expression patterns this cache entry depends on.
+    #[must_use]
+    pub fn depends_on(&self) -> &[String] {
+        &self.depends_on
+    }
 }
 
 impl CacheDependency {
@@ -121,20 +135,20 @@ mod tests {
     #[test]
     fn new_creates_empty_dependency() {
         let dep = CacheDependency::new("my-key");
-        assert_eq!(dep.cache_key, "my-key");
-        assert!(dep.depends_on.is_empty());
+        assert_eq!(dep.cache_key(), "my-key");
+        assert!(dep.depends_on().is_empty());
     }
 
     #[test]
     fn depends_on_aggregate_adds_double_wild_pattern() {
         let dep = CacheDependency::new("k").depends_on_aggregate("Todo");
-        assert_eq!(dep.depends_on, vec!["events/Todo/**"]);
+        assert_eq!(dep.depends_on(), ["events/Todo/**"]);
     }
 
     #[test]
     fn depends_on_instance_adds_single_wild_pattern() {
         let dep = CacheDependency::new("k").depends_on_instance("Todo", "abc-123");
-        assert_eq!(dep.depends_on, vec!["events/Todo/abc-123/*"]);
+        assert_eq!(dep.depends_on(), ["events/Todo/abc-123/*"]);
     }
 
     #[test]
@@ -144,10 +158,10 @@ mod tests {
             .depends_on_instance("Session", "user-42")
             .depends_on_aggregate("Workspace");
 
-        assert_eq!(dep.depends_on.len(), 3);
-        assert_eq!(dep.depends_on[0], "events/Todo/**");
-        assert_eq!(dep.depends_on[1], "events/Session/user-42/*");
-        assert_eq!(dep.depends_on[2], "events/Workspace/**");
+        assert_eq!(dep.depends_on().len(), 3);
+        assert_eq!(dep.depends_on()[0], "events/Todo/**");
+        assert_eq!(dep.depends_on()[1], "events/Session/user-42/*");
+        assert_eq!(dep.depends_on()[2], "events/Workspace/**");
     }
 
     // -- matches_key_expression: double wild --
