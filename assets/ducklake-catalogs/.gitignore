@@ -1,0 +1,4 @@
+# Binary catalog files are provided by nix at build time.
+# For local development, copy from sciexp-fixtures:
+#   cp ~/projects/omicslake-workspace/sciexp-fixtures/lakes/frozen/space.db .
+*.db
