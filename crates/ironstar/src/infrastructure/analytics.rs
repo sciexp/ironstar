@@ -271,17 +271,38 @@ impl DuckDBService {
 ///
 /// Extract this via axum's `State` extractor. Implements `FromRef<AppState>`
 /// for automatic extraction from the application state.
+///
+/// Provides both raw DuckDB access via `service` and cache-assisted queries
+/// via `cached`. Handlers should prefer `cached` for queries that benefit
+/// from memoization.
 #[derive(Clone)]
 pub struct AnalyticsState {
-    /// The DuckDB analytics service.
+    /// Raw DuckDB analytics service for uncached queries.
     pub service: DuckDBService,
+    /// Cache-assisted analytics service for memoized queries.
+    pub cached: Option<crate::infrastructure::cached_analytics::CachedAnalyticsService>,
 }
 
 impl AnalyticsState {
-    /// Create a new AnalyticsState with the given service.
+    /// Create a new AnalyticsState with the given service and no cache.
     #[must_use]
     pub fn new(service: DuckDBService) -> Self {
-        Self { service }
+        Self {
+            service,
+            cached: None,
+        }
+    }
+
+    /// Create a new AnalyticsState with both raw and cached service.
+    #[must_use]
+    pub fn with_cached(
+        service: DuckDBService,
+        cached: crate::infrastructure::cached_analytics::CachedAnalyticsService,
+    ) -> Self {
+        Self {
+            service,
+            cached: Some(cached),
+        }
     }
 }
 
