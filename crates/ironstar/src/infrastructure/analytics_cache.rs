@@ -214,7 +214,7 @@ impl Default for AnalyticsCache {
 }
 
 #[cfg(test)]
-#[expect(clippy::expect_used, reason = "test assertions")]
+#[expect(clippy::expect_used, clippy::panic, reason = "test assertions")]
 mod tests {
     use super::*;
 
