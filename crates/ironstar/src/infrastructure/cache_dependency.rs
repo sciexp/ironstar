@@ -27,7 +27,7 @@
 //! let should_invalidate = dep.matches("events/Todo/abc-123/5");
 //! ```
 
-use crate::infrastructure::key_expr::{EVENTS_ROOT, DOUBLE_WILD, SINGLE_WILD};
+use crate::infrastructure::key_expr::{DOUBLE_WILD, EVENTS_ROOT, SINGLE_WILD};
 
 /// Maps a cache key to the Zenoh key expression patterns it depends on.
 ///
@@ -156,7 +156,10 @@ mod tests {
 
     #[test]
     fn double_wild_matches_nested_key() {
-        assert!(matches_key_expression("events/Todo/**", "events/Todo/abc/5"));
+        assert!(matches_key_expression(
+            "events/Todo/**",
+            "events/Todo/abc/5"
+        ));
     }
 
     #[test]
@@ -260,8 +263,7 @@ mod tests {
 
     #[test]
     fn matches_returns_false_when_no_pattern_matches() {
-        let dep = CacheDependency::new("k")
-            .depends_on_aggregate("Todo");
+        let dep = CacheDependency::new("k").depends_on_aggregate("Todo");
 
         assert!(!dep.matches("events/Session/abc/1"));
     }
