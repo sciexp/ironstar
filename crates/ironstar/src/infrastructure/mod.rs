@@ -95,6 +95,7 @@
 //! - Synchronous functions (by design, everything here is async)
 
 pub mod analytics;
+pub mod analytics_cache;
 pub mod assets;
 pub mod cache_dependency;
 pub mod error;
@@ -105,6 +106,7 @@ pub mod session_store;
 pub mod sse_stream;
 
 pub use analytics::{AnalyticsState, DuckDBService};
+pub use analytics_cache::AnalyticsCache;
 pub use assets::{AssetManifest, StaticAssets, create_static_router, static_file_handler};
 pub use cache_dependency::{CacheDependency, matches_key_expression};
 pub use error::{InfrastructureError, InfrastructureErrorKind};
