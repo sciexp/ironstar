@@ -28,8 +28,8 @@
 use crate::domain::todo::commands::TodoCommand;
 use crate::domain::todo::events::TodoEvent;
 use crate::infrastructure::{
-    AnalyticsState, AssetManifest, DuckDBService, SqliteEventRepository, SqliteSessionStore,
-    ZenohEventBus,
+    AnalyticsState, AssetManifest, CachedAnalyticsService, DuckDBService, SqliteEventRepository,
+    SqliteSessionStore, ZenohEventBus,
 };
 use crate::presentation::health::HealthState;
 use crate::presentation::todo::TodoAppState;
@@ -75,6 +75,12 @@ pub struct AppState {
     /// Pool is Clone (internally Arc-wrapped), so no additional Arc needed.
     pub analytics: Option<DuckDbPool>,
 
+    /// Optional cached analytics service for memoized DuckDB queries.
+    ///
+    /// When present, handlers can use cache-aside queries that transparently
+    /// check the moka cache before executing DuckDB queries.
+    pub cached_analytics: Option<CachedAnalyticsService>,
+
     /// Shared Todo event repository.
     ///
     /// Cached here to avoid recreating for each request.
@@ -96,6 +102,7 @@ impl AppState {
             event_bus: None,
             session_store: None,
             analytics: None,
+            cached_analytics: None,
             todo_repo,
         }
     }
@@ -118,6 +125,13 @@ impl AppState {
     #[must_use]
     pub fn with_analytics(mut self, analytics: DuckDbPool) -> Self {
         self.analytics = Some(analytics);
+        self
+    }
+
+    /// Set the cached analytics service.
+    #[must_use]
+    pub fn with_cached_analytics(mut self, cached: CachedAnalyticsService) -> Self {
+        self.cached_analytics = Some(cached);
         self
     }
 
@@ -175,7 +189,11 @@ impl FromRef<AppState> for SqlitePool {
 
 impl FromRef<AppState> for AnalyticsState {
     fn from_ref(app_state: &AppState) -> Self {
-        Self::new(DuckDBService::new(app_state.analytics.clone()))
+        let service = DuckDBService::new(app_state.analytics.clone());
+        match &app_state.cached_analytics {
+            Some(cached) => Self::with_cached(service, cached.clone()),
+            None => Self::new(service),
+        }
     }
 }
 
