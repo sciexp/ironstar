@@ -34,9 +34,7 @@ impl CatalogViewState {
     /// Number of datasets in the current catalog metadata, or 0 if none.
     #[must_use]
     pub fn dataset_count(&self) -> usize {
-        self.metadata
-            .as_ref()
-            .map_or(0, |m| m.datasets.len())
+        self.metadata.as_ref().map_or(0, |m| m.datasets.len())
     }
 }
 
