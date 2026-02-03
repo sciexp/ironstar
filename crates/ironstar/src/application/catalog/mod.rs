@@ -8,5 +8,7 @@
 //! perspective.
 
 mod handlers;
+pub mod queries;
 
 pub use handlers::{handle_catalog_command, handle_catalog_command_zenoh};
+pub use queries::{query_catalog_metadata, query_catalog_state};
