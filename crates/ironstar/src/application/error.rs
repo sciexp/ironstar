@@ -227,10 +227,7 @@ impl From<QuerySessionError> for CommandPipelineError {
 /// backtrace but preserve the UUID for distributed tracing correlation.
 impl From<&QuerySessionError> for CommandPipelineError {
     fn from(e: &QuerySessionError) -> Self {
-        Self::QuerySession(QuerySessionError::with_id(
-            e.error_id(),
-            e.kind().clone(),
-        ))
+        Self::QuerySession(QuerySessionError::with_id(e.error_id(), e.kind().clone()))
     }
 }
 
