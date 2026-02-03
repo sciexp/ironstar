@@ -104,7 +104,10 @@ pub use common::{
 };
 
 // View re-exports
-pub use views::{CatalogView, CatalogViewState, TodoView, TodoViewState, catalog_view, todo_view};
+pub use views::{
+    CatalogView, CatalogViewState, QueryHistoryEntry, QueryOutcome, QuerySessionView,
+    QuerySessionViewState, TodoView, TodoViewState, catalog_view, query_session_view, todo_view,
+};
 
 // Session re-exports (from session/)
 pub use session::{
