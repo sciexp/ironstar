@@ -18,21 +18,16 @@ use super::values::{CatalogMetadata, CatalogRef};
 /// ```
 ///
 /// Invariant: only one catalog can be active at a time.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub enum CatalogState {
     /// No catalog has been selected yet (initial state).
+    #[default]
     NoCatalogSelected,
     /// A catalog is active with its metadata.
     CatalogActive {
         catalog_ref: CatalogRef,
         metadata: CatalogMetadata,
     },
-}
-
-impl Default for CatalogState {
-    fn default() -> Self {
-        Self::NoCatalogSelected
-    }
 }
 
 impl CatalogState {
