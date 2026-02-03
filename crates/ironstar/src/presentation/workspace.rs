@@ -1,10 +1,16 @@
-//! Workspace bounded context HTTP command handlers.
+//! Workspace bounded context HTTP handlers.
 //!
-//! This module provides axum handlers for Workspace command endpoints covering
-//! all five aggregate types: Workspace, Dashboard, SavedQuery, UserPreferences,
-//! and WorkspacePreferences.
+//! This module provides axum handlers for Workspace command and query endpoints
+//! covering all five aggregate types: Workspace, Dashboard, SavedQuery,
+//! UserPreferences, and WorkspacePreferences.
 //!
 //! # Routes
+//!
+//! Query endpoints:
+//! - `GET /api` - List all workspaces
+//! - `GET /api/{id}/dashboard/{dashboard_id}` - Get dashboard layout
+//! - `GET /api/{id}/queries` - List saved queries for a workspace
+//! - `GET /api/user/preferences/{user_id}` - Get user preferences
 //!
 //! Workspace lifecycle:
 //! - `POST /api` - Create a new workspace
@@ -30,7 +36,8 @@ use axum::Json;
 use axum::Router;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
-use axum::routing::post;
+use axum::response::IntoResponse;
+use axum::routing::{get, post};
 use chrono::Utc;
 use serde::Deserialize;
 use std::sync::Arc;
@@ -40,7 +47,10 @@ use crate::application::dashboard::handle_dashboard_command_zenoh;
 use crate::application::error::CommandPipelineError;
 use crate::application::saved_query::handle_saved_query_command_zenoh;
 use crate::application::user_preferences::handle_user_preferences_command_zenoh;
-use crate::application::workspace::handle_workspace_command_zenoh;
+use crate::application::workspace::{
+    handle_workspace_command_zenoh, query_dashboard_layout, query_saved_query_list,
+    query_user_preferences, query_workspace_list,
+};
 use crate::application::workspace_preferences::handle_workspace_preferences_command_zenoh;
 use crate::domain::analytics::{DatasetRef, SqlQuery};
 use crate::domain::common::DashboardTitle;
@@ -56,7 +66,7 @@ use crate::domain::user_preferences::events::UserPreferencesEvent;
 use crate::domain::user_preferences::values::{Locale, PreferencesId, Theme};
 use crate::domain::workspace::commands::WorkspaceCommand;
 use crate::domain::workspace::events::WorkspaceEvent;
-use crate::domain::workspace::values::{Visibility, WorkspaceId};
+use crate::domain::workspace::values::{Visibility, WorkspaceId, WorkspaceName};
 use crate::domain::workspace_preferences::commands::WorkspacePreferencesCommand;
 use crate::domain::workspace_preferences::events::WorkspacePreferencesEvent;
 use crate::domain::workspace_preferences::values::CatalogUri;
@@ -85,9 +95,17 @@ pub struct WorkspaceAppState {
 // Route configuration
 // =============================================================================
 
-/// Creates the Workspace feature router with all command endpoints.
+/// Creates the Workspace feature router with query and command endpoints.
 pub fn routes() -> Router<AppState> {
     Router::new()
+        // Query endpoints
+        .route("/api", get(list_workspaces))
+        .route(
+            "/api/{id}/dashboard/{dashboard_id}",
+            get(get_dashboard_layout),
+        )
+        .route("/api/{id}/queries", get(list_saved_queries))
+        .route("/api/user/preferences/{user_id}", get(get_user_preferences))
         // Workspace lifecycle
         .route("/api", post(create_workspace))
         .route("/api/{id}/rename", post(rename_workspace))
@@ -120,6 +138,167 @@ pub struct CommandResponse {
     pub id: Uuid,
     /// Number of events produced by this command.
     pub events_count: usize,
+}
+
+// =============================================================================
+// Query response types
+// =============================================================================
+
+/// A single workspace entry in the list response.
+#[derive(Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkspaceListItem {
+    pub workspace_id: WorkspaceId,
+    pub name: WorkspaceName,
+    pub owner_id: UserId,
+    pub visibility: Visibility,
+    pub created_at: chrono::DateTime<Utc>,
+}
+
+/// Response body for the workspace list query.
+#[derive(Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkspaceListResponse {
+    pub workspaces: Vec<WorkspaceListItem>,
+    pub count: usize,
+}
+
+/// Response body for the dashboard layout query.
+#[derive(Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DashboardLayoutResponse {
+    pub dashboard_id: Option<DashboardId>,
+    pub workspace_id: Option<WorkspaceId>,
+    pub name: Option<DashboardTitle>,
+    pub placements: Vec<ChartPlacement>,
+    pub chart_count: usize,
+    pub tab_count: usize,
+}
+
+/// A single saved query entry in the list response.
+#[derive(Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SavedQueryListItem {
+    pub query_id: SavedQueryId,
+    pub workspace_id: WorkspaceId,
+    pub name: QueryName,
+    pub sql: String,
+    pub dataset_ref: String,
+    pub saved_at: chrono::DateTime<Utc>,
+}
+
+/// Response body for the saved query list query.
+#[derive(Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SavedQueryListResponse {
+    pub queries: Vec<SavedQueryListItem>,
+    pub count: usize,
+}
+
+/// Response body for the user preferences query.
+#[derive(Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UserPreferencesResponse {
+    pub preferences_id: Option<PreferencesId>,
+    pub user_id: Option<UserId>,
+    pub theme: Theme,
+    pub locale: Locale,
+    pub initialized: bool,
+}
+
+// =============================================================================
+// Query handlers
+// =============================================================================
+
+/// GET /api - List all workspaces.
+pub async fn list_workspaces(
+    State(state): State<WorkspaceAppState>,
+) -> Result<impl IntoResponse, AppError> {
+    let view_state = query_workspace_list::<WorkspaceCommand>(&state.workspace_repo).await?;
+
+    let workspaces: Vec<WorkspaceListItem> = view_state
+        .workspaces
+        .into_iter()
+        .map(|w| WorkspaceListItem {
+            workspace_id: w.workspace_id,
+            name: w.name,
+            owner_id: w.owner_id,
+            visibility: w.visibility,
+            created_at: w.created_at,
+        })
+        .collect();
+    let count = workspaces.len();
+
+    Ok(Json(WorkspaceListResponse { workspaces, count }))
+}
+
+/// GET /api/{id}/dashboard/{dashboard_id} - Get dashboard layout.
+pub async fn get_dashboard_layout(
+    State(state): State<WorkspaceAppState>,
+    Path((_workspace_id, dashboard_id)): Path<(Uuid, Uuid)>,
+) -> Result<impl IntoResponse, AppError> {
+    let view_state = query_dashboard_layout::<DashboardCommand>(
+        &state.dashboard_repo,
+        &dashboard_id.to_string(),
+    )
+    .await?;
+
+    if view_state.dashboard_id.is_none() {
+        return Err(AppError::not_found("Dashboard", dashboard_id.to_string()));
+    }
+
+    Ok(Json(DashboardLayoutResponse {
+        dashboard_id: view_state.dashboard_id,
+        workspace_id: view_state.workspace_id,
+        name: view_state.name,
+        placements: view_state.placements,
+        chart_count: view_state.chart_count,
+        tab_count: view_state.tab_count,
+    }))
+}
+
+/// GET /api/{id}/queries - List saved queries for a workspace.
+pub async fn list_saved_queries(
+    State(state): State<WorkspaceAppState>,
+    Path(workspace_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let view_state = query_saved_query_list::<SavedQueryCommand>(&state.saved_query_repo).await?;
+    let ws_id = WorkspaceId::from_uuid(workspace_id);
+    let filtered = view_state.queries_for_workspace(&ws_id);
+
+    let queries: Vec<SavedQueryListItem> = filtered
+        .into_iter()
+        .map(|q| SavedQueryListItem {
+            query_id: q.query_id,
+            workspace_id: q.workspace_id,
+            name: q.name.clone(),
+            sql: q.sql.clone(),
+            dataset_ref: q.dataset_ref.clone(),
+            saved_at: q.saved_at,
+        })
+        .collect();
+    let count = queries.len();
+
+    Ok(Json(SavedQueryListResponse { queries, count }))
+}
+
+/// GET /api/user/preferences/{user_id} - Get user preferences.
+pub async fn get_user_preferences(
+    State(state): State<WorkspaceAppState>,
+    Path(user_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let uid = UserId::from_uuid(user_id);
+    let view_state =
+        query_user_preferences::<UserPreferencesCommand>(&state.user_preferences_repo, &uid)
+            .await?;
+
+    Ok(Json(UserPreferencesResponse {
+        preferences_id: view_state.preferences_id,
+        user_id: view_state.user_id,
+        theme: view_state.theme,
+        locale: view_state.locale,
+        initialized: view_state.initialized,
+    }))
 }
 
 // =============================================================================
