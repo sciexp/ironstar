@@ -116,15 +116,15 @@ pub use cache_invalidation::{CacheInvalidationRegistry, spawn_cache_invalidation
 pub use cached_analytics::{CachedAnalyticsService, cache_key, query_hash};
 pub use embedded_catalogs::{DuckLakeCatalogs, embedded_cache_key_prefix};
 pub use error::{InfrastructureError, InfrastructureErrorKind};
+pub use event_bus::workspace::{
+    ALL_WORKSPACE_AGGREGATE_TYPES, DASHBOARD_TYPE, SAVED_QUERY_TYPE, USER_PREFERENCES_TYPE,
+    WORKSPACE_TYPE, WorkspaceSubscriberFactory, dashboard_events_pattern,
+    saved_query_events_pattern, user_preferences_events_pattern, workspace_cache_dependencies,
+    workspace_events_pattern,
+};
 pub use event_bus::{
     EventBus, ZenohEventBus, open_embedded_session, publish_events_fire_and_forget,
     zenoh_embedded_config,
-};
-pub use event_bus::workspace::{
-    WorkspaceSubscriberFactory, workspace_cache_dependencies, workspace_events_pattern,
-    dashboard_events_pattern, saved_query_events_pattern, user_preferences_events_pattern,
-    ALL_WORKSPACE_AGGREGATE_TYPES, DASHBOARD_TYPE, SAVED_QUERY_TYPE, USER_PREFERENCES_TYPE,
-    WORKSPACE_TYPE,
 };
 pub use event_store::{SqliteEventRepository, StoredEvent};
 pub use key_expr::{
