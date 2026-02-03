@@ -110,10 +110,9 @@ fn decide(
         }
 
         // SetTheme when not initialized
-        (
-            UserPreferencesCommand::SetTheme { .. },
-            UserPreferencesState::NotInitialized,
-        ) => Err(UserPreferencesError::not_initialized()),
+        (UserPreferencesCommand::SetTheme { .. }, UserPreferencesState::NotInitialized) => {
+            Err(UserPreferencesError::not_initialized())
+        }
 
         // SetLocale: Initialized -> Initialized (idempotent if same locale)
         (
@@ -139,10 +138,9 @@ fn decide(
         }
 
         // SetLocale when not initialized
-        (
-            UserPreferencesCommand::SetLocale { .. },
-            UserPreferencesState::NotInitialized,
-        ) => Err(UserPreferencesError::not_initialized()),
+        (UserPreferencesCommand::SetLocale { .. }, UserPreferencesState::NotInitialized) => {
+            Err(UserPreferencesError::not_initialized())
+        }
 
         // UpdateUiState: Initialized -> Initialized (idempotent if same state)
         (
@@ -168,18 +166,14 @@ fn decide(
         }
 
         // UpdateUiState when not initialized
-        (
-            UserPreferencesCommand::UpdateUiState { .. },
-            UserPreferencesState::NotInitialized,
-        ) => Err(UserPreferencesError::not_initialized()),
+        (UserPreferencesCommand::UpdateUiState { .. }, UserPreferencesState::NotInitialized) => {
+            Err(UserPreferencesError::not_initialized())
+        }
     }
 }
 
 /// Pure evolve function: (State, Event) -> State
-fn evolve(
-    state: &UserPreferencesState,
-    event: &UserPreferencesEvent,
-) -> UserPreferencesState {
+fn evolve(state: &UserPreferencesState, event: &UserPreferencesEvent) -> UserPreferencesState {
     match event {
         UserPreferencesEvent::PreferencesInitialized {
             preferences_id,
