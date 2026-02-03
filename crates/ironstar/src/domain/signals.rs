@@ -56,7 +56,7 @@ use uuid::Uuid;
 /// - Browser → Server: Request body via `ReadSignals<TodoSignals>`
 #[derive(Clone, Debug, Default, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
-#[ts(export, export_to = "web-components/types/signals/")]
+#[ts(export, export_to = "signals/")]
 pub struct TodoSignals {
     /// Current input field value.
     ///
@@ -89,7 +89,7 @@ pub struct TodoSignals {
 /// Determines which todos are visible based on their completion status.
 /// Serializes to lowercase strings for JavaScript compatibility.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, TS)]
-#[ts(export, export_to = "web-components/types/signals/")]
+#[ts(export, export_to = "signals/")]
 pub enum TodoFilter {
     /// Show all todos regardless of status.
     #[default]
@@ -111,7 +111,7 @@ pub enum TodoFilter {
 /// shaped for efficient list rendering via SSE updates.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
-#[ts(export, export_to = "web-components/types/signals/")]
+#[ts(export, export_to = "signals/")]
 pub struct TodoItemView {
     /// Unique identifier for this todo.
     pub id: Uuid,
@@ -130,7 +130,7 @@ pub struct TodoItemView {
 /// for coordinated updates (e.g., filtering related data).
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
-#[ts(export, export_to = "web-components/types/signals/")]
+#[ts(export, export_to = "signals/")]
 pub struct ChartSelection {
     /// Name of the series containing the selected data point.
     pub series_name: String,
@@ -161,7 +161,7 @@ pub struct ChartSelection {
 /// - Browser → Server: Selection events via `ReadSignals<ChartSignals>`
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
-#[ts(export, export_to = "web-components/types/signals/")]
+#[ts(export, export_to = "signals/")]
 pub struct ChartSignals {
     /// ECharts option configuration.
     ///
