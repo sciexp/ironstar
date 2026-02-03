@@ -70,6 +70,20 @@ export default defineConfig({
 		cssEntryFileNames: "[name].[hash].css",
 		sourcemap: process.env.NODE_ENV !== "production",
 	},
+	// Lit web components require legacy (experimental) TypeScript decorators
+	// for @customElement and @property. Rolldown auto-detects this from
+	// tsconfig.json experimentalDecorators, but we declare it explicitly
+	// to make the Lit bundling requirement visible in the build config.
+	transform: {
+		decorator: {
+			legacy: true,
+		},
+	},
+	// Suppress expected warning about transform.decorator.legacy overriding
+	// tsconfig.json experimentalDecorators (both are intentionally set).
+	checks: {
+		configurationFieldConflict: false,
+	},
 	plugins: [
 		// Manifest generation for server-side asset lookup
 		outputManifest({
