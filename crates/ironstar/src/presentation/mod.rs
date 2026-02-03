@@ -118,7 +118,9 @@ pub mod todo;
 pub mod todo_templates;
 
 pub use bar_chart_transformer::BarChartTransformer;
-pub use chart::{astronauts_chart_page, astronauts_chart_sse, routes as chart_routes};
+pub use chart::{
+    astronauts_chart_page, astronauts_chart_sse, chart_feed_handler, routes as chart_routes,
+};
 pub use chart_templates::{chart_page, echarts_chart, echarts_chart_with_feedback};
 pub use chart_transformer::{
     ChartConfig, ChartTransformer, ChartType, ColumnMetadata, QueryResult, TransformError,
