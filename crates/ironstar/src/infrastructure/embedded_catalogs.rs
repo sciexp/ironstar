@@ -28,8 +28,8 @@ use std::path::{Path, PathBuf};
 
 use rust_embed::RustEmbed;
 
-use crate::infrastructure::error::InfrastructureError;
 use crate::infrastructure::DuckDBService;
+use crate::infrastructure::error::InfrastructureError;
 
 /// Embedded DuckLake catalog database files.
 ///
@@ -63,9 +63,11 @@ pub async fn extract_catalog(name: &str) -> Result<PathBuf, InfrastructureError>
     })?;
 
     let file_path = catalog_dir.join(name);
-    tokio::fs::write(&file_path, &data.data).await.map_err(|e| {
-        InfrastructureError::analytics(format!("failed to write catalog '{name}': {e}"))
-    })?;
+    tokio::fs::write(&file_path, &data.data)
+        .await
+        .map_err(|e| {
+            InfrastructureError::analytics(format!("failed to write catalog '{name}': {e}"))
+        })?;
 
     Ok(file_path)
 }
@@ -207,10 +209,7 @@ mod tests {
         let count = DuckLakeCatalogs::iter().count();
         // If space.db was copied to assets/ducklake-catalogs/, count >= 1.
         // If the directory is empty, count == 0. Both are valid states.
-        assert!(
-            count <= 100,
-            "unexpectedly many embedded catalogs: {count}"
-        );
+        assert!(count <= 100, "unexpectedly many embedded catalogs: {count}");
     }
 
     #[tokio::test]
