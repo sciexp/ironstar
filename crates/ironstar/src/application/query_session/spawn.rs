@@ -122,7 +122,7 @@ pub fn spawn_query_execution(
                 Ok(row_count)
             })
             .await;
-        let duration_ms = start_time.elapsed().as_millis() as u64;
+        let duration_ms = u64::try_from(start_time.elapsed().as_millis()).unwrap_or(0);
 
         // Step 3: Issue completion or failure command
         match query_result {
