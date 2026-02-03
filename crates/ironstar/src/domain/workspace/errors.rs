@@ -73,6 +73,19 @@ impl WorkspaceError {
 
     // Convenience constructors for common error variants
 
+    /// Create a new error with an explicit UUID, preserving error tracking.
+    ///
+    /// Used when converting from lower-layer errors to preserve UUID tracking
+    /// for distributed tracing correlation.
+    #[must_use]
+    pub fn with_id(id: Uuid, kind: WorkspaceErrorKind) -> Self {
+        Self {
+            id,
+            kind,
+            backtrace: Backtrace::capture(),
+        }
+    }
+
     /// Creates an `AlreadyExists` error.
     pub fn already_exists() -> Self {
         Self::new(WorkspaceErrorKind::AlreadyExists)
