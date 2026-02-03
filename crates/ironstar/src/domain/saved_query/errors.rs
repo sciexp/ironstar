@@ -50,6 +50,16 @@ impl SavedQueryError {
         &self.backtrace
     }
 
+    /// Create a new error with an explicit UUID, preserving error tracking.
+    #[must_use]
+    pub fn with_id(id: Uuid, kind: SavedQueryErrorKind) -> Self {
+        Self {
+            id,
+            kind,
+            backtrace: Backtrace::capture(),
+        }
+    }
+
     pub fn already_exists() -> Self {
         Self::new(SavedQueryErrorKind::AlreadyExists)
     }
