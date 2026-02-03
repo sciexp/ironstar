@@ -388,7 +388,7 @@ fn evolve_saved_query_list(
 ///
 /// Represents the current preferences for a single user. Singleton per
 /// user-scoped aggregate.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct UserPreferencesViewState {
     pub preferences_id: Option<PreferencesId>,
     pub user_id: Option<UserId>,
@@ -396,19 +396,6 @@ pub struct UserPreferencesViewState {
     pub locale: Locale,
     pub ui_state: UiState,
     pub initialized: bool,
-}
-
-impl Default for UserPreferencesViewState {
-    fn default() -> Self {
-        Self {
-            preferences_id: None,
-            user_id: None,
-            theme: Theme::default(),
-            locale: Locale::default(),
-            ui_state: UiState::default(),
-            initialized: false,
-        }
-    }
 }
 
 pub type UserPreferencesView<'a> = View<'a, UserPreferencesViewState, UserPreferencesEvent>;
@@ -440,7 +427,7 @@ fn evolve_user_preferences(
         },
 
         UserPreferencesEvent::ThemeSet { theme, .. } => UserPreferencesViewState {
-            theme: theme.clone(),
+            theme: *theme,
             ..state.clone()
         },
 
@@ -464,6 +451,7 @@ mod tests {
     use crate::domain::common::{DashboardTitle, GridSize, TabTitle};
     use crate::domain::dashboard::values::{ChartDefinitionRef, GridPosition};
     use fmodel_rust::view::ViewStateComputation;
+    use uuid::Uuid;
 
     fn sample_workspace_id() -> WorkspaceId {
         WorkspaceId::from_uuid(Uuid::nil())
@@ -625,6 +613,7 @@ mod tests {
 
     mod dashboard_layout {
         use super::*;
+        use crate::domain::dashboard::values::{ChartId, TabId};
 
         fn sample_dash_id() -> DashboardId {
             DashboardId::from_uuid(Uuid::nil())
