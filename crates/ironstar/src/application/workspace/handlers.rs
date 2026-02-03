@@ -99,7 +99,7 @@ pub async fn handle_workspace_command_zenoh(
 #[allow(clippy::expect_used, clippy::panic)]
 mod tests {
     use super::*;
-    use crate::domain::workspace::{WorkspaceErrorKind, WorkspaceId, WorkspaceName};
+    use crate::domain::workspace::{Visibility, WorkspaceErrorKind, WorkspaceId};
     use crate::domain::UserId;
     use crate::infrastructure::event_bus::ZenohEventBus;
     use chrono::Utc;
@@ -128,9 +128,10 @@ mod tests {
         let repo = Arc::new(SqliteEventRepository::new(pool));
 
         let command = WorkspaceCommand::Create {
-            id: WorkspaceId::new(),
-            name: WorkspaceName::try_from("Test Workspace".to_string()).expect("valid name"),
-            owner: UserId::new(),
+            workspace_id: WorkspaceId::new(),
+            name: "Test Workspace".to_string(),
+            owner_id: UserId::new(),
+            visibility: Visibility::Private,
             created_at: Utc::now(),
         };
 
@@ -148,9 +149,10 @@ mod tests {
         let id = WorkspaceId::new();
 
         let command = WorkspaceCommand::Create {
-            id: id.clone(),
-            name: WorkspaceName::try_from("Workspace".to_string()).expect("valid name"),
-            owner: UserId::new(),
+            workspace_id: id.clone(),
+            name: "Workspace".to_string(),
+            owner_id: UserId::new(),
+            visibility: Visibility::Private,
             created_at: Utc::now(),
         };
 
@@ -159,9 +161,10 @@ mod tests {
             .expect("first create should succeed");
 
         let duplicate = WorkspaceCommand::Create {
-            id,
-            name: WorkspaceName::try_from("Duplicate".to_string()).expect("valid name"),
-            owner: UserId::new(),
+            workspace_id: id,
+            name: "Duplicate".to_string(),
+            owner_id: UserId::new(),
+            visibility: Visibility::Private,
             created_at: Utc::now(),
         };
 
@@ -180,8 +183,8 @@ mod tests {
         let repo = Arc::new(SqliteEventRepository::new(pool));
 
         let command = WorkspaceCommand::Rename {
-            id: WorkspaceId::new(),
-            name: WorkspaceName::try_from("New Name".to_string()).expect("valid name"),
+            workspace_id: WorkspaceId::new(),
+            new_name: "New Name".to_string(),
             renamed_at: Utc::now(),
         };
 
