@@ -17,7 +17,6 @@ pub mod todo;
 
 pub use catalog::{CatalogView, CatalogViewState, catalog_view};
 pub use query_session::{
-    QueryHistoryEntry, QueryOutcome, QuerySessionView, QuerySessionViewState,
-    query_session_view,
+    QueryHistoryEntry, QueryOutcome, QuerySessionView, QuerySessionViewState, query_session_view,
 };
 pub use todo::{TodoView, TodoViewState, todo_view};
