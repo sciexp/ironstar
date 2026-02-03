@@ -98,10 +98,12 @@
 //! - HTTP routing or request parsing (belongs in [`crate::presentation`])
 //! - Async primitives in domain types (domain must remain sync)
 
+pub mod catalog;
 pub mod error;
 pub mod query_session;
 pub mod todo;
 
+pub use catalog::{handle_catalog_command, handle_catalog_command_zenoh};
 pub use error::{AggregateError, CommandPipelineError};
 pub use query_session::{
     QueryExecutionParams, handle_query_session_command,
