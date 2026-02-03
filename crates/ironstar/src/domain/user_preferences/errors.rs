@@ -118,9 +118,6 @@ mod tests {
     #[test]
     fn error_kind_accessible() {
         let err = UserPreferencesError::already_initialized();
-        assert_eq!(
-            err.kind(),
-            &UserPreferencesErrorKind::AlreadyInitialized
-        );
+        assert_eq!(err.kind(), &UserPreferencesErrorKind::AlreadyInitialized);
     }
 }
