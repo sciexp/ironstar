@@ -171,7 +171,7 @@ mod tests {
         let ws_id = WorkspaceId::from_uuid(Uuid::new_v4());
 
         let command = WorkspacePreferencesCommand::InitializeWorkspacePreferences {
-            workspace_id: ws_id.clone(),
+            workspace_id: ws_id,
             initialized_at: Utc::now(),
         };
 
