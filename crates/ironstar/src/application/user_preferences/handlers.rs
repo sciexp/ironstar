@@ -27,13 +27,8 @@ impl UserPreferencesEventRepositoryAdapter {
     }
 }
 
-impl
-    EventRepository<
-        UserPreferencesCommand,
-        UserPreferencesEvent,
-        String,
-        CommandPipelineError,
-    > for UserPreferencesEventRepositoryAdapter
+impl EventRepository<UserPreferencesCommand, UserPreferencesEvent, String, CommandPipelineError>
+    for UserPreferencesEventRepositoryAdapter
 {
     async fn fetch_events(
         &self,
@@ -65,13 +60,12 @@ pub async fn handle_user_preferences_command<B: EventBus>(
 ) -> Result<Vec<(UserPreferencesEvent, String)>, CommandPipelineError> {
     let repo_adapter = UserPreferencesEventRepositoryAdapter::new(event_repository);
 
-    let mapped_decider =
-        user_preferences_decider().map_error(|e: &UserPreferencesError| {
-            CommandPipelineError::UserPreferences(UserPreferencesError::with_id(
-                e.error_id(),
-                e.kind().clone(),
-            ))
-        });
+    let mapped_decider = user_preferences_decider().map_error(|e: &UserPreferencesError| {
+        CommandPipelineError::UserPreferences(UserPreferencesError::with_id(
+            e.error_id(),
+            e.kind().clone(),
+        ))
+    });
 
     let aggregate = EventSourcedAggregate::new(repo_adapter, mapped_decider);
 
@@ -92,13 +86,12 @@ pub async fn handle_user_preferences_command_zenoh(
 ) -> Result<Vec<(UserPreferencesEvent, String)>, CommandPipelineError> {
     let repo_adapter = UserPreferencesEventRepositoryAdapter::new(event_repository);
 
-    let mapped_decider =
-        user_preferences_decider().map_error(|e: &UserPreferencesError| {
-            CommandPipelineError::UserPreferences(UserPreferencesError::with_id(
-                e.error_id(),
-                e.kind().clone(),
-            ))
-        });
+    let mapped_decider = user_preferences_decider().map_error(|e: &UserPreferencesError| {
+        CommandPipelineError::UserPreferences(UserPreferencesError::with_id(
+            e.error_id(),
+            e.kind().clone(),
+        ))
+    });
 
     let aggregate = EventSourcedAggregate::new(repo_adapter, mapped_decider);
 
@@ -115,10 +108,8 @@ pub async fn handle_user_preferences_command_zenoh(
 #[allow(clippy::expect_used, clippy::panic)]
 mod tests {
     use super::*;
-    use crate::domain::user_preferences::{
-        PreferencesId, Theme, UserPreferencesErrorKind,
-    };
     use crate::domain::UserId;
+    use crate::domain::user_preferences::{PreferencesId, Theme, UserPreferencesErrorKind};
     use crate::infrastructure::event_bus::ZenohEventBus;
     use chrono::Utc;
     use sqlx::sqlite::SqlitePoolOptions;
@@ -169,7 +160,7 @@ mod tests {
 
         let command = UserPreferencesCommand::InitializePreferences {
             preferences_id: PreferencesId::new(),
-            user_id: user_id.clone(),
+            user_id,
             initialized_at: Utc::now(),
         };
 
