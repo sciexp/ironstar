@@ -154,8 +154,8 @@ mod tests {
         let ws_id = WorkspaceId::from_uuid(Uuid::new_v4());
 
         let command = DashboardCommand::CreateDashboard {
-            dashboard_id: dash_id.clone(),
-            workspace_id: ws_id.clone(),
+            dashboard_id: dash_id,
+            workspace_id: ws_id,
             name: DashboardTitle::new("Dashboard").expect("valid title"),
             created_at: Utc::now(),
         };
@@ -194,8 +194,8 @@ mod tests {
         let result = handle_dashboard_command(repo, NO_EVENT_BUS, command).await;
         assert!(result.is_err());
         match result.expect_err("rename without create should fail") {
-            CommandPipelineError::Dashboard(ref e)
-                if *e.kind() == DashboardErrorKind::NotFound => {}
+            CommandPipelineError::Dashboard(ref e) if *e.kind() == DashboardErrorKind::NotFound => {
+            }
             other => panic!("Expected NotFound, got: {other:?}"),
         }
     }
