@@ -119,6 +119,7 @@ impl AggregateError {
 // CommandPipelineError: Unified error type for EventSourcedAggregate pipeline
 // =============================================================================
 
+use crate::domain::catalog::CatalogError;
 use crate::domain::query_session::QuerySessionError;
 use crate::domain::todo::TodoError;
 use crate::infrastructure::error::InfrastructureError;
@@ -155,6 +156,8 @@ pub enum CommandPipelineError {
     Todo(TodoError),
     /// QuerySession aggregate domain error (preserves UUID from QuerySessionError).
     QuerySession(QuerySessionError),
+    /// Catalog aggregate domain error (preserves UUID from CatalogError).
+    Catalog(CatalogError),
     // Session(SessionError),      // future: ironstar-507
     // Workspace(WorkspaceError),  // future: ironstar-7a2
     /// Infrastructure failure (from EventRepository adapter).
@@ -171,6 +174,7 @@ impl CommandPipelineError {
         match self {
             Self::Todo(e) => e.error_id(),
             Self::QuerySession(e) => e.error_id(),
+            Self::Catalog(e) => e.error_id(),
             Self::Infrastructure(e) => e.error_id(),
         }
     }
@@ -181,6 +185,7 @@ impl fmt::Display for CommandPipelineError {
         match self {
             Self::Todo(e) => write!(f, "Todo: {e}"),
             Self::QuerySession(e) => write!(f, "QuerySession: {e}"),
+            Self::Catalog(e) => write!(f, "Catalog: {e}"),
             Self::Infrastructure(e) => write!(f, "{e}"),
         }
     }
@@ -191,6 +196,7 @@ impl std::error::Error for CommandPipelineError {
         match self {
             Self::Todo(e) => Some(e),
             Self::QuerySession(e) => Some(e),
+            Self::Catalog(e) => Some(e),
             Self::Infrastructure(e) => Some(e),
         }
     }
@@ -225,6 +231,19 @@ impl From<&QuerySessionError> for CommandPipelineError {
             e.error_id(),
             e.kind().clone(),
         ))
+    }
+}
+
+impl From<CatalogError> for CommandPipelineError {
+    fn from(e: CatalogError) -> Self {
+        Self::Catalog(e)
+    }
+}
+
+/// Conversion from `&CatalogError` for fmodel-rust's `map_error` which passes references.
+impl From<&CatalogError> for CommandPipelineError {
+    fn from(e: &CatalogError) -> Self {
+        Self::Catalog(CatalogError::with_id(e.error_id(), e.kind().clone()))
     }
 }
 
