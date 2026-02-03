@@ -11,6 +11,8 @@
 //!
 //! Views reuse the evolve function pattern but drop command handling entirely.
 
+pub mod catalog;
 pub mod todo;
 
+pub use catalog::{CatalogView, CatalogViewState, catalog_view};
 pub use todo::{TodoView, TodoViewState, todo_view};
