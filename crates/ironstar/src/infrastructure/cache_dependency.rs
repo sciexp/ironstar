@@ -114,7 +114,10 @@ impl CacheDependency {
 pub fn matches_key_expression(pattern: &str, key: &str) -> bool {
     if let Some(prefix) = pattern.strip_suffix("/**") {
         // Double wild: key must start with prefix, then either end or continue with '/'.
-        key == prefix || key.strip_prefix(prefix).is_some_and(|rest| rest.starts_with('/'))
+        key == prefix
+            || key
+                .strip_prefix(prefix)
+                .is_some_and(|rest| rest.starts_with('/'))
     } else if let Some(prefix) = pattern.strip_suffix("/*") {
         // Single wild: key must have exactly one more segment after prefix.
         key.strip_prefix(prefix)
