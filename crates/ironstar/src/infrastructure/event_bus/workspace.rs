@@ -141,9 +141,7 @@ impl WorkspaceSubscriberFactory {
     /// Subscribe to all UserPreferences events.
     ///
     /// Pattern: `events/UserPreferences/**`
-    pub async fn subscribe_user_preferences(
-        &self,
-    ) -> Result<ZenohSubscriber, InfrastructureError> {
+    pub async fn subscribe_user_preferences(&self) -> Result<ZenohSubscriber, InfrastructureError> {
         self.subscribe_aggregate(USER_PREFERENCES_TYPE).await
     }
 
@@ -153,7 +151,7 @@ impl WorkspaceSubscriberFactory {
     /// workspace SSE feed that streams all workspace-related events.
     pub async fn subscribe_all(
         &self,
-    ) -> Result<Vec<(& 'static str, ZenohSubscriber)>, InfrastructureError> {
+    ) -> Result<Vec<(&'static str, ZenohSubscriber)>, InfrastructureError> {
         let mut subscribers = Vec::with_capacity(ALL_WORKSPACE_AGGREGATE_TYPES.len());
         for &aggregate_type in &ALL_WORKSPACE_AGGREGATE_TYPES {
             let subscriber = self.subscribe_aggregate(aggregate_type).await?;
@@ -286,23 +284,35 @@ mod tests {
         let deps = workspace_cache_dependencies();
 
         // Workspace dependency matches workspace events
-        let ws_dep = deps.iter().find(|d| d.cache_key() == "workspace:list").unwrap();
+        let ws_dep = deps
+            .iter()
+            .find(|d| d.cache_key() == "workspace:list")
+            .unwrap();
         assert!(ws_dep.matches("events/Workspace/some-id"));
         assert!(ws_dep.matches("events/Workspace/some-id/1"));
         assert!(!ws_dep.matches("events/Dashboard/some-id"));
 
         // Dashboard dependency matches dashboard events
-        let db_dep = deps.iter().find(|d| d.cache_key() == "dashboard:layout").unwrap();
+        let db_dep = deps
+            .iter()
+            .find(|d| d.cache_key() == "dashboard:layout")
+            .unwrap();
         assert!(db_dep.matches("events/Dashboard/dashboard_abc"));
         assert!(!db_dep.matches("events/Workspace/some-id"));
 
         // SavedQuery dependency
-        let sq_dep = deps.iter().find(|d| d.cache_key() == "saved_query:list").unwrap();
+        let sq_dep = deps
+            .iter()
+            .find(|d| d.cache_key() == "saved_query:list")
+            .unwrap();
         assert!(sq_dep.matches("events/SavedQuery/saved_query_abc"));
         assert!(!sq_dep.matches("events/Dashboard/abc"));
 
         // UserPreferences dependency
-        let up_dep = deps.iter().find(|d| d.cache_key() == "user_preferences").unwrap();
+        let up_dep = deps
+            .iter()
+            .find(|d| d.cache_key() == "user_preferences")
+            .unwrap();
         assert!(up_dep.matches("events/UserPreferences/user_abc/preferences"));
         assert!(!up_dep.matches("events/Workspace/abc"));
     }
