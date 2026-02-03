@@ -29,6 +29,7 @@
 use crate::application::error::{AggregateError, CommandPipelineError};
 use crate::common::ErrorCode;
 use crate::domain::error::{DomainError, DomainErrorKind, ValidationError, ValidationErrorKind};
+use crate::domain::query_session::QuerySessionErrorKind;
 use crate::domain::todo::TodoErrorKind;
 use crate::infrastructure::error::InfrastructureError;
 use axum::Json;
@@ -295,6 +296,39 @@ impl From<CommandPipelineError> for AppError {
                             DomainErrorKind::InvalidTransition {
                                 from: "current".to_string(),
                                 to: format!("{kind:?}"),
+                            },
+                        )),
+                    ),
+                }
+            }
+            CommandPipelineError::QuerySession(qs_err) => {
+                // Map QuerySessionError to HTTP-semantic AppErrorKind
+                let kind = qs_err.kind().clone();
+                match kind {
+                    QuerySessionErrorKind::QueryAlreadyInProgress => Self::with_id(
+                        error_id,
+                        AppErrorKind::Domain(DomainError::new(
+                            DomainErrorKind::InvalidTransition {
+                                from: "active query".to_string(),
+                                to: "start query".to_string(),
+                            },
+                        )),
+                    ),
+                    QuerySessionErrorKind::NoQueryInProgress => Self::with_id(
+                        error_id,
+                        AppErrorKind::Domain(DomainError::new(DomainErrorKind::NotFound {
+                            aggregate_type: "QuerySession".to_string(),
+                            aggregate_id: "no active query".to_string(),
+                        })),
+                    ),
+                    QuerySessionErrorKind::QueryIdMismatch { .. }
+                    | QuerySessionErrorKind::TerminalState { .. }
+                    | QuerySessionErrorKind::InvalidTransition { .. } => Self::with_id(
+                        error_id,
+                        AppErrorKind::Domain(DomainError::new(
+                            DomainErrorKind::InvalidTransition {
+                                from: format!("{kind:?}"),
+                                to: "requested".to_string(),
                             },
                         )),
                     ),
