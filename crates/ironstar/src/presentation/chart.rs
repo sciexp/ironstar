@@ -102,17 +102,16 @@ async fn astronauts_chart_signals(analytics: &AnalyticsState) -> ChartSignals {
     );
 
     // Try cached path first.
-    if let Some(cached) = &analytics.cached {
-        if let Some(bytes) = cached.cache().get(&key).await {
-            if let Ok(chart_option) = serde_json::from_slice::<serde_json::Value>(&bytes) {
-                return ChartSignals {
-                    chart_option,
-                    selected: None,
-                    loading: false,
-                    error: None,
-                };
-            }
-        }
+    if let Some(cached) = &analytics.cached
+        && let Some(bytes) = cached.cache().get(&key).await
+        && let Ok(chart_option) = serde_json::from_slice::<serde_json::Value>(&bytes)
+    {
+        return ChartSignals {
+            chart_option,
+            selected: None,
+            loading: false,
+            error: None,
+        };
     }
 
     // Cache miss or no cache: execute query.
@@ -164,10 +163,10 @@ async fn astronauts_chart_signals(analytics: &AnalyticsState) -> ChartSignals {
             match BarChartTransformer.transform(&result, &config) {
                 Ok(chart_option) => {
                     // Cache the chart option as JSON bytes.
-                    if let Some(cached) = &analytics.cached {
-                        if let Ok(bytes) = serde_json::to_vec(&chart_option) {
-                            cached.cache().insert(key, bytes).await;
-                        }
+                    if let Some(cached) = &analytics.cached
+                        && let Ok(bytes) = serde_json::to_vec(&chart_option)
+                    {
+                        cached.cache().insert(key, bytes).await;
                     }
                     ChartSignals {
                         chart_option,
