@@ -220,8 +220,7 @@ async fn main() -> Result<(), StartupError> {
 
     // 10. Spawn cache invalidation subscriber (if both Zenoh and cached analytics)
     if let (Some(bus), Some(cached)) = (&event_bus, &cached_analytics) {
-        let registry =
-            ironstar::infrastructure::CacheInvalidationRegistry::new(cached.clone());
+        let registry = ironstar::infrastructure::CacheInvalidationRegistry::new(cached.clone());
         // Dependencies will be registered as domain aggregates are added.
         // For now, the registry is empty and ready for 3gd domain integration.
         let _handle = spawn_cache_invalidation(bus.session().clone(), registry);
