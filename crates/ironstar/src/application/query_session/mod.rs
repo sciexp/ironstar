@@ -19,5 +19,8 @@
 mod handlers;
 mod spawn;
 
-pub use handlers::{handle_query_session_command, handle_query_session_command_zenoh};
+pub use handlers::{
+    handle_query_session_command, handle_query_session_command_with_spawn,
+    handle_query_session_command_zenoh,
+};
 pub use spawn::{QueryExecutionParams, spawn_query_execution};
