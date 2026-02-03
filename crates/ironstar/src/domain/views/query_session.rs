@@ -110,10 +110,7 @@ fn evolve(state: &QuerySessionViewState, event: &QuerySessionEvent) -> QuerySess
             ..*state
         },
 
-        QuerySessionEvent::ExecutionBegan {
-            query_id,
-            began_at,
-        } => {
+        QuerySessionEvent::ExecutionBegan { query_id, began_at } => {
             // Extract pending fields to promote to Executing
             if let QuerySessionStatus::Pending {
                 sql,
@@ -148,13 +145,13 @@ fn evolve(state: &QuerySessionViewState, event: &QuerySessionEvent) -> QuerySess
             completed_at,
         } => {
             let mut history = state.query_history.clone();
-            if let Some(entry) = build_history_entry(state, *query_id, |_| {
-                QueryOutcome::Completed {
+            if let Some(entry) =
+                build_history_entry(state, *query_id, |_| QueryOutcome::Completed {
                     row_count: *row_count,
                     duration_ms: *duration_ms,
                     completed_at: *completed_at,
-                }
-            }) {
+                })
+            {
                 history.push(entry);
             }
             QuerySessionViewState {
@@ -431,10 +428,7 @@ mod tests {
 
         let state = view.compute_new_state(None, &as_refs(&events));
 
-        assert!(matches!(
-            state.status,
-            QuerySessionStatus::Cancelled { .. }
-        ));
+        assert!(matches!(state.status, QuerySessionStatus::Cancelled { .. }));
         assert_eq!(state.query_history.len(), 1);
         assert_eq!(state.cancelled_count, 1);
     }
