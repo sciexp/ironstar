@@ -57,9 +57,7 @@ impl UserPreferencesState {
     pub fn preferences_id(&self) -> Option<&PreferencesId> {
         match self {
             Self::NotInitialized => None,
-            Self::Initialized {
-                preferences_id, ..
-            } => Some(preferences_id),
+            Self::Initialized { preferences_id, .. } => Some(preferences_id),
         }
     }
 
