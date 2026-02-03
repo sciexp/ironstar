@@ -5,7 +5,9 @@
 //! unifying domain and infrastructure errors via `CommandPipelineError`.
 
 use crate::application::error::CommandPipelineError;
-use crate::domain::workspace::{WorkspaceCommand, WorkspaceError, WorkspaceEvent, workspace_decider};
+use crate::domain::workspace::{
+    WorkspaceCommand, WorkspaceError, WorkspaceEvent, workspace_decider,
+};
 use crate::infrastructure::event_bus::{EventBus, ZenohEventBus, publish_events_fire_and_forget};
 use crate::infrastructure::event_store::SqliteEventRepository;
 use fmodel_rust::aggregate::{EventRepository, EventSourcedAggregate};
@@ -99,8 +101,8 @@ pub async fn handle_workspace_command_zenoh(
 #[allow(clippy::expect_used, clippy::panic)]
 mod tests {
     use super::*;
-    use crate::domain::workspace::{Visibility, WorkspaceErrorKind, WorkspaceId};
     use crate::domain::UserId;
+    use crate::domain::workspace::{Visibility, WorkspaceErrorKind, WorkspaceId};
     use crate::infrastructure::event_bus::ZenohEventBus;
     use chrono::Utc;
     use sqlx::sqlite::SqlitePoolOptions;
@@ -149,7 +151,7 @@ mod tests {
         let id = WorkspaceId::new();
 
         let command = WorkspaceCommand::Create {
-            workspace_id: id.clone(),
+            workspace_id: id,
             name: "Workspace".to_string(),
             owner_id: UserId::new(),
             visibility: Visibility::Private,
@@ -191,8 +193,8 @@ mod tests {
         let result = handle_workspace_command(repo, NO_EVENT_BUS, command).await;
         assert!(result.is_err());
         match result.expect_err("rename without create should fail") {
-            CommandPipelineError::Workspace(ref e)
-                if *e.kind() == WorkspaceErrorKind::NotFound => {}
+            CommandPipelineError::Workspace(ref e) if *e.kind() == WorkspaceErrorKind::NotFound => {
+            }
             other => panic!("Expected NotFound, got: {other:?}"),
         }
     }
