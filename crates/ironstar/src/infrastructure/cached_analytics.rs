@@ -89,7 +89,8 @@ impl CachedAnalyticsService {
                     rkyv::ser::allocator::ArenaHandle<'a>,
                     rkyv::rancor::Error,
                 >,
-            > + rkyv::Archive,
+            >
+            + rkyv::Archive,
         T::Archived: for<'a> rkyv::bytecheck::CheckBytes<
                 rkyv::api::high::HighValidator<'a, rkyv::rancor::Error>,
             > + rkyv::Deserialize<T, rkyv::rancor::Strategy<rkyv::de::Pool, rkyv::rancor::Error>>,
@@ -159,9 +160,7 @@ mod tests {
     use super::*;
     use std::time::Duration;
 
-    #[derive(
-        Debug, Clone, PartialEq, rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Hash,
-    )]
+    #[derive(Debug, Clone, PartialEq, rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Hash)]
     #[rkyv(compare(PartialEq))]
     struct QueryResult {
         count: u64,
