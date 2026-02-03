@@ -136,15 +136,15 @@ pub use saved_query::{
 // UserPreferences re-exports (from user_preferences/)
 pub use user_preferences::{
     LOCALE_MAX_LENGTH, Locale, PreferencesId, Theme, UiState, UserPreferencesCommand,
-    UserPreferencesDecider, UserPreferencesError, UserPreferencesErrorKind,
-    UserPreferencesEvent, UserPreferencesState, user_preferences_decider,
+    UserPreferencesDecider, UserPreferencesError, UserPreferencesErrorKind, UserPreferencesEvent,
+    UserPreferencesState, user_preferences_decider,
 };
 
 // Dashboard re-exports (from dashboard/)
 pub use dashboard::{
     ChartDefinitionRef, ChartId, ChartPlacement, DashboardCommand, DashboardDecider,
-    DashboardError, DashboardErrorKind, DashboardEvent, DashboardId, DashboardState,
-    GridPosition, TabId, TabInfo, dashboard_decider,
+    DashboardError, DashboardErrorKind, DashboardEvent, DashboardId, DashboardState, GridPosition,
+    TabId, TabInfo, dashboard_decider,
 };
 
 // WorkspacePreferences re-exports (from workspace_preferences/)
