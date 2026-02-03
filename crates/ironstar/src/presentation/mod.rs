@@ -116,6 +116,7 @@ pub mod health;
 pub mod layout;
 pub mod todo;
 pub mod todo_templates;
+pub mod workspace;
 
 pub use bar_chart_transformer::BarChartTransformer;
 pub use chart::{
@@ -157,6 +158,7 @@ pub fn app_router(state: AppState) -> Router {
         .nest("/todos", todo::routes())
         .nest("/analytics", analytics::routes())
         .nest("/charts", chart::routes())
+        .nest("/workspace", workspace::routes())
         .with_state(state);
 
     // Merge stateless static router after state is applied
