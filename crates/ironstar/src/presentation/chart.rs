@@ -2,7 +2,7 @@
 //!
 //! Provides SSE endpoints for streaming chart data from DuckDB analytics.
 //! Charts are rendered as HTML fragments containing ds-echarts web components
-//! with Datastar signal bindings.
+//! with Datastar signal bindings, or as PatchSignals for direct signal updates.
 //!
 //! # Architecture
 //!
@@ -12,34 +12,42 @@
 //! 3. Render chart template with embedded signals
 //! 4. Stream HTML fragment via SSE `datastar-merge-fragments` event
 //!
+//! The chart feed endpoint uses PatchSignals to stream ChartSignals directly,
+//! allowing clients to receive structured signal updates with keep-alive
+//! support for proxy compatibility.
+//!
 //! # Routes
 //!
 //! - `GET /charts/astronauts` - Page with astronaut demographics chart
 //! - `GET /charts/api/astronauts/data` - SSE endpoint streaming chart data
+//! - `GET /charts/api/{chart_id}/feed` - SSE endpoint streaming ChartSignals via PatchSignals
 
 use std::convert::Infallible;
 
 use axum::{
     Router,
-    extract::State,
+    extract::{Path, State},
+    http::StatusCode,
     response::sse::{Event, Sse},
     response::{Html, IntoResponse},
     routing::get,
 };
-
-use crate::infrastructure::assets::AssetManifest;
-use crate::infrastructure::{cache_key, embedded_cache_key_prefix};
-use crate::state::AppState;
-use futures::stream::{self, Stream};
+use datastar::prelude::PatchSignals;
+use futures::stream::{self, Stream, StreamExt};
 use hypertext::Renderable;
+use tracing::warn;
 
 use crate::domain::signals::ChartSignals;
 use crate::infrastructure::analytics::AnalyticsState;
+use crate::infrastructure::assets::AssetManifest;
+use crate::infrastructure::sse_stream::SseStreamBuilder;
+use crate::infrastructure::{cache_key, embedded_cache_key_prefix};
 use crate::presentation::bar_chart_transformer::BarChartTransformer;
 use crate::presentation::chart_templates::echarts_chart;
 use crate::presentation::chart_transformer::{
     ChartConfig, ChartTransformer, ChartType, ColumnMetadata, QueryResult,
 };
+use crate::state::AppState;
 
 /// SSE endpoint for astronaut nationality chart data.
 ///
@@ -214,16 +222,96 @@ pub async fn astronauts_chart_page(State(manifest): State<AssetManifest>) -> imp
     Html(html.into_inner())
 }
 
+/// SSE feed endpoint for chart signal updates via PatchSignals.
+///
+/// Streams `ChartSignals` as Datastar `PatchSignals` events for the
+/// specified chart. The stream first sends a loading indicator, then
+/// computes and sends the chart data, followed by keep-alive comments
+/// for proxy compatibility.
+///
+/// # Route
+///
+/// GET /charts/api/{chart_id}/feed
+///
+/// # SSE events
+///
+/// - `datastar-patch-signals`: JSON-encoded `ChartSignals` with loading state
+/// - `datastar-patch-signals`: JSON-encoded `ChartSignals` with chart data
+/// - `: keepalive` comments at 15-second intervals
+///
+/// # Supported chart IDs
+///
+/// - `astronauts` - Astronaut demographics bar chart
+///
+/// Returns 404 for unrecognized chart IDs.
+///
+/// # Error handling
+///
+/// Query or transformation errors are communicated via the `error` field
+/// in `ChartSignals` rather than HTTP error codes, allowing the chart UI
+/// to display error state gracefully.
+pub async fn chart_feed_handler(
+    Path(chart_id): Path<String>,
+    State(analytics): State<AnalyticsState>,
+) -> Result<Sse<impl Stream<Item = Result<Event, Infallible>> + Send>, StatusCode> {
+    match chart_id.as_str() {
+        "astronauts" => {}
+        _ => {
+            warn!(chart_id = %chart_id, "Unknown chart_id requested for feed");
+            return Err(StatusCode::NOT_FOUND);
+        }
+    }
+
+    // Build a finite stream: loading signal, then computed chart data.
+    let data_stream = stream::once(async move {
+        // Send loading indicator first.
+        let loading_signals = ChartSignals {
+            chart_option: serde_json::json!({}),
+            selected: None,
+            loading: true,
+            error: None,
+        };
+        let loading_json = serde_json::to_string(&loading_signals).unwrap_or_else(|e| {
+            warn!(error = %e, "Failed to serialize loading ChartSignals");
+            r#"{"loading":true}"#.to_string()
+        });
+        let loading_event: Event = PatchSignals::new(loading_json).into();
+
+        loading_event
+    })
+    .chain(stream::once(async move {
+        // Compute chart signals from DuckDB.
+        let signals = astronauts_chart_signals(&analytics).await;
+        let signals_json = serde_json::to_string(&signals).unwrap_or_else(|e| {
+            warn!(error = %e, "Failed to serialize ChartSignals");
+            r#"{"chartOption":{},"loading":false,"error":"Serialization error"}"#.to_string()
+        });
+        let data_event: Event = PatchSignals::new(signals_json).into();
+
+        data_event
+    }))
+    .map(Ok);
+
+    // Wrap with keep-alive for proxy compatibility. Use build_live_only
+    // since the data stream is finite and there is no replay/live split.
+    let builder = SseStreamBuilder::new().with_keep_alive_secs(15);
+    let stream = builder.build_live_only(data_stream);
+
+    Ok(Sse::new(stream))
+}
+
 /// Creates the Chart feature router with all endpoints.
 ///
 /// # Routes (relative to /charts nest)
 ///
 /// - `GET /astronauts` - Astronaut demographics chart page (HTML)
 /// - `GET /api/astronauts/data` - Astronaut chart SSE endpoint
+/// - `GET /api/{chart_id}/feed` - Chart signal feed SSE endpoint
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/astronauts", get(astronauts_chart_page))
         .route("/api/astronauts/data", get(astronauts_chart_sse))
+        .route("/api/{chart_id}/feed", get(chart_feed_handler))
 }
 
 #[cfg(test)]
@@ -384,6 +472,72 @@ mod tests {
             err,
             crate::presentation::chart_transformer::TransformError::EmptyResult
         ));
+    }
+
+    /// Verify chart_feed_handler returns 404 for unknown chart IDs.
+    #[tokio::test]
+    async fn chart_feed_returns_not_found_for_unknown_id() {
+        use crate::infrastructure::analytics::{AnalyticsState, DuckDBService};
+
+        let service = DuckDBService::new(None);
+        let analytics = AnalyticsState::new(service);
+
+        let result = chart_feed_handler(Path("nonexistent".to_string()), State(analytics)).await;
+
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), StatusCode::NOT_FOUND);
+    }
+
+    /// Verify chart_feed_handler accepts "astronauts" as a valid chart ID.
+    ///
+    /// When analytics is unavailable, the handler still returns an SSE stream
+    /// (with error signals) rather than an HTTP error, because query failures
+    /// are communicated via ChartSignals.error.
+    #[tokio::test]
+    async fn chart_feed_accepts_astronauts_chart_id() {
+        use crate::infrastructure::analytics::{AnalyticsState, DuckDBService};
+
+        let service = DuckDBService::new(None);
+        let analytics = AnalyticsState::new(service);
+
+        let result = chart_feed_handler(Path("astronauts".to_string()), State(analytics)).await;
+
+        // Should succeed (returns SSE stream) even with unavailable analytics.
+        // Query errors surface in ChartSignals.error, not HTTP status.
+        assert!(result.is_ok());
+    }
+
+    /// Verify PatchSignals produces the correct Datastar event type.
+    #[test]
+    fn patch_signals_creates_valid_event() {
+        let signals = ChartSignals {
+            chart_option: json!({"xAxis": {"type": "category"}}),
+            selected: None,
+            loading: false,
+            error: None,
+        };
+        let signals_json = serde_json::to_string(&signals).unwrap();
+        let patch = PatchSignals::new(signals_json);
+
+        // Verify conversion to axum Event succeeds without panic.
+        let _event: Event = patch.into();
+    }
+
+    /// Verify loading ChartSignals serializes correctly for PatchSignals.
+    #[test]
+    fn loading_chart_signals_serializes_for_patch() {
+        let signals = ChartSignals {
+            chart_option: json!({}),
+            selected: None,
+            loading: true,
+            error: None,
+        };
+
+        let json = serde_json::to_string(&signals).unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(parsed["loading"], true);
+        assert_eq!(parsed["chartOption"], json!({}));
     }
 
     /// Verify graceful degradation when analytics service is unavailable.
