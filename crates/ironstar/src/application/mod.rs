@@ -103,11 +103,14 @@ pub mod error;
 pub mod query_session;
 pub mod todo;
 
-pub use catalog::{handle_catalog_command, handle_catalog_command_zenoh};
+pub use catalog::{
+    handle_catalog_command, handle_catalog_command_zenoh, query_catalog_metadata,
+    query_catalog_state,
+};
 pub use error::{AggregateError, CommandPipelineError};
 pub use query_session::{
     QueryExecutionParams, handle_query_session_command,
     handle_query_session_command_with_spawn, handle_query_session_command_zenoh,
-    spawn_query_execution,
+    query_query_history, query_session_state, spawn_query_execution,
 };
 pub use todo::{handle_todo_command, query_all_todos, query_todo_state};
