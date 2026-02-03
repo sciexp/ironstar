@@ -121,7 +121,9 @@ pub use query_session::{
 };
 pub use saved_query::{handle_saved_query_command, handle_saved_query_command_zenoh};
 pub use todo::{handle_todo_command, query_all_todos, query_todo_state};
-pub use user_preferences::{handle_user_preferences_command, handle_user_preferences_command_zenoh};
+pub use user_preferences::{
+    handle_user_preferences_command, handle_user_preferences_command_zenoh,
+};
 pub use workspace::{handle_workspace_command, handle_workspace_command_zenoh};
 pub use workspace_preferences::{
     handle_workspace_preferences_command, handle_workspace_preferences_command_zenoh,
