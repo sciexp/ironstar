@@ -27,10 +27,12 @@
 
 use crate::domain::todo::commands::TodoCommand;
 use crate::domain::todo::events::TodoEvent;
+use crate::domain::{CatalogCommand, CatalogEvent, QuerySessionCommand, QuerySessionEvent};
 use crate::infrastructure::{
     AnalyticsState, AssetManifest, CachedAnalyticsService, DuckDBService, SqliteEventRepository,
     SqliteSessionStore, ZenohEventBus,
 };
+use crate::presentation::analytics::AnalyticsAppState;
 use crate::presentation::health::HealthState;
 use crate::presentation::todo::TodoAppState;
 use axum::extract::FromRef;
@@ -85,6 +87,12 @@ pub struct AppState {
     ///
     /// Cached here to avoid recreating for each request.
     todo_repo: Arc<SqliteEventRepository<TodoCommand, TodoEvent>>,
+
+    /// Shared Catalog event repository.
+    catalog_repo: Arc<SqliteEventRepository<CatalogCommand, CatalogEvent>>,
+
+    /// Shared QuerySession event repository.
+    query_session_repo: Arc<SqliteEventRepository<QuerySessionCommand, QuerySessionEvent>>,
 }
 
 impl AppState {
@@ -95,6 +103,8 @@ impl AppState {
     #[must_use]
     pub fn new(db_pool: SqlitePool, assets: AssetManifest) -> Self {
         let todo_repo = Arc::new(SqliteEventRepository::new(db_pool.clone()));
+        let catalog_repo = Arc::new(SqliteEventRepository::new(db_pool.clone()));
+        let query_session_repo = Arc::new(SqliteEventRepository::new(db_pool.clone()));
 
         Self {
             db_pool,
@@ -104,6 +114,8 @@ impl AppState {
             analytics: None,
             cached_analytics: None,
             todo_repo,
+            catalog_repo,
+            query_session_repo,
         }
     }
 
@@ -162,6 +174,16 @@ impl FromRef<AppState> for TodoAppState {
     fn from_ref(app_state: &AppState) -> Self {
         Self {
             repo: Arc::clone(&app_state.todo_repo),
+            event_bus: app_state.event_bus.clone(),
+        }
+    }
+}
+
+impl FromRef<AppState> for AnalyticsAppState {
+    fn from_ref(app_state: &AppState) -> Self {
+        Self {
+            catalog_repo: Arc::clone(&app_state.catalog_repo),
+            query_session_repo: Arc::clone(&app_state.query_session_repo),
             event_bus: app_state.event_bus.clone(),
         }
     }
