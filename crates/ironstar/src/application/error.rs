@@ -119,6 +119,7 @@ impl AggregateError {
 // CommandPipelineError: Unified error type for EventSourcedAggregate pipeline
 // =============================================================================
 
+use crate::domain::query_session::QuerySessionError;
 use crate::domain::todo::TodoError;
 use crate::infrastructure::error::InfrastructureError;
 use uuid::Uuid;
@@ -152,6 +153,8 @@ use uuid::Uuid;
 pub enum CommandPipelineError {
     /// Todo aggregate domain error (preserves UUID from TodoError).
     Todo(TodoError),
+    /// QuerySession aggregate domain error (preserves UUID from QuerySessionError).
+    QuerySession(QuerySessionError),
     // Session(SessionError),      // future: ironstar-507
     // Workspace(WorkspaceError),  // future: ironstar-7a2
     /// Infrastructure failure (from EventRepository adapter).
@@ -167,6 +170,7 @@ impl CommandPipelineError {
     pub fn error_id(&self) -> Uuid {
         match self {
             Self::Todo(e) => e.error_id(),
+            Self::QuerySession(e) => e.error_id(),
             Self::Infrastructure(e) => e.error_id(),
         }
     }
@@ -176,6 +180,7 @@ impl fmt::Display for CommandPipelineError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Todo(e) => write!(f, "Todo: {e}"),
+            Self::QuerySession(e) => write!(f, "QuerySession: {e}"),
             Self::Infrastructure(e) => write!(f, "{e}"),
         }
     }
@@ -185,6 +190,7 @@ impl std::error::Error for CommandPipelineError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::Todo(e) => Some(e),
+            Self::QuerySession(e) => Some(e),
             Self::Infrastructure(e) => Some(e),
         }
     }
@@ -199,6 +205,26 @@ impl From<InfrastructureError> for CommandPipelineError {
 impl From<TodoError> for CommandPipelineError {
     fn from(e: TodoError) -> Self {
         Self::Todo(e)
+    }
+}
+
+impl From<QuerySessionError> for CommandPipelineError {
+    fn from(e: QuerySessionError) -> Self {
+        Self::QuerySession(e)
+    }
+}
+
+/// Conversion from `&QuerySessionError` for fmodel-rust's `map_error` which passes references.
+///
+/// Creates a new `QuerySessionError` with the same kind, preserving the error_id from the
+/// original. Since `QuerySessionError` contains non-Clone fields (Backtrace), we create a fresh
+/// backtrace but preserve the UUID for distributed tracing correlation.
+impl From<&QuerySessionError> for CommandPipelineError {
+    fn from(e: &QuerySessionError) -> Self {
+        Self::QuerySession(QuerySessionError::with_id(
+            e.error_id(),
+            e.kind().clone(),
+        ))
     }
 }
 
