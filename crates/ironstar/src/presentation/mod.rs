@@ -104,6 +104,7 @@
 //! - Multi-step workflows (belongs in [`crate::application`])
 //! - Synchronous business logic (domain functions should be sync)
 
+pub mod analytics;
 pub mod bar_chart_transformer;
 pub mod chart;
 pub mod chart_templates;
@@ -152,6 +153,7 @@ pub fn app_router(state: AppState) -> Router {
     let stateful = Router::new()
         .merge(health::routes())
         .nest("/todos", todo::routes())
+        .nest("/analytics", analytics::routes())
         .nest("/charts", chart::routes())
         .with_state(state);
 
