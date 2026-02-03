@@ -39,13 +39,8 @@ use super::events::SavedQueryEvent;
 use super::state::SavedQueryState;
 
 /// Type alias for the SavedQuery Decider.
-pub type SavedQueryDecider<'a> = Decider<
-    'a,
-    SavedQueryCommand,
-    SavedQueryState,
-    SavedQueryEvent,
-    SavedQueryError,
->;
+pub type SavedQueryDecider<'a> =
+    Decider<'a, SavedQueryCommand, SavedQueryState, SavedQueryEvent, SavedQueryError>;
 
 /// Factory function creating a pure SavedQuery Decider.
 ///
@@ -86,10 +81,9 @@ fn decide(
         }]),
 
         // SaveQuery when already exists
-        (
-            SavedQueryCommand::SaveQuery { .. },
-            SavedQueryState::QueryExists { .. },
-        ) => Err(SavedQueryError::already_exists()),
+        (SavedQueryCommand::SaveQuery { .. }, SavedQueryState::QueryExists { .. }) => {
+            Err(SavedQueryError::already_exists())
+        }
 
         // DeleteQuery: QueryExists -> NoQuery (terminal)
         (
@@ -104,10 +98,9 @@ fn decide(
         }]),
 
         // DeleteQuery when no query exists
-        (
-            SavedQueryCommand::DeleteQuery { .. },
-            SavedQueryState::NoQuery,
-        ) => Err(SavedQueryError::not_found()),
+        (SavedQueryCommand::DeleteQuery { .. }, SavedQueryState::NoQuery) => {
+            Err(SavedQueryError::not_found())
+        }
 
         // RenameQuery: QueryExists -> QueryExists (idempotent if same name)
         (
@@ -132,10 +125,9 @@ fn decide(
         }
 
         // RenameQuery when no query exists
-        (
-            SavedQueryCommand::RenameQuery { .. },
-            SavedQueryState::NoQuery,
-        ) => Err(SavedQueryError::not_found()),
+        (SavedQueryCommand::RenameQuery { .. }, SavedQueryState::NoQuery) => {
+            Err(SavedQueryError::not_found())
+        }
 
         // UpdateQuerySql: QueryExists -> QueryExists (idempotent if same SQL)
         (
@@ -160,10 +152,9 @@ fn decide(
         }
 
         // UpdateQuerySql when no query exists
-        (
-            SavedQueryCommand::UpdateQuerySql { .. },
-            SavedQueryState::NoQuery,
-        ) => Err(SavedQueryError::not_found()),
+        (SavedQueryCommand::UpdateQuerySql { .. }, SavedQueryState::NoQuery) => {
+            Err(SavedQueryError::not_found())
+        }
 
         // UpdateDatasetRef: QueryExists -> QueryExists (idempotent if same ref)
         (
@@ -189,18 +180,14 @@ fn decide(
         }
 
         // UpdateDatasetRef when no query exists
-        (
-            SavedQueryCommand::UpdateDatasetRef { .. },
-            SavedQueryState::NoQuery,
-        ) => Err(SavedQueryError::not_found()),
+        (SavedQueryCommand::UpdateDatasetRef { .. }, SavedQueryState::NoQuery) => {
+            Err(SavedQueryError::not_found())
+        }
     }
 }
 
 /// Pure evolve function: (State, Event) -> State
-fn evolve(
-    state: &SavedQueryState,
-    event: &SavedQueryEvent,
-) -> SavedQueryState {
+fn evolve(state: &SavedQueryState, event: &SavedQueryEvent) -> SavedQueryState {
     match event {
         SavedQueryEvent::QuerySaved {
             query_id,
