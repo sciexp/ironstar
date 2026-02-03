@@ -124,7 +124,11 @@ pub use todo::{handle_todo_command, query_all_todos, query_todo_state};
 pub use user_preferences::{
     handle_user_preferences_command, handle_user_preferences_command_zenoh,
 };
-pub use workspace::{handle_workspace_command, handle_workspace_command_zenoh};
+pub use workspace::{
+    handle_workspace_command, handle_workspace_command_zenoh, query_dashboard_layout,
+    query_saved_query_list, query_user_preferences, query_workspace_list,
+    query_workspaces_for_user,
+};
 pub use workspace_preferences::{
     handle_workspace_preferences_command, handle_workspace_preferences_command_zenoh,
 };
