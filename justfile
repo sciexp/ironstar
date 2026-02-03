@@ -1098,6 +1098,11 @@ rust-test:
 rust-doc:
   cargo doc --workspace --no-deps --document-private-items
 
+# Generate TypeScript bindings via ts-rs (exports on test run)
+[group('rust')]
+gen-types:
+  cargo test --workspace
+
 # Build Rust workspace (release)
 [group('rust')]
 rust-build:
