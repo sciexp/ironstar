@@ -234,8 +234,8 @@ mod tests {
     use chrono::{DateTime, Utc};
     use fmodel_rust::specification::DeciderTestSpecification;
 
-    use crate::domain::workspace::WorkspaceId;
     use super::super::values::CatalogUri;
+    use crate::domain::workspace::WorkspaceId;
 
     fn sample_workspace_id() -> WorkspaceId {
         WorkspaceId::from_uuid(uuid::Uuid::nil())
@@ -268,10 +268,12 @@ mod tests {
         DeciderTestSpecification::default()
             .for_decider(workspace_preferences_decider())
             .given(vec![])
-            .when(WorkspacePreferencesCommand::InitializeWorkspacePreferences {
-                workspace_id: ws_id,
-                initialized_at: ts,
-            })
+            .when(
+                WorkspacePreferencesCommand::InitializeWorkspacePreferences {
+                    workspace_id: ws_id,
+                    initialized_at: ts,
+                },
+            )
             .then(vec![
                 WorkspacePreferencesEvent::WorkspacePreferencesInitialized {
                     workspace_id: ws_id,
@@ -288,10 +290,12 @@ mod tests {
         DeciderTestSpecification::default()
             .for_decider(workspace_preferences_decider())
             .given(vec![initialized_event()])
-            .when(WorkspacePreferencesCommand::InitializeWorkspacePreferences {
-                workspace_id: ws_id,
-                initialized_at: ts,
-            })
+            .when(
+                WorkspacePreferencesCommand::InitializeWorkspacePreferences {
+                    workspace_id: ws_id,
+                    initialized_at: ts,
+                },
+            )
             .then_error(WorkspacePreferencesError::already_initialized());
     }
 
