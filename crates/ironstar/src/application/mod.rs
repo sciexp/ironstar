@@ -104,7 +104,8 @@ pub mod todo;
 
 pub use error::{AggregateError, CommandPipelineError};
 pub use query_session::{
-    QueryExecutionParams, handle_query_session_command, handle_query_session_command_zenoh,
+    QueryExecutionParams, handle_query_session_command,
+    handle_query_session_command_with_spawn, handle_query_session_command_zenoh,
     spawn_query_execution,
 };
 pub use todo::{handle_todo_command, query_all_todos, query_todo_state};
