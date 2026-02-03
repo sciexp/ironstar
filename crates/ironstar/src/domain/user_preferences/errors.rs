@@ -50,6 +50,16 @@ impl UserPreferencesError {
         &self.backtrace
     }
 
+    /// Create a new error with an explicit UUID, preserving error tracking.
+    #[must_use]
+    pub fn with_id(id: Uuid, kind: UserPreferencesErrorKind) -> Self {
+        Self {
+            id,
+            kind,
+            backtrace: Backtrace::capture(),
+        }
+    }
+
     pub fn already_initialized() -> Self {
         Self::new(UserPreferencesErrorKind::AlreadyInitialized)
     }
