@@ -152,7 +152,7 @@ mod tests {
         let id = SavedQueryId::new();
 
         let command = SavedQueryCommand::SaveQuery {
-            query_id: id.clone(),
+            query_id: id,
             workspace_id: WorkspaceId::from_uuid(Uuid::new_v4()),
             name: QueryName::try_from("Query".to_string()).expect("valid name"),
             sql: SqlQuery::try_from("SELECT 1".to_string()).expect("valid sql"),
