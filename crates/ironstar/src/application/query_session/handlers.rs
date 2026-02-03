@@ -40,9 +40,7 @@ pub struct QuerySessionEventRepositoryAdapter {
 
 impl QuerySessionEventRepositoryAdapter {
     /// Create a new adapter wrapping the given repository.
-    pub fn new(
-        inner: Arc<SqliteEventRepository<QuerySessionCommand, QuerySessionEvent>>,
-    ) -> Self {
+    pub fn new(inner: Arc<SqliteEventRepository<QuerySessionCommand, QuerySessionEvent>>) -> Self {
         Self { inner }
     }
 }
@@ -182,12 +180,8 @@ pub async fn handle_query_session_command_with_spawn(
     command: QuerySessionCommand,
 ) -> Result<Vec<(QuerySessionEvent, String)>, CommandPipelineError> {
     let bus_ref = event_bus.as_deref();
-    let saved_events = handle_query_session_command_zenoh(
-        Arc::clone(&event_repository),
-        bus_ref,
-        command,
-    )
-    .await?;
+    let saved_events =
+        handle_query_session_command_zenoh(Arc::clone(&event_repository), bus_ref, command).await?;
 
     // Spawn-after-persist: if QueryStarted was persisted, kick off DuckDB execution
     for (event, _version) in &saved_events {
@@ -208,8 +202,8 @@ pub async fn handle_query_session_command_with_spawn(
 #[allow(clippy::expect_used, clippy::panic)]
 mod tests {
     use super::*;
-    use crate::domain::query_session::{QuerySessionErrorKind, QuerySessionEvent};
     use crate::domain::analytics::{QueryId, SqlQuery};
+    use crate::domain::query_session::{QuerySessionErrorKind, QuerySessionEvent};
     use crate::infrastructure::event_bus::ZenohEventBus;
     use chrono::Utc;
     use sqlx::sqlite::SqlitePoolOptions;
@@ -257,7 +251,10 @@ mod tests {
         assert!(result.is_ok());
         let events = result.expect("command should succeed");
         assert_eq!(events.len(), 1);
-        assert!(matches!(events[0].0, QuerySessionEvent::QueryStarted { .. }));
+        assert!(matches!(
+            events[0].0,
+            QuerySessionEvent::QueryStarted { .. }
+        ));
     }
 
     #[tokio::test]
