@@ -63,6 +63,16 @@ impl QuerySessionError {
         }
     }
 
+    /// Creates an error with a specific UUID, preserving the original error ID
+    /// across error mapping boundaries (e.g., Decider → CommandPipelineError).
+    pub fn with_id(id: Uuid, kind: QuerySessionErrorKind) -> Self {
+        Self {
+            id,
+            kind,
+            backtrace: Backtrace::capture(),
+        }
+    }
+
     /// Returns the unique error identifier for distributed tracing.
     pub fn error_id(&self) -> Uuid {
         self.id
