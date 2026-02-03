@@ -25,8 +25,15 @@
 //! }
 //! ```
 
+use crate::domain::dashboard::{DashboardCommand, DashboardEvent};
+use crate::domain::saved_query::{SavedQueryCommand, SavedQueryEvent};
 use crate::domain::todo::commands::TodoCommand;
 use crate::domain::todo::events::TodoEvent;
+use crate::domain::user_preferences::{UserPreferencesCommand, UserPreferencesEvent};
+use crate::domain::workspace::{WorkspaceCommand, WorkspaceEvent};
+use crate::domain::workspace_preferences::{
+    WorkspacePreferencesCommand, WorkspacePreferencesEvent,
+};
 use crate::domain::{CatalogCommand, CatalogEvent, QuerySessionCommand, QuerySessionEvent};
 use crate::infrastructure::{
     AnalyticsState, AssetManifest, CachedAnalyticsService, DuckDBService, SqliteEventRepository,
@@ -35,6 +42,7 @@ use crate::infrastructure::{
 use crate::presentation::analytics::AnalyticsAppState;
 use crate::presentation::health::HealthState;
 use crate::presentation::todo::TodoAppState;
+use crate::presentation::workspace::WorkspaceAppState;
 use axum::extract::FromRef;
 use sqlx::sqlite::SqlitePool;
 use std::sync::Arc;
@@ -93,6 +101,22 @@ pub struct AppState {
 
     /// Shared QuerySession event repository.
     query_session_repo: Arc<SqliteEventRepository<QuerySessionCommand, QuerySessionEvent>>,
+
+    /// Shared Workspace event repository.
+    workspace_repo: Arc<SqliteEventRepository<WorkspaceCommand, WorkspaceEvent>>,
+
+    /// Shared Dashboard event repository.
+    dashboard_repo: Arc<SqliteEventRepository<DashboardCommand, DashboardEvent>>,
+
+    /// Shared SavedQuery event repository.
+    saved_query_repo: Arc<SqliteEventRepository<SavedQueryCommand, SavedQueryEvent>>,
+
+    /// Shared UserPreferences event repository.
+    user_preferences_repo: Arc<SqliteEventRepository<UserPreferencesCommand, UserPreferencesEvent>>,
+
+    /// Shared WorkspacePreferences event repository.
+    workspace_preferences_repo:
+        Arc<SqliteEventRepository<WorkspacePreferencesCommand, WorkspacePreferencesEvent>>,
 }
 
 impl AppState {
@@ -105,6 +129,11 @@ impl AppState {
         let todo_repo = Arc::new(SqliteEventRepository::new(db_pool.clone()));
         let catalog_repo = Arc::new(SqliteEventRepository::new(db_pool.clone()));
         let query_session_repo = Arc::new(SqliteEventRepository::new(db_pool.clone()));
+        let workspace_repo = Arc::new(SqliteEventRepository::new(db_pool.clone()));
+        let dashboard_repo = Arc::new(SqliteEventRepository::new(db_pool.clone()));
+        let saved_query_repo = Arc::new(SqliteEventRepository::new(db_pool.clone()));
+        let user_preferences_repo = Arc::new(SqliteEventRepository::new(db_pool.clone()));
+        let workspace_preferences_repo = Arc::new(SqliteEventRepository::new(db_pool.clone()));
 
         Self {
             db_pool,
@@ -116,6 +145,11 @@ impl AppState {
             todo_repo,
             catalog_repo,
             query_session_repo,
+            workspace_repo,
+            dashboard_repo,
+            saved_query_repo,
+            user_preferences_repo,
+            workspace_preferences_repo,
         }
     }
 
@@ -184,6 +218,19 @@ impl FromRef<AppState> for AnalyticsAppState {
         Self {
             catalog_repo: Arc::clone(&app_state.catalog_repo),
             query_session_repo: Arc::clone(&app_state.query_session_repo),
+            event_bus: app_state.event_bus.clone(),
+        }
+    }
+}
+
+impl FromRef<AppState> for WorkspaceAppState {
+    fn from_ref(app_state: &AppState) -> Self {
+        Self {
+            workspace_repo: Arc::clone(&app_state.workspace_repo),
+            dashboard_repo: Arc::clone(&app_state.dashboard_repo),
+            saved_query_repo: Arc::clone(&app_state.saved_query_repo),
+            user_preferences_repo: Arc::clone(&app_state.user_preferences_repo),
+            workspace_preferences_repo: Arc::clone(&app_state.workspace_preferences_repo),
             event_bus: app_state.event_bus.clone(),
         }
     }
