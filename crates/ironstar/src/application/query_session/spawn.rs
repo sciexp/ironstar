@@ -45,9 +45,7 @@ impl QueryExecutionParams {
     #[must_use]
     pub fn from_event(event: &QuerySessionEvent) -> Option<Self> {
         match event {
-            QuerySessionEvent::QueryStarted {
-                query_id, sql, ..
-            } => Some(Self {
+            QuerySessionEvent::QueryStarted { query_id, sql, .. } => Some(Self {
                 query_id: *query_id,
                 sql: sql.clone(),
             }),
@@ -92,12 +90,9 @@ pub fn spawn_query_execution(
         };
 
         let bus_ref = event_bus.as_deref();
-        if let Err(e) = handle_query_session_command_zenoh(
-            Arc::clone(&event_repository),
-            bus_ref,
-            begin_cmd,
-        )
-        .await
+        if let Err(e) =
+            handle_query_session_command_zenoh(Arc::clone(&event_repository), bus_ref, begin_cmd)
+                .await
         {
             tracing::error!(
                 query_id = %query_id,
