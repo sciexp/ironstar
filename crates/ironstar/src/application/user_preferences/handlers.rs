@@ -116,7 +116,7 @@ pub async fn handle_user_preferences_command_zenoh(
 mod tests {
     use super::*;
     use crate::domain::user_preferences::{
-        Locale, PreferencesId, Theme, UserPreferencesErrorKind,
+        PreferencesId, Theme, UserPreferencesErrorKind,
     };
     use crate::domain::UserId;
     use crate::infrastructure::event_bus::ZenohEventBus;
