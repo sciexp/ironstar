@@ -104,10 +104,7 @@ mod tests {
 
         assert!(state.is_initialized());
         assert_eq!(state.workspace_id(), Some(&ws_id));
-        assert_eq!(
-            state.default_catalog().unwrap().as_str(),
-            "ducklake:test"
-        );
+        assert_eq!(state.default_catalog().unwrap().as_str(), "ducklake:test");
         assert_eq!(state.layout_defaults().unwrap().as_str(), "{}");
     }
 }
