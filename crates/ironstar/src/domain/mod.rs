@@ -61,6 +61,7 @@ pub mod todo;
 pub mod traits;
 pub mod views;
 pub mod workspace;
+pub mod workspace_preferences;
 
 // Trait re-exports (Identifier re-exported from fmodel_rust via traits module)
 pub use traits::{DeciderType, EventType, IsFinal};
@@ -120,4 +121,11 @@ pub use workspace::{
     Visibility, WORKSPACE_NAME_MAX_LENGTH, WorkspaceCommand, WorkspaceDecider, WorkspaceError,
     WorkspaceErrorKind, WorkspaceEvent, WorkspaceId, WorkspaceName, WorkspaceState,
     WorkspaceStatus, workspace_decider,
+};
+
+// WorkspacePreferences re-exports (from workspace_preferences/)
+pub use workspace_preferences::{
+    CATALOG_URI_MAX_LENGTH, CatalogUri, LayoutDefaults, WorkspacePreferencesCommand,
+    WorkspacePreferencesDecider, WorkspacePreferencesError, WorkspacePreferencesErrorKind,
+    WorkspacePreferencesEvent, WorkspacePreferencesState, workspace_preferences_decider,
 };
