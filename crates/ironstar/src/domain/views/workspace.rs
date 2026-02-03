@@ -242,10 +242,7 @@ fn evolve_dashboard_layout(
             chart_id, tab_id, ..
         } => {
             let mut placements = state.placements.clone();
-            if let Some(placement) = placements
-                .iter_mut()
-                .find(|p| p.chart_id == *chart_id)
-            {
+            if let Some(placement) = placements.iter_mut().find(|p| p.chart_id == *chart_id) {
                 placement.tab_id = Some(*tab_id);
             }
             DashboardLayoutViewState {
@@ -344,9 +341,7 @@ fn evolve_saved_query_list(
             }
         }
 
-        SavedQueryEvent::QueryRenamed {
-            query_id, name, ..
-        } => {
+        SavedQueryEvent::QueryRenamed { query_id, name, .. } => {
             let mut queries = state.queries.clone();
             if let Some(q) = queries.iter_mut().find(|q| q.query_id == *query_id) {
                 q.name = name.clone();
