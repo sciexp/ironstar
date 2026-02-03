@@ -29,6 +29,7 @@
 use crate::application::error::{AggregateError, CommandPipelineError};
 use crate::common::ErrorCode;
 use crate::domain::error::{DomainError, DomainErrorKind, ValidationError, ValidationErrorKind};
+use crate::domain::catalog::CatalogErrorKind;
 use crate::domain::query_session::QuerySessionErrorKind;
 use crate::domain::todo::TodoErrorKind;
 use crate::infrastructure::error::InfrastructureError;
@@ -324,6 +325,40 @@ impl From<CommandPipelineError> for AppError {
                     QuerySessionErrorKind::QueryIdMismatch { .. }
                     | QuerySessionErrorKind::TerminalState { .. }
                     | QuerySessionErrorKind::InvalidTransition { .. } => Self::with_id(
+                        error_id,
+                        AppErrorKind::Domain(DomainError::new(
+                            DomainErrorKind::InvalidTransition {
+                                from: format!("{kind:?}"),
+                                to: "requested".to_string(),
+                            },
+                        )),
+                    ),
+                }
+            }
+            CommandPipelineError::Catalog(cat_err) => {
+                // Map CatalogError to HTTP-semantic AppErrorKind
+                let kind = cat_err.kind().clone();
+                match kind {
+                    CatalogErrorKind::EmptyRef => Self::with_id(
+                        error_id,
+                        AppErrorKind::Validation(ValidationError::new(
+                            ValidationErrorKind::EmptyField {
+                                field: "catalog_ref".to_string(),
+                            },
+                        )),
+                    ),
+                    CatalogErrorKind::RefTooLong { max, actual } => Self::with_id(
+                        error_id,
+                        AppErrorKind::Validation(ValidationError::new(
+                            ValidationErrorKind::TooLong {
+                                field: "catalog_ref".to_string(),
+                                max_length: max,
+                                actual_length: actual,
+                            },
+                        )),
+                    ),
+                    CatalogErrorKind::CatalogAlreadyActive
+                    | CatalogErrorKind::NoCatalogSelected => Self::with_id(
                         error_id,
                         AppErrorKind::Domain(DomainError::new(
                             DomainErrorKind::InvalidTransition {
