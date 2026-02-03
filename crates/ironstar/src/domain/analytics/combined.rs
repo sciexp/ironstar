@@ -19,8 +19,8 @@ use crate::domain::query_session::{
     QuerySessionCommand, QuerySessionError, QuerySessionEvent, QuerySessionState,
     query_session_decider,
 };
-use fmodel_rust::decider::Decider;
 use fmodel_rust::Sum;
+use fmodel_rust::decider::Decider;
 use std::fmt;
 
 /// Unified error type for the combined Analytics Decider.
@@ -143,7 +143,10 @@ mod tests {
         let events = (decider.decide)(&command, &state);
         let events = events.expect("select catalog should succeed");
         assert_eq!(events.len(), 1);
-        assert!(matches!(events[0], Sum::First(CatalogEvent::CatalogSelected { .. })));
+        assert!(matches!(
+            events[0],
+            Sum::First(CatalogEvent::CatalogSelected { .. })
+        ));
     }
 
     #[test]
