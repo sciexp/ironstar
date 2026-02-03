@@ -39,13 +39,8 @@ use super::state::DashboardState;
 use super::values::ChartPlacement;
 
 /// Type alias for the Dashboard Decider.
-pub type DashboardDecider<'a> = Decider<
-    'a,
-    DashboardCommand,
-    DashboardState,
-    DashboardEvent,
-    DashboardError,
->;
+pub type DashboardDecider<'a> =
+    Decider<'a, DashboardCommand, DashboardState, DashboardEvent, DashboardError>;
 
 /// Factory function creating a pure Dashboard Decider.
 ///
@@ -82,10 +77,9 @@ fn decide(
         }]),
 
         // CreateDashboard when already exists
-        (
-            DashboardCommand::CreateDashboard { .. },
-            DashboardState::DashboardExists { .. },
-        ) => Err(DashboardError::already_exists()),
+        (DashboardCommand::CreateDashboard { .. }, DashboardState::DashboardExists { .. }) => {
+            Err(DashboardError::already_exists())
+        }
 
         // RenameDashboard: DashboardExists -> DashboardExists (idempotent if same name)
         (
@@ -110,10 +104,9 @@ fn decide(
         }
 
         // RenameDashboard when not created
-        (
-            DashboardCommand::RenameDashboard { .. },
-            DashboardState::NoDashboard,
-        ) => Err(DashboardError::not_found()),
+        (DashboardCommand::RenameDashboard { .. }, DashboardState::NoDashboard) => {
+            Err(DashboardError::not_found())
+        }
 
         // AddChart: DashboardExists -> DashboardExists (idempotent on duplicate chart_id)
         (
@@ -136,10 +129,9 @@ fn decide(
         }
 
         // AddChart when not created
-        (
-            DashboardCommand::AddChart { .. },
-            DashboardState::NoDashboard,
-        ) => Err(DashboardError::not_found()),
+        (DashboardCommand::AddChart { .. }, DashboardState::NoDashboard) => {
+            Err(DashboardError::not_found())
+        }
 
         // RemoveChart: DashboardExists -> DashboardExists (idempotent on missing)
         (
@@ -162,10 +154,9 @@ fn decide(
         }
 
         // RemoveChart when not created
-        (
-            DashboardCommand::RemoveChart { .. },
-            DashboardState::NoDashboard,
-        ) => Err(DashboardError::not_found()),
+        (DashboardCommand::RemoveChart { .. }, DashboardState::NoDashboard) => {
+            Err(DashboardError::not_found())
+        }
 
         // AddTab: DashboardExists -> DashboardExists (idempotent on duplicate tab_id)
         (
@@ -188,10 +179,9 @@ fn decide(
         }
 
         // AddTab when not created
-        (
-            DashboardCommand::AddTab { .. },
-            DashboardState::NoDashboard,
-        ) => Err(DashboardError::not_found()),
+        (DashboardCommand::AddTab { .. }, DashboardState::NoDashboard) => {
+            Err(DashboardError::not_found())
+        }
 
         // RemoveTab: DashboardExists -> error if not found, else remove
         (
@@ -214,10 +204,9 @@ fn decide(
         }
 
         // RemoveTab when not created
-        (
-            DashboardCommand::RemoveTab { .. },
-            DashboardState::NoDashboard,
-        ) => Err(DashboardError::not_found()),
+        (DashboardCommand::RemoveTab { .. }, DashboardState::NoDashboard) => {
+            Err(DashboardError::not_found())
+        }
 
         // MoveChartToTab: DashboardExists -> check chart and tab exist
         (
@@ -248,10 +237,9 @@ fn decide(
         }
 
         // MoveChartToTab when not created
-        (
-            DashboardCommand::MoveChartToTab { .. },
-            DashboardState::NoDashboard,
-        ) => Err(DashboardError::not_found()),
+        (DashboardCommand::MoveChartToTab { .. }, DashboardState::NoDashboard) => {
+            Err(DashboardError::not_found())
+        }
     }
 }
 
@@ -411,10 +399,10 @@ fn evolve(state: &DashboardState, event: &DashboardEvent) -> DashboardState {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::values::{
         ChartDefinitionRef, ChartId, ChartPlacement, DashboardId, GridPosition, TabId, TabInfo,
     };
+    use super::*;
     use chrono::{DateTime, Utc};
     use fmodel_rust::specification::DeciderTestSpecification;
 
@@ -1022,10 +1010,7 @@ mod tests {
         assert_eq!(events.len(), 1);
 
         let state = evolve(&state, &events[0]);
-        assert_eq!(
-            state.placements().unwrap()[0].tab_id,
-            Some(tab_id)
-        );
+        assert_eq!(state.placements().unwrap()[0].tab_id, Some(tab_id));
 
         // Rename
         let new_name = DashboardTitle::new("Revenue Dashboard").unwrap();
