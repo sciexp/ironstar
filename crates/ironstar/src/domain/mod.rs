@@ -51,6 +51,7 @@
 //! ```
 
 pub mod analytics;
+pub mod catalog;
 pub mod common;
 pub mod error;
 pub mod query_session;
@@ -75,6 +76,12 @@ pub use analytics::{
     AnalyticsError, AnalyticsErrorKind, AnalyticsValidationError, AnalyticsValidationErrorKind,
     ChartConfig, ChartType, DATASET_REF_MAX_LENGTH, DatasetRef, QueryId, SQL_QUERY_MAX_LENGTH,
     SqlQuery,
+};
+
+// Catalog re-exports
+pub use catalog::{
+    CATALOG_REF_MAX_LENGTH, CatalogCommand, CatalogDecider, CatalogError, CatalogErrorKind,
+    CatalogEvent, CatalogMetadata, CatalogRef, CatalogState, DatasetInfo, catalog_decider,
 };
 
 // QuerySession re-exports
