@@ -4,8 +4,8 @@
 //! to compute current state on demand. QuerySession is a singleton aggregate
 //! ("default-session"), so queries do not require an aggregate ID parameter.
 
-use crate::domain::views::{QueryHistoryEntry, QuerySessionViewState, query_session_view};
 use crate::domain::QuerySessionEvent;
+use crate::domain::views::{QueryHistoryEntry, QuerySessionViewState, query_session_view};
 use crate::infrastructure::error::InfrastructureError;
 use crate::infrastructure::event_store::SqliteEventRepository;
 
