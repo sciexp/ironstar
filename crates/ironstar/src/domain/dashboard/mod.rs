@@ -54,4 +54,6 @@ pub use decider::{DashboardDecider, dashboard_decider};
 pub use errors::{DashboardError, DashboardErrorKind};
 pub use events::DashboardEvent;
 pub use state::DashboardState;
-pub use values::{ChartDefinitionRef, ChartId, ChartPlacement, DashboardId, GridPosition, TabId, TabInfo};
+pub use values::{
+    ChartDefinitionRef, ChartId, ChartPlacement, DashboardId, GridPosition, TabId, TabInfo,
+};
