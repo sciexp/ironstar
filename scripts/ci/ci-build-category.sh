@@ -111,7 +111,7 @@ build_packages() {
 
     print_step "building packages"
     local failed=0
-    echo "$packages" | while read -r pkg; do
+    while read -r pkg; do
         if [ -n "$pkg" ]; then
             echo ""
             echo "building packages.$system.$pkg"
@@ -120,7 +120,7 @@ build_packages() {
                 failed=$((failed + 1))
             fi
         fi
-    done
+    done <<< "$packages"
 
     if [ $failed -gt 0 ]; then
         echo ""
@@ -152,7 +152,7 @@ build_checks() {
 
     print_step "building checks"
     local failed=0
-    echo "$checks" | while read -r check; do
+    while read -r check; do
         if [ -n "$check" ]; then
             echo ""
             echo "building checks.$system.$check"
@@ -161,7 +161,7 @@ build_checks() {
                 failed=$((failed + 1))
             fi
         fi
-    done
+    done <<< "$checks"
 
     if [ $failed -gt 0 ]; then
         echo ""
@@ -193,7 +193,7 @@ build_devshells() {
 
     print_step "building devshells"
     local failed=0
-    echo "$devshells" | while read -r shell; do
+    while read -r shell; do
         if [ -n "$shell" ]; then
             echo ""
             echo "building devShells.$system.$shell"
@@ -202,7 +202,7 @@ build_devshells() {
                 failed=$((failed + 1))
             fi
         fi
-    done
+    done <<< "$devshells"
 
     if [ $failed -gt 0 ]; then
         echo ""
