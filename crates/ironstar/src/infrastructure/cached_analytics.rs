@@ -154,7 +154,7 @@ pub fn cache_key(prefix: &str, params: &impl Hash) -> String {
 }
 
 #[cfg(test)]
-#[expect(clippy::expect_used, clippy::panic, reason = "test assertions")]
+#[expect(clippy::expect_used, reason = "test assertions")]
 mod tests {
     use super::*;
     use std::time::Duration;
@@ -208,7 +208,7 @@ mod tests {
                 let mut stmt = conn.prepare("SELECT 42 AS count, 'hello' AS name")?;
                 stmt.query_row([], |row| {
                     Ok(QueryResult {
-                        count: row.get::<_, i64>(0)? as u64,
+                        count: u64::try_from(row.get::<_, i64>(0)?).unwrap_or(0),
                         name: row.get(1)?,
                     })
                 })
@@ -242,7 +242,7 @@ mod tests {
                 let mut stmt = conn.prepare("SELECT 1 AS count, 'first' AS name")?;
                 stmt.query_row([], |row| {
                     Ok(QueryResult {
-                        count: row.get::<_, i64>(0)? as u64,
+                        count: u64::try_from(row.get::<_, i64>(0)?).unwrap_or(0),
                         name: row.get(1)?,
                     })
                 })
@@ -257,7 +257,7 @@ mod tests {
                 let mut stmt = conn.prepare("SELECT 2 AS count, 'second' AS name")?;
                 stmt.query_row([], |row| {
                     Ok(QueryResult {
-                        count: row.get::<_, i64>(0)? as u64,
+                        count: u64::try_from(row.get::<_, i64>(0)?).unwrap_or(0),
                         name: row.get(1)?,
                     })
                 })
@@ -286,7 +286,7 @@ mod tests {
             .query_cached("space:astronauts:abc", |conn| {
                 conn.prepare("SELECT 1, 'a'")?.query_row([], |row| {
                     Ok(QueryResult {
-                        count: row.get::<_, i64>(0)? as u64,
+                        count: u64::try_from(row.get::<_, i64>(0)?).unwrap_or(0),
                         name: row.get(1)?,
                     })
                 })
@@ -298,7 +298,7 @@ mod tests {
             .query_cached("other:missions:xyz", |conn| {
                 conn.prepare("SELECT 2, 'b'")?.query_row([], |row| {
                     Ok(QueryResult {
-                        count: row.get::<_, i64>(0)? as u64,
+                        count: u64::try_from(row.get::<_, i64>(0)?).unwrap_or(0),
                         name: row.get(1)?,
                     })
                 })
@@ -327,7 +327,7 @@ mod tests {
             .query_cached("test:unavailable", |conn| {
                 conn.prepare("SELECT 1, 'x'")?.query_row([], |row| {
                     Ok(QueryResult {
-                        count: row.get::<_, i64>(0)? as u64,
+                        count: u64::try_from(row.get::<_, i64>(0)?).unwrap_or(0),
                         name: row.get(1)?,
                     })
                 })
