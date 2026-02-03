@@ -99,18 +99,30 @@
 //! - Async primitives in domain types (domain must remain sync)
 
 pub mod catalog;
+pub mod dashboard;
 pub mod error;
 pub mod query_session;
+pub mod saved_query;
 pub mod todo;
+pub mod user_preferences;
+pub mod workspace;
+pub mod workspace_preferences;
 
 pub use catalog::{
     handle_catalog_command, handle_catalog_command_zenoh, query_catalog_metadata,
     query_catalog_state,
 };
+pub use dashboard::{handle_dashboard_command, handle_dashboard_command_zenoh};
 pub use error::{AggregateError, CommandPipelineError};
 pub use query_session::{
     QueryExecutionParams, handle_query_session_command, handle_query_session_command_with_spawn,
     handle_query_session_command_zenoh, query_query_history, query_session_state,
     spawn_query_execution,
 };
+pub use saved_query::{handle_saved_query_command, handle_saved_query_command_zenoh};
 pub use todo::{handle_todo_command, query_all_todos, query_todo_state};
+pub use user_preferences::{handle_user_preferences_command, handle_user_preferences_command_zenoh};
+pub use workspace::{handle_workspace_command, handle_workspace_command_zenoh};
+pub use workspace_preferences::{
+    handle_workspace_preferences_command, handle_workspace_preferences_command_zenoh,
+};
