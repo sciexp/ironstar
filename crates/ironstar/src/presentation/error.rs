@@ -385,11 +385,9 @@ impl From<CatalogError> for AppError {
         match kind {
             CatalogErrorKind::EmptyRef => Self::with_id(
                 error_id,
-                AppErrorKind::Validation(ValidationError::new(
-                    ValidationErrorKind::EmptyField {
-                        field: "catalog_ref".to_string(),
-                    },
-                )),
+                AppErrorKind::Validation(ValidationError::new(ValidationErrorKind::EmptyField {
+                    field: "catalog_ref".to_string(),
+                })),
             ),
             CatalogErrorKind::RefTooLong { max, actual } => Self::with_id(
                 error_id,
@@ -402,12 +400,10 @@ impl From<CatalogError> for AppError {
             CatalogErrorKind::CatalogAlreadyActive | CatalogErrorKind::NoCatalogSelected => {
                 Self::with_id(
                     error_id,
-                    AppErrorKind::Domain(DomainError::new(
-                        DomainErrorKind::InvalidTransition {
-                            from: format!("{kind:?}"),
-                            to: "requested".to_string(),
-                        },
-                    )),
+                    AppErrorKind::Domain(DomainError::new(DomainErrorKind::InvalidTransition {
+                        from: format!("{kind:?}"),
+                        to: "requested".to_string(),
+                    })),
                 )
             }
         }
@@ -421,11 +417,9 @@ impl From<AnalyticsValidationError> for AppError {
         match kind {
             AnalyticsValidationErrorKind::EmptySql => Self::with_id(
                 error_id,
-                AppErrorKind::Validation(ValidationError::new(
-                    ValidationErrorKind::EmptyField {
-                        field: "sql".to_string(),
-                    },
-                )),
+                AppErrorKind::Validation(ValidationError::new(ValidationErrorKind::EmptyField {
+                    field: "sql".to_string(),
+                })),
             ),
             AnalyticsValidationErrorKind::SqlTooLong { max, actual } => Self::with_id(
                 error_id,
@@ -437,11 +431,9 @@ impl From<AnalyticsValidationError> for AppError {
             ),
             AnalyticsValidationErrorKind::EmptyDatasetRef => Self::with_id(
                 error_id,
-                AppErrorKind::Validation(ValidationError::new(
-                    ValidationErrorKind::EmptyField {
-                        field: "dataset_ref".to_string(),
-                    },
-                )),
+                AppErrorKind::Validation(ValidationError::new(ValidationErrorKind::EmptyField {
+                    field: "dataset_ref".to_string(),
+                })),
             ),
             AnalyticsValidationErrorKind::DatasetRefTooLong { max, actual } => Self::with_id(
                 error_id,
