@@ -10,11 +10,10 @@
 
 use chrono::{DateTime, Utc};
 use fmodel_rust::view::View;
-use uuid::Uuid;
 
 use crate::domain::common::DashboardTitle;
 use crate::domain::dashboard::events::DashboardEvent;
-use crate::domain::dashboard::values::{ChartId, ChartPlacement, DashboardId, TabId, TabInfo};
+use crate::domain::dashboard::values::{ChartPlacement, DashboardId, TabInfo};
 use crate::domain::saved_query::events::SavedQueryEvent;
 use crate::domain::saved_query::values::{QueryName, SavedQueryId};
 use crate::domain::session::UserId;
