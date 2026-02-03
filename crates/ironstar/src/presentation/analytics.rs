@@ -38,11 +38,11 @@ use crate::application::query_session::{
     handle_query_session_command_zenoh, query_query_history, query_session_state,
 };
 use crate::domain::traits::EventType;
+use crate::domain::views::{CatalogViewState, QueryHistoryEntry, QuerySessionViewState};
 use crate::domain::{
     CatalogCommand, CatalogEvent, CatalogMetadata, CatalogRef, DatasetInfo, QueryId,
     QuerySessionCommand, QuerySessionEvent, SqlQuery,
 };
-use crate::domain::views::{CatalogViewState, QueryHistoryEntry, QuerySessionViewState};
 use crate::infrastructure::event_bus::ZenohEventBus;
 use crate::infrastructure::event_store::{SqliteEventRepository, StoredEvent};
 use crate::infrastructure::key_expr::aggregate_type_pattern;
@@ -158,10 +158,8 @@ async fn analytics_feed_handler(
     }
     all_sse.sort_by_key(|(seq, _)| *seq);
 
-    let replay_stream = stored_events_to_stream(
-        all_sse.into_iter().map(|(_, event)| event).collect(),
-        |e| e,
-    );
+    let replay_stream =
+        stored_events_to_stream(all_sse.into_iter().map(|(_, event)| event).collect(), |e| e);
 
     // Merge live streams from both subscribers.
     let catalog_live = zenoh_to_sse_stream(catalog_sub, live_catalog_event_to_sse);
