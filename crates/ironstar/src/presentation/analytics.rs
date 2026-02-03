@@ -439,7 +439,7 @@ pub async fn start_query(
     let sql = SqlQuery::new(&request.sql)?;
     let dataset_ref = request
         .dataset_ref
-        .map(|r| crate::domain::DatasetRef::new(r))
+        .map(crate::domain::DatasetRef::new)
         .transpose()?;
 
     let command = QuerySessionCommand::StartQuery {
