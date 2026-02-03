@@ -33,8 +33,7 @@ use super::values::CatalogMetadata;
 ///
 /// Uses `CatalogState` directly (not `Option<CatalogState>`) since the
 /// initial state is a concrete value (`NoCatalogSelected`).
-pub type CatalogDecider<'a> =
-    Decider<'a, CatalogCommand, CatalogState, CatalogEvent, CatalogError>;
+pub type CatalogDecider<'a> = Decider<'a, CatalogCommand, CatalogState, CatalogEvent, CatalogError>;
 
 /// Factory function creating a pure Catalog Decider.
 pub fn catalog_decider<'a>() -> CatalogDecider<'a> {
@@ -73,16 +72,14 @@ fn decide(
         ) if catalog_ref == active_ref => Ok(vec![]),
 
         // SelectCatalog from CatalogActive with different ref → error
-        (
-            CatalogCommand::SelectCatalog { .. },
-            CatalogState::CatalogActive { .. },
-        ) => Err(CatalogError::catalog_already_active()),
+        (CatalogCommand::SelectCatalog { .. }, CatalogState::CatalogActive { .. }) => {
+            Err(CatalogError::catalog_already_active())
+        }
 
         // RefreshCatalogMetadata from NoCatalogSelected → error
-        (
-            CatalogCommand::RefreshCatalogMetadata { .. },
-            CatalogState::NoCatalogSelected,
-        ) => Err(CatalogError::no_catalog_selected()),
+        (CatalogCommand::RefreshCatalogMetadata { .. }, CatalogState::NoCatalogSelected) => {
+            Err(CatalogError::no_catalog_selected())
+        }
 
         // RefreshCatalogMetadata from CatalogActive → emit refresh
         (
@@ -125,8 +122,8 @@ fn evolve(state: &CatalogState, event: &CatalogEvent) -> CatalogState {
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod tests {
-    use super::*;
     use super::super::values::{CatalogRef, DatasetInfo};
+    use super::*;
     use chrono::Utc;
     use fmodel_rust::specification::DeciderTestSpecification;
 
@@ -325,12 +322,10 @@ mod tests {
         // Start with no catalog, select one, then refresh metadata
         DeciderTestSpecification::default()
             .for_decider(catalog_decider())
-            .given(vec![
-                CatalogEvent::CatalogSelected {
-                    catalog_ref: r.clone(),
-                    selected_at: ts,
-                },
-            ])
+            .given(vec![CatalogEvent::CatalogSelected {
+                catalog_ref: r.clone(),
+                selected_at: ts,
+            }])
             .when(CatalogCommand::RefreshCatalogMetadata {
                 metadata: meta.clone(),
                 refreshed_at: ts,
