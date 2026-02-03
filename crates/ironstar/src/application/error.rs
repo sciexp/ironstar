@@ -120,8 +120,13 @@ impl AggregateError {
 // =============================================================================
 
 use crate::domain::catalog::CatalogError;
+use crate::domain::dashboard::DashboardError;
 use crate::domain::query_session::QuerySessionError;
+use crate::domain::saved_query::SavedQueryError;
 use crate::domain::todo::TodoError;
+use crate::domain::user_preferences::UserPreferencesError;
+use crate::domain::workspace::WorkspaceError;
+use crate::domain::workspace_preferences::WorkspacePreferencesError;
 use crate::infrastructure::error::InfrastructureError;
 use uuid::Uuid;
 
@@ -158,8 +163,17 @@ pub enum CommandPipelineError {
     QuerySession(QuerySessionError),
     /// Catalog aggregate domain error (preserves UUID from CatalogError).
     Catalog(CatalogError),
+    /// Workspace aggregate domain error (preserves UUID from WorkspaceError).
+    Workspace(WorkspaceError),
+    /// WorkspacePreferences aggregate domain error.
+    WorkspacePreferences(WorkspacePreferencesError),
+    /// Dashboard aggregate domain error.
+    Dashboard(DashboardError),
+    /// SavedQuery aggregate domain error.
+    SavedQuery(SavedQueryError),
+    /// UserPreferences aggregate domain error.
+    UserPreferences(UserPreferencesError),
     // Session(SessionError),      // future: ironstar-507
-    // Workspace(WorkspaceError),  // future: ironstar-7a2
     /// Infrastructure failure (from EventRepository adapter).
     Infrastructure(InfrastructureError),
 }
@@ -175,6 +189,11 @@ impl CommandPipelineError {
             Self::Todo(e) => e.error_id(),
             Self::QuerySession(e) => e.error_id(),
             Self::Catalog(e) => e.error_id(),
+            Self::Workspace(e) => e.error_id(),
+            Self::WorkspacePreferences(e) => e.error_id(),
+            Self::Dashboard(e) => e.error_id(),
+            Self::SavedQuery(e) => e.error_id(),
+            Self::UserPreferences(e) => e.error_id(),
             Self::Infrastructure(e) => e.error_id(),
         }
     }
@@ -186,6 +205,11 @@ impl fmt::Display for CommandPipelineError {
             Self::Todo(e) => write!(f, "Todo: {e}"),
             Self::QuerySession(e) => write!(f, "QuerySession: {e}"),
             Self::Catalog(e) => write!(f, "Catalog: {e}"),
+            Self::Workspace(e) => write!(f, "Workspace: {e}"),
+            Self::WorkspacePreferences(e) => write!(f, "WorkspacePreferences: {e}"),
+            Self::Dashboard(e) => write!(f, "Dashboard: {e}"),
+            Self::SavedQuery(e) => write!(f, "SavedQuery: {e}"),
+            Self::UserPreferences(e) => write!(f, "UserPreferences: {e}"),
             Self::Infrastructure(e) => write!(f, "{e}"),
         }
     }
@@ -197,6 +221,11 @@ impl std::error::Error for CommandPipelineError {
             Self::Todo(e) => Some(e),
             Self::QuerySession(e) => Some(e),
             Self::Catalog(e) => Some(e),
+            Self::Workspace(e) => Some(e),
+            Self::WorkspacePreferences(e) => Some(e),
+            Self::Dashboard(e) => Some(e),
+            Self::SavedQuery(e) => Some(e),
+            Self::UserPreferences(e) => Some(e),
             Self::Infrastructure(e) => Some(e),
         }
     }
@@ -252,6 +281,72 @@ impl From<&CatalogError> for CommandPipelineError {
 impl From<&TodoError> for CommandPipelineError {
     fn from(e: &TodoError) -> Self {
         Self::Todo(TodoError::with_id(e.error_id(), e.kind().clone()))
+    }
+}
+
+impl From<WorkspaceError> for CommandPipelineError {
+    fn from(e: WorkspaceError) -> Self {
+        Self::Workspace(e)
+    }
+}
+
+impl From<&WorkspaceError> for CommandPipelineError {
+    fn from(e: &WorkspaceError) -> Self {
+        Self::Workspace(WorkspaceError::with_id(e.error_id(), e.kind().clone()))
+    }
+}
+
+impl From<WorkspacePreferencesError> for CommandPipelineError {
+    fn from(e: WorkspacePreferencesError) -> Self {
+        Self::WorkspacePreferences(e)
+    }
+}
+
+impl From<&WorkspacePreferencesError> for CommandPipelineError {
+    fn from(e: &WorkspacePreferencesError) -> Self {
+        Self::WorkspacePreferences(WorkspacePreferencesError::with_id(
+            e.error_id(),
+            e.kind().clone(),
+        ))
+    }
+}
+
+impl From<DashboardError> for CommandPipelineError {
+    fn from(e: DashboardError) -> Self {
+        Self::Dashboard(e)
+    }
+}
+
+impl From<&DashboardError> for CommandPipelineError {
+    fn from(e: &DashboardError) -> Self {
+        Self::Dashboard(DashboardError::with_id(e.error_id(), e.kind().clone()))
+    }
+}
+
+impl From<SavedQueryError> for CommandPipelineError {
+    fn from(e: SavedQueryError) -> Self {
+        Self::SavedQuery(e)
+    }
+}
+
+impl From<&SavedQueryError> for CommandPipelineError {
+    fn from(e: &SavedQueryError) -> Self {
+        Self::SavedQuery(SavedQueryError::with_id(e.error_id(), e.kind().clone()))
+    }
+}
+
+impl From<UserPreferencesError> for CommandPipelineError {
+    fn from(e: UserPreferencesError) -> Self {
+        Self::UserPreferences(e)
+    }
+}
+
+impl From<&UserPreferencesError> for CommandPipelineError {
+    fn from(e: &UserPreferencesError) -> Self {
+        Self::UserPreferences(UserPreferencesError::with_id(
+            e.error_id(),
+            e.kind().clone(),
+        ))
     }
 }
 
