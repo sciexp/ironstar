@@ -88,8 +88,7 @@ impl CacheInvalidationRegistry {
                     event_key = key_expr,
                     "Invalidating cache entry"
                 );
-                self.cached_service
-                    .invalidate_for_prefix(dep.cache_key());
+                self.cached_service.invalidate_for_prefix(dep.cache_key());
                 invalidated += 1;
             }
         }
@@ -183,10 +182,8 @@ mod tests {
 
     #[test]
     fn registry_matches_aggregate_dependency() {
-        let registry = test_registry().register(
-            CacheDependency::new("dashboard:todo")
-                .depends_on_aggregate("Todo"),
-        );
+        let registry = test_registry()
+            .register(CacheDependency::new("dashboard:todo").depends_on_aggregate("Todo"));
 
         assert_eq!(registry.process_event("events/Todo/abc/1"), 1);
         assert_eq!(registry.process_event("events/Session/abc/1"), 0);
@@ -195,8 +192,7 @@ mod tests {
     #[test]
     fn registry_matches_instance_dependency() {
         let registry = test_registry().register(
-            CacheDependency::new("user:session:42")
-                .depends_on_instance("Session", "user-42"),
+            CacheDependency::new("user:session:42").depends_on_instance("Session", "user-42"),
         );
 
         assert_eq!(registry.process_event("events/Session/user-42/3"), 1);
@@ -206,14 +202,8 @@ mod tests {
     #[test]
     fn registry_matches_multiple_dependencies() {
         let registry = test_registry()
-            .register(
-                CacheDependency::new("summary:all")
-                    .depends_on_aggregate("Todo"),
-            )
-            .register(
-                CacheDependency::new("counts:todo")
-                    .depends_on_aggregate("Todo"),
-            );
+            .register(CacheDependency::new("summary:all").depends_on_aggregate("Todo"))
+            .register(CacheDependency::new("counts:todo").depends_on_aggregate("Todo"));
 
         // Both deps match Todo events.
         assert_eq!(registry.process_event("events/Todo/abc/1"), 2);
@@ -252,10 +242,8 @@ mod tests {
         assert_eq!(cache.entry_count(), 1);
 
         // Register dependency: "todo:" prefix depends on Todo events.
-        let registry = CacheInvalidationRegistry::new(cached).register(
-            CacheDependency::new("todo:")
-                .depends_on_aggregate("Todo"),
-        );
+        let registry = CacheInvalidationRegistry::new(cached)
+            .register(CacheDependency::new("todo:").depends_on_aggregate("Todo"));
 
         let _handle = spawn_cache_invalidation(session.clone(), registry);
 
