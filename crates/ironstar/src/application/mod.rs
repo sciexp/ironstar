@@ -99,7 +99,9 @@
 //! - Async primitives in domain types (domain must remain sync)
 
 pub mod error;
+pub mod query_session;
 pub mod todo;
 
 pub use error::{AggregateError, CommandPipelineError};
+pub use query_session::{handle_query_session_command, handle_query_session_command_zenoh};
 pub use todo::{handle_todo_command, query_all_todos, query_todo_state};
