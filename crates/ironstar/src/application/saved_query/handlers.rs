@@ -134,7 +134,7 @@ mod tests {
             workspace_id: WorkspaceId::from_uuid(Uuid::new_v4()),
             name: QueryName::try_from("Test Query".to_string()).expect("valid name"),
             sql: SqlQuery::try_from("SELECT 1".to_string()).expect("valid sql"),
-            dataset_ref: DatasetRef::try_from("test_dataset".to_string()).expect("valid ref"),
+            dataset_ref: DatasetRef::try_from("hf://test/dataset".to_string()).expect("valid ref"),
             saved_at: Utc::now(),
         };
 
@@ -156,7 +156,7 @@ mod tests {
             workspace_id: WorkspaceId::from_uuid(Uuid::new_v4()),
             name: QueryName::try_from("Query".to_string()).expect("valid name"),
             sql: SqlQuery::try_from("SELECT 1".to_string()).expect("valid sql"),
-            dataset_ref: DatasetRef::try_from("dataset".to_string()).expect("valid ref"),
+            dataset_ref: DatasetRef::try_from("hf://other/dataset".to_string()).expect("valid ref"),
             saved_at: Utc::now(),
         };
 
@@ -169,7 +169,7 @@ mod tests {
             workspace_id: WorkspaceId::from_uuid(Uuid::new_v4()),
             name: QueryName::try_from("Duplicate".to_string()).expect("valid name"),
             sql: SqlQuery::try_from("SELECT 2".to_string()).expect("valid sql"),
-            dataset_ref: DatasetRef::try_from("dataset".to_string()).expect("valid ref"),
+            dataset_ref: DatasetRef::try_from("hf://other/dataset".to_string()).expect("valid ref"),
             saved_at: Utc::now(),
         };
 
