@@ -53,12 +53,15 @@
 pub mod analytics;
 pub mod catalog;
 pub mod common;
+pub mod dashboard;
 pub mod error;
 pub mod query_session;
+pub mod saved_query;
 pub mod session;
 pub mod signals;
 pub mod todo;
 pub mod traits;
+pub mod user_preferences;
 pub mod views;
 pub mod workspace;
 pub mod workspace_preferences;
@@ -121,6 +124,27 @@ pub use workspace::{
     Visibility, WORKSPACE_NAME_MAX_LENGTH, WorkspaceCommand, WorkspaceDecider, WorkspaceError,
     WorkspaceErrorKind, WorkspaceEvent, WorkspaceId, WorkspaceName, WorkspaceState,
     WorkspaceStatus, workspace_decider,
+};
+
+// SavedQuery re-exports (from saved_query/)
+pub use saved_query::{
+    QUERY_NAME_MAX_LENGTH, QUERY_NAME_MIN_LENGTH, QueryName, SavedQueryCommand, SavedQueryDecider,
+    SavedQueryError, SavedQueryErrorKind, SavedQueryEvent, SavedQueryId, SavedQueryState,
+    saved_query_decider,
+};
+
+// UserPreferences re-exports (from user_preferences/)
+pub use user_preferences::{
+    LOCALE_MAX_LENGTH, Locale, PreferencesId, Theme, UiState, UserPreferencesCommand,
+    UserPreferencesDecider, UserPreferencesError, UserPreferencesErrorKind,
+    UserPreferencesEvent, UserPreferencesState, user_preferences_decider,
+};
+
+// Dashboard re-exports (from dashboard/)
+pub use dashboard::{
+    ChartDefinitionRef, ChartId, ChartPlacement, DashboardCommand, DashboardDecider,
+    DashboardError, DashboardErrorKind, DashboardEvent, DashboardId, DashboardState,
+    GridPosition, TabId, TabInfo, dashboard_decider,
 };
 
 // WorkspacePreferences re-exports (from workspace_preferences/)
