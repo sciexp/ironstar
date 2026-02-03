@@ -30,9 +30,14 @@ use crate::application::error::{AggregateError, CommandPipelineError};
 use crate::common::ErrorCode;
 use crate::domain::analytics::{AnalyticsValidationError, AnalyticsValidationErrorKind};
 use crate::domain::catalog::{CatalogError, CatalogErrorKind};
+use crate::domain::dashboard::DashboardErrorKind;
 use crate::domain::error::{DomainError, DomainErrorKind, ValidationError, ValidationErrorKind};
 use crate::domain::query_session::QuerySessionErrorKind;
+use crate::domain::saved_query::SavedQueryErrorKind;
 use crate::domain::todo::TodoErrorKind;
+use crate::domain::user_preferences::UserPreferencesErrorKind;
+use crate::domain::workspace::WorkspaceErrorKind;
+use crate::domain::workspace_preferences::WorkspacePreferencesErrorKind;
 use crate::infrastructure::error::InfrastructureError;
 use axum::Json;
 use axum::http::StatusCode;
@@ -367,6 +372,139 @@ impl From<CommandPipelineError> for AppError {
                                 to: "requested".to_string(),
                             },
                         )),
+                    ),
+                }
+            }
+            CommandPipelineError::Workspace(ws_err) => {
+                let kind = ws_err.kind().clone();
+                match kind {
+                    WorkspaceErrorKind::AlreadyExists => Self::with_id(
+                        error_id,
+                        AppErrorKind::Domain(DomainError::new(DomainErrorKind::AlreadyExists {
+                            aggregate_type: "Workspace".to_string(),
+                            aggregate_id: "unknown".to_string(),
+                        })),
+                    ),
+                    WorkspaceErrorKind::NotFound => Self::with_id(
+                        error_id,
+                        AppErrorKind::Domain(DomainError::new(DomainErrorKind::NotFound {
+                            aggregate_type: "Workspace".to_string(),
+                            aggregate_id: "unknown".to_string(),
+                        })),
+                    ),
+                    WorkspaceErrorKind::InvalidName(reason) => Self::with_id(
+                        error_id,
+                        AppErrorKind::Validation(ValidationError::new(
+                            ValidationErrorKind::InvalidFormat {
+                                field: "name".to_string(),
+                                expected: reason,
+                            },
+                        )),
+                    ),
+                }
+            }
+            CommandPipelineError::WorkspacePreferences(wp_err) => {
+                let kind = wp_err.kind().clone();
+                match kind {
+                    WorkspacePreferencesErrorKind::AlreadyInitialized => Self::with_id(
+                        error_id,
+                        AppErrorKind::Domain(DomainError::new(DomainErrorKind::AlreadyExists {
+                            aggregate_type: "WorkspacePreferences".to_string(),
+                            aggregate_id: "unknown".to_string(),
+                        })),
+                    ),
+                    WorkspacePreferencesErrorKind::NotInitialized => Self::with_id(
+                        error_id,
+                        AppErrorKind::Domain(DomainError::new(DomainErrorKind::NotFound {
+                            aggregate_type: "WorkspacePreferences".to_string(),
+                            aggregate_id: "unknown".to_string(),
+                        })),
+                    ),
+                    WorkspacePreferencesErrorKind::EmptyCatalogUri => Self::with_id(
+                        error_id,
+                        AppErrorKind::Validation(ValidationError::new(
+                            ValidationErrorKind::EmptyField {
+                                field: "catalog_uri".to_string(),
+                            },
+                        )),
+                    ),
+                    WorkspacePreferencesErrorKind::CatalogUriTooLong { max, actual } => {
+                        Self::with_id(
+                            error_id,
+                            AppErrorKind::Validation(ValidationError::new(
+                                ValidationErrorKind::TooLong {
+                                    field: "catalog_uri".to_string(),
+                                    max_length: max,
+                                    actual_length: actual,
+                                },
+                            )),
+                        )
+                    }
+                }
+            }
+            CommandPipelineError::Dashboard(dash_err) => {
+                let kind = dash_err.kind().clone();
+                match kind {
+                    DashboardErrorKind::AlreadyExists => Self::with_id(
+                        error_id,
+                        AppErrorKind::Domain(DomainError::new(DomainErrorKind::AlreadyExists {
+                            aggregate_type: "Dashboard".to_string(),
+                            aggregate_id: "unknown".to_string(),
+                        })),
+                    ),
+                    DashboardErrorKind::NotFound => Self::with_id(
+                        error_id,
+                        AppErrorKind::Domain(DomainError::new(DomainErrorKind::NotFound {
+                            aggregate_type: "Dashboard".to_string(),
+                            aggregate_id: "unknown".to_string(),
+                        })),
+                    ),
+                    DashboardErrorKind::TabNotFound | DashboardErrorKind::ChartNotFound => {
+                        Self::with_id(
+                            error_id,
+                            AppErrorKind::Domain(DomainError::new(DomainErrorKind::NotFound {
+                                aggregate_type: "Dashboard".to_string(),
+                                aggregate_id: format!("{kind:?}"),
+                            })),
+                        )
+                    }
+                }
+            }
+            CommandPipelineError::SavedQuery(sq_err) => {
+                let kind = sq_err.kind().clone();
+                match kind {
+                    SavedQueryErrorKind::AlreadyExists => Self::with_id(
+                        error_id,
+                        AppErrorKind::Domain(DomainError::new(DomainErrorKind::AlreadyExists {
+                            aggregate_type: "SavedQuery".to_string(),
+                            aggregate_id: "unknown".to_string(),
+                        })),
+                    ),
+                    SavedQueryErrorKind::NotFound => Self::with_id(
+                        error_id,
+                        AppErrorKind::Domain(DomainError::new(DomainErrorKind::NotFound {
+                            aggregate_type: "SavedQuery".to_string(),
+                            aggregate_id: "unknown".to_string(),
+                        })),
+                    ),
+                }
+            }
+            CommandPipelineError::UserPreferences(up_err) => {
+                let kind = up_err.kind().clone();
+                match kind {
+                    UserPreferencesErrorKind::AlreadyInitialized => Self::with_id(
+                        error_id,
+                        AppErrorKind::Domain(DomainError::new(DomainErrorKind::AlreadyExists {
+                            aggregate_type: "UserPreferences".to_string(),
+                            aggregate_id: "unknown".to_string(),
+                        })),
+                    ),
+                    UserPreferencesErrorKind::NotInitialized => Self::with_id(
+                        error_id,
+                        AppErrorKind::Domain(DomainError::new(DomainErrorKind::NotFound {
+                            aggregate_type: "UserPreferences".to_string(),
+                            aggregate_id: "unknown".to_string(),
+                        })),
                     ),
                 }
             }
