@@ -9,15 +9,25 @@
 //! After successful persistence, events are published to the event bus using
 //! fire-and-forget semantics. This enables SSE subscribers to receive real-time
 //! updates while ensuring the event store remains the source of truth.
+//!
+//! # Spawn-after-persist
+//!
+//! The `handle_query_session_command_with_spawn` function composes the base handler
+//! with the spawn-after-persist pattern: when a `QueryStarted` event is persisted,
+//! it spawns a background DuckDB execution task that issues subsequent commands
+//! (BeginExecution, CompleteQuery/FailQuery) back through the Decider.
 
 use crate::application::error::CommandPipelineError;
 use crate::domain::query_session::{
     QuerySessionCommand, QuerySessionError, QuerySessionEvent, query_session_decider,
 };
+use crate::infrastructure::analytics::DuckDBService;
 use crate::infrastructure::event_bus::{EventBus, ZenohEventBus, publish_events_fire_and_forget};
 use crate::infrastructure::event_store::SqliteEventRepository;
 use fmodel_rust::aggregate::{EventRepository, EventSourcedAggregate};
 use std::sync::Arc;
+
+use super::spawn::{QueryExecutionParams, spawn_query_execution};
 
 /// Adapter wrapping SqliteEventRepository to map errors to CommandPipelineError.
 ///
@@ -146,6 +156,49 @@ pub async fn handle_query_session_command_zenoh(
     // Publish events to event bus (fire-and-forget)
     if let Some(bus) = event_bus {
         publish_events_fire_and_forget(bus, &saved_events).await;
+    }
+
+    Ok(saved_events)
+}
+
+/// Handle a QuerySession command with spawn-after-persist for DuckDB execution.
+///
+/// Composes `handle_query_session_command_zenoh` with the spawn-after-persist
+/// pattern. After the base handler persists and publishes events, this function
+/// checks for `QueryStarted` events and spawns a background DuckDB execution
+/// task for each.
+///
+/// Use this function in HTTP handlers where DuckDB execution should follow
+/// query initiation. The spawned task issues subsequent commands (BeginExecution,
+/// CompleteQuery/FailQuery) back through the Decider autonomously.
+///
+/// The base `handle_query_session_command_zenoh` remains available for internal
+/// use by the spawn module itself, where subsequent commands should not trigger
+/// further spawns.
+pub async fn handle_query_session_command_with_spawn(
+    event_repository: Arc<SqliteEventRepository<QuerySessionCommand, QuerySessionEvent>>,
+    event_bus: Option<Arc<ZenohEventBus>>,
+    duckdb_service: DuckDBService,
+    command: QuerySessionCommand,
+) -> Result<Vec<(QuerySessionEvent, String)>, CommandPipelineError> {
+    let bus_ref = event_bus.as_deref();
+    let saved_events = handle_query_session_command_zenoh(
+        Arc::clone(&event_repository),
+        bus_ref,
+        command,
+    )
+    .await?;
+
+    // Spawn-after-persist: if QueryStarted was persisted, kick off DuckDB execution
+    for (event, _version) in &saved_events {
+        if let Some(params) = QueryExecutionParams::from_event(event) {
+            spawn_query_execution(
+                Arc::clone(&event_repository),
+                event_bus.clone(),
+                duckdb_service.clone(),
+                params,
+            );
+        }
     }
 
     Ok(saved_events)
