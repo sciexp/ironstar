@@ -28,8 +28,9 @@
 
 use crate::application::error::{AggregateError, CommandPipelineError};
 use crate::common::ErrorCode;
+use crate::domain::analytics::{AnalyticsValidationError, AnalyticsValidationErrorKind};
+use crate::domain::catalog::{CatalogError, CatalogErrorKind};
 use crate::domain::error::{DomainError, DomainErrorKind, ValidationError, ValidationErrorKind};
-use crate::domain::catalog::CatalogErrorKind;
 use crate::domain::query_session::QuerySessionErrorKind;
 use crate::domain::todo::TodoErrorKind;
 use crate::infrastructure::error::InfrastructureError;
@@ -373,6 +374,110 @@ impl From<CommandPipelineError> for AppError {
                 // Preserve error_id from infrastructure layer
                 Self::with_id(error_id, AppErrorKind::Infrastructure(infra))
             }
+        }
+    }
+}
+
+impl From<CatalogError> for AppError {
+    fn from(e: CatalogError) -> Self {
+        let error_id = e.error_id();
+        let kind = e.kind().clone();
+        match kind {
+            CatalogErrorKind::EmptyRef => Self::with_id(
+                error_id,
+                AppErrorKind::Validation(ValidationError::new(
+                    ValidationErrorKind::EmptyField {
+                        field: "catalog_ref".to_string(),
+                    },
+                )),
+            ),
+            CatalogErrorKind::RefTooLong { max, actual } => Self::with_id(
+                error_id,
+                AppErrorKind::Validation(ValidationError::new(ValidationErrorKind::TooLong {
+                    field: "catalog_ref".to_string(),
+                    max_length: max,
+                    actual_length: actual,
+                })),
+            ),
+            CatalogErrorKind::CatalogAlreadyActive | CatalogErrorKind::NoCatalogSelected => {
+                Self::with_id(
+                    error_id,
+                    AppErrorKind::Domain(DomainError::new(
+                        DomainErrorKind::InvalidTransition {
+                            from: format!("{kind:?}"),
+                            to: "requested".to_string(),
+                        },
+                    )),
+                )
+            }
+        }
+    }
+}
+
+impl From<AnalyticsValidationError> for AppError {
+    fn from(e: AnalyticsValidationError) -> Self {
+        let error_id = e.error_id();
+        let kind = e.kind().clone();
+        match kind {
+            AnalyticsValidationErrorKind::EmptySql => Self::with_id(
+                error_id,
+                AppErrorKind::Validation(ValidationError::new(
+                    ValidationErrorKind::EmptyField {
+                        field: "sql".to_string(),
+                    },
+                )),
+            ),
+            AnalyticsValidationErrorKind::SqlTooLong { max, actual } => Self::with_id(
+                error_id,
+                AppErrorKind::Validation(ValidationError::new(ValidationErrorKind::TooLong {
+                    field: "sql".to_string(),
+                    max_length: max,
+                    actual_length: actual,
+                })),
+            ),
+            AnalyticsValidationErrorKind::EmptyDatasetRef => Self::with_id(
+                error_id,
+                AppErrorKind::Validation(ValidationError::new(
+                    ValidationErrorKind::EmptyField {
+                        field: "dataset_ref".to_string(),
+                    },
+                )),
+            ),
+            AnalyticsValidationErrorKind::DatasetRefTooLong { max, actual } => Self::with_id(
+                error_id,
+                AppErrorKind::Validation(ValidationError::new(ValidationErrorKind::TooLong {
+                    field: "dataset_ref".to_string(),
+                    max_length: max,
+                    actual_length: actual,
+                })),
+            ),
+            AnalyticsValidationErrorKind::InvalidDatasetRefFormat { reason } => Self::with_id(
+                error_id,
+                AppErrorKind::Validation(ValidationError::new(
+                    ValidationErrorKind::InvalidFormat {
+                        field: "dataset_ref".to_string(),
+                        expected: reason.to_string(),
+                    },
+                )),
+            ),
+            AnalyticsValidationErrorKind::InvalidChartConfig { reason } => Self::with_id(
+                error_id,
+                AppErrorKind::Validation(ValidationError::new(
+                    ValidationErrorKind::InvalidFormat {
+                        field: "chart_config".to_string(),
+                        expected: reason.to_string(),
+                    },
+                )),
+            ),
+            AnalyticsValidationErrorKind::SchemaIncompatible { message } => Self::with_id(
+                error_id,
+                AppErrorKind::Validation(ValidationError::new(
+                    ValidationErrorKind::InvalidFormat {
+                        field: "schema".to_string(),
+                        expected: message,
+                    },
+                )),
+            ),
         }
     }
 }
