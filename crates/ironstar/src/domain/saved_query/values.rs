@@ -8,7 +8,7 @@ use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::domain::common::BoundedString;
-use crate::domain::error::{ValidationError, ValidationErrorKind};
+use crate::domain::error::ValidationError;
 
 /// Maximum length for query names in characters.
 pub const QUERY_NAME_MAX_LENGTH: usize = 200;
@@ -184,6 +184,7 @@ mod tests {
 
     mod query_name {
         use super::*;
+        use crate::domain::error::ValidationErrorKind;
 
         #[test]
         fn accepts_valid_name() {
