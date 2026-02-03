@@ -31,9 +31,16 @@
 //! let sql = SqlQuery::new("SELECT * FROM dataset LIMIT 10")?;
 //! ```
 
+pub mod combined;
 mod errors;
 mod values;
 pub mod workflow;
+
+// Re-export combined decider
+pub use combined::{
+    AnalyticsCommand, AnalyticsDecider, AnalyticsEvent, AnalyticsState, CombinedDeciderError,
+    analytics_decider,
+};
 
 // Re-export errors
 pub use errors::{
