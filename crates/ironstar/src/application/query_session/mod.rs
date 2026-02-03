@@ -17,5 +17,7 @@
 //! See the `spawn` module for the async execution pattern.
 
 mod handlers;
+mod spawn;
 
 pub use handlers::{handle_query_session_command, handle_query_session_command_zenoh};
+pub use spawn::{QueryExecutionParams, spawn_query_execution};
