@@ -43,7 +43,10 @@ impl CatalogRef {
 
         let char_count = trimmed.chars().count();
         if char_count > CATALOG_REF_MAX_LENGTH {
-            return Err(CatalogError::ref_too_long(CATALOG_REF_MAX_LENGTH, char_count));
+            return Err(CatalogError::ref_too_long(
+                CATALOG_REF_MAX_LENGTH,
+                char_count,
+            ));
         }
 
         Ok(Self(trimmed.to_string()))
