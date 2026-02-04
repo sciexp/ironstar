@@ -1123,6 +1123,19 @@ rust-check: rust-fmt-check rust-clippy rust-test
 rust-check-full: rust-fmt-check rust-clippy
   cargo nextest run --workspace --run-ignored all
 
+# List all test cases
+[group('rust')]
+rust-test-list:
+  cargo nextest list --workspace
+
+# List ignored test cases (with source reasons via rg)
+[group('rust')]
+rust-test-list-ignored:
+  cargo nextest list --workspace --run-ignored ignored-only
+  @echo ""
+  @echo "Ignore reasons:"
+  @rg '#\[ignore\s*=' --type rust
+
 # Build Rust package with Nix
 [group('rust')]
 rust-nix-build:
