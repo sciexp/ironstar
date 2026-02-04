@@ -79,6 +79,10 @@
         # Use dev profile for faster compilation during development.
         # Release builds use [profile.release] from Cargo.toml (strip, lto, opt-level=z).
         CARGO_PROFILE = "dev";
+        # DuckDB INSTALL writes extensions to ~/.duckdb/extensions/. Nix sandbox
+        # sets HOME=/homeless-shelter (non-writable), so tests that install
+        # extensions fail. Provide a writable HOME for the build sandbox.
+        HOME = "/tmp";
         # Match crate.nix nativeBuildInputs for identical derivation hash
         nativeBuildInputs = [ pkgs.pkg-config ];
       };
