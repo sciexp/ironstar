@@ -201,6 +201,22 @@ impl From<serde_json::Error> for InfrastructureError {
     }
 }
 
+impl From<ironstar_session_store::SessionStoreError> for InfrastructureError {
+    fn from(e: ironstar_session_store::SessionStoreError) -> Self {
+        match e.kind() {
+            ironstar_session_store::SessionStoreErrorKind::Database(_) => {
+                Self::database(e.to_string())
+            }
+            ironstar_session_store::SessionStoreErrorKind::DatabaseMessage(_) => {
+                Self::database(e.to_string())
+            }
+            ironstar_session_store::SessionStoreErrorKind::Serialization(_) => {
+                Self::new(InfrastructureErrorKind::DatabaseMessage(e.to_string()))
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
