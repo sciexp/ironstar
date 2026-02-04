@@ -422,4 +422,226 @@ mod tests {
             assert_eq!(BoundedString::<1, 100>::max_length(), 100);
         }
     }
+
+    mod dashboard_title {
+        use super::*;
+
+        #[test]
+        fn accepts_valid_title() {
+            let title = DashboardTitle::new("Sales Overview").unwrap();
+            assert_eq!(title.as_str(), "Sales Overview");
+        }
+
+        #[test]
+        fn trims_whitespace() {
+            let title = DashboardTitle::new("  Revenue Report  ").unwrap();
+            assert_eq!(title.as_str(), "Revenue Report");
+        }
+
+        #[test]
+        fn rejects_empty_string() {
+            let result = DashboardTitle::new("");
+            assert!(result.is_err());
+            let err = result.unwrap_err();
+            assert!(matches!(
+                err.kind(),
+                ValidationErrorKind::TooShort {
+                    min_length: 1,
+                    actual_length: 0,
+                    ..
+                }
+            ));
+        }
+
+        #[test]
+        fn rejects_whitespace_only() {
+            let result = DashboardTitle::new("   \t\n  ");
+            assert!(result.is_err());
+        }
+
+        #[test]
+        fn rejects_too_long() {
+            let long_title = "a".repeat(DASHBOARD_TITLE_MAX_LENGTH + 1);
+            let result = DashboardTitle::new(&long_title);
+            assert!(result.is_err());
+            let err = result.unwrap_err();
+            assert!(matches!(
+                err.kind(),
+                ValidationErrorKind::TooLong {
+                    max_length: 200,
+                    actual_length: 201,
+                    ..
+                }
+            ));
+        }
+
+        #[test]
+        fn accepts_max_length() {
+            let max_title = "a".repeat(DASHBOARD_TITLE_MAX_LENGTH);
+            let result = DashboardTitle::new(&max_title);
+            assert!(result.is_ok());
+        }
+
+        #[test]
+        fn serde_roundtrip() {
+            let original = DashboardTitle::new("Test Dashboard").unwrap();
+            let json = serde_json::to_string(&original).unwrap();
+            let parsed: DashboardTitle = serde_json::from_str(&json).unwrap();
+            assert_eq!(original, parsed);
+        }
+
+        #[test]
+        fn serde_rejects_empty() {
+            let json = r#""""#;
+            let result: Result<DashboardTitle, _> = serde_json::from_str(json);
+            assert!(result.is_err());
+        }
+    }
+
+    mod tab_title {
+        use super::*;
+
+        #[test]
+        fn accepts_valid_title() {
+            let title = TabTitle::new("Overview").unwrap();
+            assert_eq!(title.as_str(), "Overview");
+        }
+
+        #[test]
+        fn trims_whitespace() {
+            let title = TabTitle::new("  Details  ").unwrap();
+            assert_eq!(title.as_str(), "Details");
+        }
+
+        #[test]
+        fn rejects_empty_string() {
+            let result = TabTitle::new("");
+            assert!(result.is_err());
+            let err = result.unwrap_err();
+            assert!(matches!(
+                err.kind(),
+                ValidationErrorKind::TooShort {
+                    min_length: 1,
+                    actual_length: 0,
+                    ..
+                }
+            ));
+        }
+
+        #[test]
+        fn rejects_too_long() {
+            let long_title = "a".repeat(TAB_TITLE_MAX_LENGTH + 1);
+            let result = TabTitle::new(&long_title);
+            assert!(result.is_err());
+            let err = result.unwrap_err();
+            assert!(matches!(
+                err.kind(),
+                ValidationErrorKind::TooLong {
+                    max_length: 100,
+                    actual_length: 101,
+                    ..
+                }
+            ));
+        }
+
+        #[test]
+        fn accepts_max_length() {
+            let max_title = "a".repeat(TAB_TITLE_MAX_LENGTH);
+            let result = TabTitle::new(&max_title);
+            assert!(result.is_ok());
+        }
+
+        #[test]
+        fn serde_roundtrip() {
+            let original = TabTitle::new("Test Tab").unwrap();
+            let json = serde_json::to_string(&original).unwrap();
+            let parsed: TabTitle = serde_json::from_str(&json).unwrap();
+            assert_eq!(original, parsed);
+        }
+
+        #[test]
+        fn serde_rejects_empty() {
+            let json = r#""""#;
+            let result: Result<TabTitle, _> = serde_json::from_str(json);
+            assert!(result.is_err());
+        }
+    }
+
+    mod grid_size {
+        use super::*;
+
+        #[test]
+        fn accepts_valid_size() {
+            let size = GridSize::new(4, 3).unwrap();
+            assert_eq!(size.width(), 4);
+            assert_eq!(size.height(), 3);
+        }
+
+        #[test]
+        fn accepts_minimum_size() {
+            let size = GridSize::new(1, 1).unwrap();
+            assert_eq!(size.width(), 1);
+            assert_eq!(size.height(), 1);
+        }
+
+        #[test]
+        fn rejects_zero_width() {
+            let result = GridSize::new(0, 3);
+            assert!(result.is_err());
+            let err = result.unwrap_err();
+            assert!(matches!(
+                err.kind(),
+                ValidationErrorKind::OutOfRange {
+                    field,
+                    min: 1,
+                    actual: 0,
+                    ..
+                } if field == "grid_width"
+            ));
+        }
+
+        #[test]
+        fn rejects_zero_height() {
+            let result = GridSize::new(4, 0);
+            assert!(result.is_err());
+            let err = result.unwrap_err();
+            assert!(matches!(
+                err.kind(),
+                ValidationErrorKind::OutOfRange {
+                    field,
+                    min: 1,
+                    actual: 0,
+                    ..
+                } if field == "grid_height"
+            ));
+        }
+
+        #[test]
+        fn cell_count_calculation() {
+            let size = GridSize::new(4, 3).unwrap();
+            assert_eq!(size.cell_count(), 12);
+        }
+
+        #[test]
+        fn display_format() {
+            let size = GridSize::new(4, 3).unwrap();
+            assert_eq!(size.to_string(), "4x3");
+        }
+
+        #[test]
+        fn serde_roundtrip() {
+            let original = GridSize::new(4, 3).unwrap();
+            let json = serde_json::to_string(&original).unwrap();
+            let parsed: GridSize = serde_json::from_str(&json).unwrap();
+            assert_eq!(original, parsed);
+        }
+
+        #[test]
+        fn copy_semantics() {
+            let size1 = GridSize::new(4, 3).unwrap();
+            let size2 = size1; // Copy
+            assert_eq!(size1.width(), size2.width());
+            assert_eq!(size1.height(), size2.height());
+        }
+    }
 }
