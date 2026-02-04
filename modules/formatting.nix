@@ -35,6 +35,9 @@
             "*.json"
             "*.astro"
           ];
+          excludes = [
+            "web-components/vendor/*"
+          ];
         };
       };
 
