@@ -15,6 +15,7 @@ path = "src/lib.rs"
 doctest = false
 
 [dependencies]
+ironstar-analytics = { workspace = true }
 axum = { workspace = true }
 axum-extra = { workspace = true }
 cookie = { workspace = true }
