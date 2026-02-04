@@ -48,6 +48,7 @@ fmodel-rust = { workspace = true }
 
 # Workspace-internal crates
 ironstar-core = { workspace = true }
+ironstar-shared-kernel = { workspace = true }
 
 # Session ID generation
 rand = { workspace = true }
