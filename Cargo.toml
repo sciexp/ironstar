@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/ironstar", "crates/ironstar-core", "crates/ironstar-session", "crates/ironstar-shared-kernel", "crates/ironstar-todo"]
+members = ["crates/ironstar", "crates/ironstar-analytics", "crates/ironstar-core", "crates/ironstar-session", "crates/ironstar-shared-kernel", "crates/ironstar-todo"]
 
 [workspace.package]
 version = "0.1.0"
@@ -61,6 +61,7 @@ zenoh = { version = "1.7", default-features = false, features = ["transport_tcp"
 fmodel-rust = { version = "0.9" }
 
 # Workspace-internal crates
+ironstar-analytics = { path = "crates/ironstar-analytics" }
 ironstar-core = { path = "crates/ironstar-core" }
 ironstar-session = { path = "crates/ironstar-session" }
 ironstar-shared-kernel = { path = "crates/ironstar-shared-kernel" }
