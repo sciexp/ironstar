@@ -52,6 +52,7 @@ ironstar-core = { workspace = true }
 ironstar-session = { workspace = true }
 ironstar-shared-kernel = { workspace = true }
 ironstar-todo = { workspace = true }
+ironstar-workspace = { workspace = true }
 
 # Session ID generation
 rand = { workspace = true }
