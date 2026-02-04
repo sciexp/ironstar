@@ -292,6 +292,30 @@ mod tests {
     }
 
     #[test]
+    fn execution_began_transitions_to_executing() {
+        let view = query_session_view();
+        let qid = sample_query_id();
+        let events = vec![
+            QuerySessionEvent::QueryStarted {
+                query_id: qid,
+                sql: sample_sql(),
+                dataset_ref: None,
+                chart_config: None,
+                started_at: Utc::now(),
+            },
+            QuerySessionEvent::ExecutionBegan {
+                query_id: qid,
+                began_at: Utc::now(),
+            },
+        ];
+
+        let state = view.compute_new_state(None, &as_refs(&events));
+
+        assert!(matches!(state.status, QuerySessionStatus::Executing { .. }));
+        assert!(state.query_history.is_empty());
+    }
+
+    #[test]
     fn query_completed_adds_to_history() {
         let view = query_session_view();
         let qid = sample_query_id();
@@ -360,6 +384,32 @@ mod tests {
         assert_eq!(state.query_history.len(), 1);
         assert_eq!(state.failed_count, 1);
         assert_eq!(state.completed_count, 0);
+    }
+
+    #[test]
+    fn query_cancelled_adds_to_history() {
+        let view = query_session_view();
+        let qid = sample_query_id();
+        let events = vec![
+            QuerySessionEvent::QueryStarted {
+                query_id: qid,
+                sql: sample_sql(),
+                dataset_ref: None,
+                chart_config: None,
+                started_at: Utc::now(),
+            },
+            QuerySessionEvent::QueryCancelled {
+                query_id: qid,
+                reason: Some("user requested".to_string()),
+                cancelled_at: Utc::now(),
+            },
+        ];
+
+        let state = view.compute_new_state(None, &as_refs(&events));
+
+        assert!(matches!(state.status, QuerySessionStatus::Cancelled { .. }));
+        assert_eq!(state.query_history.len(), 1);
+        assert_eq!(state.cancelled_count, 1);
     }
 
     #[test]
