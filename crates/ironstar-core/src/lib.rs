@@ -16,6 +16,10 @@ pub use error::{DomainError, DomainErrorKind, ValidationError, ValidationErrorKi
 pub use error_code::ErrorCode;
 pub use traits::{DeciderType, EventType, IsFinal};
 pub use values::BoundedString;
+pub use values::{
+    DASHBOARD_TITLE_MAX_LENGTH, DASHBOARD_TITLE_MIN_LENGTH, DashboardTitle, GRID_HEIGHT_MIN,
+    GRID_WIDTH_MIN, GridSize, TAB_TITLE_MAX_LENGTH, TAB_TITLE_MIN_LENGTH, TabTitle,
+};
 
 // Re-export fmodel-rust core abstractions.
 //

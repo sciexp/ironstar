@@ -6,8 +6,10 @@
 //! to satisfy its invariants.
 
 use crate::error::{ValidationError, ValidationErrorKind};
+use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::marker::PhantomData;
+use ts_rs::TS;
 
 /// A string with compile-time length bounds.
 ///
@@ -117,6 +119,217 @@ impl<const MIN: usize, const MAX: usize> fmt::Display for BoundedString<MIN, MAX
 impl<const MIN: usize, const MAX: usize> AsRef<str> for BoundedString<MIN, MAX> {
     fn as_ref(&self) -> &str {
         &self.value
+    }
+}
+
+// ============================================================================
+// DashboardTitle - Title for dashboard entities
+// ============================================================================
+
+/// Maximum length for dashboard titles in characters.
+pub const DASHBOARD_TITLE_MAX_LENGTH: usize = 200;
+
+/// Minimum length for dashboard titles in characters.
+pub const DASHBOARD_TITLE_MIN_LENGTH: usize = 1;
+
+/// Validated dashboard title.
+///
+/// Guarantees:
+/// - Non-empty (at least 1 character)
+/// - At most 200 characters
+/// - Trimmed of leading/trailing whitespace
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "domain/", type = "string")]
+#[serde(try_from = "String", into = "String")]
+pub struct DashboardTitle(BoundedString<DASHBOARD_TITLE_MIN_LENGTH, DASHBOARD_TITLE_MAX_LENGTH>);
+
+impl DashboardTitle {
+    /// Create a new DashboardTitle, validating and normalizing the input.
+    ///
+    /// # Errors
+    ///
+    /// - [`ValidationError`] with `TooShort` if the trimmed title is empty
+    /// - [`ValidationError`] with `TooLong` if the title exceeds 200 characters
+    pub fn new(title: impl Into<String>) -> Result<Self, ValidationError> {
+        let bounded = BoundedString::new(title, "dashboard_title")?;
+        Ok(Self(bounded))
+    }
+
+    /// Get the title as a string slice.
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        self.0.as_str()
+    }
+
+    /// Consume self and return the inner String.
+    #[must_use]
+    pub fn into_inner(self) -> String {
+        self.0.into_inner()
+    }
+}
+
+impl fmt::Display for DashboardTitle {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl TryFrom<String> for DashboardTitle {
+    type Error = ValidationError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Self::new(value)
+    }
+}
+
+impl From<DashboardTitle> for String {
+    fn from(title: DashboardTitle) -> Self {
+        title.into_inner()
+    }
+}
+
+// ============================================================================
+// TabTitle - Title for tab entities
+// ============================================================================
+
+/// Maximum length for tab titles in characters.
+pub const TAB_TITLE_MAX_LENGTH: usize = 100;
+
+/// Minimum length for tab titles in characters.
+pub const TAB_TITLE_MIN_LENGTH: usize = 1;
+
+/// Validated tab title.
+///
+/// Guarantees:
+/// - Non-empty (at least 1 character)
+/// - At most 100 characters
+/// - Trimmed of leading/trailing whitespace
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "domain/", type = "string")]
+#[serde(try_from = "String", into = "String")]
+pub struct TabTitle(BoundedString<TAB_TITLE_MIN_LENGTH, TAB_TITLE_MAX_LENGTH>);
+
+impl TabTitle {
+    /// Create a new TabTitle, validating and normalizing the input.
+    ///
+    /// # Errors
+    ///
+    /// - [`ValidationError`] with `TooShort` if the trimmed title is empty
+    /// - [`ValidationError`] with `TooLong` if the title exceeds 100 characters
+    pub fn new(title: impl Into<String>) -> Result<Self, ValidationError> {
+        let bounded = BoundedString::new(title, "tab_title")?;
+        Ok(Self(bounded))
+    }
+
+    /// Get the title as a string slice.
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        self.0.as_str()
+    }
+
+    /// Consume self and return the inner String.
+    #[must_use]
+    pub fn into_inner(self) -> String {
+        self.0.into_inner()
+    }
+}
+
+impl fmt::Display for TabTitle {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl TryFrom<String> for TabTitle {
+    type Error = ValidationError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Self::new(value)
+    }
+}
+
+impl From<TabTitle> for String {
+    fn from(title: TabTitle) -> Self {
+        title.into_inner()
+    }
+}
+
+// ============================================================================
+// GridSize - Validated grid dimensions
+// ============================================================================
+
+/// Minimum width for grid size.
+pub const GRID_WIDTH_MIN: u32 = 1;
+
+/// Minimum height for grid size.
+pub const GRID_HEIGHT_MIN: u32 = 1;
+
+/// Validated grid dimensions.
+///
+/// Guarantees:
+/// - Width >= 1
+/// - Height >= 1
+///
+/// Represents the size of a grid layout in cells. Both dimensions must be
+/// at least 1 to ensure a valid, displayable grid.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "domain/")]
+pub struct GridSize {
+    width: u32,
+    height: u32,
+}
+
+impl GridSize {
+    /// Create a new GridSize with validated dimensions.
+    ///
+    /// # Errors
+    ///
+    /// - [`ValidationError`] with `OutOfRange` if width < 1
+    /// - [`ValidationError`] with `OutOfRange` if height < 1
+    pub fn new(width: u32, height: u32) -> Result<Self, ValidationError> {
+        if width < GRID_WIDTH_MIN {
+            return Err(ValidationError::new(ValidationErrorKind::OutOfRange {
+                field: "grid_width".to_string(),
+                min: i64::from(GRID_WIDTH_MIN),
+                max: i64::MAX,
+                actual: i64::from(width),
+            }));
+        }
+
+        if height < GRID_HEIGHT_MIN {
+            return Err(ValidationError::new(ValidationErrorKind::OutOfRange {
+                field: "grid_height".to_string(),
+                min: i64::from(GRID_HEIGHT_MIN),
+                max: i64::MAX,
+                actual: i64::from(height),
+            }));
+        }
+
+        Ok(Self { width, height })
+    }
+
+    /// Get the grid width.
+    #[must_use]
+    pub const fn width(&self) -> u32 {
+        self.width
+    }
+
+    /// Get the grid height.
+    #[must_use]
+    pub const fn height(&self) -> u32 {
+        self.height
+    }
+
+    /// Calculate the total number of cells in the grid.
+    #[must_use]
+    pub const fn cell_count(&self) -> u32 {
+        self.width * self.height
+    }
+}
+
+impl fmt::Display for GridSize {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}x{}", self.width, self.height)
     }
 }
 

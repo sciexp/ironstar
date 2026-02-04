@@ -11,6 +11,7 @@ doctest = false
 [dependencies]
 fmodel-rust = { workspace = true }
 serde = { workspace = true }
+ts-rs = { workspace = true }
 uuid = { workspace = true }
 
 [dev-dependencies]
