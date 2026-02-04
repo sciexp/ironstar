@@ -1,0 +1,24 @@
+[package]
+name = "ironstar-event-bus"
+version.workspace = true
+edition.workspace = true
+description = "Zenoh event bus, key expression routing, and cache invalidation for event-sourced aggregates"
+license.workspace = true
+
+[lib]
+doctest = false
+
+[dependencies]
+ironstar-core = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+zenoh = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }
+
+[lints]
+workspace = true
