@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/ironstar", "crates/ironstar-core", "crates/ironstar-session", "crates/ironstar-shared-kernel"]
+members = ["crates/ironstar", "crates/ironstar-core", "crates/ironstar-session", "crates/ironstar-shared-kernel", "crates/ironstar-todo"]
 
 [workspace.package]
 version = "0.1.0"
@@ -64,6 +64,7 @@ fmodel-rust = { version = "0.9" }
 ironstar-core = { path = "crates/ironstar-core" }
 ironstar-session = { path = "crates/ironstar-session" }
 ironstar-shared-kernel = { path = "crates/ironstar-shared-kernel" }
+ironstar-todo = { path = "crates/ironstar-todo" }
 
 # Async stream utilities
 futures = { version = "0.3" }
