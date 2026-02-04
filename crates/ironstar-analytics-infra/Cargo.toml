@@ -1,0 +1,28 @@
+[package]
+name = "ironstar-analytics-infra"
+version.workspace = true
+edition.workspace = true
+description = "DuckDB analytics, moka caching, and cache invalidation infrastructure for event-sourced aggregates"
+license.workspace = true
+
+[lib]
+doctest = false
+
+[dependencies]
+ironstar-core = { workspace = true }
+ironstar-event-bus = { workspace = true }
+async-duckdb = { workspace = true }
+moka = { workspace = true }
+rkyv = { workspace = true }
+rust-embed = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+zenoh = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }
+
+[lints]
+workspace = true
