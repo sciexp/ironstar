@@ -126,7 +126,9 @@ pub use event_bus::{
     EventBus, ZenohEventBus, open_embedded_session, publish_events_fire_and_forget,
     zenoh_embedded_config,
 };
-pub use event_store::{SqliteEventRepository, StoredEvent};
+pub use event_store::{
+    EVENTS_MIGRATION_SQL, EventStoreError, EventStoreErrorKind, SqliteEventRepository, StoredEvent,
+};
 pub use key_expr::{
     ALL_EVENTS, DOUBLE_WILD, EVENTS_ROOT, EventKeyExpr, ParseError as KeyExprParseError,
     SINGLE_WILD, aggregate_instance_pattern, aggregate_type_pattern, event_key,
