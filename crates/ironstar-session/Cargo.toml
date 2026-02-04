@@ -1,0 +1,24 @@
+[package]
+name = "ironstar-session"
+version.workspace = true
+edition.workspace = true
+description = "Session domain aggregate: commands, events, state, decider, values, errors"
+license.workspace = true
+
+[lib]
+doctest = false
+
+[dependencies]
+ironstar-core = { workspace = true }
+ironstar-shared-kernel = { workspace = true }
+chrono = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+ts-rs = { workspace = true }
+uuid = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+
+[lints]
+workspace = true
