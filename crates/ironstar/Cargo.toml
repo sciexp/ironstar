@@ -49,6 +49,7 @@ fmodel-rust = { workspace = true }
 
 # Workspace-internal crates
 ironstar-core = { workspace = true }
+ironstar-event-bus = { workspace = true }
 ironstar-event-store = { workspace = true }
 ironstar-session = { workspace = true }
 ironstar-session-store = { workspace = true }
