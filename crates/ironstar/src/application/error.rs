@@ -243,6 +243,12 @@ impl From<ironstar_event_store::EventStoreError> for CommandPipelineError {
     }
 }
 
+impl From<ironstar_event_bus::EventBusError> for CommandPipelineError {
+    fn from(e: ironstar_event_bus::EventBusError) -> Self {
+        Self::Infrastructure(InfrastructureError::from(e))
+    }
+}
+
 impl From<TodoError> for CommandPipelineError {
     fn from(e: TodoError) -> Self {
         Self::Todo(e)
