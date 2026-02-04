@@ -66,27 +66,7 @@
         cp -r ${inputs.self + "/crates/ironstar/migrations"} $out/crates/ironstar/
       '';
 
-      # WORKAROUND: libduckdb-sys build.rs emits rerun-if-changed with absolute
-      # OUT_DIR path. On nix, each derivation has unique sandbox path, causing
-      # cargo to see the path as "missing" and rebuild libduckdb-sys (~7 min).
-      # Patch the vendored crate to remove the problematic directive.
-      # See: https://github.com/duckdb/duckdb-rs/issues/XXX (TODO: file upstream)
-      cargoVendorDir = crane-lib.vendorCargoDeps {
-        inherit src;
-        overrideVendorCargoPackage =
-          p: drv:
-          if p.name == "libduckdb-sys" then
-            drv.overrideAttrs (old: {
-              postPatch = (old.postPatch or "") + ''
-                substituteInPlace build.rs \
-                  --replace-fail \
-                  'println!("cargo:rerun-if-changed={out_dir}/{lib_name}/manifest.json");' \
-                  '// Patched: absolute OUT_DIR path causes nix cross-derivation rebuild'
-              '';
-            })
-          else
-            drv;
-      };
+      cargoVendorDir = crane-lib.vendorCargoDeps { inherit src; };
 
       # Common args for consistent caching across all crane derivations.
       # Pure crane pattern: single commonArgs shared by all derivations.
