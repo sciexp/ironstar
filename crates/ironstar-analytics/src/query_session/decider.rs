@@ -832,4 +832,320 @@ mod tests {
         assert!(state.is_idle());
         assert_eq!(state.query_count, 1);
     }
+
+    #[test]
+    fn reset_from_failed_succeeds() {
+        let query_id = sample_query_id();
+        let ts = sample_time();
+
+        DeciderTestSpecification::default()
+            .for_decider(query_session_decider())
+            .given(vec![
+                QuerySessionEvent::QueryStarted {
+                    query_id,
+                    sql: sample_sql(),
+                    dataset_ref: None,
+                    chart_config: None,
+                    started_at: ts,
+                },
+                QuerySessionEvent::ExecutionBegan {
+                    query_id,
+                    began_at: ts,
+                },
+                QuerySessionEvent::QueryFailed {
+                    query_id,
+                    error: "Some error".to_string(),
+                    failed_at: ts,
+                },
+            ])
+            .when(QuerySessionCommand::ResetSession { reset_at: ts })
+            .then(vec![QuerySessionEvent::SessionReset { reset_at: ts }]);
+    }
+
+    #[test]
+    fn reset_from_cancelled_succeeds() {
+        let query_id = sample_query_id();
+        let ts = sample_time();
+
+        DeciderTestSpecification::default()
+            .for_decider(query_session_decider())
+            .given(vec![
+                QuerySessionEvent::QueryStarted {
+                    query_id,
+                    sql: sample_sql(),
+                    dataset_ref: None,
+                    chart_config: None,
+                    started_at: ts,
+                },
+                QuerySessionEvent::QueryCancelled {
+                    query_id,
+                    reason: None,
+                    cancelled_at: ts,
+                },
+            ])
+            .when(QuerySessionCommand::ResetSession { reset_at: ts })
+            .then(vec![QuerySessionEvent::SessionReset { reset_at: ts }]);
+    }
+
+    #[test]
+    fn reset_from_pending_fails() {
+        let query_id = sample_query_id();
+        let ts = sample_time();
+
+        DeciderTestSpecification::default()
+            .for_decider(query_session_decider())
+            .given(vec![QuerySessionEvent::QueryStarted {
+                query_id,
+                sql: sample_sql(),
+                dataset_ref: None,
+                chart_config: None,
+                started_at: ts,
+            }])
+            .when(QuerySessionCommand::ResetSession { reset_at: ts })
+            .then_error(QuerySessionError::invalid_transition(
+                "reset session",
+                "pending",
+            ));
+    }
+
+    #[test]
+    fn reset_from_executing_fails() {
+        let query_id = sample_query_id();
+        let ts = sample_time();
+
+        DeciderTestSpecification::default()
+            .for_decider(query_session_decider())
+            .given(vec![
+                QuerySessionEvent::QueryStarted {
+                    query_id,
+                    sql: sample_sql(),
+                    dataset_ref: None,
+                    chart_config: None,
+                    started_at: ts,
+                },
+                QuerySessionEvent::ExecutionBegan {
+                    query_id,
+                    began_at: ts,
+                },
+            ])
+            .when(QuerySessionCommand::ResetSession { reset_at: ts })
+            .then_error(QuerySessionError::invalid_transition(
+                "reset session",
+                "executing",
+            ));
+    }
+
+    // --- State evolution: query_count semantics ---
+
+    #[test]
+    fn query_count_increments_on_completion() {
+        let query_id = sample_query_id();
+        let ts = sample_time();
+
+        // Start with empty events
+        let state = QuerySessionState::default();
+        assert_eq!(state.query_count, 0);
+
+        // Apply QueryStarted
+        let state = evolve(
+            &state,
+            &QuerySessionEvent::QueryStarted {
+                query_id,
+                sql: sample_sql(),
+                dataset_ref: None,
+                chart_config: None,
+                started_at: ts,
+            },
+        );
+        assert_eq!(state.query_count, 0);
+
+        // Apply ExecutionBegan
+        let state = evolve(
+            &state,
+            &QuerySessionEvent::ExecutionBegan {
+                query_id,
+                began_at: ts,
+            },
+        );
+        assert_eq!(state.query_count, 0);
+
+        // Apply QueryCompleted - should increment
+        let state = evolve(
+            &state,
+            &QuerySessionEvent::QueryCompleted {
+                query_id,
+                row_count: 10,
+                duration_ms: 100,
+                completed_at: ts,
+            },
+        );
+        assert_eq!(state.query_count, 1);
+    }
+
+    #[test]
+    fn query_count_increments_on_failure() {
+        let query_id = sample_query_id();
+        let ts = sample_time();
+
+        // Start from executing state
+        let state = QuerySessionState {
+            status: QuerySessionStatus::Executing {
+                query_id,
+                sql: sample_sql(),
+                dataset_ref: None,
+                chart_config: None,
+                started_at: ts,
+                began_at: ts,
+            },
+            query_count: 5,
+        };
+
+        // Apply QueryFailed - should increment
+        let state = evolve(
+            &state,
+            &QuerySessionEvent::QueryFailed {
+                query_id,
+                error: "Error".to_string(),
+                failed_at: ts,
+            },
+        );
+        assert_eq!(state.query_count, 6);
+    }
+
+    #[test]
+    fn query_count_preserved_on_cancel() {
+        let query_id = sample_query_id();
+        let ts = sample_time();
+
+        // Start from pending state
+        let state = QuerySessionState {
+            status: QuerySessionStatus::Pending {
+                query_id,
+                sql: sample_sql(),
+                dataset_ref: None,
+                chart_config: None,
+                started_at: ts,
+            },
+            query_count: 3,
+        };
+
+        // Apply QueryCancelled - should NOT increment
+        let state = evolve(
+            &state,
+            &QuerySessionEvent::QueryCancelled {
+                query_id,
+                reason: None,
+                cancelled_at: ts,
+            },
+        );
+        assert_eq!(state.query_count, 3);
+    }
+
+    #[test]
+    fn query_count_preserved_on_reset() {
+        let query_id = sample_query_id();
+        let ts = sample_time();
+
+        // Start from completed state with count
+        let state = QuerySessionState {
+            status: QuerySessionStatus::Completed {
+                query_id,
+                row_count: 10,
+                duration_ms: 100,
+                completed_at: ts,
+            },
+            query_count: 7,
+        };
+
+        // Apply SessionReset - count preserved
+        let state = evolve(&state, &QuerySessionEvent::SessionReset { reset_at: ts });
+        assert_eq!(state.query_count, 7);
+        assert!(state.is_idle());
+    }
+
+    // --- Full lifecycle ---
+
+    #[test]
+    fn full_failure_lifecycle() {
+        let query_id = sample_query_id();
+        let ts = sample_time();
+
+        let mut state = QuerySessionState::default();
+
+        // Start and begin execution
+        let events = decide(
+            &QuerySessionCommand::StartQuery {
+                query_id,
+                sql: sample_sql(),
+                dataset_ref: None,
+                chart_config: None,
+                started_at: ts,
+            },
+            &state,
+        )
+        .unwrap();
+        state = evolve(&state, &events[0]);
+
+        let events = decide(
+            &QuerySessionCommand::BeginExecution {
+                query_id,
+                began_at: ts,
+            },
+            &state,
+        )
+        .unwrap();
+        state = evolve(&state, &events[0]);
+
+        // Fail
+        let events = decide(
+            &QuerySessionCommand::FailQuery {
+                query_id,
+                error: "Table not found".to_string(),
+                failed_at: ts,
+            },
+            &state,
+        )
+        .unwrap();
+        state = evolve(&state, &events[0]);
+
+        assert!(matches!(state.status, QuerySessionStatus::Failed { .. }));
+        assert_eq!(state.query_count, 1);
+    }
+
+    #[test]
+    fn cancel_lifecycle() {
+        let query_id = sample_query_id();
+        let ts = sample_time();
+
+        let mut state = QuerySessionState::default();
+
+        // Start query
+        let events = decide(
+            &QuerySessionCommand::StartQuery {
+                query_id,
+                sql: sample_sql(),
+                dataset_ref: None,
+                chart_config: None,
+                started_at: ts,
+            },
+            &state,
+        )
+        .unwrap();
+        state = evolve(&state, &events[0]);
+
+        // Cancel from pending
+        let events = decide(
+            &QuerySessionCommand::CancelQuery {
+                query_id,
+                reason: Some("Changed my mind".to_string()),
+                cancelled_at: ts,
+            },
+            &state,
+        )
+        .unwrap();
+        state = evolve(&state, &events[0]);
+
+        assert!(matches!(state.status, QuerySessionStatus::Cancelled { .. }));
+        assert_eq!(state.query_count, 0); // Not incremented for cancel
+    }
 }
