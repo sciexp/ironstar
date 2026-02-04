@@ -105,23 +105,9 @@ pub enum TodoFilter {
     Completed,
 }
 
-/// View projection of a single todo item for list rendering.
-///
-/// This is a read-only projection derived from [`super::TodoState`],
-/// shaped for efficient list rendering via SSE updates.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, TS)]
-#[serde(rename_all = "camelCase")]
-#[ts(export, export_to = "signals/")]
-pub struct TodoItemView {
-    /// Unique identifier for this todo.
-    pub id: Uuid,
-
-    /// The todo text content.
-    pub text: String,
-
-    /// Whether the todo is completed.
-    pub completed: bool,
-}
+// TodoItemView is defined in ironstar-todo and re-exported here for
+// backward compatibility with existing import paths.
+pub use ironstar_todo::TodoItemView;
 
 /// ECharts selection event data.
 ///
