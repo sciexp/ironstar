@@ -219,6 +219,12 @@ impl From<ironstar_event_store::EventStoreError> for InfrastructureError {
     }
 }
 
+impl From<ironstar_event_bus::EventBusError> for InfrastructureError {
+    fn from(e: ironstar_event_bus::EventBusError) -> Self {
+        Self::event_bus(e.to_string())
+    }
+}
+
 impl From<ironstar_session_store::SessionStoreError> for InfrastructureError {
     fn from(e: ironstar_session_store::SessionStoreError) -> Self {
         match e.kind() {
