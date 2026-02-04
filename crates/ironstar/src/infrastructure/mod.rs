@@ -133,7 +133,8 @@ pub use key_expr::{
     event_key_without_sequence,
 };
 pub use session_store::{
-    Session, SessionStore, SqliteSessionStore, generate_session_id, spawn_session_cleanup,
+    SESSIONS_MIGRATION_SQL, Session, SessionStore, SessionStoreError, SessionStoreErrorKind,
+    SqliteSessionStore, generate_session_id, spawn_session_cleanup,
 };
 pub use sse_stream::{
     DEFAULT_KEEP_ALIVE_SECS, KEEP_ALIVE_COMMENT, KeepAliveStream, SseStreamBuilder,
