@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/ironstar", "crates/ironstar-analytics", "crates/ironstar-core", "crates/ironstar-event-bus", "crates/ironstar-event-store", "crates/ironstar-session", "crates/ironstar-session-store", "crates/ironstar-shared-kernel", "crates/ironstar-todo", "crates/ironstar-workspace"]
+members = ["crates/ironstar", "crates/ironstar-analytics", "crates/ironstar-analytics-infra", "crates/ironstar-core", "crates/ironstar-event-bus", "crates/ironstar-event-store", "crates/ironstar-session", "crates/ironstar-session-store", "crates/ironstar-shared-kernel", "crates/ironstar-todo", "crates/ironstar-workspace"]
 
 [workspace.package]
 version = "0.1.0"
@@ -62,6 +62,7 @@ fmodel-rust = { version = "0.9" }
 
 # Workspace-internal crates
 ironstar-analytics = { path = "crates/ironstar-analytics" }
+ironstar-analytics-infra = { path = "crates/ironstar-analytics-infra" }
 ironstar-core = { path = "crates/ironstar-core" }
 ironstar-session = { path = "crates/ironstar-session" }
 ironstar-shared-kernel = { path = "crates/ironstar-shared-kernel" }

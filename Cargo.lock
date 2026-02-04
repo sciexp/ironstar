@@ -1801,6 +1801,7 @@ dependencies = [
  "http",
  "hypertext",
  "ironstar-analytics",
+ "ironstar-analytics-infra",
  "ironstar-core",
  "ironstar-event-bus",
  "ironstar-event-store",
@@ -1840,6 +1841,23 @@ dependencies = [
  "serde_json",
  "ts-rs",
  "uuid",
+]
+
+[[package]]
+name = "ironstar-analytics-infra"
+version = "0.1.0"
+dependencies = [
+ "async-duckdb",
+ "ironstar-core",
+ "ironstar-event-bus",
+ "moka",
+ "rkyv 0.8.14",
+ "rust-embed",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "uuid",
+ "zenoh",
 ]
 
 [[package]]
