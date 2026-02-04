@@ -50,26 +50,133 @@
 //! assert_eq!(events.len(), 1);
 //! ```
 
-pub mod analytics;
-pub mod catalog;
-pub mod common;
-pub mod dashboard;
-pub mod error;
-pub mod query_session;
-pub mod saved_query;
-pub mod session;
+// Inline re-export modules for extracted domain crates.
+// Each `pub mod` preserves the `crate::domain::X` import path while
+// the subdirectory shim files have been removed.
+
+pub mod todo {
+    //! Todo domain re-exports from `ironstar-todo` crate.
+    pub use ironstar_todo::*;
+}
+
+pub mod session {
+    //! Session domain aggregate re-exports from `ironstar-session` crate.
+    pub use ironstar_session::*;
+}
+
+pub mod analytics {
+    //! Analytics domain value objects re-exports from `ironstar-analytics` crate.
+    pub use ironstar_analytics::combined;
+    pub use ironstar_analytics::workflow;
+    pub use ironstar_analytics::*;
+}
+
+pub mod catalog {
+    //! Catalog Decider module re-exports from `ironstar-analytics` crate.
+    pub use ironstar_analytics::catalog::errors;
+    pub use ironstar_analytics::catalog::values;
+    pub use ironstar_analytics::catalog::*;
+}
+
+pub mod query_session {
+    //! QuerySession Decider module re-exports from `ironstar-analytics` crate.
+    pub use ironstar_analytics::query_session::errors;
+    pub use ironstar_analytics::query_session::*;
+}
+
+pub mod dashboard {
+    //! Dashboard aggregate re-exports from `ironstar-workspace` crate.
+    pub use ironstar_workspace::dashboard::*;
+}
+
+pub mod saved_query {
+    //! SavedQuery aggregate re-exports from `ironstar-workspace` crate.
+    pub use ironstar_workspace::saved_query::*;
+}
+
+pub mod user_preferences {
+    //! UserPreferences aggregate re-exports from `ironstar-workspace` crate.
+    pub use ironstar_workspace::user_preferences::*;
+}
+
+pub mod workspace {
+    //! Workspace aggregate re-exports from `ironstar-workspace` crate.
+    pub use ironstar_workspace::workspace::*;
+}
+
+pub mod workspace_preferences {
+    //! WorkspacePreferences aggregate re-exports from `ironstar-workspace` crate.
+    pub use ironstar_workspace::workspace_preferences::*;
+}
+
+pub mod common {
+    //! Common domain value objects re-exported from `ironstar-core`.
+    pub mod values {
+        pub use ironstar_core::{
+            BoundedString, DASHBOARD_TITLE_MAX_LENGTH, DASHBOARD_TITLE_MIN_LENGTH, DashboardTitle,
+            GRID_HEIGHT_MIN, GRID_WIDTH_MIN, GridSize, TAB_TITLE_MAX_LENGTH, TAB_TITLE_MIN_LENGTH,
+            TabTitle,
+        };
+    }
+
+    pub use values::{
+        BoundedString, DASHBOARD_TITLE_MAX_LENGTH, DASHBOARD_TITLE_MIN_LENGTH, DashboardTitle,
+        GRID_HEIGHT_MIN, GRID_WIDTH_MIN, GridSize, TAB_TITLE_MAX_LENGTH, TAB_TITLE_MIN_LENGTH,
+        TabTitle,
+    };
+}
+
+pub mod error {
+    //! Domain layer error types re-exported from `ironstar-core`.
+    pub use ironstar_core::error::{
+        DomainError, DomainErrorKind, ValidationError, ValidationErrorKind,
+    };
+}
+
+pub mod traits {
+    //! fmodel-rust identifier trait and ironstar-specific marker traits.
+    pub use ironstar_core::traits::{DeciderType, EventType, Identifier, IsFinal};
+}
+
+pub mod views {
+    //! View modules for read-side projections.
+
+    pub mod catalog {
+        //! Catalog View re-exports from `ironstar-analytics` crate.
+        pub use ironstar_analytics::views::catalog::*;
+    }
+
+    pub mod query_session {
+        //! QuerySession View re-exports from `ironstar-analytics` crate.
+        pub use ironstar_analytics::views::query_session::*;
+    }
+
+    pub mod workspace {
+        //! Workspace views re-exports from `ironstar-workspace` crate.
+        pub use ironstar_workspace::views::workspace::*;
+    }
+
+    pub use catalog::{CatalogView, CatalogViewState, catalog_view};
+    pub use ironstar_todo::{TodoItemView, TodoView, TodoViewState, todo_view};
+    pub use query_session::{
+        QueryHistoryEntry, QueryOutcome, QuerySessionView, QuerySessionViewState,
+        query_session_view,
+    };
+    pub use workspace::{
+        DashboardLayoutView, DashboardLayoutViewState, SavedQueryListEntry, SavedQueryListView,
+        SavedQueryListViewState, UserPreferencesView, UserPreferencesViewState, WorkspaceListEntry,
+        WorkspaceListView, WorkspaceListViewState, dashboard_layout_view, saved_query_list_view,
+        user_preferences_view, workspace_list_view,
+    };
+}
+
+// Signals module kept as a real file (429 lines of original code)
 pub mod signals;
-pub mod todo;
-pub mod traits;
-pub mod user_preferences;
-pub mod views;
-pub mod workspace;
-pub mod workspace_preferences;
 
 // Trait re-exports (Identifier re-exported from fmodel_rust via traits module)
 pub use traits::{DeciderType, EventType, IsFinal};
 
-// Todo re-exports (from todo/)
+// Todo re-exports
 pub use todo::{
     TODO_TEXT_MAX_LENGTH, TodoCommand, TodoDecider, TodoError, TodoErrorKind, TodoEvent, TodoId,
     TodoState, TodoStatus, TodoText, todo_decider,
@@ -113,41 +220,41 @@ pub use views::{
     QuerySessionViewState, TodoView, TodoViewState, catalog_view, query_session_view, todo_view,
 };
 
-// Session re-exports (from session/)
+// Session re-exports
 pub use session::{
     OAuthProvider, SessionCommand, SessionDecider, SessionError, SessionErrorKind, SessionEvent,
     SessionId, SessionMetadata, SessionState, SessionStatus, UserId, session_decider,
 };
 
-// Workspace re-exports (from workspace/)
+// Workspace re-exports
 pub use workspace::{
     Visibility, WORKSPACE_NAME_MAX_LENGTH, WorkspaceCommand, WorkspaceDecider, WorkspaceError,
     WorkspaceErrorKind, WorkspaceEvent, WorkspaceId, WorkspaceName, WorkspaceState,
     WorkspaceStatus, workspace_decider,
 };
 
-// SavedQuery re-exports (from saved_query/)
+// SavedQuery re-exports
 pub use saved_query::{
     QUERY_NAME_MAX_LENGTH, QUERY_NAME_MIN_LENGTH, QueryName, SavedQueryCommand, SavedQueryDecider,
     SavedQueryError, SavedQueryErrorKind, SavedQueryEvent, SavedQueryId, SavedQueryState,
     saved_query_decider,
 };
 
-// UserPreferences re-exports (from user_preferences/)
+// UserPreferences re-exports
 pub use user_preferences::{
     LOCALE_MAX_LENGTH, Locale, PreferencesId, Theme, UiState, UserPreferencesCommand,
     UserPreferencesDecider, UserPreferencesError, UserPreferencesErrorKind, UserPreferencesEvent,
     UserPreferencesState, user_preferences_decider,
 };
 
-// Dashboard re-exports (from dashboard/)
+// Dashboard re-exports
 pub use dashboard::{
     ChartDefinitionRef, ChartId, ChartPlacement, DashboardCommand, DashboardDecider,
     DashboardError, DashboardErrorKind, DashboardEvent, DashboardId, DashboardState, GridPosition,
     TabId, TabInfo, dashboard_decider,
 };
 
-// WorkspacePreferences re-exports (from workspace_preferences/)
+// WorkspacePreferences re-exports
 pub use workspace_preferences::{
     CATALOG_URI_MAX_LENGTH, CatalogUri, LayoutDefaults, WorkspacePreferencesCommand,
     WorkspacePreferencesDecider, WorkspacePreferencesError, WorkspacePreferencesErrorKind,
