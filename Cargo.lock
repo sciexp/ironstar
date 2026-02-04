@@ -1800,6 +1800,7 @@ dependencies = [
  "futures",
  "http",
  "hypertext",
+ "ironstar-analytics",
  "ironstar-core",
  "ironstar-session",
  "ironstar-shared-kernel",
@@ -1823,6 +1824,18 @@ dependencies = [
  "ts-rs",
  "uuid",
  "zenoh",
+]
+
+[[package]]
+name = "ironstar-analytics"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "ironstar-core",
+ "serde",
+ "serde_json",
+ "ts-rs",
+ "uuid",
 ]
 
 [[package]]
