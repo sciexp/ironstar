@@ -225,6 +225,23 @@ impl From<ironstar_event_bus::EventBusError> for InfrastructureError {
     }
 }
 
+impl From<ironstar_analytics_infra::AnalyticsInfraError> for InfrastructureError {
+    fn from(e: ironstar_analytics_infra::AnalyticsInfraError) -> Self {
+        match e.kind() {
+            ironstar_analytics_infra::AnalyticsInfraErrorKind::Analytics(_) => {
+                Self::analytics(e.to_string())
+            }
+            ironstar_analytics_infra::AnalyticsInfraErrorKind::Cache(_)
+            | ironstar_analytics_infra::AnalyticsInfraErrorKind::Serialization(_) => {
+                Self::cache(e.to_string())
+            }
+            ironstar_analytics_infra::AnalyticsInfraErrorKind::NotFound { resource, id } => {
+                Self::not_found(resource, id)
+            }
+        }
+    }
+}
+
 impl From<ironstar_session_store::SessionStoreError> for InfrastructureError {
     fn from(e: ironstar_session_store::SessionStoreError) -> Self {
         match e.kind() {
