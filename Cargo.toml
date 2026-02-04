@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/ironstar"]
+members = ["crates/ironstar", "crates/ironstar-core"]
 
 [workspace.package]
 version = "0.1.0"
@@ -59,6 +59,9 @@ zenoh = { version = "1.7", default-features = false, features = ["transport_tcp"
 # Functional event sourcing (Decider pattern)
 # Default features require Send bounds, enabling axum multi-threaded handler compatibility
 fmodel-rust = { version = "0.9" }
+
+# Workspace-internal crates
+ironstar-core = { path = "crates/ironstar-core" }
 
 # Async stream utilities
 futures = { version = "0.3" }
