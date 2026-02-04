@@ -94,19 +94,97 @@
 //! - Orchestration of multiple services (belongs in [`crate::application`])
 //! - Synchronous functions (by design, everything here is async)
 
-pub mod analytics;
-pub mod analytics_cache;
+// Inline re-export modules for extracted infrastructure crates.
+// Each `pub mod` preserves the `crate::infrastructure::X` import path while
+// the individual shim files have been removed.
+
+pub mod event_bus {
+    //! Event bus re-exports from `ironstar-event-bus` crate.
+    pub use ironstar_event_bus::{
+        EventBus, ZenohEventBus, open_embedded_session, publish_events_fire_and_forget,
+        zenoh_embedded_config,
+    };
+
+    pub mod workspace {
+        //! Workspace subscriber factory re-exports from `ironstar-event-bus` crate.
+        pub use ironstar_event_bus::workspace::{
+            ALL_WORKSPACE_AGGREGATE_TYPES, DASHBOARD_TYPE, SAVED_QUERY_TYPE, USER_PREFERENCES_TYPE,
+            WORKSPACE_TYPE, WorkspaceSubscriberFactory, ZenohSubscriber, dashboard_events_pattern,
+            saved_query_events_pattern, user_preferences_events_pattern,
+            workspace_cache_dependencies, workspace_events_pattern,
+        };
+    }
+}
+
+pub mod event_store {
+    //! Event store re-exports from `ironstar-event-store` crate.
+    pub use ironstar_event_store::event_store::EVENTS_MIGRATION_SQL;
+    pub use ironstar_event_store::{
+        EventStoreError, EventStoreErrorKind, SqliteEventRepository, StoredEvent,
+    };
+}
+
+pub mod session_store {
+    //! Session store re-exports from `ironstar-session-store` crate.
+    pub use ironstar_session_store::{
+        SESSIONS_MIGRATION_SQL, Session, SessionStore, SessionStoreError, SessionStoreErrorKind,
+        SqliteSessionStore, generate_session_id, spawn_session_cleanup,
+    };
+}
+
+pub mod key_expr {
+    //! Key expression utilities re-exports from `ironstar-event-bus` crate.
+    pub use ironstar_event_bus::{
+        ALL_EVENTS, DOUBLE_WILD, EVENTS_ROOT, EventKeyExpr, KeyExprParseError as ParseError,
+        SINGLE_WILD, aggregate_instance_pattern, aggregate_type_pattern, event_key,
+        event_key_without_sequence,
+    };
+}
+
+pub mod cache_dependency {
+    //! Cache dependency re-exports from `ironstar-event-bus` crate.
+    pub use ironstar_event_bus::{CacheDependency, matches_key_expression};
+}
+
+pub mod analytics {
+    //! Analytics infrastructure re-exports from `ironstar-analytics-infra` crate.
+    pub use ironstar_analytics_infra::analytics::duckdb;
+    pub use ironstar_analytics_infra::{AnalyticsState, DuckDBService, DuckDbPool};
+}
+
+pub mod analytics_cache {
+    //! Analytics cache re-exports from `ironstar-analytics-infra` crate.
+    pub use ironstar_analytics_infra::AnalyticsCache;
+}
+
+pub mod cached_analytics {
+    //! Cached analytics service re-exports from `ironstar-analytics-infra` crate.
+    pub use ironstar_analytics_infra::{CachedAnalyticsService, cache_key, query_hash};
+}
+
+pub mod cache_invalidation {
+    //! Cache invalidation re-exports from `ironstar-analytics-infra` crate.
+    pub use ironstar_analytics_infra::{CacheInvalidationRegistry, spawn_cache_invalidation};
+}
+
+pub mod embedded_catalogs {
+    //! Embedded catalogs re-exports from `ironstar-analytics-infra` crate.
+    pub use ironstar_analytics_infra::embedded_catalogs::{
+        DuckLakeCatalogs, attach_all, embedded_cache_key_prefix, extract_catalog,
+    };
+}
+
+pub mod sse_stream {
+    //! SSE stream utilities re-exports from `ironstar-event-store` crate.
+    pub use ironstar_event_store::{
+        DEFAULT_KEEP_ALIVE_SECS, KEEP_ALIVE_COMMENT, KeepAliveStream, SseStreamBuilder,
+        event_with_sequence, stored_events_to_stream, zenoh_to_sse_stream,
+    };
+}
+
+// Original code modules kept as real files
 pub mod assets;
-pub mod cache_dependency;
-pub mod cache_invalidation;
-pub mod cached_analytics;
-pub mod embedded_catalogs;
 pub mod error;
-pub mod event_bus;
-pub mod event_store;
-pub mod key_expr;
-pub mod session_store;
-pub mod sse_stream;
 
 pub use analytics::{AnalyticsState, DuckDBService};
 pub use analytics_cache::AnalyticsCache;
