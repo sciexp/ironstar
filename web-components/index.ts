@@ -5,6 +5,6 @@
 import "./styles/processed.css";
 
 // Web components
-export * from './components/ds-echarts';
+export * from "./components/ds-echarts";
 
 // Type exports will be added here (ny3.10)
