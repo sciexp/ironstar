@@ -48,6 +48,7 @@ zenoh = { workspace = true }
 fmodel-rust = { workspace = true }
 
 # Workspace-internal crates
+ironstar-analytics-infra = { workspace = true }
 ironstar-core = { workspace = true }
 ironstar-event-bus = { workspace = true }
 ironstar-event-store = { workspace = true }
