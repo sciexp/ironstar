@@ -363,6 +363,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore = "requires network: INSTALL httpfs/ducklake downloads from extensions.duckdb.org"]
     #[expect(clippy::expect_used, reason = "test assertions")]
     async fn initialize_extensions_succeeds_with_pool() {
         // Create an in-memory DuckDB pool for testing
@@ -400,6 +401,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore = "requires network: INSTALL httpfs/ducklake downloads from extensions.duckdb.org"]
     #[expect(clippy::expect_used, reason = "test assertions")]
     async fn initialize_extensions_loads_on_all_connections() {
         // Create pool with multiple connections to verify all get loaded
