@@ -1118,6 +1118,11 @@ rust-update:
 [group('rust')]
 rust-check: rust-fmt-check rust-clippy rust-test
 
+# Run all Rust checks including network-dependent tests
+[group('rust')]
+rust-check-full: rust-fmt-check rust-clippy
+  cargo nextest run --workspace --run-ignored all
+
 # Build Rust package with Nix
 [group('rust')]
 rust-nix-build:
