@@ -1802,6 +1802,7 @@ dependencies = [
  "hypertext",
  "ironstar-analytics",
  "ironstar-core",
+ "ironstar-event-bus",
  "ironstar-event-store",
  "ironstar-session",
  "ironstar-session-store",
@@ -1850,6 +1851,20 @@ dependencies = [
  "serde_json",
  "ts-rs",
  "uuid",
+]
+
+[[package]]
+name = "ironstar-event-bus"
+version = "0.1.0"
+dependencies = [
+ "ironstar-core",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "uuid",
+ "zenoh",
 ]
 
 [[package]]
