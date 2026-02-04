@@ -1802,6 +1802,7 @@ dependencies = [
  "hypertext",
  "ironstar-analytics",
  "ironstar-core",
+ "ironstar-event-store",
  "ironstar-session",
  "ironstar-session-store",
  "ironstar-shared-kernel",
@@ -1849,6 +1850,24 @@ dependencies = [
  "serde_json",
  "ts-rs",
  "uuid",
+]
+
+[[package]]
+name = "ironstar-event-store"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "fmodel-rust",
+ "futures",
+ "ironstar-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "uuid",
+ "zenoh",
 ]
 
 [[package]]
