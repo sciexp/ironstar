@@ -1,0 +1,20 @@
+[package]
+name = "ironstar-core"
+version.workspace = true
+edition.workspace = true
+description = "Core domain abstractions: traits, error types, value objects, and fmodel-rust re-exports"
+license.workspace = true
+
+[lib]
+doctest = false
+
+[dependencies]
+fmodel-rust = { workspace = true }
+serde = { workspace = true }
+uuid = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+
+[lints]
+workspace = true
