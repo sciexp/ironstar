@@ -201,6 +201,24 @@ impl From<serde_json::Error> for InfrastructureError {
     }
 }
 
+impl From<ironstar_event_store::EventStoreError> for InfrastructureError {
+    fn from(e: ironstar_event_store::EventStoreError) -> Self {
+        match e.kind() {
+            ironstar_event_store::EventStoreErrorKind::Database(_)
+            | ironstar_event_store::EventStoreErrorKind::DatabaseMessage(_) => {
+                Self::database(e.to_string())
+            }
+            ironstar_event_store::EventStoreErrorKind::Serialization(_) => {
+                Self::new(InfrastructureErrorKind::DatabaseMessage(e.to_string()))
+            }
+            ironstar_event_store::EventStoreErrorKind::OptimisticLockingConflict {
+                aggregate_type,
+                aggregate_id,
+            } => Self::optimistic_locking_conflict(aggregate_type, aggregate_id),
+        }
+    }
+}
+
 impl From<ironstar_session_store::SessionStoreError> for InfrastructureError {
     fn from(e: ironstar_session_store::SessionStoreError) -> Self {
         match e.kind() {
