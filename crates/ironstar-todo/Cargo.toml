@@ -1,0 +1,23 @@
+[package]
+name = "ironstar-todo"
+version.workspace = true
+edition.workspace = true
+description = "Todo domain aggregate: commands, events, state, decider, values, errors, view"
+license.workspace = true
+
+[lib]
+doctest = false
+
+[dependencies]
+ironstar-core = { workspace = true }
+chrono = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+ts-rs = { workspace = true }
+uuid = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+
+[lints]
+workspace = true
