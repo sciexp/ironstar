@@ -30,7 +30,7 @@
 //! let jar = jar.add(cookie);
 //! ```
 
-use crate::infrastructure::{InfrastructureError, Session, SessionStore};
+use crate::infrastructure::{Session, SessionStore, SessionStoreError};
 use crate::state::AppState;
 use axum::extract::{FromRef, FromRequestParts};
 use axum::http::StatusCode;
@@ -80,7 +80,7 @@ pub enum SessionRejection {
     /// Session cookie exists but session not found (expired or deleted).
     SessionNotFound,
     /// Database error during session lookup.
-    StoreError(InfrastructureError),
+    StoreError(SessionStoreError),
 }
 
 impl fmt::Display for SessionRejection {
