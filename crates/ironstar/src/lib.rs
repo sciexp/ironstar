@@ -11,7 +11,14 @@
 //! - `state`: Application state container with FromRef implementations
 
 pub mod application;
-pub mod common;
+pub mod common {
+    //! Common types shared across all layers.
+    pub mod error_code {
+        pub use ironstar_core::error_code::ErrorCode;
+    }
+
+    pub use error_code::ErrorCode;
+}
 pub mod config;
 pub mod domain;
 pub mod infrastructure;
