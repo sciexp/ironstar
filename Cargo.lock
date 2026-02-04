@@ -1805,6 +1805,7 @@ dependencies = [
  "ironstar-session",
  "ironstar-shared-kernel",
  "ironstar-todo",
+ "ironstar-workspace",
  "mime_guess",
  "moka",
  "rand 0.9.2",
@@ -1845,6 +1846,7 @@ dependencies = [
  "fmodel-rust",
  "serde",
  "serde_json",
+ "ts-rs",
  "uuid",
 ]
 
@@ -1877,6 +1879,20 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "ironstar-core",
+ "serde",
+ "serde_json",
+ "ts-rs",
+ "uuid",
+]
+
+[[package]]
+name = "ironstar-workspace"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "ironstar-analytics",
+ "ironstar-core",
+ "ironstar-shared-kernel",
  "serde",
  "serde_json",
  "ts-rs",
