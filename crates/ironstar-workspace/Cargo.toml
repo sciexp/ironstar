@@ -1,0 +1,25 @@
+[package]
+name = "ironstar-workspace"
+version.workspace = true
+edition.workspace = true
+description = "Workspace domain: 5 aggregates (Workspace, Dashboard, SavedQuery, UserPreferences, WorkspacePreferences) with views"
+license.workspace = true
+
+[lib]
+doctest = false
+
+[dependencies]
+ironstar-core = { workspace = true }
+ironstar-shared-kernel = { workspace = true }
+ironstar-analytics = { workspace = true }
+chrono = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+ts-rs = { workspace = true }
+uuid = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+
+[lints]
+workspace = true
