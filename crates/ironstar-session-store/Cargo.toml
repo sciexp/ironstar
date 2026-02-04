@@ -1,0 +1,24 @@
+[package]
+name = "ironstar-session-store"
+version.workspace = true
+edition.workspace = true
+description = "SQLite session store: SqliteSessionStore, SessionStore trait, TTL cleanup"
+license.workspace = true
+
+[lib]
+doctest = false
+
+[dependencies]
+ironstar-core = { workspace = true }
+base64 = { workspace = true }
+chrono = { workspace = true }
+rand = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sqlx = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+
+[lints]
+workspace = true
