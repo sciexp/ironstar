@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/ironstar", "crates/ironstar-analytics", "crates/ironstar-core", "crates/ironstar-session", "crates/ironstar-shared-kernel", "crates/ironstar-todo", "crates/ironstar-workspace"]
+members = ["crates/ironstar", "crates/ironstar-analytics", "crates/ironstar-core", "crates/ironstar-session", "crates/ironstar-session-store", "crates/ironstar-shared-kernel", "crates/ironstar-todo", "crates/ironstar-workspace"]
 
 [workspace.package]
 version = "0.1.0"
@@ -66,6 +66,7 @@ ironstar-core = { path = "crates/ironstar-core" }
 ironstar-session = { path = "crates/ironstar-session" }
 ironstar-shared-kernel = { path = "crates/ironstar-shared-kernel" }
 ironstar-todo = { path = "crates/ironstar-todo" }
+ironstar-session-store = { path = "crates/ironstar-session-store" }
 ironstar-workspace = { path = "crates/ironstar-workspace" }
 
 # Async stream utilities
