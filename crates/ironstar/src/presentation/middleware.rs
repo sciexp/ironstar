@@ -50,9 +50,7 @@ mod tests {
     #[test]
     fn generates_valid_uuid_v7() {
         let mut maker = MakeRequestUuidV7;
-        let request = http::Request::builder()
-            .body(())
-            .expect("test request");
+        let request = http::Request::builder().body(()).expect("test request");
 
         let id = maker.make_request_id(&request);
         assert!(id.is_some());
@@ -68,9 +66,7 @@ mod tests {
     #[test]
     fn generates_unique_ids() {
         let mut maker = MakeRequestUuidV7;
-        let request = http::Request::builder()
-            .body(())
-            .expect("test request");
+        let request = http::Request::builder().body(()).expect("test request");
 
         let id1 = maker
             .make_request_id(&request)
