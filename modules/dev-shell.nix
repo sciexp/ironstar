@@ -107,6 +107,9 @@
             act
             cachix
 
+            # Process orchestration
+            process-compose
+
             # Specification and diagrams
             idris2
             d2
