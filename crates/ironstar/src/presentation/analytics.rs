@@ -30,7 +30,7 @@ use futures::Stream;
 use serde::{Deserialize, Serialize};
 use std::convert::Infallible;
 use std::sync::Arc;
-use tracing::warn;
+use tracing::{instrument, warn};
 use uuid::Uuid;
 
 use crate::application::catalog::{handle_catalog_command_zenoh, query_catalog_state};
@@ -93,6 +93,7 @@ pub fn routes() -> Router<AppState> {
 /// Supports `Last-Event-ID` reconnection. Subscribe-before-replay invariant
 /// is maintained: Zenoh subscriptions are established before querying historical
 /// events.
+#[instrument(name = "handler.analytics.feed", skip(state, headers))]
 async fn analytics_feed_handler(
     State(state): State<AnalyticsAppState>,
     headers: HeaderMap,
@@ -215,6 +216,7 @@ fn live_qs_event_to_sse(event: QuerySessionEvent) -> Event {
 // =============================================================================
 
 /// GET /api/catalog - Query current catalog state.
+#[instrument(name = "handler.catalog.get", skip(state))]
 pub async fn get_catalog(
     State(state): State<AnalyticsAppState>,
 ) -> Result<Json<CatalogStateResponse>, AppError> {
@@ -265,6 +267,7 @@ pub struct AnalyticsCommandResponse {
 }
 
 /// POST /api/catalog/select - Select a DuckLake catalog.
+#[instrument(name = "handler.catalog.select", skip(state, request))]
 pub async fn select_catalog(
     State(state): State<AnalyticsAppState>,
     Json(request): Json<SelectCatalogRequest>,
@@ -296,6 +299,7 @@ pub struct RefreshCatalogRequest {
 }
 
 /// POST /api/catalog/refresh - Refresh catalog metadata.
+#[instrument(name = "handler.catalog.refresh", skip(state, request))]
 pub async fn refresh_catalog(
     State(state): State<AnalyticsAppState>,
     Json(request): Json<RefreshCatalogRequest>,
@@ -386,6 +390,7 @@ impl From<&QueryHistoryEntry> for QueryHistoryEntryResponse {
 }
 
 /// GET /api/queries - List query history.
+#[instrument(name = "handler.query_session.list", skip(state))]
 pub async fn list_query_history(
     State(state): State<AnalyticsAppState>,
 ) -> Result<Json<QueryHistoryResponse>, AppError> {
@@ -403,6 +408,7 @@ pub async fn list_query_history(
 }
 
 /// GET /api/queries/{id} - Get specific query from history.
+#[instrument(name = "handler.query_session.get", skip(state), fields(query_id = %id))]
 pub async fn get_query(
     State(state): State<AnalyticsAppState>,
     Path(id): Path<Uuid>,
@@ -431,6 +437,7 @@ pub struct StartQueryRequest {
 }
 
 /// POST /api/queries - Start a new analytics query.
+#[instrument(name = "handler.query_session.start", skip(state, request))]
 pub async fn start_query(
     State(state): State<AnalyticsAppState>,
     Json(request): Json<StartQueryRequest>,
@@ -484,6 +491,7 @@ pub struct CancelQueryRequest {
 }
 
 /// DELETE /api/queries/{id} - Cancel a running query.
+#[instrument(name = "handler.query_session.cancel", skip(state, body), fields(query_id = %id))]
 pub async fn cancel_query(
     State(state): State<AnalyticsAppState>,
     Path(id): Path<Uuid>,
