@@ -54,6 +54,34 @@
               };
             };
 
+            # TypeScript type generation: watches domain crates for ts-rs derive changes,
+            # runs cargo test --lib to trigger TS_RS_EXPORT_DIR exports.
+            # Export directory configured in .cargo/config.toml (web-components/bindings).
+            typegen = {
+              command = pkgs.writeShellApplication {
+                name = "typegen-dev";
+                runtimeInputs = [ pkgs.cargo-watch ];
+                text = ''
+                  cargo watch \
+                    -w crates/ironstar-core/src \
+                    -w crates/ironstar-shared-kernel/src \
+                    -w crates/ironstar-todo/src \
+                    -w crates/ironstar-session/src \
+                    -w crates/ironstar-analytics/src \
+                    -w crates/ironstar-workspace/src \
+                    -w crates/ironstar/src/domain \
+                    -s 'cargo test --lib export_bindings 2>&1 || true'
+                '';
+              };
+              depends_on = {
+                backend.condition = "process_started";
+              };
+              availability = {
+                restart = "on_failure";
+                backoff_seconds = 5;
+              };
+            };
+
             # Backend: Rust server with cargo-watch for auto-rebuild
             backend = {
               command = pkgs.writeShellApplication {
