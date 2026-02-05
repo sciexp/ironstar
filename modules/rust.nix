@@ -52,7 +52,13 @@
       # Source filtering (replaces config.rust-project.src)
       src = lib.cleanSourceWith {
         src = self;
-        filter = path: type: crane-lib.filterCargoSources path type;
+        filter =
+          path: type:
+          # Include SQL files for include_str! macros
+          (lib.hasSuffix ".sql" path)
+          ||
+            # Default crane filter for Rust files
+            (crane-lib.filterCargoSources path type);
       };
 
       # Frontend assets built from web-components/ via Rolldown.
