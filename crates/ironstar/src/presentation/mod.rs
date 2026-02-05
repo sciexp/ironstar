@@ -195,8 +195,5 @@ pub fn app_router(state: AppState) -> Router {
                 )
             },
         ))
-        .layer(SetRequestIdLayer::new(
-            x_request_id,
-            MakeRequestUuidV7,
-        ))
+        .layer(SetRequestIdLayer::new(x_request_id, MakeRequestUuidV7))
 }
