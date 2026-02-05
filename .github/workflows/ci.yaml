@@ -403,7 +403,7 @@ jobs:
   # job 5: nix
   # builds flake outputs via category-based matrix for disk space optimization
   # distributes builds across multiple machines to avoid disk space exhaustion
-  # each job builds a specific category (packages, checks, devshells)
+  # each job builds a specific category (flake-check, devshells)
   nix:
     needs: [secrets-scan, set-variables]
     runs-on: ${{ matrix.runner }}
@@ -420,10 +420,7 @@ jobs:
           # x86_64-linux builds
           - system: x86_64-linux
             runner: ubuntu-latest
-            category: packages
-          - system: x86_64-linux
-            runner: ubuntu-latest
-            category: checks
+            category: flake-check
           - system: x86_64-linux
             runner: ubuntu-latest
             category: devshells
