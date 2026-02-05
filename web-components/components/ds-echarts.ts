@@ -5,7 +5,6 @@ import { customElement, property } from "lit/decorators.js";
 
 @customElement("ds-echarts")
 export class DsEcharts extends LitElement {
-	// Props matching Rocket ECharts interface
 	@property({ type: String }) option = "{}";
 	@property({ type: String }) theme = "default";
 	@property({ type: Number, attribute: "resize-delay" }) resizeDelay = 100;
