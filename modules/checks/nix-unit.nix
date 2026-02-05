@@ -6,8 +6,8 @@
       # All flake inputs must be explicitly passed to nix-unit so it can evaluate
       # tests without network access. Without this, nix-unit runs in a sandbox
       # and fails with SSL/network errors when trying to fetch inputs.
-      # Transitive dependencies (like rust-overlay from rust-flake) must be hoisted
-      # to direct inputs in flake.nix and included here.
+      # All flake inputs must be explicitly passed to nix-unit so it can evaluate
+      # tests without network access.
       nix-unit.inputs = {
         inherit (inputs)
           nixpkgs
@@ -17,7 +17,7 @@
           import-tree
           git-hooks
           rust-overlay
-          rust-flake
+          crane
           playwright-web-flake
           nix-unit
           ;
