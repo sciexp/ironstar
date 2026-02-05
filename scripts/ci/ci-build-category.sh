@@ -100,7 +100,7 @@ build_packages() {
 
     print_step "discovering packages"
     local packages
-    packages=$(nix eval ".#packages.$system" --apply 'builtins.attrNames' --json 2>/dev/null | jq -r '.[]' || echo "")
+    packages=$(nix eval --accept-flake-config ".#packages.$system" --apply 'builtins.attrNames' --json 2>/dev/null | jq -r '.[]' || echo "")
 
     if [ -z "$packages" ]; then
         echo "no packages found for $system"
@@ -117,7 +117,7 @@ build_packages() {
         if [ -n "$pkg" ]; then
             echo ""
             echo "building packages.$system.$pkg"
-            if ! nix build ".#packages.$system.$pkg" -L --no-link; then
+            if ! nix build --accept-flake-config ".#packages.$system.$pkg" -L --no-link; then
                 echo "failed to build packages.$system.$pkg"
                 failed=$((failed + 1))
             fi
@@ -141,7 +141,7 @@ build_checks() {
 
     print_step "discovering checks"
     local checks
-    checks=$(nix eval ".#checks.$system" --apply 'builtins.attrNames' --json 2>/dev/null | jq -r '.[]' || echo "")
+    checks=$(nix eval --accept-flake-config ".#checks.$system" --apply 'builtins.attrNames' --json 2>/dev/null | jq -r '.[]' || echo "")
 
     if [ -z "$checks" ]; then
         echo "no checks found for $system"
@@ -158,7 +158,7 @@ build_checks() {
         if [ -n "$check" ]; then
             echo ""
             echo "building checks.$system.$check"
-            if ! nix build ".#checks.$system.$check" -L --no-link; then
+            if ! nix build --accept-flake-config ".#checks.$system.$check" -L --no-link; then
                 echo "failed to build checks.$system.$check"
                 failed=$((failed + 1))
             fi
@@ -182,7 +182,7 @@ build_flake_check() {
 
     # nix flake check builds all checks in parallel with shared cargoArtifacts
     # --system ensures we check the correct platform
-    nix flake check --system "$system" -L
+    nix flake check --accept-flake-config --system "$system" -L
 
     echo ""
     echo "flake check completed successfully"
@@ -195,7 +195,7 @@ build_devshells() {
 
     print_step "discovering devshells"
     local devshells
-    devshells=$(nix eval ".#devShells.$system" --apply 'builtins.attrNames' --json 2>/dev/null | jq -r '.[]' || echo "")
+    devshells=$(nix eval --accept-flake-config ".#devShells.$system" --apply 'builtins.attrNames' --json 2>/dev/null | jq -r '.[]' || echo "")
 
     if [ -z "$devshells" ]; then
         echo "no devshells found for $system"
@@ -212,7 +212,7 @@ build_devshells() {
         if [ -n "$shell" ]; then
             echo ""
             echo "building devShells.$system.$shell"
-            if ! nix build ".#devShells.$system.$shell" -L --no-link; then
+            if ! nix build --accept-flake-config ".#devShells.$system.$shell" -L --no-link; then
                 echo "failed to build devShells.$system.$shell"
                 failed=$((failed + 1))
             fi
