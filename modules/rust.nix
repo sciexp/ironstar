@@ -202,49 +202,50 @@
               CARGO_PROFILE = "release";
             }
           );
-          # Exposed for isolated testing: `nix build .#frontendAssets`
           inherit frontendAssets;
-        };
+        }
+        # Per-crate test and clippy for ad-hoc debugging (e.g. `nix build .#ironstar-core-test`)
+        // lib.genAttrs (map (n: "${n}-test") libCrates) (
+          attr: perCrateTest (lib.removeSuffix "-test" attr)
+        )
+        // lib.genAttrs (map (n: "${n}-clippy") libCrates) (
+          attr: perCrateClippy (lib.removeSuffix "-clippy" attr)
+        );
 
         # Manual wiring: checks
-        # Workspace-level checks validate the entire codebase.
-        # Per-crate checks enable isolated CI feedback and granular caching.
-        checks =
-          lib.genAttrs (map (n: "${n}-test") libCrates) (attr: perCrateTest (lib.removeSuffix "-test" attr))
-          // lib.genAttrs (map (n: "${n}-clippy") libCrates) (
-            attr: perCrateClippy (lib.removeSuffix "-clippy" attr)
-          )
-          // {
-            workspace-fmt = crane-lib.cargoFmt {
-              inherit src;
-              pname = "ironstar";
-            };
-
-            workspace-test = crane-lib.cargoNextest (
-              commonArgs
-              // {
-                inherit cargoArtifacts;
-                partitions = 1;
-                partitionType = "count";
-                # Allow empty test suite during early development
-                cargoNextestExtraArgs = "--no-tests=pass";
-              }
-            );
-
-            workspace-clippy = crane-lib.cargoClippy (
-              commonArgs
-              // {
-                inherit cargoArtifacts;
-                cargoClippyExtraArgs = "--all-targets -- --deny warnings";
-              }
-            );
-
-            # Doctests disabled: examples as integration tests in crates/*/tests/
-            # See CLAUDE.md "Testing conventions" for rationale
-            # rust-doctest = crane-lib.cargoDocTest (
-            #   commonArgs // { inherit cargoArtifacts; }
-            # );
+        # Workspace-level checks run by `nix flake check`.
+        # Per-crate checks are in `packages` for ad-hoc debugging via `nix build .#ironstar-core-test`.
+        checks = {
+          workspace-fmt = crane-lib.cargoFmt {
+            inherit src;
+            pname = "ironstar";
           };
+
+          workspace-test = crane-lib.cargoNextest (
+            commonArgs
+            // {
+              inherit cargoArtifacts;
+              partitions = 1;
+              partitionType = "count";
+              # Allow empty test suite during early development
+              cargoNextestExtraArgs = "--no-tests=pass";
+            }
+          );
+
+          workspace-clippy = crane-lib.cargoClippy (
+            commonArgs
+            // {
+              inherit cargoArtifacts;
+              cargoClippyExtraArgs = "--all-targets -- --deny warnings";
+            }
+          );
+
+          # Doctests disabled: examples as integration tests in crates/*/tests/
+          # See CLAUDE.md "Testing conventions" for rationale
+          # rust-doctest = crane-lib.cargoDocTest (
+          #   commonArgs // { inherit cargoArtifacts; }
+          # );
+        };
       };
     };
 }
