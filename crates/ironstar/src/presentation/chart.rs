@@ -35,7 +35,7 @@ use axum::{
 use datastar::prelude::PatchSignals;
 use futures::stream::{self, Stream, StreamExt};
 use hypertext::Renderable;
-use tracing::warn;
+use tracing::{instrument, warn};
 
 use crate::domain::signals::ChartSignals;
 use crate::infrastructure::analytics::AnalyticsState;
@@ -81,6 +81,7 @@ use crate::state::AppState;
 /// For charts requiring live updates (e.g., real-time metrics), use
 /// `SseStreamBuilder` with Zenoh subscription for continuous streaming.
 /// See `infrastructure/sse_stream.rs` for the streaming pattern.
+#[instrument(name = "handler.chart.astronauts_sse", skip(analytics))]
 pub async fn astronauts_chart_sse(
     State(analytics): State<AnalyticsState>,
 ) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
@@ -208,6 +209,7 @@ async fn astronauts_chart_signals(analytics: &AnalyticsState) -> ChartSignals {
 /// # Route
 ///
 /// GET /charts/astronauts
+#[instrument(name = "handler.chart.astronauts_page", skip(manifest))]
 pub async fn astronauts_chart_page(State(manifest): State<AssetManifest>) -> impl IntoResponse {
     use crate::presentation::chart_templates::chart_page;
 
@@ -250,6 +252,7 @@ pub async fn astronauts_chart_page(State(manifest): State<AssetManifest>) -> imp
 /// Query or transformation errors are communicated via the `error` field
 /// in `ChartSignals` rather than HTTP error codes, allowing the chart UI
 /// to display error state gracefully.
+#[instrument(name = "handler.chart.feed", skip(analytics), fields(chart_id = %chart_id))]
 pub async fn chart_feed_handler(
     Path(chart_id): Path<String>,
     State(analytics): State<AnalyticsState>,
