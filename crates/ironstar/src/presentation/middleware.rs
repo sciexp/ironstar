@@ -43,6 +43,7 @@ impl MakeRequestId for MakeRequestUuidV7 {
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used, clippy::panic)]
 mod tests {
     use super::*;
     use tower_http::request_id::MakeRequestId;
