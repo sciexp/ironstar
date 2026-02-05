@@ -41,6 +41,7 @@ use axum::routing::{get, post};
 use chrono::Utc;
 use serde::Deserialize;
 use std::sync::Arc;
+use tracing::instrument;
 use uuid::Uuid;
 
 use crate::application::dashboard::handle_dashboard_command_zenoh;
@@ -211,6 +212,7 @@ pub struct UserPreferencesResponse {
 // =============================================================================
 
 /// GET /api - List all workspaces.
+#[instrument(name = "handler.workspace.list", skip(state))]
 pub async fn list_workspaces(
     State(state): State<WorkspaceAppState>,
 ) -> Result<impl IntoResponse, AppError> {
@@ -233,6 +235,7 @@ pub async fn list_workspaces(
 }
 
 /// GET /api/{id}/dashboard/{dashboard_id} - Get dashboard layout.
+#[instrument(name = "handler.dashboard.get_layout", skip(state), fields(dashboard_id = %dashboard_id))]
 pub async fn get_dashboard_layout(
     State(state): State<WorkspaceAppState>,
     Path((_workspace_id, dashboard_id)): Path<(Uuid, Uuid)>,
@@ -258,6 +261,7 @@ pub async fn get_dashboard_layout(
 }
 
 /// GET /api/{id}/queries - List saved queries for a workspace.
+#[instrument(name = "handler.saved_query.list", skip(state), fields(workspace_id = %workspace_id))]
 pub async fn list_saved_queries(
     State(state): State<WorkspaceAppState>,
     Path(workspace_id): Path<Uuid>,
@@ -283,6 +287,7 @@ pub async fn list_saved_queries(
 }
 
 /// GET /api/user/preferences/{user_id} - Get user preferences.
+#[instrument(name = "handler.user_preferences.get", skip(state), fields(user_id = %user_id))]
 pub async fn get_user_preferences(
     State(state): State<WorkspaceAppState>,
     Path(user_id): Path<Uuid>,
@@ -375,6 +380,7 @@ pub struct SetLocaleRequest {
 /// POST /api - Create a new workspace.
 ///
 /// Returns 202 Accepted; state changes are delivered via SSE feeds.
+#[instrument(name = "handler.workspace.create", skip(state, request))]
 pub async fn create_workspace(
     State(state): State<WorkspaceAppState>,
     Json(request): Json<CreateWorkspaceRequest>,
@@ -403,6 +409,7 @@ pub async fn create_workspace(
 }
 
 /// POST /api/{id}/rename - Rename a workspace.
+#[instrument(name = "handler.workspace.rename", skip(state, request), fields(workspace_id = %id))]
 pub async fn rename_workspace(
     State(state): State<WorkspaceAppState>,
     Path(id): Path<Uuid>,
@@ -430,6 +437,7 @@ pub async fn rename_workspace(
 }
 
 /// POST /api/{id}/visibility - Change workspace visibility.
+#[instrument(name = "handler.workspace.set_visibility", skip(state, request), fields(workspace_id = %id))]
 pub async fn set_visibility(
     State(state): State<WorkspaceAppState>,
     Path(id): Path<Uuid>,
@@ -461,6 +469,7 @@ pub async fn set_visibility(
 // =============================================================================
 
 /// POST /api/{id}/dashboard - Create a dashboard in a workspace.
+#[instrument(name = "handler.dashboard.create", skip(state, request), fields(workspace_id = %workspace_id))]
 pub async fn create_dashboard(
     State(state): State<WorkspaceAppState>,
     Path(workspace_id): Path<Uuid>,
@@ -489,6 +498,7 @@ pub async fn create_dashboard(
 }
 
 /// POST /api/{id}/dashboard/{dashboard_id}/chart - Add a chart to a dashboard.
+#[instrument(name = "handler.dashboard.add_chart", skip(state, request), fields(dashboard_id = %dashboard_id))]
 pub async fn add_chart(
     State(state): State<WorkspaceAppState>,
     Path((_workspace_id, dashboard_id)): Path<(Uuid, Uuid)>,
@@ -520,6 +530,7 @@ pub async fn add_chart(
 // =============================================================================
 
 /// POST /api/{id}/query - Save a query in a workspace.
+#[instrument(name = "handler.saved_query.save", skip(state, request), fields(workspace_id = %workspace_id))]
 pub async fn save_query(
     State(state): State<WorkspaceAppState>,
     Path(workspace_id): Path<Uuid>,
@@ -561,6 +572,7 @@ pub async fn save_query(
 // =============================================================================
 
 /// POST /api/{id}/preferences/catalog - Set default catalog for workspace.
+#[instrument(name = "handler.workspace_preferences.set_catalog", skip(state, request), fields(workspace_id = %id))]
 pub async fn set_default_catalog(
     State(state): State<WorkspaceAppState>,
     Path(id): Path<Uuid>,
@@ -607,6 +619,7 @@ pub async fn set_default_catalog(
 }
 
 /// POST /api/{id}/preferences/catalog/clear - Clear default catalog.
+#[instrument(name = "handler.workspace_preferences.clear_catalog", skip(state), fields(workspace_id = %id))]
 pub async fn clear_default_catalog(
     State(state): State<WorkspaceAppState>,
     Path(id): Path<Uuid>,
@@ -639,6 +652,7 @@ pub async fn clear_default_catalog(
 // =============================================================================
 
 /// POST /api/user/preferences/theme - Set user theme.
+#[instrument(name = "handler.user_preferences.set_theme", skip(state, request))]
 pub async fn set_theme(
     State(state): State<WorkspaceAppState>,
     Json(request): Json<SetThemeRequest>,
@@ -685,6 +699,7 @@ pub async fn set_theme(
 }
 
 /// POST /api/user/preferences/locale - Set user locale.
+#[instrument(name = "handler.user_preferences.set_locale", skip(state, request))]
 pub async fn set_locale(
     State(state): State<WorkspaceAppState>,
     Json(request): Json<SetLocaleRequest>,
