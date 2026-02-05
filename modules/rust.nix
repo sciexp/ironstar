@@ -1,21 +1,59 @@
-{ inputs, ... }:
 {
-  imports = [
-    inputs.rust-flake.flakeModules.default
-    inputs.rust-flake.flakeModules.nixpkgs
-  ];
+  inputs,
+  self,
+  flake-parts-lib,
+  ...
+}:
+{
+  # Inject nixpkgs module into perSystem via mkPerSystemOption.
+  # This pattern (from hercules-ci/flake-parts#74) enables the nixpkgs.overlays
+  # and nixpkgs.hostPlatform options inside perSystem, which rust-flake previously provided.
+  options.perSystem = flake-parts-lib.mkPerSystemOption (
+    { system, ... }:
+    {
+      imports = [
+        "${inputs.nixpkgs}/nixos/modules/misc/nixpkgs.nix"
+      ];
+      nixpkgs = {
+        hostPlatform = system;
+        overlays = [
+          (import inputs.rust-overlay)
+        ];
+      };
+    }
+  );
 
-  perSystem =
+  config.perSystem =
     {
       config,
       self',
       pkgs,
       lib,
+      system,
       ...
     }:
     let
       rustToolchainVersion = "1.92.0";
-      inherit (config.rust-project) crane-lib src;
+
+      # Rust toolchain via rust-overlay (replaces rust-flake config.rust-project.toolchain)
+      rustToolchain = pkgs.rust-bin.stable.${rustToolchainVersion}.default.override {
+        extensions = [
+          "rust-src"
+          "rust-analyzer"
+          "clippy"
+          "rustfmt"
+          "llvm-tools-preview"
+        ];
+      };
+
+      # Crane library overridden with our toolchain (replaces config.rust-project.crane-lib)
+      crane-lib = (inputs.crane.mkLib pkgs).overrideToolchain rustToolchain;
+
+      # Source filtering (replaces config.rust-project.src)
+      src = lib.cleanSourceWith {
+        src = self;
+        filter = path: type: crane-lib.filterCargoSources path type;
+      };
 
       # Frontend assets built from web-components/ via Rolldown.
       # Produces static/dist/ contents for rust-embed at compile time.
@@ -72,7 +110,7 @@
       # Pure crane pattern: single commonArgs shared by all derivations.
       # See: nix-cargo-crane/docs/faq/constant-rebuilds.md
       commonArgs = {
-        src = combinedSrc; # Includes frontend assets for rust-embed
+        src = combinedSrc;
         inherit cargoVendorDir;
         pname = "ironstar";
         strictDeps = true;
@@ -83,8 +121,9 @@
         # sets HOME=/homeless-shelter (non-writable), so tests that install
         # extensions fail. Provide a writable HOME for the build sandbox.
         HOME = "/tmp";
-        # Match crate.nix nativeBuildInputs for identical derivation hash
         nativeBuildInputs = [ pkgs.pkg-config ];
+        # openssl required on Linux for TLS-dependent crates
+        buildInputs = lib.optionals pkgs.stdenv.isLinux [ pkgs.openssl ];
       };
 
       # Single cargoArtifacts derivation shared by all crane outputs
@@ -99,69 +138,107 @@
           CARGO_PROFILE = "release";
         }
       );
+
+      # Per-crate library names for isolated test and clippy derivations.
+      # All share the workspace cargoArtifacts for cache efficiency.
+      libCrates = [
+        "ironstar-analytics"
+        "ironstar-analytics-infra"
+        "ironstar-core"
+        "ironstar-event-bus"
+        "ironstar-event-store"
+        "ironstar-session"
+        "ironstar-session-store"
+        "ironstar-shared-kernel"
+        "ironstar-todo"
+        "ironstar-workspace"
+      ];
+
+      perCrateTest =
+        name:
+        crane-lib.cargoNextest (
+          commonArgs
+          // {
+            inherit cargoArtifacts;
+            pname = name;
+            cargoNextestExtraArgs = "-p ${name} --no-tests=pass";
+          }
+        );
+
+      perCrateClippy =
+        name:
+        crane-lib.cargoClippy (
+          commonArgs
+          // {
+            inherit cargoArtifacts;
+            pname = name;
+            cargoClippyExtraArgs = "-p ${name} --all-targets -- --deny warnings";
+          }
+        );
     in
     {
-      # Configure rust-project toolchain (no per-crate defaults needed)
-      rust-project = {
-        crateNixFile = "crate.nix";
-        toolchain = pkgs.rust-bin.stable.${rustToolchainVersion}.default.override {
-          extensions = [
-            "rust-src"
-            "rust-analyzer"
-            "clippy"
-            "rustfmt"
-            "llvm-tools-preview" # Required for cargo-llvm-cov coverage
-          ];
-        };
+      options.ironstar.rustToolchain = lib.mkOption {
+        type = lib.types.package;
+        description = "Rust toolchain package for use by other modules";
       };
 
-      # Manual wiring: packages
-      packages = {
-        default = self'.packages.ironstar;
-        ironstar = crane-lib.buildPackage (commonArgs // { inherit cargoArtifacts; });
-        ironstar-release = crane-lib.buildPackage (
-          commonArgs
-          // {
-            cargoArtifacts = cargoArtifactsRelease;
-            CARGO_PROFILE = "release";
-          }
-        );
-        # Exposed for isolated testing: `nix build .#frontendAssets`
-        inherit frontendAssets;
-      };
+      config = {
+        ironstar.rustToolchain = rustToolchain;
 
-      # Manual wiring: checks
-      # Note: crane functions auto-append suffixes (-fmt, -nextest, -clippy)
-      checks = {
-        workspace-fmt = crane-lib.cargoFmt {
-          inherit src;
-          pname = "ironstar";
+        # Manual wiring: packages
+        packages = {
+          default = self'.packages.ironstar;
+          ironstar = crane-lib.buildPackage (commonArgs // { inherit cargoArtifacts; });
+          ironstar-release = crane-lib.buildPackage (
+            commonArgs
+            // {
+              cargoArtifacts = cargoArtifactsRelease;
+              CARGO_PROFILE = "release";
+            }
+          );
+          # Exposed for isolated testing: `nix build .#frontendAssets`
+          inherit frontendAssets;
         };
 
-        workspace-test = crane-lib.cargoNextest (
-          commonArgs
+        # Manual wiring: checks
+        # Workspace-level checks validate the entire codebase.
+        # Per-crate checks enable isolated CI feedback and granular caching.
+        checks =
+          lib.genAttrs (map (n: "${n}-test") libCrates) (attr: perCrateTest (lib.removeSuffix "-test" attr))
+          // lib.genAttrs (map (n: "${n}-clippy") libCrates) (
+            attr: perCrateClippy (lib.removeSuffix "-clippy" attr)
+          )
           // {
-            inherit cargoArtifacts;
-            partitions = 1;
-            partitionType = "count";
-            # Allow empty test suite during early development
-            cargoNextestExtraArgs = "--no-tests=pass";
-          }
-        );
+            workspace-fmt = crane-lib.cargoFmt {
+              inherit src;
+              pname = "ironstar";
+            };
 
-        workspace-clippy = crane-lib.cargoClippy (
-          commonArgs
-          // {
-            inherit cargoArtifacts;
-            cargoClippyExtraArgs = "--all-targets -- --deny warnings";
-          }
-        );
+            workspace-test = crane-lib.cargoNextest (
+              commonArgs
+              // {
+                inherit cargoArtifacts;
+                partitions = 1;
+                partitionType = "count";
+                # Allow empty test suite during early development
+                cargoNextestExtraArgs = "--no-tests=pass";
+              }
+            );
 
-        # Doctests disabled: examples as integration tests in crates/*/tests/
-        # See CLAUDE.md "Testing conventions" for rationale
-        # rust-doctest = crane-lib.cargoDocTest (
-        #   commonArgs // { inherit cargoArtifacts; }
-        # );
+            workspace-clippy = crane-lib.cargoClippy (
+              commonArgs
+              // {
+                inherit cargoArtifacts;
+                cargoClippyExtraArgs = "--all-targets -- --deny warnings";
+              }
+            );
+
+            # Doctests disabled: examples as integration tests in crates/*/tests/
+            # See CLAUDE.md "Testing conventions" for rationale
+            # rust-doctest = crane-lib.cargoDocTest (
+            #   commonArgs // { inherit cargoArtifacts; }
+            # );
+          };
       };
     };
 }
