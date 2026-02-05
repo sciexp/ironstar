@@ -28,6 +28,9 @@
 
     crane.url = "github:ipetkov/crane";
 
+    process-compose-flake.url = "github:Platonic-Systems/process-compose-flake";
+    services-flake.url = "github:juspay/services-flake";
+
     # playwright browsers pinned to match package.json (@playwright/test version)
     # sync this when upgrading @playwright/test in packages/docs/package.json
     playwright-web-flake.url = "github:pietdevries94/playwright-web-flake/1.57.0";
