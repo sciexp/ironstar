@@ -999,6 +999,16 @@ flake-update:
 dev:
   nix develop
 
+# Start all dev services via process-compose (backend, frontend, observability)
+[group('nix')]
+dev-services:
+  nix run .#dev
+
+# Start dev services with process-compose TUI
+[group('nix')]
+dev-services-tui:
+  nix run .#dev -- --tui
+
 # Build the documentation package with Nix
 [group('nix')]
 nix-build:
