@@ -54,6 +54,7 @@ pub fn base_layout(manifest: &AssetManifest, content: impl Renderable) -> impl R
             head {
                 meta charset="utf-8";
                 meta name="viewport" content="width=device-width, initial-scale=1";
+                meta name="color-scheme" content="light dark";
                 link rel="stylesheet" href=(css_href);
                 script defer type="module" src=(datastar_src) {}
             }
@@ -110,6 +111,17 @@ mod tests {
 
         assert!(body.contains(r#"name="viewport""#));
         assert!(body.contains(r#"content="width=device-width, initial-scale=1""#));
+    }
+
+    #[test]
+    fn base_layout_renders_color_scheme() {
+        let manifest = AssetManifest::default();
+        let content = maud! { main { "test" } };
+        let html = base_layout(&manifest, content).render();
+        let body = html.as_inner();
+
+        assert!(body.contains(r#"name="color-scheme""#));
+        assert!(body.contains(r#"content="light dark""#));
     }
 
     #[test]
