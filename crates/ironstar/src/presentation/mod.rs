@@ -114,6 +114,7 @@ pub mod error;
 pub mod extractors;
 pub mod health;
 pub mod layout;
+pub mod middleware;
 pub mod todo;
 pub mod todo_templates;
 pub mod workspace;
@@ -134,6 +135,7 @@ pub use extractors::{
 pub use health::{
     HealthChecks, HealthResponse, HealthState, HealthStatus, health_router, routes as health_routes,
 };
+pub use middleware::MakeRequestUuidV7;
 pub use todo::{TodoAppState, TodoListResponse, get_todo, list_todos};
 pub use todo_templates::{todo_app, todo_item, todo_list, todo_page};
 
