@@ -86,7 +86,7 @@
           inputsFrom = [ config.pre-commit.devShell ];
           packages = with pkgs; [
             # Rust toolchain (version defined in rust.nix)
-            config.rust-project.toolchain
+            config.ironstar.rustToolchain
             cargo-edit
             cargo-nextest
 
