@@ -1093,6 +1093,11 @@ rust-clippy:
 rust-test:
   cargo nextest run --workspace
 
+# Run the ironstar dev server (http://localhost:3000/todos)
+[group('rust')]
+rust-serve:
+  cargo run --package ironstar
+
 # Build Rust documentation
 [group('rust')]
 rust-doc:
