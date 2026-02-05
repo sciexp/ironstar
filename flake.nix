@@ -26,11 +26,7 @@
     rust-overlay.url = "github:oxalica/rust-overlay";
     rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
 
-    rust-flake = {
-      url = "github:juspay/rust-flake";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.rust-overlay.follows = "rust-overlay";
-    };
+    crane.url = "github:ipetkov/crane";
 
     # playwright browsers pinned to match package.json (@playwright/test version)
     # sync this when upgrading @playwright/test in packages/docs/package.json
