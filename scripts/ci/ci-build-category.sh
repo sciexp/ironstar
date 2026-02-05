@@ -15,11 +15,13 @@ set -euo pipefail
 #   category  - Output category to build:
 #               - packages: all packages for system
 #               - checks: checks only
+#               - flake-check: all checks via nix flake check (parallel)
 #               - devshells: devshells only
 #
 # Examples:
 #   ci-build-category.sh x86_64-linux packages
 #   ci-build-category.sh x86_64-linux checks
+#   ci-build-category.sh x86_64-linux flake-check
 #   ci-build-category.sh x86_64-linux devshells
 # ============================================================================
 
@@ -31,7 +33,7 @@ if [ $# -lt 2 ]; then
     echo "usage: $0 <system> <category>"
     echo ""
     echo "system: x86_64-linux, aarch64-linux, aarch64-darwin"
-    echo "category: packages, checks, devshells"
+    echo "category: packages, checks, flake-check, devshells"
     exit 1
 fi
 
@@ -55,11 +57,11 @@ esac
 
 # Validate category
 case "$CATEGORY" in
-    packages|checks|devshells)
+    packages|checks|flake-check|devshells)
         ;;
     *)
         echo "error: unknown category '$CATEGORY'"
-        echo "valid: packages, checks, devshells"
+        echo "valid: packages, checks, flake-check, devshells"
         exit 1
         ;;
 esac
@@ -173,6 +175,19 @@ build_checks() {
     echo "successfully built $count checks"
 }
 
+build_flake_check() {
+    local system="$1"
+
+    print_header "running nix flake check for $system"
+
+    # nix flake check builds all checks in parallel with shared cargoArtifacts
+    # --system ensures we check the correct platform
+    nix flake check --system "$system" -L
+
+    echo ""
+    echo "flake check completed successfully"
+}
+
 build_devshells() {
     local system="$1"
 
@@ -238,6 +253,9 @@ case "$CATEGORY" in
         ;;
     checks)
         build_checks "$SYSTEM"
+        ;;
+    flake-check)
+        build_flake_check "$SYSTEM"
         ;;
     devshells)
         build_devshells "$SYSTEM"
