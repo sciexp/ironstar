@@ -48,6 +48,7 @@ use axum::response::IntoResponse;
 use axum::routing::get;
 use serde::Serialize;
 use sqlx::sqlite::SqlitePool;
+use tracing::instrument;
 
 use crate::state::AppState;
 
@@ -131,6 +132,7 @@ impl HealthResponse {
 ///   }
 /// }
 /// ```
+#[instrument(name = "handler.health.status", skip(state))]
 pub async fn health(State(state): State<HealthState>) -> impl IntoResponse {
     let database_status = check_database(&state.db_pool).await;
 
@@ -167,6 +169,7 @@ pub async fn health(State(state): State<HealthState>) -> impl IntoResponse {
 ///
 /// - `200 OK` with plain text "ready" when ready
 /// - `503 Service Unavailable` with plain text "not ready" when not ready
+#[instrument(name = "handler.health.ready", skip(state))]
 pub async fn ready(State(state): State<HealthState>) -> impl IntoResponse {
     let database_status = check_database(&state.db_pool).await;
 
@@ -188,6 +191,7 @@ pub async fn ready(State(state): State<HealthState>) -> impl IntoResponse {
 ///
 /// This endpoint always returns 200 as long as the HTTP server is running.
 /// Kubernetes uses liveness failures to trigger container restarts.
+#[instrument(name = "handler.health.live")]
 pub async fn live() -> impl IntoResponse {
     (StatusCode::OK, "alive")
 }
