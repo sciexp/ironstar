@@ -181,7 +181,7 @@ mod tests {
                 assert_eq!(aggregate_type, "Todo");
                 assert_eq!(aggregate_id, "todo-123");
             }
-            _ => panic!("Expected OptimisticLockingConflict variant"),
+            other => unreachable!("Expected OptimisticLockingConflict variant, got {other:?}"),
         }
     }
 }
