@@ -1541,6 +1541,21 @@ playwright-install:
   @echo "This command is only needed in non-Nix environments"
   bunx playwright install --with-deps
 
+# Run ironstar E2E tests (compiles and starts Rust server, then runs Playwright)
+[group('testing')]
+e2e-test:
+  bunx playwright test
+
+# Run ironstar E2E tests with Playwright UI mode
+[group('testing')]
+e2e-ui:
+  bunx playwright test --ui
+
+# List ironstar E2E test cases without running them
+[group('testing')]
+e2e-list:
+  bunx playwright test --list
+
 ## Template
 
 # Verify template functionality by creating and checking a test project
