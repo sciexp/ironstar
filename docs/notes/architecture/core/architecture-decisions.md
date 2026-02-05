@@ -91,26 +91,26 @@ Covers build tooling technology choices including:
 ## Architecture summary
 
 This diagram shows the 5-layer operational view of ironstar's architecture.
-For the complete 8-layer crate decomposition plan, see `crate-architecture.md`.
+For the complete crate decomposition plan, see `crate-decomposition-plan.md`.
 
 ### Layer model mapping
 
-Ironstar uses three layer models serving different purposes: conceptual thinking (3 layers), operational architecture (5 layers), and physical crate organization (8 layers).
+Ironstar uses three layer models serving different purposes: conceptual thinking (3 layers), operational architecture (5 layers), and physical crate organization (bounded-context-based).
 
-| Conceptual (3-layer) | Operational (5-layer) | Crate (8-layer) | Purpose |
-|---------------------|----------------------|-----------------|---------|
-| Domain | Domain | Layer 0 (Foundation), Layer 1 (Domain) | Pure types, business rules |
-| Application | Application | Layer 2 (Application), Layer 3 (Interfaces) | Command/query handlers, port traits |
-| Infrastructure | Infrastructure | Layer 4 (Infrastructure), Layer 5 (Services) | Database adapters, service composition |
-| — | Boundary | Layer 6 (Presentation) | HTTP extractors, SSE streams |
-| — | Presentation | Layer 6 (Presentation), Layer 7 (Binary) | HTML templates, router wiring |
+| Conceptual (3-layer) | Operational (5-layer) | Crate organization | Purpose |
+|---------------------|----------------------|---------------------|---------|
+| Domain | Domain | Domain crates (ironstar-todo, ironstar-session, ironstar-analytics, ironstar-workspace) + ironstar-core (port traits) + ironstar-shared-kernel (UserId, OAuthProvider) | Pure types, business rules |
+| Application | Application | Binary crate (ironstar): command/query handlers | Command/query handlers, port traits |
+| Infrastructure | Infrastructure | Infrastructure crates (ironstar-event-store, ironstar-event-bus, ironstar-analytics-infra, ironstar-session-store) | Database adapters, service composition |
+| — | Boundary | Binary crate (ironstar): axum extractors, SSE endpoints | HTTP extractors, SSE streams |
+| — | Presentation | Binary crate (ironstar): hypertext templates, datastar-rust integration | HTML templates, router wiring |
 
-**Note on Layer 6 mapping:** Both Boundary and Presentation operational layers are implemented in crate Layer 6 (`ironstar-web`), which contains all presentation concerns: HTTP handlers, SSE streams, and HTML templates.
-Layer 7 (`ironstar` binary) is purely the composition root and main entry point.
+**Note on physical crate organization:** The implemented crate decomposition uses bounded-context-based boundaries (11 crates) mirroring the Idris2 spec module structure, superseding the earlier layer-based decomposition exploration.
+The binary crate (`ironstar`) serves as the composition root, containing application layer handlers, presentation layer templates, and boundary layer HTTP/SSE infrastructure.
 
 **Conceptual model** (3 layers) - used when discussing high-level architecture principles and CQRS/ES patterns.
 **Operational model** (5 layers) - used when implementing features and understanding data flow.
-**Crate model** (8 layers) - used when organizing workspace structure and managing dependencies.
+**Crate organization** (bounded-context-based) - used when organizing workspace structure and managing dependencies.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -387,7 +387,7 @@ This pattern mirrors northstar's `features/*/routes.go` organization.
 
 ### Workspace scaling path
 
-When the codebase grows, extract layers into separate crates following the multi-crate architecture documented in `crate-architecture.md`.
+When the codebase grows, extract layers into separate crates following the multi-crate architecture documented in `crate-decomposition-plan.md`.
 The structure draws from patterns in Golem (~25 crates) and Hyperswitch (~40 crates).
 
 **Key patterns adopted:**
@@ -401,24 +401,39 @@ The structure draws from patterns in Golem (~25 crates) and Hyperswitch (~40 cra
 | Configuration-driven adapters | Golem | Runtime backend selection |
 | Workspace lints | Hyperswitch | Consistent code quality |
 
-**Layered crate structure:**
+**Bounded-context crate structure:**
 
 ```
-Layer 0 (Foundation): common-enums, common-types, common-utils
-Layer 1 (Domain): ironstar-domain, ironstar-commands, ironstar-events
-Layer 2 (Application): ironstar-app
-Layer 3 (Interfaces): ironstar-interfaces
-Layer 4 (Infrastructure): ironstar-adapters, ironstar-analytics, ironstar-projections, ironstar-config
-Layer 5 (Services): ironstar-services
-Layer 6 (Presentation): ironstar-web
-Layer 7 (Binary): ironstar
+Core layer:
+  ironstar-core                  # Port traits, EventEnvelope, BoundedString
+  ironstar-shared-kernel         # UserId, OAuthProvider
+
+Domain crates (bounded contexts):
+  ironstar-todo                  # Todo aggregate
+  ironstar-session               # Session aggregate
+  ironstar-analytics             # Catalog + QuerySession + Chart aggregates
+  ironstar-workspace             # WorkspaceAggregate + Dashboard + SavedQuery + Preferences aggregates
+
+Infrastructure crates (technology-aligned):
+  ironstar-event-store           # SQLite event persistence
+  ironstar-event-bus             # Zenoh event notification
+  ironstar-analytics-infra       # DuckDB + moka cache
+  ironstar-session-store         # SQLite session storage
+
+Binary crate (composition root):
+  ironstar                       # main.rs, AppState, routes, handlers, templates
 ```
+
+This structure reflects an earlier layer-based design exploration that was superseded by the bounded-context decomposition documented in `crate-decomposition-plan.md`.
+The implemented approach aligns crate boundaries with Idris2 spec module boundaries, keeping each aggregate's 7-file structure (Commands, Events, State, Decider, Values, Errors, View) cohesive within its context crate rather than fragmenting it across layer crates.
 
 Crate names use kebab-case following crates.io convention.
 Rust normalizes these to snake_case for `use` statements.
 
-Each layer can only depend on layers below it.
-See `crate-architecture.md` for detailed directory structure, trait definitions, and migration strategy.
+Domain crates depend only on ironstar-core and optionally ironstar-shared-kernel.
+Infrastructure crates depend on ironstar-core for port traits and on their respective domain crates.
+The binary crate depends on everything.
+See `crate-decomposition-plan.md` for detailed directory structure, trait definitions, and migration strategy.
 
 **Per-crate Nix configuration:**
 
@@ -584,7 +599,7 @@ async fn add_todo(
 ### Design and patterns
 
 - **Design principles**: `design-principles.md`
-- **Crate architecture**: `crate-architecture.md`
+- **Crate decomposition**: `crate-decomposition-plan.md`
 - **Event sourcing core concepts**: `../cqrs/event-sourcing-core.md`
 - **SSE connection lifecycle**: `../cqrs/sse-connection-lifecycle.md`
 - **Command write patterns**: `../cqrs/command-write-patterns.md`
