@@ -14,13 +14,13 @@
         # Nix formatting
         programs.nixfmt.enable = true;
 
-        # Rust formatting - use rustfmt from rust-flake toolchain for version consistency
+        # Rust formatting - use rustfmt from project toolchain for version consistency
         # This ensures treefmt uses the same rustfmt as cargo fmt (from rust-toolchain.toml)
         # NOTE: edition must match workspace.package.edition in Cargo.toml
         # treefmt-nix doesn't support auto-detection from Cargo.toml (always passes --edition)
         programs.rustfmt = {
           enable = true;
-          package = config.rust-project.toolchain;
+          package = config.ironstar.rustToolchain;
           edition = "2024";
         };
 
