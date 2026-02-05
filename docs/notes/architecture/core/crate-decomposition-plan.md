@@ -2,21 +2,25 @@
 title: Crate decomposition plan
 ---
 
-This document presents a concrete plan for decomposing ironstar's single monolithic crate into a fine-grained workspace of spec-aligned crates.
-It supersedes the incremental decomposition strategy in `crate-services-composition.md` and revises the topology in `crate-architecture.md`, which described a *layer-based* decomposition (common-enums, common-types, ironstar-domain, ironstar-commands, ironstar-events, etc.).
-The revised approach uses *bounded-context-based* decomposition where crate boundaries mirror the Idris2 `spec/` module boundaries, keeping each aggregate's 7-file structure cohesive within its context crate rather than fragmenting it across layer crates.
+**Status: Completed** (epic 29b, 12/12 children closed).
+This document was originally written as a plan for decomposing ironstar's single monolithic crate into a fine-grained workspace of spec-aligned crates.
+The decomposition is now fully implemented with 11 crates in production.
+This document has been updated to reflect the completed implementation, including architectural decisions made during implementation that diverged from or refined the original plan.
+
+The decomposition superseded the incremental decomposition strategy in `crate-services-composition.md` and revised the topology in `crate-architecture.md`, which described a *layer-based* decomposition (common-enums, common-types, ironstar-domain, ironstar-commands, ironstar-events, etc.).
+The implemented approach uses *bounded-context-based* decomposition where crate boundaries mirror the Idris2 `spec/` module boundaries, keeping each aggregate's 7-file structure cohesive within its context crate rather than fragmenting it across layer crates.
 
 Patterns from the earlier documents that remain fully applicable include the HasXxx capability traits (from Golem), workspace lints (from Hyperswitch), per-crate Nix configuration via `crate.nix`, and the algebraic layer interpretation.
 These are incorporated into the new topology without conflict.
 
 ## Motivation
 
-The monolithic `crates/ironstar/` crate has reached ~38,655 lines across 12 domain aggregates, 4 architectural layers, and multiple infrastructure technologies (SQLite, DuckDB, Zenoh, moka).
-Module-level separation is clean but enforced only by convention.
-Crate boundaries provide compiler-enforced encapsulation, prevent accidental cross-domain coupling, enable parallel compilation, and allow nix-cargo-crane to cache and rebuild individual crates independently.
+The monolithic `crates/ironstar/` crate had reached ~38,655 lines across 12 domain aggregates, 4 architectural layers, and multiple infrastructure technologies (SQLite, DuckDB, Zenoh, moka).
+Module-level separation was clean but enforced only by convention.
+The decomposition introduced compiler-enforced encapsulation through crate boundaries, preventing accidental cross-domain coupling, enabling parallel compilation, and allowing nix-cargo-crane to cache and rebuild individual crates independently.
 
-The Idris2 `spec/` tree already defines the authoritative bounded context boundaries.
-Aligning crate boundaries to spec module boundaries means the type system enforces the same architectural invariants that the spec describes.
+The Idris2 `spec/` tree defined the authoritative bounded context boundaries.
+The implemented crate boundaries align to spec module boundaries, ensuring the type system enforces the same architectural invariants that the spec describes.
 
 ## Design influences
 
@@ -29,27 +33,37 @@ Aligning crate boundaries to spec module boundaries means the type system enforc
 
 ## Spec-to-crate mapping
 
-Each bounded context in the Idris2 spec maps to exactly one domain crate.
-Sub-aggregates within a context (e.g., Catalog + QuerySession + Chart within Analytics) remain in the same crate because the spec composes them at the context level via `combine` operators, and sub-aggregates share value objects.
+Each bounded context in the Idris2 spec maps to exactly one domain crate in the implemented workspace.
+Sub-aggregates within a context (e.g., Catalog + QuerySession within Analytics, or the 5 workspace sub-aggregates) remain in the same crate because the spec composes them at the context level via `combine` operators, and sub-aggregates share value objects.
 
-| Spec module | Crate | Contents |
-|-------------|-------|----------|
-| `Core/*` | `ironstar-core` | Decider/View/Saga re-exports from fmodel-rust; EventRepository, EventNotifier, EventSubscriber traits (ports); EventEnvelope, EventId, Timestamp; DeciderType, EventType, IsFinal traits; BoundedString and validated newtypes |
+| Spec module | Crate | Implemented contents |
+|-------------|-------|----------------------|
+| `Core/*` | `ironstar-core` | EventRepository, EventNotifier, EventSubscriber traits (ports); EventEnvelope, EventId, Timestamp; DeciderType, EventType, IsFinal traits; BoundedString and validated newtypes; ErrorCode enum |
 | `SharedKernel/*` | `ironstar-shared-kernel` | UserId, OAuthProvider |
 | `Todo/*` | `ironstar-todo` | Commands, Events, State, Decider, Values, Errors, View |
 | `Session/*` | `ironstar-session` | Commands, Events, State, Decider, Values, Errors, View |
-| `Analytics/*` | `ironstar-analytics` | Catalog aggregate, QuerySession aggregate, Chart value objects, combined analyticsDecider |
-| `Workspace/*` | `ironstar-workspace` | WorkspaceAggregate, WorkspacePreferences, Dashboard, SavedQuery, UserPreferences (5 aggregates), combined workspaceContextDecider |
+| `Analytics/*` | `ironstar-analytics` | Catalog aggregate, QuerySession aggregate, combined analyticsDecider |
+| `Workspace/*` | `ironstar-workspace` | WorkspaceAggregate, Dashboard, SavedQuery, WorkspacePreferences, UserPreferences (5 aggregates), combined workspaceContextDecider, workspace views |
+
+**Implementation note:** `ironstar-core` does not re-export `Decider`, `View`, or `Saga` from fmodel-rust.
+Domain crates depend on both `ironstar-core` and `fmodel-rust` directly.
+This keeps `ironstar-core` focused on ironstar-specific abstractions (ports, event infrastructure, domain errors) rather than acting as a leaky facade.
 
 Infrastructure crates are split by technology concern rather than by domain, because infrastructure implements generic port traits and does not contain domain logic.
 
-| Crate | Layer | Contents |
-|-------|-------|----------|
-| `ironstar-event-store` | Infrastructure | SqliteEventRepository implementing EventRepository from core; SSE stream composition |
-| `ironstar-event-bus` | Infrastructure | ZenohEventBus, EventBus trait implementation, key expression utilities, workspace subscriber factory |
-| `ironstar-analytics-infra` | Infrastructure | DuckDBService, AnalyticsCache (moka), CachedAnalyticsService, CacheInvalidationRegistry, CacheDependency, EmbeddedCatalogs |
-| `ironstar-session-store` | Infrastructure | SqliteSessionStore, TTL cleanup |
-| `ironstar` | Binary | main.rs, AppState, config, axum routes, SSE endpoints, extractors, hypertext templates, datastar-rust integration, application layer command/query handlers |
+| Crate | Layer | Implemented contents |
+|-------|-------|----------------------|
+| `ironstar-event-store` | Infrastructure | SqliteEventRepository implementing EventRepository from core; SSE stream utilities; EventStoreError with UUID tracking and backtrace |
+| `ironstar-event-bus` | Infrastructure | ZenohEventBus implementing EventBus trait from core; key expression utilities; workspace subscriber factory; EventBusError with UUID tracking and backtrace |
+| `ironstar-analytics-infra` | Infrastructure | DuckDBService, AnalyticsCache (moka), CachedAnalyticsService, CacheInvalidationRegistry, CacheDependency, EmbeddedCatalogs; AnalyticsInfraError with UUID tracking and backtrace |
+| `ironstar-session-store` | Infrastructure | SqliteSessionStore, session cleanup; SessionStoreError with UUID tracking and backtrace |
+| `ironstar` | Binary/Composition Root | main.rs, AppState, config; axum routes, SSE endpoints, extractors; hypertext templates, datastar-rust integration; application layer command/query handlers; InfrastructureError with `From` conversions; CommandPipelineError with `From` conversions; StaticAssets (embedded static files); SQL migration files; ts-rs TypeScript bindings; integration tests |
+
+**Binary crate design note:** The application and presentation layers remain in the binary crate by design.
+These are composition-root concerns that depend on all domain and infrastructure crates.
+Command and query handlers orchestrate domain logic and infrastructure, requiring access to the full workspace.
+They cannot be extracted into library crates without creating circular dependencies or artificial abstractions.
+The binary crate retains `domain/mod.rs` and `infrastructure/mod.rs` as inline `pub mod` re-export modules to preserve `crate::domain::X` and `crate::infrastructure::X` import paths from the monolithic structure.
 
 ## Dependency DAG
 
@@ -170,90 +184,120 @@ async fn handle_start_query<S: HasEventStore + HasEventBus + HasDuckDB>(
 
 This keeps handlers testable with minimal mock surface.
 
-## Open design questions
+## Per-crate error type pattern
 
-Two decisions deferred to implementation:
+During implementation, an architectural pattern emerged for infrastructure error handling.
+Each infrastructure crate defines its own error type with consistent structure:
 
-*Re-export vs. direct dependency on fmodel-rust.*
-Should `ironstar-core` re-export fmodel-rust's `Decider`, `View`, and `Saga` types so that domain crates only depend on `ironstar-core`?
-Or should domain crates depend on both `ironstar-core` and `fmodel-rust` directly?
-Re-exporting centralizes version management but creates a leaky abstraction if `ironstar-core` only passes types through.
-Direct dependency is explicit but requires coordinated version bumps.
+| Crate | Error type | Features |
+|-------|------------|----------|
+| `ironstar-event-store` | `EventStoreError` | UUID tracking, backtrace capture, `error_code()` mapping to `ErrorCode` enum |
+| `ironstar-event-bus` | `EventBusError` | UUID tracking, backtrace capture, `error_code()` mapping to `ErrorCode` enum |
+| `ironstar-analytics-infra` | `AnalyticsInfraError` | UUID tracking, backtrace capture, `error_code()` mapping to `ErrorCode` enum |
+| `ironstar-session-store` | `SessionStoreError` | UUID tracking, backtrace capture, `error_code()` mapping to `ErrorCode` enum |
 
-*Views crate placement.*
-The `views/` module contains CQRS read models that span aggregate boundaries (e.g., `WorkspaceView` projects from multiple workspace aggregates).
-These could live in their respective context crates (since the spec defines views per context) or in a separate `ironstar-views` crate if cross-context views emerge.
-The spec currently defines views within each context module (`Analytics.QuerySession` has `queryHistoryView`, `Todo` has `todoListView`), so the default is to keep them in context crates unless cross-context views are needed.
+The binary crate's `InfrastructureError` provides `From<XxxError>` conversions for each infrastructure error type, enabling unified error handling at composition boundaries.
+The binary crate's `CommandPipelineError` also provides `From` conversions where needed for command handler orchestration.
 
-## Migration sequence
+This pattern preserves error context through the stack while allowing each infrastructure crate to define errors specific to its technology concern.
 
-The migration proceeds in phases that maintain a compilable workspace at every step.
-Each phase creates one or more new crates, moves code, and updates dependencies.
+## Resolved design questions
 
-### Phase 1: Extract `ironstar-core`
+Two decisions that were deferred to implementation have been resolved:
 
-Create `crates/ironstar-core/` with:
-- Port traits: EventRepository, EventNotifier, EventSubscriber, EventBus
+**fmodel-rust dependency strategy** (resolved: direct dependency).
+Domain crates depend on both `ironstar-core` and `fmodel-rust` directly rather than using re-exports.
+This keeps `ironstar-core` focused on ironstar-specific abstractions (ports, event infrastructure, domain errors) rather than acting as a leaky facade for upstream types.
+The tradeoff is explicit: coordinated version bumps are required, but the dependency graph remains transparent.
+
+**Views crate placement** (resolved: context crates).
+Views live in their respective context crates following the Idris2 spec structure.
+The spec defines views within each context module (`Analytics.QuerySession` has `queryHistoryView`, `Todo` has `todoListView`, `Workspace` context has workspace views).
+The implementation followed this structure without requiring a separate `ironstar-views` crate.
+Cross-context views have not emerged; if they do, they would be evaluated against the spec before being added.
+
+## Implementation sequence
+
+The decomposition was implemented in phases that maintained a compilable workspace at every step.
+Each phase created one or more new crates, moved code, and updated dependencies.
+
+### Phase 1: Extract `ironstar-core` (completed: 29b.1)
+
+Created `crates/ironstar-core/` with:
+- Port traits: EventRepository, EventNotifier, EventSubscriber
 - Event infrastructure: EventEnvelope, EventId, Timestamp
 - Domain traits: DeciderType, EventType, IsFinal
 - Common value objects: BoundedString and validated newtypes from `domain/common/`
 - Domain error types: DomainError, ValidationError
+- ErrorCode enum for infrastructure error mapping
 
-The monolithic crate replaces its internal definitions with `use ironstar_core::*` imports.
-This is the lowest-risk extraction since these types have no dependencies on other ironstar code.
+The monolithic crate replaced its internal definitions with `use ironstar_core::*` imports.
+This was the lowest-risk extraction since these types had no dependencies on other ironstar code.
 
-### Phase 2: Extract `ironstar-shared-kernel`
+### Phase 2: Extract `ironstar-shared-kernel` (completed: 29b.2)
 
-Create `crates/ironstar-shared-kernel/` with:
+Created `crates/ironstar-shared-kernel/` with:
 - UserId, OAuthProvider
 
-Depends on: nothing (or `ironstar-core` if UserId uses BoundedString).
+Depends on `ironstar-core` (UserId uses BoundedString).
 
-### Phase 3: Extract domain crates
+### Phase 3: Extract domain crates (completed: 29b.3, 29b.4, 29b.5, 29b.6)
 
-Create four domain crates in parallel:
-- `crates/ironstar-todo/` — moves `domain/todo/` + `domain/views/todo.rs`
-- `crates/ironstar-session/` — moves `domain/session/` + related view
-- `crates/ironstar-analytics/` — moves `domain/analytics/`, `domain/catalog/`, `domain/query_session/` + related views
-- `crates/ironstar-workspace/` — moves `domain/workspace/`, `domain/dashboard/`, `domain/saved_query/`, `domain/user_preferences/`, `domain/workspace_preferences/` + related views
+Created four domain crates in parallel:
+- `crates/ironstar-todo/` (29b.3) — moved `domain/todo/` + `domain/views/todo.rs`
+- `crates/ironstar-session/` (29b.4) — moved `domain/session/` + related view
+- `crates/ironstar-analytics/` (29b.5) — moved `domain/analytics/`, `domain/catalog/`, `domain/query_session/` + related views
+- `crates/ironstar-workspace/` (29b.6) — moved `domain/workspace/`, `domain/dashboard/`, `domain/saved_query/`, `domain/user_preferences/`, `domain/workspace_preferences/` + related views
 
 Each depends on `ironstar-core` and optionally `ironstar-shared-kernel`.
 `ironstar-workspace` additionally depends on `ironstar-analytics` for the Customer-Supplier references.
 
-### Phase 4: Extract infrastructure crates
+### Phase 4: Extract infrastructure crates (completed: 29b.7, 29b.8, 29b.9, 29b.10)
 
-Create four infrastructure crates:
-- `crates/ironstar-event-store/` — moves `infrastructure/event_store.rs`, `infrastructure/sse_stream.rs`
-- `crates/ironstar-event-bus/` — moves `infrastructure/event_bus/`, `infrastructure/key_expr.rs`
-- `crates/ironstar-analytics-infra/` — moves `infrastructure/analytics.rs`, `infrastructure/analytics_cache.rs`, `infrastructure/cached_analytics.rs`, `infrastructure/cache_invalidation.rs`, `infrastructure/cache_dependency.rs`, `infrastructure/embedded_catalogs.rs`
-- `crates/ironstar-session-store/` — moves `infrastructure/session_store.rs`
+Created four infrastructure crates:
+- `crates/ironstar-event-store/` (29b.7) — moved event store implementation, SSE stream utilities; introduced EventStoreError with UUID tracking and backtrace
+- `crates/ironstar-event-bus/` (29b.8) — moved Zenoh event bus, key expression utilities, workspace subscriber factory; introduced EventBusError with UUID tracking and backtrace
+- `crates/ironstar-analytics-infra/` (29b.9) — moved DuckDB service, moka cache, cache invalidation, embedded catalogs; introduced AnalyticsInfraError with UUID tracking and backtrace
+- `crates/ironstar-session-store/` (29b.10) — moved session store implementation, TTL cleanup; introduced SessionStoreError with UUID tracking and backtrace
 
 Each depends on `ironstar-core` for port traits and on respective domain crates for domain-specific types.
+The per-crate error type pattern emerged during this phase, establishing a consistent error handling architecture across all infrastructure crates.
 
-### Phase 5: Collapse the monolith
+### Phase 5: Collapse the monolith to binary (completed: 29b.11)
 
-The remaining `crates/ironstar/` becomes the binary crate containing:
+The remaining `crates/ironstar/` became the binary crate containing:
 - `main.rs` and startup sequence
 - `config.rs` and `state.rs` (AppState)
 - Application layer: command handlers, query handlers (from `application/`)
 - Presentation layer: axum routes, SSE endpoints, extractors, templates (from `presentation/`)
-- `All` composition root and HasXxx trait implementations
+- `domain/mod.rs` and `infrastructure/mod.rs` as inline `pub mod` re-export modules (not empty)
+- InfrastructureError with `From` conversions for infrastructure crate error types
+- CommandPipelineError with `From` conversions where needed
+- StaticAssets for embedded static files
+- SQL migration files in `migrations/`
+- ts-rs TypeScript bindings in `bindings/`
+- Integration tests in `tests/`
 
-At this point, the `domain/` and `infrastructure/` directories are empty and can be removed.
+**Implementation note:** The `domain/` and `infrastructure/` directories were not removed.
+Instead, they remain as thin module re-export layers (`pub mod session { pub use ironstar_session::*; }`) to preserve import paths like `crate::domain::session` from the monolithic structure.
+This minimized churn in the binary crate's application and presentation layers during the transition.
 
-### Phase 6: Workspace configuration
+### Phase 6: Workspace configuration (completed: 29b.12)
 
-- Update root `Cargo.toml` workspace members
-- Add `[workspace.lints]` configuration (from `crate-services-composition.md`)
-- Add `[lints] workspace = true` to each crate's `Cargo.toml`
-- Update `flake.nix` with per-crate derivations and `fileSetForCrate` functions
-- Add `cargo-hakari` workspace hack crate if dependency divergence causes cache misses
+- Updated root `Cargo.toml` workspace members
+- Added `[workspace.lints]` configuration
+- Added `[lints] workspace = true` to each crate's `Cargo.toml`
+- Updated `flake.nix` with per-crate derivations using rust-flake autowiring
+- Created `crates/ironstar/crate.nix` as a custom override for the binary crate (only crate requiring custom configuration)
+- Evaluated `cargo-hakari` workspace hack crate; deferred as optional since crane shared `cargoArtifacts` caching is sufficient
 
 ## Verification
 
-Each phase must pass `cargo check --workspace` and `cargo test --workspace` before proceeding.
-The existing DeciderTestSpecification tests (1248 lines for QuerySession alone) serve as regression guards.
-No behavioral changes should occur during the migration; this is a purely structural refactoring.
+Each phase passed `cargo check --workspace` and `cargo test --workspace` before proceeding.
+The existing DeciderTestSpecification tests (1248 lines for QuerySession alone) served as regression guards.
+No behavioral changes occurred during the migration; this was a purely structural refactoring.
+
+**Final test counts:** 897 tests passing across the workspace (891 baseline + 6 from new per-crate error type tests added during infrastructure extraction).
 
 ## Related documentation
 
