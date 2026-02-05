@@ -29,7 +29,7 @@ use hypertext::Renderable;
 use serde::Deserialize;
 use std::convert::Infallible;
 use std::sync::Arc;
-use tracing::warn;
+use tracing::{instrument, warn};
 use uuid::Uuid;
 
 use crate::application::todo::{handle_todo_command_zenoh, query_all_todos, query_todo_state};
@@ -93,6 +93,7 @@ pub fn routes() -> Router<AppState> {
 }
 
 /// GET / - Render the todo page with current todos.
+#[instrument(name = "handler.todo.page", skip(state, manifest))]
 async fn todo_page_handler(
     State(state): State<TodoAppState>,
     State(manifest): State<AssetManifest>,
@@ -145,6 +146,7 @@ async fn todo_page_handler(
 ///
 /// : keepalive
 /// ```
+#[instrument(name = "handler.todo.feed", skip(state, headers))]
 async fn todo_feed_handler(
     State(state): State<TodoAppState>,
     headers: HeaderMap,
@@ -262,6 +264,7 @@ pub struct TodoListResponse {
 ///   "activeCount": 1
 /// }
 /// ```
+#[instrument(name = "handler.todo.list", skip(state))]
 pub async fn list_todos(State(state): State<TodoAppState>) -> Result<impl IntoResponse, AppError> {
     let view_state = query_all_todos(&state.repo).await?;
 
@@ -296,6 +299,7 @@ pub async fn list_todos(State(state): State<TodoAppState>) -> Result<impl IntoRe
 /// ```json
 /// { "id": "550e8400-...", "text": "Buy groceries", "completed": false }
 /// ```
+#[instrument(name = "handler.todo.get", skip(state), fields(todo_id = %id))]
 pub async fn get_todo(
     State(state): State<TodoAppState>,
     Path(id): Path<Uuid>,
@@ -358,6 +362,7 @@ pub struct CommandResponse {
 /// ```json
 /// { "id": "550e8400-...", "eventsCount": 1 }
 /// ```
+#[instrument(name = "handler.todo.create", skip(state, request))]
 pub async fn create_todo(
     State(state): State<TodoAppState>,
     Json(request): Json<CreateTodoRequest>,
@@ -403,6 +408,7 @@ pub async fn create_todo(
 /// ```json
 /// { "id": "550e8400-...", "eventsCount": 1 }
 /// ```
+#[instrument(name = "handler.todo.complete", skip(state), fields(todo_id = %id))]
 pub async fn complete_todo(
     State(state): State<TodoAppState>,
     Path(id): Path<Uuid>,
@@ -445,6 +451,7 @@ pub async fn complete_todo(
 /// ```json
 /// { "id": "550e8400-...", "eventsCount": 1 }
 /// ```
+#[instrument(name = "handler.todo.delete", skip(state), fields(todo_id = %id))]
 pub async fn delete_todo(
     State(state): State<TodoAppState>,
     Path(id): Path<Uuid>,
