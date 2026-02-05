@@ -15,11 +15,8 @@ shared:
         - check-success=bootstrap-verification
         - check-skipped=bootstrap-verification
     - or:
-        - check-success=nix (x86_64-linux, ubuntu-latest, packages)
-        - check-skipped=nix (x86_64-linux, ubuntu-latest, packages)
-    - or:
-        - check-success=nix (x86_64-linux, ubuntu-latest, checks)
-        - check-skipped=nix (x86_64-linux, ubuntu-latest, checks)
+        - check-success=nix (x86_64-linux, ubuntu-latest, flake-check)
+        - check-skipped=nix (x86_64-linux, ubuntu-latest, flake-check)
     - or:
         - check-success=nix (x86_64-linux, ubuntu-latest, devshells)
         - check-skipped=nix (x86_64-linux, ubuntu-latest, devshells)
