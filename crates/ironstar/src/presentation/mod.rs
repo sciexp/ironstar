@@ -142,6 +142,8 @@ pub use todo_templates::{todo_app, todo_item, todo_list, todo_page};
 use crate::infrastructure::create_static_router;
 use crate::state::AppState;
 use axum::Router;
+use tower_http::request_id::{PropagateRequestIdLayer, SetRequestIdLayer};
+use tower_http::trace::TraceLayer;
 
 /// Compose the application router from all feature routers.
 ///
@@ -153,7 +155,15 @@ use axum::Router;
 ///
 /// Each feature router uses `Router<AppState>` and handlers extract
 /// domain-specific state via `FromRef`.
+///
+/// # Middleware stack (outermost first)
+///
+/// 1. `SetRequestIdLayer` — generates UUID v7 request ID (or preserves existing)
+/// 2. `TraceLayer` — creates a tracing span per request with method, URI, and request_id
+/// 3. `PropagateRequestIdLayer` — copies request ID to response header
 pub fn app_router(state: AppState) -> Router {
+    let x_request_id = http::HeaderName::from_static("x-request-id");
+
     // Compose stateful feature routers and apply state
     let stateful = Router::new()
         .merge(health::routes())
@@ -163,6 +173,30 @@ pub fn app_router(state: AppState) -> Router {
         .nest("/workspace", workspace::routes())
         .with_state(state);
 
-    // Merge stateless static router after state is applied
-    stateful.merge(create_static_router())
+    // Merge stateless static router after state is applied, then add
+    // observability middleware. Layer order matters: layers added last
+    // execute first on requests.
+    stateful
+        .merge(create_static_router())
+        .layer(PropagateRequestIdLayer::new(x_request_id.clone()))
+        .layer(TraceLayer::new_for_http().make_span_with(
+            |request: &http::Request<axum::body::Body>| {
+                let request_id = request
+                    .headers()
+                    .get("x-request-id")
+                    .and_then(|v| v.to_str().ok())
+                    .unwrap_or("-");
+
+                tracing::info_span!(
+                    "http.request",
+                    http.request.method = %request.method(),
+                    url.path = %request.uri().path(),
+                    request_id = %request_id,
+                )
+            },
+        ))
+        .layer(SetRequestIdLayer::new(
+            x_request_id,
+            MakeRequestUuidV7::default(),
+        ))
 }
