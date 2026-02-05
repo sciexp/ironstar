@@ -1,5 +1,14 @@
 # Crate architecture
 
+> **Superseded by bounded-context decomposition**
+>
+> This document describes an obsolete layer-based crate decomposition (8 layers: Foundation through Binary, with crates like `common-enums`, `ironstar-domain`, `ironstar-commands`, `ironstar-events`, `ironstar-interfaces`, etc.).
+> This approach was superseded by the bounded-context decomposition documented in `crate-decomposition-plan.md`, which organizes the codebase by domain boundary rather than architectural layer.
+> The bounded-context approach is now fully implemented with 11 crates: `ironstar-core`, `ironstar-shared-kernel`, `ironstar-todo`, `ironstar-session`, `ironstar-analytics`, `ironstar-workspace`, `ironstar-event-store`, `ironstar-event-bus`, `ironstar-analytics-infra`, `ironstar-session-store`, and the `ironstar` binary.
+>
+> See `crate-decomposition-plan.md` for the authoritative decomposition architecture.
+> This document is preserved for historical context as a design exploration.
+
 This document details the multi-crate workspace decomposition plan for ironstar, synthesizing patterns from production Rust projects (Golem, Hyperswitch) adapted for event sourcing, CQRS, and Datastar SSE integration.
 
 ## Design influences
