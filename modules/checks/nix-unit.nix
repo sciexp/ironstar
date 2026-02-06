@@ -18,6 +18,8 @@
           git-hooks
           rust-overlay
           crane
+          process-compose-flake
+          services-flake
           playwright-web-flake
           nix-unit
           ;
