@@ -39,6 +39,17 @@ pub enum CatalogCommand {
     },
 }
 
+impl CatalogCommand {
+    /// Get the command type name for logging and metrics.
+    #[must_use]
+    pub fn command_type(&self) -> &'static str {
+        match self {
+            Self::SelectCatalog { .. } => "SelectCatalog",
+            Self::RefreshCatalogMetadata { .. } => "RefreshCatalogMetadata",
+        }
+    }
+}
+
 impl Identifier for CatalogCommand {
     fn identifier(&self) -> String {
         // Singleton aggregate pattern - all commands target the same catalog

@@ -85,6 +85,19 @@ pub enum QuerySessionCommand {
 }
 
 impl QuerySessionCommand {
+    /// Get the command type name for logging and metrics.
+    #[must_use]
+    pub fn command_type(&self) -> &'static str {
+        match self {
+            Self::StartQuery { .. } => "StartQuery",
+            Self::BeginExecution { .. } => "BeginExecution",
+            Self::CompleteQuery { .. } => "CompleteQuery",
+            Self::FailQuery { .. } => "FailQuery",
+            Self::CancelQuery { .. } => "CancelQuery",
+            Self::ResetSession { .. } => "ResetSession",
+        }
+    }
+
     /// Extract the query ID if this command has one.
     #[must_use]
     pub fn query_id(&self) -> Option<QueryId> {
