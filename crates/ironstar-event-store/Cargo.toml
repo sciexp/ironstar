@@ -19,6 +19,7 @@ sqlx = { workspace = true }
 tokio = { workspace = true }
 tokio-stream = { workspace = true }
 tracing = { workspace = true }
+metrics = { workspace = true }
 uuid = { workspace = true }
 zenoh = { workspace = true }
 
