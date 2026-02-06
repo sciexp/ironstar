@@ -495,11 +495,79 @@ jobs:
     secrets:
       SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
 
-  # job 7: e2e
-  # Runs Playwright E2E tests with Chromium browser from nix flake
-  # Tests include smoke tests, Datastar hypermedia integration, and SSE lifecycle
+  # job 7: binary-build
+  # Build ironstar binary via nix and push to cachix for e2e tests.
+  # Runs in parallel with flake-check so the binary is cached before e2e starts.
+  binary-build:
+    needs: [secrets-scan, set-variables]
+    runs-on: ubuntu-latest
+    if: |
+      !cancelled() &&
+      needs.set-variables.outputs.skip_ci != 'true' &&
+      (github.event_name != 'workflow_dispatch' ||
+       inputs.job == '' ||
+       inputs.job == 'binary-build')
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check execution cache
+        id: cache
+        uses: ./.github/actions/cached-ci-job
+        with:
+          check-name: binary-build
+          hash-sources: 'crates/**/*.rs **/Cargo.toml Cargo.lock web-components/**/*.ts web-components/**/*.js static/**/*'
+          force-run: ${{ inputs.force_run || 'false' }}
+
+      - name: Setup Nix
+        if: steps.cache.outputs.should-run == 'true'
+        uses: ./.github/actions/setup-nix
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+        with:
+          installer: quick
+          system: x86_64-linux
+          enable-cachix: true
+          cachix-name: ${{ vars.CACHIX_CACHE_NAME }}
+          cachix-auth-token: ${{ secrets.CACHIX_AUTH_TOKEN }}
+
+      - name: Setup tmate debug session
+        if: steps.cache.outputs.should-run == 'true' && needs.set-variables.outputs.debug == 'true'
+        uses: mxschmitt/action-tmate@e5c7151931ca95bad1c6f4190c730ecf8c7dde48 # ratchet:mxschmitt/action-tmate@v3
+
+      - name: Build ironstar binary
+        if: steps.cache.outputs.should-run == 'true'
+        run: nix build --accept-flake-config .#ironstar -L
+
+      - name: Create job result marker
+        if: success() && steps.cache.outputs.should-run == 'true' && steps.cache.outputs.cache-source == 'none'
+        shell: bash
+        run: |
+          mkdir -p "${{ steps.cache.outputs.cache-path }}"
+          cat > "${{ steps.cache.outputs.cache-path }}/marker" <<EOF
+          {
+            "success": true,
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "commit": "${{ github.sha }}",
+            "run_id": "${{ github.run_id }}",
+            "run_attempt": "${{ github.run_attempt }}"
+          }
+          EOF
+
+      - name: Save execution cache
+        if: success() && steps.cache.outputs.should-run == 'true' && steps.cache.outputs.cache-source == 'none'
+        uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684 # ratchet:actions/cache/save@v4
+        with:
+          path: ${{ steps.cache.outputs.cache-path }}
+          key: ${{ steps.cache.outputs.cache-key }}
+
+  # job 8: e2e
+  # Runs Playwright E2E tests with Chromium browser from nix flake.
+  # Depends on binary-build to ensure the ironstar binary is cached in cachix.
   e2e:
-    needs: [secrets-scan, set-variables, nix]
+    needs: [secrets-scan, set-variables, binary-build]
     runs-on: ubuntu-latest
     if: |
       !cancelled() &&
@@ -541,15 +609,16 @@ jobs:
         if: steps.cache.outputs.should-run == 'true' && needs.set-variables.outputs.debug == 'true'
         uses: mxschmitt/action-tmate@e5c7151931ca95bad1c6f4190c730ecf8c7dde48 # ratchet:mxschmitt/action-tmate@v3
 
-      - name: Pre-build server binary
+      - name: Build ironstar binary from cache
         if: steps.cache.outputs.should-run == 'true'
-        run: nix develop --accept-flake-config -c cargo build --package ironstar
-        timeout-minutes: 10
+        run: nix build --accept-flake-config .#ironstar -L
+        timeout-minutes: 2
 
       - name: Run Playwright tests
         if: steps.cache.outputs.should-run == 'true'
         env:
           CI: true
+          IRONSTAR_BINARY: result/bin/ironstar
         run: |
           nix develop --accept-flake-config -c npx playwright test
         timeout-minutes: 5
@@ -584,7 +653,7 @@ jobs:
           path: ${{ steps.cache.outputs.cache-path }}
           key: ${{ steps.cache.outputs.cache-key }}
 
-  # job 8: preview-release-version
+  # job 9: preview-release-version
   # Preview semantic-release version for each package (PR only, fast feedback)
   preview-release-version:
     needs: [set-variables]
@@ -648,7 +717,7 @@ jobs:
             echo "::notice title=Next Version (${{ matrix.package.name }})::No release pending"
           fi
 
-  # job 9: preview-site-deploy
+  # job 10: preview-site-deploy
   # Deploy sites to preview environment (PR only, fast feedback)
   preview-site-deploy:
     needs: [set-variables]
@@ -670,7 +739,7 @@ jobs:
       debug_enabled: ${{ needs.set-variables.outputs.debug }}
     secrets: inherit
 
-  # job 10: production-release-packages
+  # job 11: production-release-packages
   # Release packages to production on main/beta branches
   # Requires test+nix success/skipped (safe for fast-forward merge)
   production-release-packages:
@@ -697,7 +766,7 @@ jobs:
     secrets:
       SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
 
-  # job 11: production-site-deploy
+  # job 12: production-site-deploy
   # Site deployment to production (conditional)
   # Depends on production-release-packages to ensure packages released first
   production-site-deploy:
