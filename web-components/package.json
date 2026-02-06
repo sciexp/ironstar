@@ -3,8 +3,8 @@
 	"type": "module",
 	"scripts": {
 		"build:css": "postcss styles/main.css -o styles/processed.css",
-		"dev": "npm run build:css && rolldown -c --watch",
-		"build": "npm run build:css && rolldown -c",
+		"dev": "npm run build:css && rolldown -c rolldown.config.ts --watch",
+		"build": "npm run build:css && rolldown -c rolldown.config.ts",
 		"typecheck": "tsc --noEmit",
 		"test": "vitest",
 		"test:coverage": "vitest --coverage"
