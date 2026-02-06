@@ -98,7 +98,7 @@
                 '';
               };
               depends_on = {
-                backend.condition = "process_started";
+                backend.condition = "process_healthy";
               };
               availability = {
                 restart = "on_failure";
