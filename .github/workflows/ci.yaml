@@ -539,7 +539,7 @@ jobs:
 
       - name: Build ironstar binary
         if: steps.cache.outputs.should-run == 'true'
-        run: nix build --accept-flake-config .#ironstar -L
+        run: nix build --accept-flake-config .#ironstar-release -L
 
       - name: Create job result marker
         if: success() && steps.cache.outputs.should-run == 'true' && steps.cache.outputs.cache-source == 'none'
@@ -611,7 +611,7 @@ jobs:
 
       - name: Build ironstar binary from cache
         if: steps.cache.outputs.should-run == 'true'
-        run: nix build --accept-flake-config .#ironstar -L
+        run: nix build --accept-flake-config .#ironstar-release -L
         timeout-minutes: 2
 
       - name: Run Playwright tests
