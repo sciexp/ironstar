@@ -114,6 +114,7 @@ pub mod error;
 pub mod extractors;
 pub mod health;
 pub mod layout;
+pub mod metrics;
 pub mod middleware;
 pub mod todo;
 pub mod todo_templates;
@@ -135,6 +136,7 @@ pub use extractors::{
 pub use health::{
     HealthChecks, HealthResponse, HealthState, HealthStatus, health_router, routes as health_routes,
 };
+pub use metrics::{MetricsState, metrics_handler};
 pub use middleware::MakeRequestUuidV7;
 pub use todo::{TodoAppState, TodoListResponse, get_todo, list_todos};
 pub use todo_templates::{todo_app, todo_item, todo_list, todo_page};
@@ -167,6 +169,7 @@ pub fn app_router(state: AppState) -> Router {
     // Compose stateful feature routers and apply state
     let stateful = Router::new()
         .merge(health::routes())
+        .merge(metrics::routes())
         .nest("/todos", todo::routes())
         .nest("/analytics", analytics::routes())
         .nest("/charts", chart::routes())
