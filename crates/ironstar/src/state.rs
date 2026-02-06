@@ -41,9 +41,11 @@ use crate::infrastructure::{
 };
 use crate::presentation::analytics::AnalyticsAppState;
 use crate::presentation::health::HealthState;
+use crate::presentation::metrics::MetricsState;
 use crate::presentation::todo::TodoAppState;
 use crate::presentation::workspace::WorkspaceAppState;
 use axum::extract::FromRef;
+use metrics_exporter_prometheus::PrometheusHandle;
 use sqlx::sqlite::SqlitePool;
 use std::sync::Arc;
 
@@ -91,6 +93,11 @@ pub struct AppState {
     /// check the moka cache before executing DuckDB queries.
     pub cached_analytics: Option<CachedAnalyticsService>,
 
+    /// Prometheus metrics handle for rendering exposition format.
+    ///
+    /// Used by the `/metrics` endpoint to render accumulated metrics on demand.
+    pub prometheus_handle: PrometheusHandle,
+
     /// Shared Todo event repository.
     ///
     /// Cached here to avoid recreating for each request.
@@ -125,7 +132,11 @@ impl AppState {
     /// Optional capabilities (event_bus, session_store, analytics) can be set
     /// using the builder-style methods.
     #[must_use]
-    pub fn new(db_pool: SqlitePool, assets: AssetManifest) -> Self {
+    pub fn new(
+        db_pool: SqlitePool,
+        assets: AssetManifest,
+        prometheus_handle: PrometheusHandle,
+    ) -> Self {
         let todo_repo = Arc::new(SqliteEventRepository::new(db_pool.clone()));
         let catalog_repo = Arc::new(SqliteEventRepository::new(db_pool.clone()));
         let query_session_repo = Arc::new(SqliteEventRepository::new(db_pool.clone()));
@@ -142,6 +153,7 @@ impl AppState {
             session_store: None,
             analytics: None,
             cached_analytics: None,
+            prometheus_handle,
             todo_repo,
             catalog_repo,
             query_session_repo,
@@ -244,6 +256,14 @@ impl FromRef<AppState> for HealthState {
     }
 }
 
+impl FromRef<AppState> for MetricsState {
+    fn from_ref(app_state: &AppState) -> Self {
+        Self {
+            prometheus_handle: app_state.prometheus_handle.clone(),
+        }
+    }
+}
+
 impl FromRef<AppState> for AssetManifest {
     fn from_ref(app_state: &AppState) -> Self {
         app_state.assets.clone()
@@ -267,11 +287,12 @@ impl FromRef<AppState> for AnalyticsState {
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used)]
 mod tests {
     use super::*;
+    use crate::infrastructure::metrics::test_prometheus_handle;
     use sqlx::sqlite::SqlitePoolOptions;
 
-    #[expect(clippy::expect_used, reason = "test helper function")]
     async fn create_test_pool() -> SqlitePool {
         SqlitePoolOptions::new()
             .max_connections(1)
@@ -284,8 +305,9 @@ mod tests {
     async fn app_state_creation() {
         let pool = create_test_pool().await;
         let assets = AssetManifest::default();
+        let handle = test_prometheus_handle();
 
-        let state = AppState::new(pool, assets);
+        let state = AppState::new(pool, assets, handle);
 
         assert!(!state.has_event_bus());
         assert!(!state.has_session_store());
@@ -296,7 +318,8 @@ mod tests {
     async fn from_ref_todo_app_state() {
         let pool = create_test_pool().await;
         let assets = AssetManifest::default();
-        let state = AppState::new(pool, assets);
+        let handle = test_prometheus_handle();
+        let state = AppState::new(pool, assets, handle);
 
         let todo_state: TodoAppState = TodoAppState::from_ref(&state);
 
@@ -308,17 +331,32 @@ mod tests {
     async fn from_ref_health_state() {
         let pool = create_test_pool().await;
         let assets = AssetManifest::default();
-        let state = AppState::new(pool, assets);
+        let handle = test_prometheus_handle();
+        let state = AppState::new(pool, assets, handle);
 
         let _health_state: HealthState = HealthState::from_ref(&state);
         // HealthState successfully extracted
     }
 
     #[tokio::test]
+    async fn from_ref_metrics_state() {
+        let pool = create_test_pool().await;
+        let assets = AssetManifest::default();
+        let handle = test_prometheus_handle();
+        let state = AppState::new(pool, assets, handle);
+
+        let metrics_state: MetricsState = MetricsState::from_ref(&state);
+        // MetricsState should render without error
+        let output = metrics_state.prometheus_handle.render();
+        assert!(output.is_empty() || output.contains('#'));
+    }
+
+    #[tokio::test]
     async fn from_ref_analytics_state_unavailable() {
         let pool = create_test_pool().await;
         let assets = AssetManifest::default();
-        let state = AppState::new(pool, assets);
+        let handle = test_prometheus_handle();
+        let state = AppState::new(pool, assets, handle);
 
         // Without analytics pool, service should be unavailable
         let analytics: AnalyticsState = AnalyticsState::from_ref(&state);
