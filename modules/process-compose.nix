@@ -88,7 +88,9 @@
                 name = "backend-dev";
                 runtimeInputs = [ pkgs.cargo-watch ];
                 text = ''
-                  cargo watch -x 'run --package ironstar'
+                  cargo watch \
+                    -w crates \
+                    -x 'run --package ironstar'
                 '';
               };
               depends_on = {
@@ -101,8 +103,9 @@
                   port = 3000;
                   path = "/health/ready";
                 };
-                initial_delay_seconds = 5;
+                initial_delay_seconds = 15;
                 period_seconds = 5;
+                failure_threshold = 10;
               };
               liveness_probe = {
                 http_get = {
