@@ -67,6 +67,10 @@ tower-http = { workspace = true }
 mime_guess = { workspace = true }
 http = { workspace = true }
 
+# Metrics (Prometheus exposition)
+metrics = { workspace = true }
+metrics-exporter-prometheus = { workspace = true }
+
 [dev-dependencies]
 tokio = { workspace = true }
 tower = { workspace = true }
