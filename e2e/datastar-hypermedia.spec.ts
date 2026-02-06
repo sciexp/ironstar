@@ -1,7 +1,9 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("Datastar hypermedia interactions", () => {
-	test.beforeEach(async ({ page }) => {
+	test.beforeEach(async ({ page, request }) => {
+		// Clean slate: purge all todo events before each test
+		await request.delete("http://localhost:3000/todos/api");
 		await page.goto("/todos");
 	});
 
