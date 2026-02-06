@@ -495,7 +495,91 @@ jobs:
     secrets:
       SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
 
-  # job 7: preview-release-version
+  # job 7: e2e
+  # Runs Playwright E2E tests with Chromium browser from nix flake
+  # Tests include smoke tests, Datastar hypermedia integration, and SSE lifecycle
+  e2e:
+    needs: [secrets-scan, set-variables, nix]
+    runs-on: ubuntu-latest
+    if: |
+      !cancelled() &&
+      needs.set-variables.outputs.skip_ci != 'true' &&
+      (github.event_name != 'workflow_dispatch' ||
+       inputs.job == '' ||
+       inputs.job == 'e2e')
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check execution cache
+        id: cache
+        uses: ./.github/actions/cached-ci-job
+        with:
+          check-name: e2e
+          hash-sources: 'e2e/**/*.ts playwright.config.ts package.json packages/**/package.json **/*.lock crates/**/*.rs **/Cargo.toml Cargo.lock static/**/*'
+          force-run: ${{ inputs.force_run || 'false' }}
+
+      - name: Setup Nix
+        if: steps.cache.outputs.should-run == 'true'
+        uses: ./.github/actions/setup-nix
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+        with:
+          installer: quick
+          system: x86_64-linux
+          enable-cachix: true
+          cachix-name: ${{ vars.CACHIX_CACHE_NAME }}
+          cachix-auth-token: ${{ secrets.CACHIX_AUTH_TOKEN }}
+
+      - name: Install dependencies
+        if: steps.cache.outputs.should-run == 'true'
+        run: nix develop --accept-flake-config -c bun install
+
+      - name: Setup tmate debug session
+        if: steps.cache.outputs.should-run == 'true' && needs.set-variables.outputs.debug == 'true'
+        uses: mxschmitt/action-tmate@e5c7151931ca95bad1c6f4190c730ecf8c7dde48 # ratchet:mxschmitt/action-tmate@v3
+
+      - name: Run Playwright tests
+        if: steps.cache.outputs.should-run == 'true'
+        env:
+          CI: true
+        run: |
+          nix develop --accept-flake-config -c npx playwright test
+        timeout-minutes: 10
+
+      - name: Upload test artifacts
+        if: failure() && steps.cache.outputs.should-run == 'true'
+        uses: actions/upload-artifact@ea165a742353808ab18f0ba2bc58fdcbaf58e1f2 # ratchet:actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Create job result marker
+        if: success() && steps.cache.outputs.should-run == 'true' && steps.cache.outputs.cache-source == 'none'
+        shell: bash
+        run: |
+          mkdir -p "${{ steps.cache.outputs.cache-path }}"
+          cat > "${{ steps.cache.outputs.cache-path }}/marker" <<EOF
+          {
+            "success": true,
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "commit": "${{ github.sha }}",
+            "run_id": "${{ github.run_id }}",
+            "run_attempt": "${{ github.run_attempt }}"
+          }
+          EOF
+
+      - name: Save execution cache
+        if: success() && steps.cache.outputs.should-run == 'true' && steps.cache.outputs.cache-source == 'none'
+        uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684 # ratchet:actions/cache/save@v4
+        with:
+          path: ${{ steps.cache.outputs.cache-path }}
+          key: ${{ steps.cache.outputs.cache-key }}
+
+  # job 8: preview-release-version
   # Preview semantic-release version for each package (PR only, fast feedback)
   preview-release-version:
     needs: [set-variables]
@@ -559,7 +643,7 @@ jobs:
             echo "::notice title=Next Version (${{ matrix.package.name }})::No release pending"
           fi
 
-  # job 8: preview-site-deploy
+  # job 9: preview-site-deploy
   # Deploy sites to preview environment (PR only, fast feedback)
   preview-site-deploy:
     needs: [set-variables]
@@ -581,7 +665,7 @@ jobs:
       debug_enabled: ${{ needs.set-variables.outputs.debug }}
     secrets: inherit
 
-  # job 9: production-release-packages
+  # job 10: production-release-packages
   # Release packages to production on main/beta branches
   # Requires test+nix success/skipped (safe for fast-forward merge)
   production-release-packages:
@@ -608,7 +692,7 @@ jobs:
     secrets:
       SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
 
-  # job 10: production-site-deploy
+  # job 11: production-site-deploy
   # Site deployment to production (conditional)
   # Depends on production-release-packages to ensure packages released first
   production-site-deploy:
