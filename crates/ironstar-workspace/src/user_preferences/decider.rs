@@ -32,6 +32,7 @@
 //! - UpdateUiState with same state returns `Ok(vec![])`
 
 use ironstar_core::Decider;
+use tracing::instrument;
 
 use super::commands::UserPreferencesCommand;
 use super::errors::UserPreferencesError;
@@ -61,11 +62,19 @@ pub fn user_preferences_decider<'a>() -> UserPreferencesDecider<'a> {
 }
 
 /// Pure decide function: (Command, State) -> Result<Vec<Event>, Error>
+#[instrument(
+    name = "decider.user_preferences.decide",
+    skip_all,
+    fields(
+        command_type = command.command_type(),
+        aggregate_type = "UserPreferences",
+    )
+)]
 fn decide(
     command: &UserPreferencesCommand,
     state: &UserPreferencesState,
 ) -> Result<Vec<UserPreferencesEvent>, UserPreferencesError> {
-    match (command, state) {
+    let result = match (command, state) {
         // Initialize: NotInitialized -> Initialized
         (
             UserPreferencesCommand::InitializePreferences {
@@ -169,10 +178,20 @@ fn decide(
         (UserPreferencesCommand::UpdateUiState { .. }, UserPreferencesState::NotInitialized) => {
             Err(UserPreferencesError::not_initialized())
         }
+    };
+    if let Ok(ref events) = result {
+        tracing::debug!(event_count = events.len(), "decision complete");
     }
+    result
 }
 
 /// Pure evolve function: (State, Event) -> State
+#[instrument(
+    name = "decider.user_preferences.evolve",
+    level = "trace",
+    skip_all,
+    fields(aggregate_type = "UserPreferences")
+)]
 fn evolve(state: &UserPreferencesState, event: &UserPreferencesEvent) -> UserPreferencesState {
     match event {
         UserPreferencesEvent::PreferencesInitialized {

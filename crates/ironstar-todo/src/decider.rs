@@ -34,6 +34,7 @@
 //! - Delete when already Deleted
 
 use ironstar_core::Decider;
+use tracing::instrument;
 
 use crate::commands::TodoCommand;
 use crate::errors::TodoError;
@@ -83,8 +84,16 @@ pub fn todo_decider<'a>() -> TodoDecider<'a> {
 ///
 /// This function is the heart of the domain logic. It validates commands
 /// against current state and returns events or errors. No side effects.
+#[instrument(
+    name = "decider.todo.decide",
+    skip_all,
+    fields(
+        command_type = command.command_type(),
+        aggregate_type = "Todo",
+    )
+)]
 fn decide(command: &TodoCommand, state: &Option<TodoState>) -> Result<Vec<TodoEvent>, TodoError> {
-    match (command, state) {
+    let result = match (command, state) {
         // Create: NonExistent → Active
         (
             TodoCommand::Create {
@@ -163,13 +172,23 @@ fn decide(command: &TodoCommand, state: &Option<TodoState>) -> Result<Vec<TodoEv
         // Fallback for Any Some state not covered above (e.g., NotCreated status)
         // This should never happen in normal operation but provides exhaustiveness
         (TodoCommand::Delete { .. }, Some(_)) => Err(TodoError::cannot_delete()),
+    };
+    if let Ok(ref events) = result {
+        tracing::debug!(event_count = events.len(), "decision complete");
     }
+    result
 }
 
 /// Pure evolve function: (State, Event) -> State
 ///
 /// This function applies an event to produce new state. It must be
 /// deterministic and total (handle all event variants).
+#[instrument(
+    name = "decider.todo.evolve",
+    level = "trace",
+    skip_all,
+    fields(aggregate_type = "Todo")
+)]
 fn evolve(state: &Option<TodoState>, event: &TodoEvent) -> Option<TodoState> {
     match event {
         // Created: None → Some(Active)

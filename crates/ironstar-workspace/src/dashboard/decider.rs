@@ -31,6 +31,7 @@
 //! - AddTab with existing tab_id returns `Ok(vec![])`
 
 use ironstar_core::Decider;
+use tracing::instrument;
 
 use super::commands::DashboardCommand;
 use super::errors::DashboardError;
@@ -55,11 +56,19 @@ pub fn dashboard_decider<'a>() -> DashboardDecider<'a> {
 }
 
 /// Pure decide function: (Command, State) -> Result<Vec<Event>, Error>
+#[instrument(
+    name = "decider.dashboard.decide",
+    skip_all,
+    fields(
+        command_type = command.command_type(),
+        aggregate_type = "Dashboard",
+    )
+)]
 fn decide(
     command: &DashboardCommand,
     state: &DashboardState,
 ) -> Result<Vec<DashboardEvent>, DashboardError> {
-    match (command, state) {
+    let result = match (command, state) {
         // CreateDashboard: NoDashboard -> DashboardExists
         (
             DashboardCommand::CreateDashboard {
@@ -240,10 +249,20 @@ fn decide(
         (DashboardCommand::MoveChartToTab { .. }, DashboardState::NoDashboard) => {
             Err(DashboardError::not_found())
         }
+    };
+    if let Ok(ref events) = result {
+        tracing::debug!(event_count = events.len(), "decision complete");
     }
+    result
 }
 
 /// Pure evolve function: (State, Event) -> State
+#[instrument(
+    name = "decider.dashboard.evolve",
+    level = "trace",
+    skip_all,
+    fields(aggregate_type = "Dashboard")
+)]
 fn evolve(state: &DashboardState, event: &DashboardEvent) -> DashboardState {
     match event {
         DashboardEvent::DashboardCreated {

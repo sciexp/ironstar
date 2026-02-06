@@ -30,6 +30,7 @@
 //! - SetVisibility with the same visibility
 
 use ironstar_core::Decider;
+use tracing::instrument;
 
 use super::commands::WorkspaceCommand;
 use super::errors::WorkspaceError;
@@ -80,11 +81,19 @@ pub fn workspace_decider<'a>() -> WorkspaceDecider<'a> {
 ///
 /// This function is the heart of the domain logic. It validates commands
 /// against current state and returns events or errors. No side effects.
+#[instrument(
+    name = "decider.workspace.decide",
+    skip_all,
+    fields(
+        command_type = command.command_type(),
+        aggregate_type = "Workspace",
+    )
+)]
 fn decide(
     command: &WorkspaceCommand,
     state: &WorkspaceState,
 ) -> Result<Vec<WorkspaceEvent>, WorkspaceError> {
-    match (command, state.status) {
+    let result = match (command, state.status) {
         // Create: NotCreated → Active
         (
             WorkspaceCommand::Create {
@@ -176,13 +185,23 @@ fn decide(
         (WorkspaceCommand::SetVisibility { .. }, WorkspaceStatus::NotCreated) => {
             Err(WorkspaceError::not_found())
         }
+    };
+    if let Ok(ref events) = result {
+        tracing::debug!(event_count = events.len(), "decision complete");
     }
+    result
 }
 
 /// Pure evolve function: (State, Event) -> State
 ///
 /// This function applies an event to produce new state. It must be
 /// deterministic and total (handle all event variants).
+#[instrument(
+    name = "decider.workspace.evolve",
+    level = "trace",
+    skip_all,
+    fields(aggregate_type = "Workspace")
+)]
 fn evolve(state: &WorkspaceState, event: &WorkspaceEvent) -> WorkspaceState {
     match event {
         // Created: NotCreated → Active

@@ -5,6 +5,7 @@
 //! no side effects: all I/O (timestamps, persistence) happens at boundaries.
 
 use ironstar_core::Decider;
+use tracing::instrument;
 
 use super::commands::QuerySessionCommand;
 use super::errors::QuerySessionError;
@@ -29,11 +30,19 @@ pub fn query_session_decider<'a>() -> QuerySessionDecider<'a> {
 }
 
 /// Pure decide function: (Command, State) -> Result<Vec<Event>, Error>
+#[instrument(
+    name = "decider.query_session.decide",
+    skip_all,
+    fields(
+        command_type = command.command_type(),
+        aggregate_type = "QuerySession",
+    )
+)]
 fn decide(
     command: &QuerySessionCommand,
     state: &QuerySessionState,
 ) -> Result<Vec<QuerySessionEvent>, QuerySessionError> {
-    match command {
+    let result = match command {
         // StartQuery: Idle -> Pending
         QuerySessionCommand::StartQuery {
             query_id,
@@ -183,10 +192,20 @@ fn decide(
                 ))
             }
         }
+    };
+    if let Ok(ref events) = result {
+        tracing::debug!(event_count = events.len(), "decision complete");
     }
+    result
 }
 
 /// Pure evolve function: (State, Event) -> State
+#[instrument(
+    name = "decider.query_session.evolve",
+    level = "trace",
+    skip_all,
+    fields(aggregate_type = "QuerySession")
+)]
 fn evolve(state: &QuerySessionState, event: &QuerySessionEvent) -> QuerySessionState {
     match event {
         QuerySessionEvent::QueryStarted {

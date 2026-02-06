@@ -32,6 +32,7 @@
 //! - UpdateLayoutDefaults with same JSON returns `Ok(vec![])`
 
 use ironstar_core::Decider;
+use tracing::instrument;
 
 use super::commands::WorkspacePreferencesCommand;
 use super::errors::WorkspacePreferencesError;
@@ -61,11 +62,19 @@ pub fn workspace_preferences_decider<'a>() -> WorkspacePreferencesDecider<'a> {
 }
 
 /// Pure decide function: (Command, State) -> Result<Vec<Event>, Error>
+#[instrument(
+    name = "decider.workspace_preferences.decide",
+    skip_all,
+    fields(
+        command_type = command.command_type(),
+        aggregate_type = "WorkspacePreferences",
+    )
+)]
 fn decide(
     command: &WorkspacePreferencesCommand,
     state: &WorkspacePreferencesState,
 ) -> Result<Vec<WorkspacePreferencesEvent>, WorkspacePreferencesError> {
-    match (command, state) {
+    let result = match (command, state) {
         // Initialize: NotInitialized → Initialized
         (
             WorkspacePreferencesCommand::InitializeWorkspacePreferences {
@@ -168,10 +177,20 @@ fn decide(
             WorkspacePreferencesCommand::UpdateLayoutDefaults { .. },
             WorkspacePreferencesState::NotInitialized,
         ) => Err(WorkspacePreferencesError::not_initialized()),
+    };
+    if let Ok(ref events) = result {
+        tracing::debug!(event_count = events.len(), "decision complete");
     }
+    result
 }
 
 /// Pure evolve function: (State, Event) -> State
+#[instrument(
+    name = "decider.workspace_preferences.evolve",
+    level = "trace",
+    skip_all,
+    fields(aggregate_type = "WorkspacePreferences")
+)]
 fn evolve(
     state: &WorkspacePreferencesState,
     event: &WorkspacePreferencesEvent,

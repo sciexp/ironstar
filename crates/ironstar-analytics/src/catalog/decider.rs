@@ -4,6 +4,7 @@
 //! It is a pure function with no side effects.
 
 use ironstar_core::Decider;
+use tracing::instrument;
 
 use super::commands::CatalogCommand;
 use super::errors::CatalogError;
@@ -27,11 +28,19 @@ pub fn catalog_decider<'a>() -> CatalogDecider<'a> {
 }
 
 /// Pure decide function: (Command, State) -> Result<Vec<Event>, Error>
+#[instrument(
+    name = "decider.catalog.decide",
+    skip_all,
+    fields(
+        command_type = command.command_type(),
+        aggregate_type = "Catalog",
+    )
+)]
 fn decide(
     command: &CatalogCommand,
     state: &CatalogState,
 ) -> Result<Vec<CatalogEvent>, CatalogError> {
-    match (command, state) {
+    let result = match (command, state) {
         // SelectCatalog from NoCatalogSelected -> emit CatalogSelected
         (
             CatalogCommand::SelectCatalog {
@@ -74,10 +83,20 @@ fn decide(
             metadata: metadata.clone(),
             refreshed_at: *refreshed_at,
         }]),
+    };
+    if let Ok(ref events) = result {
+        tracing::debug!(event_count = events.len(), "decision complete");
     }
+    result
 }
 
 /// Pure evolve function: (State, Event) -> State
+#[instrument(
+    name = "decider.catalog.evolve",
+    level = "trace",
+    skip_all,
+    fields(aggregate_type = "Catalog")
+)]
 fn evolve(state: &CatalogState, event: &CatalogEvent) -> CatalogState {
     match event {
         CatalogEvent::CatalogSelected {

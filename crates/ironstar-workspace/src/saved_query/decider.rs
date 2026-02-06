@@ -32,6 +32,7 @@
 //! can succeed again since the aggregate is in NoQuery state.
 
 use ironstar_core::Decider;
+use tracing::instrument;
 
 use super::commands::SavedQueryCommand;
 use super::errors::SavedQueryError;
@@ -55,11 +56,19 @@ pub fn saved_query_decider<'a>() -> SavedQueryDecider<'a> {
 }
 
 /// Pure decide function: (Command, State) -> Result<Vec<Event>, Error>
+#[instrument(
+    name = "decider.saved_query.decide",
+    skip_all,
+    fields(
+        command_type = command.command_type(),
+        aggregate_type = "SavedQuery",
+    )
+)]
 fn decide(
     command: &SavedQueryCommand,
     state: &SavedQueryState,
 ) -> Result<Vec<SavedQueryEvent>, SavedQueryError> {
-    match (command, state) {
+    let result = match (command, state) {
         // SaveQuery: NoQuery -> QueryExists
         (
             SavedQueryCommand::SaveQuery {
@@ -183,10 +192,20 @@ fn decide(
         (SavedQueryCommand::UpdateDatasetRef { .. }, SavedQueryState::NoQuery) => {
             Err(SavedQueryError::not_found())
         }
+    };
+    if let Ok(ref events) = result {
+        tracing::debug!(event_count = events.len(), "decision complete");
     }
+    result
 }
 
 /// Pure evolve function: (State, Event) -> State
+#[instrument(
+    name = "decider.saved_query.evolve",
+    level = "trace",
+    skip_all,
+    fields(aggregate_type = "SavedQuery")
+)]
 fn evolve(state: &SavedQueryState, event: &SavedQueryEvent) -> SavedQueryState {
     match event {
         SavedQueryEvent::QuerySaved {

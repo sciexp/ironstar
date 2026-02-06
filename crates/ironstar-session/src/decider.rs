@@ -33,6 +33,7 @@
 //! - All timestamps are boundary-injected (commands carry timestamps)
 
 use ironstar_core::Decider;
+use tracing::instrument;
 
 use crate::commands::SessionCommand;
 use crate::errors::SessionError;
@@ -78,11 +79,19 @@ pub fn session_decider<'a>() -> SessionDecider<'a> {
 ///
 /// This function is the heart of the domain logic. It validates commands
 /// against current state and returns events or errors. No side effects.
+#[instrument(
+    name = "decider.session.decide",
+    skip_all,
+    fields(
+        command_type = command.command_type(),
+        aggregate_type = "Session",
+    )
+)]
 fn decide(
     command: &SessionCommand,
     state: &SessionState,
 ) -> Result<Vec<SessionEvent>, SessionError> {
-    match (command, state) {
+    let result = match (command, state) {
         // Create: NoSession -> Active
         (
             SessionCommand::Create {
@@ -193,13 +202,23 @@ fn decide(
         (SessionCommand::Invalidate { .. }, SessionState::Invalidated { .. }) => {
             Err(SessionError::session_invalidated())
         }
+    };
+    if let Ok(ref events) = result {
+        tracing::debug!(event_count = events.len(), "decision complete");
     }
+    result
 }
 
 /// Pure evolve function: (State, Event) -> State
 ///
 /// This function applies an event to produce new state. It must be
 /// deterministic and total (handle all event variants).
+#[instrument(
+    name = "decider.session.evolve",
+    level = "trace",
+    skip_all,
+    fields(aggregate_type = "Session")
+)]
 fn evolve(state: &SessionState, event: &SessionEvent) -> SessionState {
     match event {
         // Created: NoSession -> Active
