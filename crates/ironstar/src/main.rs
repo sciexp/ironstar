@@ -8,22 +8,23 @@
 //!
 //! 1. Load configuration from environment variables
 //! 2. Initialize tracing subscriber
-//! 3. Create parent directories and SQLite pool
-//! 4. Run database migrations
-//! 5. Load asset manifest (graceful fallback)
-//! 6. Initialize Zenoh event bus (optional, graceful fallback)
-//! 7. Initialize DuckDB analytics pool (optional, graceful fallback)
-//! 8. Attach DuckLake catalogs (embedded first, network fallback)
-//! 9. Initialize analytics cache layer
-//! 10. Spawn cache invalidation subscriber
-//! 11. Construct AppState
-//! 12. Compose router
-//! 13. Start server with graceful shutdown
+//! 3. Initialize Prometheus metrics recorder
+//! 4. Create parent directories and SQLite pool
+//! 5. Run database migrations
+//! 6. Load asset manifest (graceful fallback)
+//! 7. Initialize Zenoh event bus (optional, graceful fallback)
+//! 8. Initialize DuckDB analytics pool (optional, graceful fallback)
+//! 9. Attach DuckLake catalogs (embedded first, network fallback)
+//! 10. Initialize analytics cache layer
+//! 11. Spawn cache invalidation subscriber
+//! 12. Construct AppState
+//! 13. Compose router
+//! 14. Start server with graceful shutdown
 
 use ironstar::config::Config;
 use ironstar::infrastructure::{
     AnalyticsCache, AssetManifest, CachedAnalyticsService, DuckDBService, ZenohEventBus,
-    embedded_catalogs, open_embedded_session, spawn_cache_invalidation,
+    embedded_catalogs, init_prometheus_recorder, open_embedded_session, spawn_cache_invalidation,
 };
 use ironstar::presentation::app_router;
 use ironstar::state::AppState;
@@ -49,6 +50,9 @@ pub enum StartupError {
 
     #[error("Failed to bind to address: {0}")]
     Bind(std::io::Error),
+
+    #[error("Failed to install metrics recorder: {0}")]
+    MetricsRecorder(#[from] metrics_exporter_prometheus::BuildError),
 }
 
 #[tokio::main]
@@ -74,7 +78,11 @@ async fn main() -> Result<(), StartupError> {
         "Starting ironstar"
     );
 
-    // 3. Create parent directories if needed
+    // 3. Initialize Prometheus metrics recorder
+    let prometheus_handle = init_prometheus_recorder()?;
+    tracing::info!("Prometheus metrics recorder initialized");
+
+    // 4. Create parent directories if needed
     if let Some(dir) = config.database_dir()
         && !dir.exists()
     {
@@ -82,19 +90,19 @@ async fn main() -> Result<(), StartupError> {
         std::fs::create_dir_all(&dir)?;
     }
 
-    // 4. Create SQLite pool
+    // 5. Create SQLite pool
     tracing::debug!(url = %config.database_url, "Connecting to database");
     let db_pool = SqlitePoolOptions::new()
         .max_connections(5)
         .connect(&config.database_url)
         .await?;
 
-    // 5. Run migrations
+    // 6. Run migrations
     tracing::info!("Running database migrations");
     sqlx::migrate!("./migrations").run(&db_pool).await?;
     tracing::info!("Database migrations complete");
 
-    // 6. Load asset manifest (graceful fallback)
+    // 7. Load asset manifest (graceful fallback)
     let assets = AssetManifest::load();
     if assets.is_empty() {
         tracing::warn!(
@@ -105,7 +113,7 @@ async fn main() -> Result<(), StartupError> {
         tracing::debug!("Asset manifest loaded");
     }
 
-    // 7. Initialize Zenoh event bus (optional)
+    // 8. Initialize Zenoh event bus (optional)
     let event_bus = if config.enable_zenoh {
         match open_embedded_session().await {
             Ok(session) => {
@@ -125,7 +133,7 @@ async fn main() -> Result<(), StartupError> {
         None
     };
 
-    // 8. Initialize DuckDB analytics pool (optional)
+    // 9. Initialize DuckDB analytics pool (optional)
     let analytics = if config.enable_analytics {
         let mut builder = async_duckdb::PoolBuilder::new().num_conns(config.analytics_num_conns);
         if let Some(ref path) = config.analytics_database_path {
@@ -209,7 +217,7 @@ async fn main() -> Result<(), StartupError> {
         None
     };
 
-    // 9. Initialize analytics cache layer (if analytics available)
+    // 10. Initialize analytics cache layer (if analytics available)
     let cached_analytics = analytics.as_ref().map(|pool| {
         let service = DuckDBService::new(Some(pool.clone()));
         let cache = AnalyticsCache::new();
@@ -218,7 +226,7 @@ async fn main() -> Result<(), StartupError> {
         cached
     });
 
-    // 10. Spawn cache invalidation subscriber (if both Zenoh and cached analytics)
+    // 11. Spawn cache invalidation subscriber (if both Zenoh and cached analytics)
     if let (Some(bus), Some(cached)) = (&event_bus, &cached_analytics) {
         let registry = ironstar::infrastructure::CacheInvalidationRegistry::new(cached.clone());
         // Dependencies will be registered as domain aggregates are added.
@@ -227,8 +235,8 @@ async fn main() -> Result<(), StartupError> {
         tracing::info!("Cache invalidation subscriber spawned");
     }
 
-    // 11. Construct AppState
-    let mut app_state = AppState::new(db_pool.clone(), assets);
+    // 12. Construct AppState
+    let mut app_state = AppState::new(db_pool.clone(), assets, prometheus_handle);
     if let Some(bus) = event_bus {
         app_state = app_state.with_event_bus(bus);
     }
@@ -239,10 +247,10 @@ async fn main() -> Result<(), StartupError> {
         app_state = app_state.with_cached_analytics(cached);
     }
 
-    // 12. Compose router
+    // 13. Compose router
     let app = app_router(app_state);
 
-    // 13. Start server with graceful shutdown
+    // 14. Start server with graceful shutdown
     let addr = config.socket_addr();
     tracing::info!(addr = %addr, "Listening");
 
