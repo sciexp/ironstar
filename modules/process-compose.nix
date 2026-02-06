@@ -5,7 +5,30 @@
   ];
 
   perSystem =
-    { pkgs, lib, ... }:
+    {
+      pkgs,
+      lib,
+      config,
+      ...
+    }:
+    let
+      # Shared runtimeInputs for processes that invoke cargo (compile Rust).
+      # writeShellApplication only adds bin/ to PATH via runtimeInputs;
+      # it does not set up the full stdenv build environment.
+      rustCompileInputs = [
+        pkgs.cargo-watch
+        config.ironstar.rustToolchain
+        pkgs.stdenv.cc
+      ];
+
+      # On Darwin, the nix cc-wrapper reads NIX_LDFLAGS at invocation time
+      # for library search paths. Its baked-in paths only cover clang-lib and
+      # libcxx; libiconv comes exclusively from this environment variable.
+      # Prepend to preserve any inherited value from the devShell.
+      darwinLdSetup = lib.optionalString pkgs.stdenv.isDarwin ''
+        export NIX_LDFLAGS="-L${pkgs.libiconv}/lib ''${NIX_LDFLAGS:-}"
+      '';
+    in
     {
       process-compose.dev = {
         imports = [
@@ -60,8 +83,9 @@
             typegen = {
               command = pkgs.writeShellApplication {
                 name = "typegen-dev";
-                runtimeInputs = [ pkgs.cargo-watch ];
+                runtimeInputs = rustCompileInputs;
                 text = ''
+                  ${darwinLdSetup}
                   cargo watch \
                     -w crates/ironstar-core/src \
                     -w crates/ironstar-shared-kernel/src \
@@ -86,8 +110,9 @@
             backend = {
               command = pkgs.writeShellApplication {
                 name = "backend-dev";
-                runtimeInputs = [ pkgs.cargo-watch ];
+                runtimeInputs = rustCompileInputs;
                 text = ''
+                  ${darwinLdSetup}
                   cargo watch \
                     -w crates \
                     -x 'run --package ironstar'
