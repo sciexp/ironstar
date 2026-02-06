@@ -245,7 +245,12 @@ mod tests {
 
     fn create_app_state(pool: sqlx::SqlitePool) -> AppState {
         let session_store = Arc::new(SqliteSessionStore::new(pool.clone(), Duration::days(30)));
-        AppState::new(pool, AssetManifest::default()).with_session_store(session_store)
+        AppState::new(
+            pool,
+            AssetManifest::default(),
+            crate::infrastructure::metrics::test_prometheus_handle(),
+        )
+        .with_session_store(session_store)
     }
 
     async fn test_handler(SessionExtractor(session): SessionExtractor) -> String {
@@ -379,7 +384,11 @@ mod tests {
     async fn extractor_returns_service_unavailable_when_no_store() {
         let pool = create_test_pool().await;
         // Create AppState without session store
-        let state = AppState::new(pool, AssetManifest::default());
+        let state = AppState::new(
+            pool,
+            AssetManifest::default(),
+            crate::infrastructure::metrics::test_prometheus_handle(),
+        );
 
         let app = Router::new()
             .route("/test", get(test_handler))
@@ -404,7 +413,12 @@ mod tests {
         let pool = create_test_pool().await;
         // Create session store with negative TTL (sessions expire immediately)
         let session_store = Arc::new(SqliteSessionStore::new(pool.clone(), Duration::days(-1)));
-        let state = AppState::new(pool, AssetManifest::default()).with_session_store(session_store);
+        let state = AppState::new(
+            pool,
+            AssetManifest::default(),
+            crate::infrastructure::metrics::test_prometheus_handle(),
+        )
+        .with_session_store(session_store);
 
         // Create a session (which is already expired due to negative TTL)
         let session = state

@@ -21,7 +21,9 @@ use ironstar::domain::todo::commands::TodoCommand;
 use ironstar::domain::todo::events::TodoEvent;
 use ironstar::domain::todo::values::TodoId;
 use ironstar::infrastructure::event_store::SqliteEventRepository;
-use ironstar::infrastructure::{AssetManifest, ZenohEventBus, open_embedded_session};
+use ironstar::infrastructure::{
+    AssetManifest, ZenohEventBus, open_embedded_session, test_prometheus_handle,
+};
 use ironstar::presentation::todo::routes as todo_routes;
 use ironstar::state::AppState;
 use sqlx::sqlite::SqlitePoolOptions;
@@ -53,8 +55,8 @@ async fn create_test_app_with_event_bus() -> (Router, Arc<ZenohEventBus>) {
     let session = Arc::new(open_embedded_session().await.expect("session should open"));
     let event_bus = Arc::new(ZenohEventBus::new(session));
 
-    let state =
-        AppState::new(pool, AssetManifest::default()).with_event_bus(Arc::clone(&event_bus));
+    let state = AppState::new(pool, AssetManifest::default(), test_prometheus_handle())
+        .with_event_bus(Arc::clone(&event_bus));
 
     // Mount todo routes at /todos to match production
     let app = Router::new()
@@ -67,7 +69,7 @@ async fn create_test_app_with_event_bus() -> (Router, Arc<ZenohEventBus>) {
 /// Create a test router without event bus (for testing 503 behavior).
 async fn create_test_app_without_event_bus() -> Router {
     let pool = create_test_pool().await;
-    let state = AppState::new(pool, AssetManifest::default());
+    let state = AppState::new(pool, AssetManifest::default(), test_prometheus_handle());
 
     Router::new()
         .nest("/todos", todo_routes())
@@ -230,8 +232,12 @@ async fn feed_replays_events_after_last_event_id() {
     let session = Arc::new(open_embedded_session().await.expect("session should open"));
     let event_bus = Arc::new(ZenohEventBus::new(session));
 
-    let state = AppState::new(pool.clone(), AssetManifest::default())
-        .with_event_bus(Arc::clone(&event_bus));
+    let state = AppState::new(
+        pool.clone(),
+        AssetManifest::default(),
+        test_prometheus_handle(),
+    )
+    .with_event_bus(Arc::clone(&event_bus));
 
     // Create some Todo events directly in the event store
     let repo: Arc<SqliteEventRepository<TodoCommand, TodoEvent>> =
@@ -357,8 +363,12 @@ async fn feed_events_include_event_type() {
     let session = Arc::new(open_embedded_session().await.expect("session should open"));
     let event_bus = Arc::new(ZenohEventBus::new(session));
 
-    let state = AppState::new(pool.clone(), AssetManifest::default())
-        .with_event_bus(Arc::clone(&event_bus));
+    let state = AppState::new(
+        pool.clone(),
+        AssetManifest::default(),
+        test_prometheus_handle(),
+    )
+    .with_event_bus(Arc::clone(&event_bus));
 
     // Create a Todo event
     let repo: Arc<SqliteEventRepository<TodoCommand, TodoEvent>> =
@@ -413,8 +423,12 @@ async fn feed_events_include_json_data() {
     let session = Arc::new(open_embedded_session().await.expect("session should open"));
     let event_bus = Arc::new(ZenohEventBus::new(session));
 
-    let state = AppState::new(pool.clone(), AssetManifest::default())
-        .with_event_bus(Arc::clone(&event_bus));
+    let state = AppState::new(
+        pool.clone(),
+        AssetManifest::default(),
+        test_prometheus_handle(),
+    )
+    .with_event_bus(Arc::clone(&event_bus));
 
     let repo: Arc<SqliteEventRepository<TodoCommand, TodoEvent>> =
         Arc::new(SqliteEventRepository::new(pool.clone()));
@@ -487,8 +501,12 @@ async fn feed_with_last_event_id_zero_gets_all_events() {
     let session = Arc::new(open_embedded_session().await.expect("session should open"));
     let event_bus = Arc::new(ZenohEventBus::new(session));
 
-    let state = AppState::new(pool.clone(), AssetManifest::default())
-        .with_event_bus(Arc::clone(&event_bus));
+    let state = AppState::new(
+        pool.clone(),
+        AssetManifest::default(),
+        test_prometheus_handle(),
+    )
+    .with_event_bus(Arc::clone(&event_bus));
 
     let repo: Arc<SqliteEventRepository<TodoCommand, TodoEvent>> =
         Arc::new(SqliteEventRepository::new(pool.clone()));
