@@ -71,12 +71,11 @@ export default defineConfig({
 				},
 			],
 
-	// Compile and run the Rust server before tests.
-	// The readiness probe ensures the server is fully initialized
-	// (migrations complete, optional subsystems started) before tests run.
-	// Timeout is generous because cargo build from scratch can be slow.
+	// Start the server before tests. In CI, IRONSTAR_BINARY points to the
+	// nix-built binary (pre-cached via cachix). Locally, falls back to cargo run.
+	// The readiness probe gates test execution until migrations and subsystems are ready.
 	webServer: {
-		command: "just rust-serve",
+		command: process.env.IRONSTAR_BINARY || "just rust-serve",
 		url: "http://localhost:3000/health/ready",
 		reuseExistingServer: !process.env.CI,
 		timeout: 180_000,
