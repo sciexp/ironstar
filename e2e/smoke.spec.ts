@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 test.describe("Health endpoints", () => {
 	test("GET /health returns JSON with status", async ({ request }) => {
@@ -22,9 +22,7 @@ test.describe("Health endpoints", () => {
 });
 
 test.describe("Todo page", () => {
-	test("homepage loads at /todos with correct structure", async ({
-		page,
-	}) => {
+	test("homepage loads at /todos with correct structure", async ({ page }) => {
 		const response = await page.goto("/todos");
 		expect(response?.status()).toBe(200);
 
