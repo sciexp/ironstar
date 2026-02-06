@@ -12,6 +12,7 @@ doctest = false
 ironstar-core = { workspace = true }
 ironstar-shared-kernel = { workspace = true }
 chrono = { workspace = true }
+tracing = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 ts-rs = { workspace = true }
