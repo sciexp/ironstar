@@ -61,12 +61,24 @@
             (crane-lib.filterCargoSources path type);
       };
 
+      # Content-addressed source paths for derivation hash stability.
+      # builtins.path produces store paths that only change when actual
+      # content changes, preventing full rebuilds on unrelated commits.
+      webComponentsSrc = builtins.path {
+        path = inputs.self + "/web-components";
+        name = "web-components-source";
+      };
+      migrationsSrc = builtins.path {
+        path = inputs.self + "/crates/ironstar/migrations";
+        name = "ironstar-migrations";
+      };
+
       # Frontend assets built from web-components/ via Rolldown.
       # Produces static/dist/ contents for rust-embed at compile time.
       frontendAssets = pkgs.stdenvNoCC.mkDerivation (finalAttrs: {
         pname = "ironstar-frontend";
         version = "0.1.0";
-        src = inputs.self + "/web-components";
+        src = webComponentsSrc;
 
         nativeBuildInputs = [
           pkgs.nodejs
@@ -107,7 +119,7 @@
         cp -r ${frontendAssets} $out/static/dist
         # Remove any empty migrations dir from cleaned source, then copy real migrations
         rm -rf $out/crates/ironstar/migrations
-        cp -r ${inputs.self + "/crates/ironstar/migrations"} $out/crates/ironstar/
+        cp -r ${migrationsSrc} $out/crates/ironstar/migrations
       '';
 
       cargoVendorDir = crane-lib.vendorCargoDeps { inherit src; };
