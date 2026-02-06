@@ -999,15 +999,16 @@ flake-update:
 dev:
   nix develop
 
-# Start all dev services via process-compose (backend, frontend, observability)
+# Start all dev services via process-compose with log streaming (no TUI).
+# Could be pushed into nix config via PC_DISABLE_TUI env var in the wrapper script.
 [group('nix')]
 dev-services:
-  nix run .#dev
+  nix run .#dev -- up -t=false
 
 # Start dev services with process-compose TUI
 [group('nix')]
 dev-services-tui:
-  nix run .#dev -- --tui
+  nix run .#dev
 
 # Build the documentation package with Nix
 [group('nix')]
