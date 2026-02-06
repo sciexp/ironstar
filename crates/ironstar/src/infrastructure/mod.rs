@@ -185,6 +185,7 @@ pub mod sse_stream {
 // Original code modules kept as real files
 pub mod assets;
 pub mod error;
+pub mod metrics;
 
 pub use analytics::{AnalyticsState, DuckDBService};
 pub use analytics_cache::AnalyticsCache;
@@ -211,6 +212,10 @@ pub use key_expr::{
     ALL_EVENTS, DOUBLE_WILD, EVENTS_ROOT, EventKeyExpr, ParseError as KeyExprParseError,
     SINGLE_WILD, aggregate_instance_pattern, aggregate_type_pattern, event_key,
     event_key_without_sequence,
+};
+pub use metrics::{
+    CACHE_HITS_TOTAL, CACHE_MISSES_TOTAL, EVENTS_PERSISTED_TOTAL, HTTP_REQUEST_DURATION_SECONDS,
+    HTTP_REQUESTS_TOTAL, QUERY_DURATION_SECONDS, init_prometheus_recorder, test_prometheus_handle,
 };
 pub use session_store::{
     SESSIONS_MIGRATION_SQL, Session, SessionStore, SessionStoreError, SessionStoreErrorKind,
