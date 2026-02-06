@@ -30,7 +30,7 @@ use ironstar::presentation::app_router;
 use ironstar::state::AppState;
 use sqlx::sqlite::SqlitePoolOptions;
 use std::sync::Arc;
-use tokio::net::TcpListener;
+use tokio::net::TcpSocket;
 use tokio::signal;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -254,7 +254,10 @@ async fn main() -> Result<(), StartupError> {
     let addr = config.socket_addr();
     tracing::info!(addr = %addr, "Listening");
 
-    let listener = TcpListener::bind(addr).await.map_err(StartupError::Bind)?;
+    let socket = TcpSocket::new_v4().map_err(StartupError::Bind)?;
+    socket.set_reuseaddr(true).map_err(StartupError::Bind)?;
+    socket.bind(addr).map_err(StartupError::Bind)?;
+    let listener = socket.listen(1024).map_err(StartupError::Bind)?;
 
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal(config.shutdown_timeout))
