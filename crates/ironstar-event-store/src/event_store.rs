@@ -31,6 +31,7 @@ use serde::{Serialize, de::DeserializeOwned};
 use sqlx::Row;
 use sqlx::sqlite::SqlitePool;
 use std::marker::PhantomData;
+use tracing::instrument;
 use uuid::Uuid;
 
 /// Stored event with global sequence for SSE streaming.
@@ -103,6 +104,11 @@ where
     ///
     /// Returns events ordered by global sequence (id), with each event
     /// paired with its event_id (version).
+    #[instrument(
+        name = "event_store.fetch_all_by_type",
+        skip(self),
+        fields(aggregate_type = %aggregate_type, event_count),
+    )]
     pub async fn fetch_all_events_by_type(
         &self,
         aggregate_type: &str,
@@ -126,6 +132,12 @@ where
             let event: E = serde_json::from_str(&payload)?;
             events.push((event, event_id));
         }
+
+        tracing::Span::current().record("event_count", events.len());
+        tracing::debug!(
+            event_count = events.len(),
+            "fetched events by aggregate type"
+        );
         Ok(events)
     }
 
@@ -136,6 +148,15 @@ where
     ///
     /// Returns events ordered by global sequence (id), with each event
     /// paired with its event_id (version).
+    #[instrument(
+        name = "event_store.fetch_by_aggregate",
+        skip(self),
+        fields(
+            aggregate_type = %aggregate_type,
+            aggregate_id = %aggregate_id,
+            event_count,
+        ),
+    )]
     pub async fn fetch_events_by_aggregate(
         &self,
         aggregate_type: &str,
@@ -161,12 +182,16 @@ where
             let event: E = serde_json::from_str(&payload)?;
             events.push((event, event_id));
         }
+
+        tracing::Span::current().record("event_count", events.len());
+        tracing::debug!(event_count = events.len(), "fetched events by aggregate");
         Ok(events)
     }
 
     /// Query all events across all aggregates, ordered by global sequence.
     ///
     /// Used for projection rebuild on application startup.
+    #[instrument(name = "event_store.query_all", skip(self), fields(event_count))]
     pub async fn query_all(&self) -> Result<Vec<StoredEvent<E>>, EventStoreError> {
         let rows = sqlx::query(
             r#"
@@ -196,12 +221,23 @@ where
                 created_at: row.get("created_at"),
             });
         }
+
+        tracing::Span::current().record("event_count", events.len());
+        tracing::debug!(
+            event_count = events.len(),
+            "queried all events for projection rebuild"
+        );
         Ok(events)
     }
 
     /// Query events since a global sequence (exclusive).
     ///
     /// Used for SSE reconnection via Last-Event-ID header.
+    #[instrument(
+        name = "event_store.query_since",
+        skip(self),
+        fields(since = since, event_count),
+    )]
     pub async fn query_since_sequence(
         &self,
         since: i64,
@@ -236,12 +272,20 @@ where
                 created_at: row.get("created_at"),
             });
         }
+
+        tracing::Span::current().record("event_count", events.len());
+        tracing::debug!(
+            event_count = events.len(),
+            since = since,
+            "queried events since sequence for SSE reconnection"
+        );
         Ok(events)
     }
 
     /// Get the earliest global sequence in the event store.
     ///
     /// Returns `None` if the event store is empty.
+    #[instrument(name = "event_store.earliest_sequence", skip(self))]
     pub async fn earliest_sequence(&self) -> Result<Option<i64>, EventStoreError> {
         let row = sqlx::query("SELECT MIN(id) as min_id FROM events")
             .fetch_one(&self.pool)
@@ -252,6 +296,7 @@ where
     /// Get the latest global sequence in the event store.
     ///
     /// Returns `None` if the event store is empty.
+    #[instrument(name = "event_store.latest_sequence", skip(self))]
     pub async fn latest_sequence(&self) -> Result<Option<i64>, EventStoreError> {
         let row = sqlx::query("SELECT MAX(id) as max_id FROM events")
             .fetch_one(&self.pool)
@@ -281,6 +326,11 @@ where
     /// If another transaction commits between our BEGIN IMMEDIATE and INSERT,
     /// the UNIQUE constraint on `previous_id` will fail. This is caught and
     /// translated to `OptimisticLockingConflict`.
+    #[instrument(
+        name = "event_store.append",
+        skip(self, events, command_id),
+        fields(event_count = events.len()),
+    )]
     pub async fn save_with_command(
         &self,
         events: &[E],
@@ -354,8 +404,46 @@ where
         }
 
         tx.commit().await?;
+
+        // Emit metrics for each distinct aggregate type in the batch.
+        // Typical batches contain events for a single aggregate, but the loop
+        // handles mixed batches correctly.
+        let mut counted: std::collections::HashMap<&str, u64> = std::collections::HashMap::new();
+        for (event, _version) in &results {
+            *counted.entry(leak_str(&event.decider_type())).or_default() += 1;
+        }
+        for (agg_type, count) in &counted {
+            metrics::counter!("events_persisted_total", "aggregate_type" => *agg_type)
+                .increment(*count);
+        }
+
+        tracing::debug!(
+            event_count = results.len(),
+            "persisted events to event store"
+        );
         Ok(results)
     }
+}
+
+/// Intern aggregate type strings for use as metric labels.
+///
+/// The `metrics` crate requires `&'static str` for label values. Aggregate type
+/// names are a small, fixed set of strings (e.g., "Todo", "Session"), so leaking
+/// them is bounded and avoids per-call allocation of owned `String` labels.
+fn leak_str(s: &str) -> &'static str {
+    use std::sync::LazyLock;
+    use std::sync::Mutex;
+
+    static INTERNED: LazyLock<Mutex<std::collections::HashSet<&'static str>>> =
+        LazyLock::new(|| Mutex::new(std::collections::HashSet::new()));
+
+    let mut set = INTERNED.lock().unwrap_or_else(|e| e.into_inner());
+    if let Some(&existing) = set.get(s) {
+        return existing;
+    }
+    let leaked: &'static str = Box::leak(s.to_owned().into_boxed_str());
+    set.insert(leaked);
+    leaked
 }
 
 /// Implementation of fmodel-rust's EventRepository trait for SQLite.
@@ -379,9 +467,18 @@ where
     ///
     /// Returns events ordered by global sequence (id), with each event
     /// paired with its event_id (version) for optimistic locking.
+    #[instrument(
+        name = "event_store.fetch_events",
+        skip_all,
+        fields(aggregate_type, aggregate_id, event_count)
+    )]
     async fn fetch_events(&self, command: &C) -> Result<Vec<(E, String)>, EventStoreError> {
         let aggregate_id = command.identifier();
         let aggregate_type = command.decider_type();
+
+        let span = tracing::Span::current();
+        span.record("aggregate_type", aggregate_type.as_str());
+        span.record("aggregate_id", aggregate_id.as_str());
 
         let rows = sqlx::query(
             r#"
@@ -403,6 +500,9 @@ where
             let event: E = serde_json::from_str(&payload)?;
             events.push((event, event_id));
         }
+
+        span.record("event_count", events.len());
+        tracing::debug!(event_count = events.len(), "fetched events for command");
         Ok(events)
     }
 
@@ -410,6 +510,11 @@ where
     ///
     /// Delegates to `save_with_command()` with `command_id = None`.
     /// Use `save_with_command()` directly when causation tracking is needed.
+    #[instrument(
+        name = "event_store.save",
+        skip_all,
+        fields(event_count = events.len()),
+    )]
     async fn save(&self, events: &[E]) -> Result<Vec<(E, String)>, EventStoreError> {
         self.save_with_command(events, None).await
     }
@@ -419,9 +524,18 @@ where
     /// Returns `None` if this would be the first event in the aggregate.
     /// Used for optimistic locking: the returned version becomes the
     /// previous_id of the next event.
+    #[instrument(
+        name = "event_store.version_provider",
+        skip_all,
+        fields(aggregate_type, aggregate_id)
+    )]
     async fn version_provider(&self, event: &E) -> Result<Option<String>, EventStoreError> {
         let aggregate_id = event.identifier();
         let aggregate_type = event.decider_type();
+
+        let span = tracing::Span::current();
+        span.record("aggregate_type", aggregate_type.as_str());
+        span.record("aggregate_id", aggregate_id.as_str());
 
         let row = sqlx::query(
             r#"
@@ -437,6 +551,8 @@ where
         .fetch_optional(&self.pool)
         .await?;
 
+        let has_version = row.is_some();
+        tracing::trace!(has_version, "checked aggregate version");
         Ok(row.map(|r| r.get("event_id")))
     }
 }
