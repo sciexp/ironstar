@@ -79,7 +79,7 @@ pub struct TodoAppState {
 /// - `DELETE /api/:id` - Delete todo (JSON)
 /// - `GET /api/feed` - SSE feed (placeholder)
 pub fn routes() -> Router<AppState> {
-    Router::new()
+    let router = Router::new()
         // HTML page endpoint
         .route("/", get(todo_page_handler))
         // JSON API endpoints (separate routes for each method)
@@ -89,7 +89,13 @@ pub fn routes() -> Router<AppState> {
         .route("/api/{id}", route_delete(delete_todo))
         .route("/api/{id}/complete", post(complete_todo))
         // SSE feed endpoint (placeholder for now)
-        .route("/api/feed", get(todo_feed_handler))
+        .route("/api/feed", get(todo_feed_handler));
+
+    // Test-only: purge endpoint for E2E test isolation (debug builds only)
+    #[cfg(debug_assertions)]
+    let router = router.route("/api", route_delete(purge_all_todos));
+
+    router
 }
 
 /// GET / - Render the todo page with current todos.
@@ -334,6 +340,81 @@ pub struct CommandResponse {
     pub id: Uuid,
     /// Number of events produced by this command.
     pub events_count: usize,
+}
+
+// =============================================================================
+// Test-only handlers (debug builds only)
+// =============================================================================
+
+/// DELETE /api - Purge all Todo events for E2E test isolation.
+///
+/// This handler exists only in debug builds. It performs a hard reset of the
+/// Todo event store by temporarily disabling the immutability trigger,
+/// deleting all Todo events, and re-enabling the trigger.
+///
+/// This bypasses event sourcing intentionally: E2E test isolation requires
+/// a clean slate, not soft-deleted aggregates that still contribute events.
+///
+/// # Response
+///
+/// - `200 OK` with JSON body containing the number of deleted events
+/// - `500 Internal Server Error` on database failure
+#[cfg(debug_assertions)]
+#[instrument(name = "handler.todo.purge_all", skip(state))]
+async fn purge_all_todos(
+    State(state): State<TodoAppState>,
+) -> Result<Json<serde_json::Value>, StatusCode> {
+    let pool = state.repo.pool();
+
+    // Temporarily disable the immutability trigger, delete, then restore.
+    // Wrap in a transaction for atomicity.
+    let mut tx = pool.begin().await.map_err(|e| {
+        warn!(error = %e, "Failed to begin transaction for purge");
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    sqlx::query("DROP TRIGGER IF EXISTS prevent_event_delete")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| {
+            warn!(error = %e, "Failed to drop delete trigger");
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    let result = sqlx::query("DELETE FROM events WHERE aggregate_type = 'Todo'")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| {
+            warn!(error = %e, "Failed to delete todo events");
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    let deleted_count = result.rows_affected();
+
+    sqlx::query(
+        "CREATE TRIGGER IF NOT EXISTS prevent_event_delete \
+         BEFORE DELETE ON events \
+         BEGIN \
+             SELECT RAISE(ABORT, 'Events are immutable: DELETE not allowed'); \
+         END",
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| {
+        warn!(error = %e, "Failed to recreate delete trigger");
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    tx.commit().await.map_err(|e| {
+        warn!(error = %e, "Failed to commit purge transaction");
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    tracing::info!(deleted_count, "purged all Todo events for test isolation");
+
+    Ok(Json(serde_json::json!({
+        "deleted": deleted_count,
+    })))
 }
 
 /// POST /api/todos - Create a new todo.
