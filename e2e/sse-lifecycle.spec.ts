@@ -1,6 +1,11 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("SSE connection lifecycle", () => {
+	test.beforeEach(async ({ request }) => {
+		// Clean slate: purge all todo events before each test
+		await request.delete("http://localhost:3000/todos/api");
+	});
+
 	test("establishes SSE connection on page load", async ({ page }) => {
 		await page.goto("/todos");
 
