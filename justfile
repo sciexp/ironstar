@@ -1010,6 +1010,34 @@ dev-services:
 dev-services-tui:
   nix run .#dev
 
+# Show stale dev processes and ports, then clean them up.
+# Useful when a prior dev-services session left zombies (cargo-watch, ironstar, observability).
+[group('nix')]
+dev-cleanup:
+  #!/usr/bin/env bash
+  set -uo pipefail
+  echo "Stale processes:"
+  pgrep -afl "process-compose|target/debug/ironstar|cargo.watch|rolldown.*watch" \
+    | grep -v "just dev-cleanup" || echo "  (none)"
+  echo ""
+  echo "Ports (3000=ironstar, 9090=prometheus, 3001=grafana):"
+  lsof -nP -i :3000,:9090,:3001 2>/dev/null | grep LISTEN || echo "  (all free)"
+  echo ""
+  read -rp "Kill stale processes and free ports? [y/N] " confirm
+  if [[ "${confirm:-n}" =~ ^[Yy]$ ]]; then
+    pkill -f "process-compose" 2>/dev/null || true
+    pkill -f "target/debug/ironstar" 2>/dev/null || true
+    pkill -f "cargo.watch" 2>/dev/null || true
+    pkill -f "rolldown.*watch" 2>/dev/null || true
+    lsof -ti :3000,:9090,:3001 2>/dev/null | xargs kill 2>/dev/null || true
+    sleep 2
+    echo ""
+    echo "Remaining:"
+    pgrep -afl "process-compose|target/debug/ironstar|cargo.watch|rolldown.*watch" \
+      | grep -v "just dev-cleanup" || echo "  (none)"
+    lsof -nP -i :3000,:9090,:3001 2>/dev/null | grep LISTEN || echo "  All ports free"
+  fi
+
 # Build the documentation package with Nix
 [group('nix')]
 nix-build:
