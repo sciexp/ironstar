@@ -53,6 +53,7 @@ fn add_todo_form() -> impl Renderable {
         form
             class="cluster"
             "data-on:submit.prevent"="@post('/todos/api', {body: {text: $input}}); $input = ''"
+            "data-indicator"="isFetching"
         {
             (text_field(
                 "input",
@@ -211,6 +212,7 @@ mod tests {
 
         assert!(body.contains("data-on:submit"));
         assert!(body.contains("data-bind:input"));
+        assert!(body.contains(r#"data-indicator="isFetching""#));
     }
 
     #[test]
