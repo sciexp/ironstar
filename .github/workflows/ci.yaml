@@ -84,16 +84,13 @@ jobs:
       - name: Setup Nix
         if: steps.cache.outputs.should-run == 'true'
         uses: ./.github/actions/setup-nix
-        env:
-          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
         with:
           installer: ${{ inputs.nix_installer || 'quick' }}
           system: x86_64-linux
-          enable-cachix: true
 
       - name: Scan for secrets with gitleaks
         if: steps.cache.outputs.should-run == 'true'
-        run: nix develop -c just scan-secrets
+        run: nix run nixpkgs#gitleaks -- detect --verbose --redact
 
   # job 2: set-variables
   # determines deployment settings and variables based on event type
