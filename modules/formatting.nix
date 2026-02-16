@@ -36,6 +36,7 @@
             "*.astro"
           ];
           excludes = [
+            ".github/renovate.json"
             "web-components/vendor/*"
           ];
         };
