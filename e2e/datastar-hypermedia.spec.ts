@@ -213,25 +213,19 @@ test.describe("Datastar hypermedia interactions", () => {
 	test("multiple rapid commands handled correctly", async ({ page }) => {
 		const input = page.locator("#todo-app form input");
 		const submitButton = page.locator('#todo-app form button[type="submit"]');
-
-		// Capture initial count to handle accumulated state
 		const todoList = page.locator("#todo-list");
-		const initialCount = await todoList.locator("li").count();
 
-		// Rapidly submit multiple todos
-		const todos = ["Rapid 1", "Rapid 2", "Rapid 3"];
+		// Rapidly submit multiple todos with unique prefixes
+		const todos = ["RapidTest A", "RapidTest B", "RapidTest C"];
 
 		for (const todoText of todos) {
 			await input.fill(todoText);
 			await submitButton.click();
 		}
 
-		// Wait for all new todos to appear (initial + 3)
-		await expect(todoList.locator("li")).toHaveCount(
-			initialCount + todos.length,
-		);
-
-		// Verify all submitted todos are present by text
+		// Verify all submitted todos are present by text content.
+		// Avoids count-based assertions that are fragile under parallel
+		// execution where multiple browser projects share the event store.
 		for (const todoText of todos) {
 			await expect(todoList.locator("li", { hasText: todoText })).toBeVisible();
 		}
