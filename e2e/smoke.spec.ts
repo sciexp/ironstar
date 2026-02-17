@@ -51,7 +51,8 @@ test.describe("Todo page", () => {
 		});
 
 		await page.goto("/todos");
-		await page.waitForLoadState("networkidle");
+		// domcontentloaded suffices; networkidle is incompatible with SSE connections
+		await page.waitForLoadState("domcontentloaded");
 
 		expect(errors).toEqual([]);
 	});
