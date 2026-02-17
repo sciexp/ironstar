@@ -73,10 +73,13 @@ test.describe("Datastar hypermedia interactions", () => {
 		const checkbox = todoItem.locator('input[type="checkbox"]');
 		await checkbox.check();
 
-		// Wait for the completed state to be reflected in the UI
-		// The text should have strikethrough class
+		// Wait for the completed state to be reflected in the UI via SSE morph.
+		// The SSE PatchElements event re-renders the todo item with a
+		// span.completed class. Allow extra time for the SSE roundtrip.
 		const completedText = todoItem.locator("span.completed");
-		await expect(completedText).toHaveClass(/text-strikethrough/);
+		await expect(completedText).toHaveClass(/text-strikethrough/, {
+			timeout: 10000,
+		});
 	});
 
 	test("delete todo via data-on-click button", async ({ page }) => {
