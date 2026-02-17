@@ -52,7 +52,7 @@ fn add_todo_form() -> impl Renderable {
     maud! {
         form
             class="cluster"
-            "data-on:submit__prevent"="@post('/todos/api', {body: {text: $input}}); $input = ''"
+            "data-on:submit__prevent"="@post('/todos/api', {payload: {text: $input}}); $input = ''"
             "data-indicator"="isFetching"
         {
             (text_field(
