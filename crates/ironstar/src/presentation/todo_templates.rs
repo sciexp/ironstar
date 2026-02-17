@@ -34,7 +34,7 @@ pub fn todo_app(todos: &[TodoItemView]) -> impl Renderable {
         div
             id="todo-app"
             class="card stack"
-            "data-init"="@get('/todos/api/feed')"
+            "data-init"="@get('/todos/api/feed',{requestCancellation:'disabled'})"
         {
             (add_todo_form())
 
