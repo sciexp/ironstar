@@ -1,19 +1,27 @@
-//! Session extractor for axum handlers.
+//! Axum extractors for request-level context.
 //!
-//! This module provides a [`SessionExtractor`] that extracts session information
-//! from cookies and loads the associated session from the session store.
+//! This module provides extractors for use in axum handler signatures:
+//!
+//! - [`DatastarRequest`] detects the `datastar-request: true` header to
+//!   distinguish full HTML page loads from Datastar SSE fragment requests.
+//!   This enables progressive enhancement: initial navigation returns a
+//!   complete HTML document, while subsequent Datastar interactions return
+//!   SSE fragments for efficient DOM patching.
+//!
+//! - [`SessionExtractor`] loads a valid session from cookies via the
+//!   session store configured in [`crate::state::AppState`].
 //!
 //! # Usage
 //!
 //! ```rust,ignore
-//! async fn protected_handler(
+//! async fn handler(
+//!     DatastarRequest(is_datastar): DatastarRequest,
 //!     SessionExtractor(session): SessionExtractor,
 //! ) -> impl IntoResponse {
-//!     // Session is guaranteed to be valid and loaded
-//!     if let Some(user_id) = &session.user_id {
-//!         format!("Hello, user {user_id}!")
+//!     if is_datastar {
+//!         // Return SSE stream with fragments
 //!     } else {
-//!         "Hello, anonymous session!".to_string()
+//!         // Return full HTML page
 //!     }
 //! }
 //! ```
@@ -38,7 +46,62 @@ use axum::http::request::Parts;
 use axum::response::{IntoResponse, Response};
 use axum_extra::extract::CookieJar;
 use axum_extra::extract::cookie::{Cookie, SameSite};
+use std::convert::Infallible;
 use std::fmt;
+
+/// Header name sent by Datastar on all SSE requests.
+///
+/// Matches `DATASTAR_REQ_HEADER_STR` in `datastar-rust/src/consts.rs`, which
+/// is `pub(crate)` and therefore unavailable outside the SDK.
+const DATASTAR_REQUEST_HEADER: &str = "datastar-request";
+
+/// Extractor that detects Datastar SSE requests via the `datastar-request: true` header.
+///
+/// Returns `true` when the request originates from a Datastar SSE interaction
+/// (e.g., `data-on-*` attributes or programmatic `sse()` calls), `false` for
+/// initial page loads via browser navigation.
+///
+/// This extractor is infallible: a missing or malformed header yields `false`
+/// rather than a rejection, so every handler receives a usable value.
+///
+/// # Usage
+///
+/// ```rust,ignore
+/// async fn handler(DatastarRequest(is_datastar): DatastarRequest) -> Response {
+///     if is_datastar {
+///         // Return SSE stream with HTML fragments and signal patches
+///     } else {
+///         // Return full HTML page with document structure
+///     }
+/// }
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DatastarRequest(pub bool);
+
+impl DatastarRequest {
+    /// Returns `true` when the request is a Datastar SSE update.
+    #[must_use]
+    pub fn is_datastar(&self) -> bool {
+        self.0
+    }
+}
+
+impl<S> FromRequestParts<S> for DatastarRequest
+where
+    S: Send + Sync,
+{
+    type Rejection = Infallible;
+
+    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+        let is_datastar = parts
+            .headers
+            .get(DATASTAR_REQUEST_HEADER)
+            .and_then(|v| v.to_str().ok())
+            .is_some_and(|v| v == "true");
+
+        Ok(Self(is_datastar))
+    }
+}
 
 /// Cookie name for session identification.
 pub const SESSION_COOKIE_NAME: &str = "ironstar_session";
@@ -256,6 +319,109 @@ mod tests {
     async fn test_handler(SessionExtractor(session): SessionExtractor) -> String {
         format!("session_id={}", session.id)
     }
+
+    // --- DatastarRequest extractor tests ---
+
+    async fn datastar_test_handler(DatastarRequest(is_datastar): DatastarRequest) -> String {
+        if is_datastar {
+            "sse_fragment".to_owned()
+        } else {
+            "full_html".to_owned()
+        }
+    }
+
+    #[tokio::test]
+    async fn datastar_request_returns_true_when_header_present() {
+        let pool = create_test_pool().await;
+        let state = create_app_state(pool);
+
+        let app = Router::new()
+            .route("/test", get(datastar_test_handler))
+            .with_state(state);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/test")
+                    .header("datastar-request", "true")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        assert_eq!(&body[..], b"sse_fragment");
+    }
+
+    #[tokio::test]
+    async fn datastar_request_returns_false_when_header_absent() {
+        let pool = create_test_pool().await;
+        let state = create_app_state(pool);
+
+        let app = Router::new()
+            .route("/test", get(datastar_test_handler))
+            .with_state(state);
+
+        let response = app
+            .oneshot(Request::builder().uri("/test").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        assert_eq!(&body[..], b"full_html");
+    }
+
+    #[tokio::test]
+    async fn datastar_request_returns_false_when_header_not_true() {
+        let pool = create_test_pool().await;
+        let state = create_app_state(pool);
+
+        let app = Router::new()
+            .route("/test", get(datastar_test_handler))
+            .with_state(state);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/test")
+                    .header("datastar-request", "false")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        assert_eq!(&body[..], b"full_html");
+    }
+
+    #[test]
+    fn datastar_request_is_datastar_accessor() {
+        assert!(DatastarRequest(true).is_datastar());
+        assert!(!DatastarRequest(false).is_datastar());
+    }
+
+    #[test]
+    fn datastar_request_derives() {
+        // Verify Clone, Copy, PartialEq, Eq, Debug
+        let a = DatastarRequest(true);
+        let b = a;
+        assert_eq!(a, b);
+        assert_eq!(format!("{a:?}"), "DatastarRequest(true)");
+    }
+
+    // --- Session cookie tests ---
 
     #[test]
     fn session_cookie_has_correct_attributes() {
