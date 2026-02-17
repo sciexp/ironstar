@@ -1,6 +1,12 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("Datastar hypermedia interactions", () => {
+	// Serialize tests within each browser project to prevent one test's
+	// beforeEach purge from deleting another test's in-progress items.
+	// Cross-project (cross-browser) interference is mitigated by using
+	// unique per-test item names that avoid locator collisions.
+	test.describe.configure({ mode: "serial" });
+
 	test.beforeEach(async ({ page, request }) => {
 		// Clean slate: purge all todo events before each test
 		await request.delete("http://localhost:3000/todos/api");
@@ -33,15 +39,15 @@ test.describe("Datastar hypermedia interactions", () => {
 		const input = page.locator("#todo-app form input");
 		const submitButton = page.locator('#todo-app form button[type="submit"]');
 
-		// Enter todo text
-		await input.fill("Buy groceries");
+		// Use a unique name to avoid locator collisions with parallel browser projects
+		await input.fill("AddTest groceries");
 
 		// Submit form (triggers data-on:submit.prevent)
 		await submitButton.click();
 
 		// Wait for the new todo to appear in the list via SSE update
 		const todoItem = page.locator("#todo-list li", {
-			hasText: "Buy groceries",
+			hasText: "AddTest groceries",
 		});
 		await expect(todoItem).toBeVisible();
 
@@ -50,16 +56,15 @@ test.describe("Datastar hypermedia interactions", () => {
 	});
 
 	test("complete todo via data-on-change checkbox", async ({ page }) => {
-		// First, create a todo
 		const input = page.locator("#todo-app form input");
 		const submitButton = page.locator('#todo-app form button[type="submit"]');
 
-		await input.fill("Walk the dog");
+		await input.fill("CompleteTest walk dog");
 		await submitButton.click();
 
 		// Wait for todo to appear
 		const todoItem = page.locator("#todo-list li", {
-			hasText: "Walk the dog",
+			hasText: "CompleteTest walk dog",
 		});
 		await expect(todoItem).toBeVisible();
 
@@ -74,16 +79,15 @@ test.describe("Datastar hypermedia interactions", () => {
 	});
 
 	test("delete todo via data-on-click button", async ({ page }) => {
-		// Create a todo
 		const input = page.locator("#todo-app form input");
 		const submitButton = page.locator('#todo-app form button[type="submit"]');
 
-		await input.fill("Delete me");
+		await input.fill("DeleteTest remove item");
 		await submitButton.click();
 
 		// Wait for todo to appear
 		const todoItem = page.locator("#todo-list li", {
-			hasText: "Delete me",
+			hasText: "DeleteTest remove item",
 		});
 		await expect(todoItem).toBeVisible();
 
@@ -102,11 +106,11 @@ test.describe("Datastar hypermedia interactions", () => {
 		await expect(input).toHaveAttribute("data-bind:input");
 
 		// Type into the input field
-		await input.fill("Test reactive input");
+		await input.fill("BindTest reactive input");
 
 		// The data-bind:input should update the $input signal in Datastar
 		// We can verify this by checking the input value is reflected
-		await expect(input).toHaveValue("Test reactive input");
+		await expect(input).toHaveValue("BindTest reactive input");
 	});
 
 	test("loading spinner shows during fetch", async ({ page }) => {
@@ -122,7 +126,7 @@ test.describe("Datastar hypermedia interactions", () => {
 		const input = page.locator("#todo-app form input");
 		const submitButton = page.locator('#todo-app form button[type="submit"]');
 
-		await input.fill("Test loading");
+		await input.fill("SpinnerTest loading");
 		// Don't await the click to catch the loading state
 		const submitPromise = submitButton.click();
 
