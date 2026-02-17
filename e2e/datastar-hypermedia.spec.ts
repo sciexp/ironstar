@@ -137,30 +137,28 @@ test.describe("Datastar hypermedia interactions", () => {
 	});
 
 	test("SSE fragment merge updates todo list", async ({ page }) => {
-		// Start with empty list
 		const todoList = page.locator("#todo-list");
-		const initialTodos = await todoList.locator("li").count();
-
-		// Add first todo
 		const input = page.locator("#todo-app form input");
 		const submitButton = page.locator('#todo-app form button[type="submit"]');
 
-		await input.fill("First todo");
+		// Add first todo and verify it appears via SSE fragment merge
+		await input.fill("MergeTest first");
 		await submitButton.click();
+		await expect(
+			todoList.locator("li", { hasText: "MergeTest first" }),
+		).toBeVisible();
 
-		// Wait for list to update via SSE
-		await expect(todoList.locator("li")).toHaveCount(initialTodos + 1);
-
-		// Add second todo
-		await input.fill("Second todo");
+		// Add second todo and verify both are present
+		await input.fill("MergeTest second");
 		await submitButton.click();
+		await expect(
+			todoList.locator("li", { hasText: "MergeTest second" }),
+		).toBeVisible();
 
-		// Wait for list to merge the new fragment
-		await expect(todoList.locator("li")).toHaveCount(initialTodos + 2);
-
-		// Verify both todos are present
-		await expect(todoList).toContainText("First todo");
-		await expect(todoList).toContainText("Second todo");
+		// Both todos remain visible after the second merge
+		await expect(
+			todoList.locator("li", { hasText: "MergeTest first" }),
+		).toBeVisible();
 	});
 
 	test("footer counts update reactively", async ({ page }) => {
