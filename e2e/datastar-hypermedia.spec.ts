@@ -38,16 +38,16 @@ test.describe("Datastar hypermedia interactions", () => {
 	test("add todo via data-on-submit command", async ({ page }) => {
 		const input = page.locator("#todo-app form input");
 		const submitButton = page.locator('#todo-app form button[type="submit"]');
+		const prefix = test.info().project.name;
 
-		// Use a unique name to avoid locator collisions with parallel browser projects
-		await input.fill("AddTest groceries");
+		await input.fill(`${prefix} AddTest groceries`);
 
 		// Submit form (triggers data-on:submit.prevent)
 		await submitButton.click();
 
 		// Wait for the new todo to appear in the list via SSE update
 		const todoItem = page.locator("#todo-list li", {
-			hasText: "AddTest groceries",
+			hasText: `${prefix} AddTest groceries`,
 		});
 		await expect(todoItem).toBeVisible();
 
@@ -58,13 +58,14 @@ test.describe("Datastar hypermedia interactions", () => {
 	test("complete todo via data-on-change checkbox", async ({ page }) => {
 		const input = page.locator("#todo-app form input");
 		const submitButton = page.locator('#todo-app form button[type="submit"]');
+		const prefix = test.info().project.name;
 
-		await input.fill("CompleteTest walk dog");
+		await input.fill(`${prefix} CompleteTest walk dog`);
 		await submitButton.click();
 
 		// Wait for todo to appear
 		const todoItem = page.locator("#todo-list li", {
-			hasText: "CompleteTest walk dog",
+			hasText: `${prefix} CompleteTest walk dog`,
 		});
 		await expect(todoItem).toBeVisible();
 
@@ -81,13 +82,14 @@ test.describe("Datastar hypermedia interactions", () => {
 	test("delete todo via data-on-click button", async ({ page }) => {
 		const input = page.locator("#todo-app form input");
 		const submitButton = page.locator('#todo-app form button[type="submit"]');
+		const prefix = test.info().project.name;
 
-		await input.fill("DeleteTest remove item");
+		await input.fill(`${prefix} DeleteTest remove item`);
 		await submitButton.click();
 
 		// Wait for todo to appear
 		const todoItem = page.locator("#todo-list li", {
-			hasText: "DeleteTest remove item",
+			hasText: `${prefix} DeleteTest remove item`,
 		});
 		await expect(todoItem).toBeVisible();
 
@@ -126,7 +128,7 @@ test.describe("Datastar hypermedia interactions", () => {
 		const input = page.locator("#todo-app form input");
 		const submitButton = page.locator('#todo-app form button[type="submit"]');
 
-		await input.fill("SpinnerTest loading");
+		await input.fill(`${test.info().project.name} SpinnerTest loading`);
 		// Don't await the click to catch the loading state
 		const submitPromise = submitButton.click();
 
@@ -144,24 +146,25 @@ test.describe("Datastar hypermedia interactions", () => {
 		const todoList = page.locator("#todo-list");
 		const input = page.locator("#todo-app form input");
 		const submitButton = page.locator('#todo-app form button[type="submit"]');
+		const prefix = test.info().project.name;
 
 		// Add first todo and verify it appears via SSE fragment merge
-		await input.fill("MergeTest first");
+		await input.fill(`${prefix} MergeTest first`);
 		await submitButton.click();
 		await expect(
-			todoList.locator("li", { hasText: "MergeTest first" }),
+			todoList.locator("li", { hasText: `${prefix} MergeTest first` }),
 		).toBeVisible();
 
 		// Add second todo and verify both are present
-		await input.fill("MergeTest second");
+		await input.fill(`${prefix} MergeTest second`);
 		await submitButton.click();
 		await expect(
-			todoList.locator("li", { hasText: "MergeTest second" }),
+			todoList.locator("li", { hasText: `${prefix} MergeTest second` }),
 		).toBeVisible();
 
 		// Both todos remain visible after the second merge
 		await expect(
-			todoList.locator("li", { hasText: "MergeTest first" }),
+			todoList.locator("li", { hasText: `${prefix} MergeTest first` }),
 		).toBeVisible();
 	});
 
@@ -223,18 +226,21 @@ test.describe("Datastar hypermedia interactions", () => {
 		const input = page.locator("#todo-app form input");
 		const submitButton = page.locator('#todo-app form button[type="submit"]');
 		const todoList = page.locator("#todo-list");
+		const prefix = test.info().project.name;
 
-		// Rapidly submit multiple todos with unique prefixes
-		const todos = ["RapidTest A", "RapidTest B", "RapidTest C"];
+		// Rapidly submit multiple todos with project-scoped names
+		const todos = [
+			`${prefix} RapidTest A`,
+			`${prefix} RapidTest B`,
+			`${prefix} RapidTest C`,
+		];
 
 		for (const todoText of todos) {
 			await input.fill(todoText);
 			await submitButton.click();
 		}
 
-		// Verify all submitted todos are present by text content.
-		// Avoids count-based assertions that are fragile under parallel
-		// execution where multiple browser projects share the event store.
+		// Verify all submitted todos are present by text content
 		for (const todoText of todos) {
 			await expect(todoList.locator("li", { hasText: todoText })).toBeVisible();
 		}
