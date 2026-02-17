@@ -25,6 +25,7 @@ use axum::response::{
 use axum::routing::{delete as route_delete, get, post};
 use chrono::Utc;
 use futures::Stream;
+use futures::stream::StreamExt;
 use hypertext::Renderable;
 use serde::Deserialize;
 use std::convert::Infallible;
@@ -39,14 +40,14 @@ use crate::domain::todo::events::TodoEvent;
 use crate::domain::todo::values::TodoId;
 use crate::infrastructure::assets::AssetManifest;
 use crate::infrastructure::event_bus::ZenohEventBus;
-use crate::infrastructure::event_store::{SqliteEventRepository, StoredEvent};
+use crate::infrastructure::event_store::SqliteEventRepository;
 use crate::infrastructure::key_expr::aggregate_type_pattern;
-use crate::infrastructure::sse_stream::{
-    SseStreamBuilder, stored_events_to_stream, zenoh_to_sse_stream,
-};
+use crate::infrastructure::sse_stream::SseStreamBuilder;
+use crate::presentation::datastar_bridge::ToDatastarEvents;
 use crate::presentation::error::AppError;
 use crate::presentation::todo_templates::todo_page;
 use crate::state::AppState;
+use ironstar_todo::{TodoViewState, todo_view};
 
 /// Application state for Todo handlers.
 ///
@@ -115,11 +116,15 @@ async fn todo_page_handler(
 
 /// GET /api/feed - SSE stream for real-time todo updates.
 ///
-/// Provides a type-scoped SSE feed for all Todo events. The feed:
+/// Provides a Datastar-formatted SSE feed for the Todo aggregate. The feed
+/// projects domain events through the Todo View to produce HTML fragments
+/// that Datastar morphs into the DOM via `datastar-patch-elements` events.
 ///
 /// 1. Supports reconnection via `Last-Event-ID` header
-/// 2. Replays historical events since the client's last known position
-/// 3. Streams live events as they occur
+/// 2. Replays all historical events since the client's last known position,
+///    folding them into a `TodoViewState` and emitting the rendered HTML
+/// 3. Streams live events by applying each to the running view state and
+///    emitting updated HTML fragments
 /// 4. Sends keep-alive comments every 15 seconds
 ///
 /// # Critical invariant: subscribe-before-replay
@@ -134,21 +139,17 @@ async fn todo_page_handler(
 ///
 /// # SSE event format
 ///
-/// Each event includes:
-/// - `id`: Global sequence number (for Last-Event-ID reconnection)
-/// - `event`: Event type name (e.g., "Created", "Completed")
-/// - `data`: JSON-serialized event payload
-///
-/// # Example
+/// Each event is a `datastar-patch-elements` event with HTML fragments:
 ///
 /// ```text
-/// id: 42
-/// event: Created
-/// data: {"type":"Created","id":"550e8400-...","text":"Buy groceries","created_at":"2024-01-15T10:30:00Z"}
+/// event: datastar-patch-elements
+/// id: 3
+/// data: selector #todo-list
+/// data: elements <ul id="todo-list"><li>...</li></ul>
 ///
-/// id: 43
-/// event: Completed
-/// data: {"type":"Completed","id":"550e8400-...","completed_at":"2024-01-15T11:00:00Z"}
+/// event: datastar-patch-elements
+/// data: selector #todo-app footer
+/// data: elements <footer>...</footer>
 ///
 /// : keepalive
 /// ```
@@ -192,11 +193,52 @@ async fn todo_feed_handler(
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
-    // Create replay stream from historical events
-    let replay_stream = stored_events_to_stream(historical_events, stored_todo_event_to_sse);
+    // Fold historical events into view state
+    let view = todo_view();
+    let mut view_state = TodoViewState::default();
+    let mut latest_seq: i64 = 0;
+    for stored in &historical_events {
+        view_state = (view.evolve)(&view_state, &stored.event);
+        latest_seq = stored.sequence;
+    }
 
-    // Create live stream from Zenoh subscriber
-    let live_stream = zenoh_to_sse_stream(subscriber, live_todo_event_to_sse);
+    // Create replay stream: render projected state as Datastar PatchElements events.
+    // Set the Last-Event-ID on the final event so clients can reconnect from this point.
+    let replay_events = view_state_to_sse_events(&view_state, latest_seq);
+    let replay_stream = futures::stream::iter(replay_events);
+
+    // Create live stream: apply each Zenoh event to the running view state and
+    // emit updated HTML fragments. State is threaded through using scan.
+    let event_stream = futures::stream::unfold(subscriber, |sub| async move {
+        match sub.recv_async().await {
+            Ok(sample) => Some((sample, sub)),
+            Err(_) => None,
+        }
+    });
+
+    let live_stream = event_stream
+        .filter_map(|sample| async move {
+            let payload = sample.payload().to_bytes();
+            match serde_json::from_slice::<TodoEvent>(&payload) {
+                Ok(event) => Some(event),
+                Err(e) => {
+                    warn!(
+                        key_expr = %sample.key_expr(),
+                        error = %e,
+                        "Failed to deserialize Zenoh sample in Todo feed, skipping"
+                    );
+                    None
+                }
+            }
+        })
+        .scan(view_state, |state, event| {
+            let view = todo_view();
+            *state = (view.evolve)(state, &event);
+            let events: Vec<Result<Event, Infallible>> =
+                state.to_datastar_events().into_iter().map(Ok).collect();
+            futures::future::ready(Some(futures::stream::iter(events)))
+        })
+        .flatten();
 
     // Build combined stream with 15-second keep-alive
     let builder = SseStreamBuilder::new().with_keep_alive_secs(15);
@@ -205,32 +247,53 @@ async fn todo_feed_handler(
     Ok(Sse::new(stream))
 }
 
-/// Convert a stored Todo event to an SSE event.
+/// Convert a `TodoViewState` into SSE events with optional Last-Event-ID tracking.
 ///
-/// Uses the global sequence as the SSE event ID to support Last-Event-ID reconnection.
-fn stored_todo_event_to_sse(stored: StoredEvent<TodoEvent>) -> Event {
-    Event::default()
-        .id(stored.sequence.to_string())
-        .event(stored.event_type)
-        .data(serde_json::to_string(&stored.event).unwrap_or_else(|e| {
-            warn!(error = %e, "Failed to serialize stored TodoEvent");
-            "{}".to_string()
-        }))
-}
+/// Renders the view state as Datastar `PatchElements` events. When `latest_seq` is
+/// non-zero (historical events were replayed), the sequence number is set as the
+/// SSE event ID on the final event to support `Last-Event-ID` reconnection.
+fn view_state_to_sse_events(
+    view_state: &TodoViewState,
+    latest_seq: i64,
+) -> Vec<Result<Event, Infallible>> {
+    use crate::presentation::datastar_bridge::render_patch_elements_with_selector;
+    use crate::presentation::todo_templates::{todo_footer, todo_list};
 
-/// Convert a live Todo event (from Zenoh) to an SSE event.
-///
-/// Live events from Zenoh don't have sequence numbers (those are assigned by the event store).
-/// The SSE stream will show these as events without IDs, which is acceptable since:
-/// - Clients can still process the event data
-/// - On reconnection, clients will get the canonical sequence from replay
-fn live_todo_event_to_sse(event: TodoEvent) -> Event {
-    Event::default()
-        .event(event.event_type())
-        .data(serde_json::to_string(&event).unwrap_or_else(|e| {
-            warn!(error = %e, "Failed to serialize live TodoEvent");
-            "{}".to_string()
-        }))
+    let mut events = Vec::new();
+
+    // Render the todo list targeting #todo-list
+    let id_str = if latest_seq > 0 {
+        Some(latest_seq.to_string())
+    } else {
+        None
+    };
+
+    // If there are no todos, emit just the list (with the sequence ID).
+    // If there are todos, emit list then footer (sequence ID on the last event).
+    if view_state.count > 0 {
+        // List without ID
+        events.push(Ok(render_patch_elements_with_selector(
+            todo_list(&view_state.todos),
+            "#todo-list",
+            None,
+        )));
+        // Footer with the sequence ID (last event gets the ID for reconnection)
+        let active = view_state.active_count();
+        events.push(Ok(render_patch_elements_with_selector(
+            todo_footer(active, view_state.completed_count),
+            "#todo-app footer",
+            id_str.as_deref(),
+        )));
+    } else {
+        // Only the list event; attach the sequence ID to it
+        events.push(Ok(render_patch_elements_with_selector(
+            todo_list(&view_state.todos),
+            "#todo-list",
+            id_str.as_deref(),
+        )));
+    }
+
+    events
 }
 
 /// Response type for the todo list endpoint.
