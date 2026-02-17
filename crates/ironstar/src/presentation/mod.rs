@@ -110,6 +110,7 @@ pub mod chart;
 pub mod chart_templates;
 pub mod chart_transformer;
 pub mod components;
+pub mod datastar_bridge;
 pub mod error;
 pub mod extractors;
 pub mod health;
@@ -129,6 +130,9 @@ pub use chart_transformer::{
     ChartConfig, ChartTransformer, ChartType, ColumnMetadata, QueryResult, TransformError,
 };
 pub use components::{button, checkbox, icon, loading_spinner, text_field};
+pub use datastar_bridge::{
+    ToDatastarEvents, render_patch_elements, render_patch_elements_with_selector,
+};
 pub use error::{AppError, AppErrorKind, ErrorResponse};
 pub use extractors::{
     SESSION_COOKIE_NAME, SessionExtractor, SessionRejection, clear_session_cookie, session_cookie,
@@ -139,7 +143,7 @@ pub use health::{
 pub use metrics::{MetricsState, metrics_handler};
 pub use middleware::MakeRequestUuidV7;
 pub use todo::{TodoAppState, TodoListResponse, get_todo, list_todos};
-pub use todo_templates::{todo_app, todo_item, todo_list, todo_page};
+pub use todo_templates::{todo_app, todo_footer, todo_item, todo_list, todo_page};
 
 use crate::infrastructure::create_static_router;
 use crate::state::AppState;
