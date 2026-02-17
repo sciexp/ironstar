@@ -334,7 +334,11 @@ mod tests {
         let html = raw.render();
         let body = html.as_inner();
 
-        assert!(body.contains(r#"@get('/api/charts/astronauts/data')"#));
+        assert!(
+            body.contains(
+                r#"@get('/api/charts/astronauts/data',{requestCancellation:'disabled'})"#
+            )
+        );
         assert!(body.contains("data-init"));
     }
 
