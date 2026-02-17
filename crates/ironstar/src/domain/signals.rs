@@ -177,6 +177,199 @@ pub struct ChartSignals {
     pub error: Option<String>,
 }
 
+/// Minimal comonad model for verifying Datastar signal composition laws.
+///
+/// Datastar signals on the client form a comonad where `extract` reads the
+/// current value (`$signal.value`) and `extend` derives a computed signal.
+/// This struct models that interface in Rust so the three comonad laws can
+/// be verified as executable tests. It is not used in production — signals
+/// are managed by Datastar's JavaScript runtime on the client.
+#[cfg(test)]
+#[derive(Debug, Clone, PartialEq)]
+struct Signal<A> {
+    value: A,
+}
+
+#[cfg(test)]
+impl<A: Clone> Signal<A> {
+    fn new(value: A) -> Self {
+        Self { value }
+    }
+
+    /// `extract: Signal a -> a` — read the current signal value.
+    ///
+    /// Corresponds to `$signal.value` in Datastar.
+    fn extract(&self) -> A {
+        self.value.clone()
+    }
+
+    /// `extend: (Signal a -> b) -> Signal a -> Signal b` — derive a
+    /// computed signal by applying a function to the whole signal context.
+    ///
+    /// Corresponds to `computed(() => f($signal))` in Datastar.
+    fn extend<B, F: Fn(&Self) -> B>(&self, f: F) -> Signal<B> {
+        Signal { value: f(self) }
+    }
+
+    /// `duplicate: Signal a -> Signal (Signal a)` — wrap the signal in
+    /// another signal layer. Derivable from `extend`: `duplicate = extend id`.
+    fn duplicate(&self) -> Signal<Self> {
+        self.extend(|s| s.clone())
+    }
+}
+
+#[cfg(test)]
+mod comonad_laws {
+    use super::*;
+
+    // Law 1: extend extract = id
+    //
+    // Extending a signal with the extract function yields the original
+    // signal unchanged. In Datastar terms, creating a computed signal
+    // that simply reads its source value is equivalent to the source.
+    #[test]
+    fn extend_extract_is_identity_i32() {
+        let signal = Signal::new(42);
+        let result = signal.extend(Signal::extract);
+        assert_eq!(result, signal);
+    }
+
+    #[test]
+    fn extend_extract_is_identity_string() {
+        let signal = Signal::new("hello".to_string());
+        let result = signal.extend(Signal::extract);
+        assert_eq!(result, signal);
+    }
+
+    #[test]
+    fn extend_extract_is_identity_todo_filter() {
+        let signal = Signal::new(TodoFilter::Active);
+        let result = signal.extend(Signal::extract);
+        assert_eq!(result, signal);
+    }
+
+    // Law 2: extract . extend f = f
+    //
+    // Extracting from a computed signal yields the same result as
+    // applying the derivation function directly. In Datastar terms,
+    // reading a computed signal's value is the same as evaluating
+    // the computation on the source.
+    #[test]
+    fn extract_of_extend_equals_application_double() {
+        let f = |s: &Signal<i32>| s.extract() * 2;
+        let signal = Signal::new(21);
+        assert_eq!(signal.extend(f).extract(), f(&signal));
+    }
+
+    #[test]
+    fn extract_of_extend_equals_application_length() {
+        let f = |s: &Signal<String>| s.extract().len();
+        let signal = Signal::new("ironstar".to_string());
+        assert_eq!(signal.extend(f).extract(), f(&signal));
+    }
+
+    #[test]
+    fn extract_of_extend_equals_application_is_positive() {
+        let f = |s: &Signal<i32>| s.extract() > 0;
+        for value in [-5, 0, 5] {
+            let signal = Signal::new(value);
+            assert_eq!(signal.extend(f).extract(), f(&signal));
+        }
+    }
+
+    // Law 3: extend f . extend g = extend (f . extend g)
+    //
+    // Chaining two extend operations is equivalent to a single extend
+    // that composes the derivations. In Datastar terms, building a
+    // computed signal from another computed signal yields the same
+    // result as a single computation that inlines both steps.
+    #[test]
+    fn extend_composition_i32() {
+        let g = |s: &Signal<i32>| s.extract() + 10;
+        let f = |s: &Signal<i32>| s.extract() * 3;
+
+        let signal = Signal::new(5);
+
+        // Left side: extend f (extend g signal)
+        let left = signal.extend(g).extend(f);
+
+        // Right side: extend (f . extend g) signal
+        let right = signal.extend(|s: &Signal<i32>| f(&s.extend(g)));
+
+        assert_eq!(left, right);
+    }
+
+    #[test]
+    fn extend_composition_string_to_bool() {
+        let g = |s: &Signal<String>| s.extract().len();
+        let f = |s: &Signal<usize>| s.extract() > 5;
+
+        let signal = Signal::new("ironstar".to_string());
+
+        let left = signal.extend(g).extend(f);
+        let right = signal.extend(|s: &Signal<String>| f(&s.extend(g)));
+
+        assert_eq!(left, right);
+    }
+
+    #[test]
+    fn extend_composition_filter_chain() {
+        let g = |s: &Signal<TodoFilter>| match s.extract() {
+            TodoFilter::All => 0,
+            TodoFilter::Active => 1,
+            TodoFilter::Completed => 2,
+        };
+        let f = |s: &Signal<i32>| s.extract() != 0;
+
+        for filter in [TodoFilter::All, TodoFilter::Active, TodoFilter::Completed] {
+            let signal = Signal::new(filter);
+            let left = signal.extend(g).extend(f);
+            let right = signal.extend(|s: &Signal<TodoFilter>| f(&s.extend(g)));
+            assert_eq!(left, right, "failed for filter {filter:?}");
+        }
+    }
+
+    // Derived operation: duplicate satisfies duplicate = extend id
+    #[test]
+    fn duplicate_equals_extend_clone() {
+        let signal = Signal::new(42);
+        let duplicated = signal.duplicate();
+        let via_extend = signal.extend(|s| s.clone());
+        assert_eq!(duplicated, via_extend);
+    }
+
+    // extract . duplicate = id
+    #[test]
+    fn extract_duplicate_is_identity() {
+        let signal = Signal::new(7);
+        assert_eq!(signal.duplicate().extract(), signal);
+    }
+
+    // Practical example: composing multiple derivations mirrors how
+    // Datastar computed signals chain in a real UI.
+    #[test]
+    fn practical_todo_signal_derivation() {
+        let todo_signals = Signal::new(TodoSignals {
+            input: Some("Buy groceries".to_string()),
+            filter: TodoFilter::Active,
+            editing_id: None,
+            loading: false,
+        });
+
+        // Derive "has input" from TodoSignals
+        let has_input = todo_signals.extend(|s| s.extract().input.is_some());
+        assert!(has_input.extract());
+
+        // Derive "should show submit" from "has input"
+        let should_show_submit = has_input.extend(|s| s.extract());
+        assert!(should_show_submit.extract());
+
+        // Law 2 holds for the composed derivation
+        let direct = |s: &Signal<TodoSignals>| s.extract().input.is_some();
+        assert_eq!(todo_signals.extend(direct).extract(), direct(&todo_signals));
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
