@@ -23,8 +23,9 @@ export default defineConfig({
 	// Limit workers to avoid overwhelming the debug-mode Rust server with
 	// concurrent SSE connections. The server's event delivery latency increases
 	// significantly under high parallel load, causing SSE-dependent assertions
-	// to timeout. CI uses 2 workers (chromium only); local uses 4.
-	workers: process.env.CI ? 2 : 4,
+	// to timeout. Three local workers (one per browser project) provides
+	// cross-browser parallelism without overloading SSE delivery.
+	workers: process.env.CI ? 2 : 3,
 
 	reporter: process.env.CI
 		? [
