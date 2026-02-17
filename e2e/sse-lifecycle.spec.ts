@@ -1,14 +1,15 @@
 import { expect, test } from "@playwright/test";
 
-test.describe("SSE connection lifecycle", () => {
-	// Serialize tests within each browser project to prevent one test's
-	// beforeEach purge from interfering with another test's SSE stream.
-	test.describe.configure({ mode: "serial" });
+/** Generate a short unique suffix for test item names. */
+function uid(): string {
+	return Math.random().toString(36).slice(2, 8);
+}
 
-	test.beforeEach(async ({ request }) => {
-		// Clean slate: purge all todo events before each test
-		await request.delete("http://localhost:3000/todos/api");
-	});
+test.describe("SSE connection lifecycle", () => {
+	// Tests that create items use uid() to generate unique names, preventing
+	// locator collisions across parallel browser projects and prior test runs.
+	// No event store purge is needed because text-filtered locators match
+	// only items created by this specific test invocation.
 
 	test("establishes SSE connection on page load", async ({ page }) => {
 		await page.goto("/todos");
@@ -46,21 +47,20 @@ test.describe("SSE connection lifecycle", () => {
 
 	test("receives events through SSE stream", async ({ page }) => {
 		await page.goto("/todos");
-		const prefix = test.info().project.name;
+		const name = `SSEStreamTest ${uid()}`;
 
 		// Create a todo and verify SSE delivers the event via DOM update
 		const inputSelector = "#todo-app form input";
 		const submitButtonSelector = '#todo-app form button[type="submit"]';
 		const todoListSelector = "#todo-app ul";
 
-		await page.fill(inputSelector, `${prefix} SSEStreamTest delivery`);
+		await page.fill(inputSelector, name);
 		await page.click(submitButtonSelector);
 
 		// Wait for the todo to appear in the DOM (evidence of SSE event reception)
-		await expect(page.locator(todoListSelector)).toContainText(
-			`${prefix} SSEStreamTest delivery`,
-			{ timeout: 10000 },
-		);
+		await expect(page.locator(todoListSelector)).toContainText(name, {
+			timeout: 10000,
+		});
 	});
 
 	test("receives heartbeat keep-alive events", async ({ page }) => {
