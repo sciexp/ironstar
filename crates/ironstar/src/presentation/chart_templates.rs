@@ -123,7 +123,7 @@ pub fn echarts_chart(id: &str, signals: &ChartSignals, height: &str) -> impl Ren
 ///
 /// # SSE initialization
 ///
-/// The `data-on-load` directive triggers a GET request to the SSE endpoint
+/// The `data-init` directive triggers a GET request to the SSE endpoint
 /// when the page loads. The server responds with signal updates containing
 /// the chart configuration.
 pub fn chart_page(
@@ -139,7 +139,7 @@ pub fn chart_page(
         main
             class="chart-page"
             style="max-width: var(--size-content-3); margin-inline: auto; padding: var(--size-4);"
-            "data-on-load"=(on_load)
+            "data-init"=(on_load)
         {
             h1 { (title) }
             div id=(container_id) {
@@ -332,7 +332,7 @@ mod tests {
         let body = html.as_inner();
 
         assert!(body.contains(r#"@get('/api/charts/astronauts/data')"#));
-        assert!(body.contains("data-on-load"));
+        assert!(body.contains("data-init"));
     }
 
     #[test]
