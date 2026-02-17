@@ -10,7 +10,7 @@
 //! 1. Query DuckDB for analytics data
 //! 2. Transform results using chart-specific transformers
 //! 3. Render chart template with embedded signals
-//! 4. Stream HTML fragment via SSE `datastar-merge-fragments` event
+//! 4. Stream HTML fragment via SSE `datastar-patch-elements` event
 //!
 //! The chart feed endpoint uses PatchSignals to stream ChartSignals directly,
 //! allowing clients to receive structured signal updates with keep-alive
@@ -32,7 +32,7 @@ use axum::{
     response::{Html, IntoResponse},
     routing::get,
 };
-use datastar::prelude::PatchSignals;
+use datastar::prelude::{PatchElements, PatchSignals};
 use futures::stream::{self, Stream, StreamExt};
 use hypertext::Renderable;
 use tracing::{instrument, warn};
@@ -61,7 +61,7 @@ use crate::state::AppState;
 ///
 /// # SSE events
 ///
-/// - `datastar-merge-fragments`: HTML fragment containing ds-echarts component
+/// - `datastar-patch-elements`: HTML fragment containing ds-echarts component
 ///   with `data-signals` attribute embedding chart configuration
 ///
 /// # Error handling
@@ -90,10 +90,8 @@ pub async fn astronauts_chart_sse(
     // Render chart template with embedded signals
     let html = echarts_chart("astronauts-chart", &signals, "400px").render();
 
-    // Create SSE event with Datastar merge-fragments format
-    let event = Event::default()
-        .event("datastar-merge-fragments")
-        .data(html.into_inner());
+    // Create SSE event via SDK PatchElements (datastar-patch-elements event type)
+    let event: Event = PatchElements::new(html.into_inner()).into();
 
     Sse::new(stream::once(async move { Ok(event) }))
 }
