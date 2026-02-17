@@ -46,18 +46,19 @@ test.describe("SSE connection lifecycle", () => {
 
 	test("receives events through SSE stream", async ({ page }) => {
 		await page.goto("/todos");
+		const prefix = test.info().project.name;
 
 		// Create a todo and verify SSE delivers the event via DOM update
 		const inputSelector = "#todo-app form input";
 		const submitButtonSelector = '#todo-app form button[type="submit"]';
 		const todoListSelector = "#todo-app ul";
 
-		await page.fill(inputSelector, "SSEStreamTest delivery");
+		await page.fill(inputSelector, `${prefix} SSEStreamTest delivery`);
 		await page.click(submitButtonSelector);
 
 		// Wait for the todo to appear in the DOM (evidence of SSE event reception)
 		await expect(page.locator(todoListSelector)).toContainText(
-			"SSEStreamTest delivery",
+			`${prefix} SSEStreamTest delivery`,
 			{ timeout: 10000 },
 		);
 	});
@@ -121,18 +122,21 @@ test.describe("SSE connection lifecycle", () => {
 		page,
 	}) => {
 		await page.goto("/todos");
+		const prefix = test.info().project.name;
 
 		const inputSelector = "#todo-app form input";
 		const submitButtonSelector = '#todo-app form button[type="submit"]';
 
 		// Create a todo to generate events with sequence IDs
-		await page.fill(inputSelector, "ReplayTest initial");
+		await page.fill(inputSelector, `${prefix} ReplayTest initial`);
 		await page.click(submitButtonSelector);
 
 		// Wait for the todo to appear in the DOM before fetching the stream,
 		// confirming the event is persisted and the SSE feed has delivered it
 		await expect(
-			page.locator("#todo-list li", { hasText: "ReplayTest initial" }),
+			page.locator("#todo-list li", {
+				hasText: `${prefix} ReplayTest initial`,
+			}),
 		).toBeVisible();
 
 		// Fetch the SSE stream to capture the latest event ID.
@@ -186,13 +190,15 @@ test.describe("SSE connection lifecycle", () => {
 		expect(firstFetch.rawText).toContain("event: datastar-patch-elements");
 
 		// Create another todo so there is something new after the last ID
-		await page.fill(inputSelector, "ReplayTest reconnect");
+		await page.fill(inputSelector, `${prefix} ReplayTest reconnect`);
 		await page.click(submitButtonSelector);
 
 		// Wait for the new todo to appear in the DOM, confirming the event
 		// is persisted before we attempt the reconnection fetch
 		await expect(
-			page.locator("#todo-list li", { hasText: "ReplayTest reconnect" }),
+			page.locator("#todo-list li", {
+				hasText: `${prefix} ReplayTest reconnect`,
+			}),
 		).toBeVisible();
 
 		// Reconnect with the Last-Event-ID from the first fetch.
@@ -266,7 +272,7 @@ test.describe("SSE connection lifecycle", () => {
 		// Verify the reconnection stream includes our test todo when possible.
 		// Concurrent purges from parallel tests may invalidate this, so this
 		// is a soft assertion that documents the expected behavior.
-		if (!secondFetch.rawText.includes("ReplayTest reconnect")) {
+		if (!secondFetch.rawText.includes(`${prefix} ReplayTest reconnect`)) {
 			console.warn(
 				"Last-Event-ID reconnection did not include expected todo; " +
 					"likely due to concurrent event store purge from parallel tests",
