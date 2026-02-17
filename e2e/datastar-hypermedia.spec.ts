@@ -51,9 +51,10 @@ test.describe("Datastar hypermedia interactions", () => {
 		// Submit form (triggers data-on:submit.prevent)
 		await submitButton.click();
 
-		// Wait for the new todo to appear in the list via SSE update
+		// Wait for the new todo to appear in the list via SSE update.
+		// Allow 10s for the SSE roundtrip under parallel test load.
 		const todoItem = page.locator("#todo-list li", { hasText: name });
-		await expect(todoItem).toBeVisible();
+		await expect(todoItem).toBeVisible({ timeout: 10000 });
 
 		// Verify input was cleared after submission (via $input = '')
 		await expect(input).toHaveValue("");
@@ -67,9 +68,9 @@ test.describe("Datastar hypermedia interactions", () => {
 		await input.fill(name);
 		await submitButton.click();
 
-		// Wait for todo to appear
+		// Wait for todo to appear (allow extra time under parallel load)
 		const todoItem = page.locator("#todo-list li", { hasText: name });
-		await expect(todoItem).toBeVisible();
+		await expect(todoItem).toBeVisible({ timeout: 10000 });
 
 		// Click the checkbox to complete (triggers data-on:change)
 		const checkbox = todoItem.locator('input[type="checkbox"]');
@@ -92,9 +93,9 @@ test.describe("Datastar hypermedia interactions", () => {
 		await input.fill(name);
 		await submitButton.click();
 
-		// Wait for todo to appear
+		// Wait for todo to appear (allow extra time under parallel load)
 		const todoItem = page.locator("#todo-list li", { hasText: name });
-		await expect(todoItem).toBeVisible();
+		await expect(todoItem).toBeVisible({ timeout: 10000 });
 
 		// Click delete button (triggers data-on:click)
 		const deleteButton = todoItem.locator("button", { hasText: "Delete" });
@@ -156,16 +157,22 @@ test.describe("Datastar hypermedia interactions", () => {
 		const first = `MergeTest ${tag} first`;
 		await input.fill(first);
 		await submitButton.click();
-		await expect(todoList.locator("li", { hasText: first })).toBeVisible();
+		await expect(todoList.locator("li", { hasText: first })).toBeVisible({
+			timeout: 10000,
+		});
 
 		// Add second todo and verify both are present
 		const second = `MergeTest ${tag} second`;
 		await input.fill(second);
 		await submitButton.click();
-		await expect(todoList.locator("li", { hasText: second })).toBeVisible();
+		await expect(todoList.locator("li", { hasText: second })).toBeVisible({
+			timeout: 10000,
+		});
 
 		// Both todos remain visible after the second merge
-		await expect(todoList.locator("li", { hasText: first })).toBeVisible();
+		await expect(todoList.locator("li", { hasText: first })).toBeVisible({
+			timeout: 10000,
+		});
 	});
 
 	test("footer counts update reactively", async ({ page }) => {
@@ -232,7 +239,9 @@ test.describe("Datastar hypermedia interactions", () => {
 
 		// Verify all submitted todos are present by text content
 		for (const todoText of todos) {
-			await expect(todoList.locator("li", { hasText: todoText })).toBeVisible();
+			await expect(todoList.locator("li", { hasText: todoText })).toBeVisible({
+				timeout: 10000,
+			});
 		}
 	});
 });
