@@ -8,41 +8,61 @@
 //!
 //! The layout template (`layout.rs`) injects a Datastar `@get('/reload', ...)`
 //! directive in debug builds. Datastar opens an SSE connection to `/reload`.
-//! This endpoint immediately sends a `datastar-execute-script` event containing
-//! `window.location.reload()`.
 //!
-//! On the initial page load, Datastar connects and receives the reload script,
-//! but since the page just loaded this is a no-op in practice. When
-//! `cargo-watch` rebuilds and restarts the server, the SSE connection drops.
-//! Datastar's retry logic reconnects to `/reload`, receives the execute-script
-//! event again, and this time it triggers a page reload that picks up the new
-//! server's content.
+//! On the initial page load, the endpoint sends a keep-alive event with an
+//! `id` field and holds the connection open. When `cargo-watch` rebuilds and
+//! restarts the server, the SSE connection drops. Datastar's retry logic
+//! reconnects to `/reload` with `Last-Event-ID` from the previous connection.
+//! The new server detects the reconnection header and sends a
+//! `datastar-execute-script` event with `window.location.reload()`, triggering
+//! a page reload that picks up the new server's content.
 //!
 //! # Routes
 //!
-//! - `GET /reload` - SSE endpoint sending `window.location.reload()` via
-//!   `datastar-execute-script` (PatchElements with inline script)
+//! - `GET /reload` - SSE endpoint for dev hot reload
 
 use std::convert::Infallible;
 
+use axum::http::HeaderMap;
 use axum::{
     Router,
     response::sse::{Event, Sse},
     routing::get,
 };
 use datastar::prelude::ExecuteScript;
-use futures::stream::{self, Stream};
+use futures::stream::{self, Stream, StreamExt};
+use std::time::Duration;
 
 /// SSE endpoint that triggers a browser page reload on reconnection.
 ///
-/// Sends a single `datastar-execute-script` event containing
-/// `window.location.reload()`. The stream completes after the single event,
-/// causing the SSE connection to close. Datastar's retry configuration
-/// (set in the layout template) handles reconnection after server restart.
-pub async fn reload_handler() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
-    let event: Event = ExecuteScript::new("window.location.reload()").into();
+/// On initial connection (no `Last-Event-ID`), sends a keep-alive event with
+/// an `id` field and holds the connection open via periodic heartbeats.
+///
+/// On reconnection (has `Last-Event-ID`), sends `window.location.reload()`
+/// via `datastar-execute-script`. This triggers after cargo-watch restarts
+/// the server: the old connection drops, Datastar reconnects with the stored
+/// event ID, and the new server sends the reload command.
+pub async fn reload_handler(
+    headers: HeaderMap,
+) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
+    let is_reconnection = headers.contains_key("Last-Event-ID");
 
-    Sse::new(stream::once(async move { Ok(event) }))
+    let initial_event = if is_reconnection {
+        // Reconnection after server restart: trigger page reload
+        ExecuteScript::new("window.location.reload()").into()
+    } else {
+        // Initial connection: send event ID for future reconnection detection
+        Event::default().id("1").comment("connected")
+    };
+
+    let initial = stream::once(async move { Ok(initial_event) });
+
+    let heartbeats = stream::unfold((), |()| async {
+        tokio::time::sleep(Duration::from_secs(15)).await;
+        Some((Ok(Event::default().comment("keepalive")), ()))
+    });
+
+    Sse::new(initial.chain(heartbeats))
 }
 
 /// Creates the hot reload router.
@@ -68,8 +88,18 @@ mod tests {
 
     #[tokio::test]
     async fn reload_handler_returns_sse_stream() {
-        let sse = reload_handler().await;
+        let headers = HeaderMap::new();
+        let sse = reload_handler(headers).await;
         // Handler returns successfully, producing an Sse wrapper.
+        drop(sse);
+    }
+
+    #[tokio::test]
+    async fn reload_handler_sends_reload_on_reconnection() {
+        let mut headers = HeaderMap::new();
+        headers.insert("Last-Event-ID", "1".parse().unwrap());
+        let sse = reload_handler(headers).await;
+        // Handler returns successfully with reconnection header.
         drop(sse);
     }
 }
