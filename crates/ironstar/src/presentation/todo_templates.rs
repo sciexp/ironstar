@@ -135,7 +135,7 @@ pub fn todo_item(todo: &TodoItemView) -> impl Renderable {
 }
 
 /// Footer with item count and filter buttons.
-fn todo_footer(active: usize, completed: usize) -> impl Renderable {
+pub fn todo_footer(active: usize, completed: usize) -> impl Renderable {
     let item_word = if active == 1 { "item" } else { "items" };
 
     maud! {
