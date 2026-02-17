@@ -132,7 +132,10 @@ pub fn chart_page(
     chart_id: &str,
     sse_endpoint: &str,
 ) -> impl Renderable {
-    let on_load = format!("@get('{}')", sse_endpoint);
+    let on_load = format!(
+        "@get('{}',{{requestCancellation:'disabled'}})",
+        sse_endpoint
+    );
     let container_id = format!("{}-container", chart_id);
 
     let content = maud! {
