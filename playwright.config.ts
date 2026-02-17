@@ -1,4 +1,3 @@
-import os from "node:os";
 import { defineConfig, devices } from "@playwright/test";
 
 /**
@@ -21,8 +20,11 @@ export default defineConfig({
 	// Retry on CI only
 	retries: process.env.CI ? 2 : 0,
 
-	// Use all available CPU cores locally, constrained workers in CI
-	workers: process.env.CI ? 2 : os.cpus().length,
+	// Limit workers to avoid overwhelming the debug-mode Rust server with
+	// concurrent SSE connections. The server's event delivery latency increases
+	// significantly under high parallel load, causing SSE-dependent assertions
+	// to timeout. CI uses 2 workers (chromium only); local uses 4.
+	workers: process.env.CI ? 2 : 4,
 
 	reporter: process.env.CI
 		? [
