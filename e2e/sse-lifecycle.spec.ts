@@ -1,6 +1,10 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("SSE connection lifecycle", () => {
+	// Serialize tests within each browser project to prevent one test's
+	// beforeEach purge from interfering with another test's SSE stream.
+	test.describe.configure({ mode: "serial" });
+
 	test.beforeEach(async ({ request }) => {
 		// Clean slate: purge all todo events before each test
 		await request.delete("http://localhost:3000/todos/api");
@@ -48,12 +52,12 @@ test.describe("SSE connection lifecycle", () => {
 		const submitButtonSelector = '#todo-app form button[type="submit"]';
 		const todoListSelector = "#todo-app ul";
 
-		await page.fill(inputSelector, "Test SSE event delivery");
+		await page.fill(inputSelector, "SSEStreamTest delivery");
 		await page.click(submitButtonSelector);
 
 		// Wait for the todo to appear in the DOM (evidence of SSE event reception)
 		await expect(page.locator(todoListSelector)).toContainText(
-			"Test SSE event delivery",
+			"SSEStreamTest delivery",
 			{ timeout: 10000 },
 		);
 	});
