@@ -135,7 +135,8 @@ pub use datastar_bridge::{
 };
 pub use error::{AppError, AppErrorKind, ErrorResponse};
 pub use extractors::{
-    SESSION_COOKIE_NAME, SessionExtractor, SessionRejection, clear_session_cookie, session_cookie,
+    DatastarRequest, SESSION_COOKIE_NAME, SessionExtractor, SessionRejection, clear_session_cookie,
+    session_cookie,
 };
 pub use health::{
     HealthChecks, HealthResponse, HealthState, HealthStatus, health_router, routes as health_routes,
