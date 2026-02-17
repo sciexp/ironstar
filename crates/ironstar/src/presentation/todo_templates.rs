@@ -34,7 +34,7 @@ pub fn todo_app(todos: &[TodoItemView]) -> impl Renderable {
         div
             id="todo-app"
             class="card stack"
-            "data-on-load"="@get('/todos/api/feed')"
+            "data-init"="@get('/todos/api/feed')"
         {
             (add_todo_form())
 
@@ -52,7 +52,7 @@ fn add_todo_form() -> impl Renderable {
     maud! {
         form
             class="cluster"
-            "data-on:submit.prevent"="@post('/todos/api', {body: {text: $input}}); $input = ''"
+            "data-on:submit__prevent"="@post('/todos/api', {body: {text: $input}}); $input = ''"
             "data-indicator"="isFetching"
         {
             (text_field(
