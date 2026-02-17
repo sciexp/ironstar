@@ -8,11 +8,11 @@ test.describe("Datastar hypermedia interactions", () => {
 	});
 
 	test("SSE connection established on page load", async ({ page }) => {
-		// Verify the todo-app has the data-on-load directive that initiates SSE
+		// Verify the todo-app has the data-init directive that initiates SSE
 		const todoApp = page.locator("#todo-app");
 		await expect(todoApp).toBeVisible();
 		await expect(todoApp).toHaveAttribute(
-			"data-on-load",
+			"data-init",
 			"@get('/todos/api/feed')",
 		);
 
