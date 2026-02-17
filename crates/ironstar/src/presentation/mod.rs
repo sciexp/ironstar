@@ -114,6 +114,8 @@ pub mod datastar_bridge;
 pub mod error;
 pub mod extractors;
 pub mod health;
+#[cfg(debug_assertions)]
+pub mod hotreload;
 pub mod layout;
 pub mod metrics;
 pub mod middleware;
@@ -181,11 +183,20 @@ pub fn app_router(state: AppState) -> Router {
         .nest("/workspace", workspace::routes())
         .with_state(state);
 
-    // Merge stateless static router after state is applied, then add
+    // Merge stateless routers after state is applied, then add
     // observability middleware. Layer order matters: layers added last
     // execute first on requests.
-    stateful
-        .merge(create_static_router())
+    #[allow(unused_mut)]
+    let mut router = stateful.merge(create_static_router());
+
+    // In debug builds, add the hot reload SSE endpoint that enables
+    // automatic page refresh when cargo-watch restarts the server.
+    #[cfg(debug_assertions)]
+    {
+        router = router.merge(hotreload::routes());
+    }
+
+    router
         .layer(PropagateRequestIdLayer::new(x_request_id.clone()))
         .layer(TraceLayer::new_for_http().make_span_with(
             |request: &http::Request<axum::body::Body>| {
