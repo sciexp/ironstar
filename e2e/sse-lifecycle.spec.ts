@@ -41,7 +41,6 @@ test.describe("SSE connection lifecycle", () => {
 	});
 
 	test("receives events through SSE stream", async ({ page }) => {
-		test.fixme(); // SSE feed sends raw domain events; Datastar expects datastar-fragment HTML events
 		await page.goto("/todos");
 
 		// Create a todo and verify SSE delivers the event via DOM update
@@ -117,7 +116,6 @@ test.describe("SSE connection lifecycle", () => {
 	test("replays events from Last-Event-ID on reconnection", async ({
 		page,
 	}) => {
-		test.fixme(); // SSE feed sends raw domain events; Datastar expects datastar-fragment HTML events
 		await page.goto("/todos");
 
 		// Create two todos to generate events with sequence IDs
@@ -132,56 +130,47 @@ test.describe("SSE connection lifecycle", () => {
 		await page.click(submitButtonSelector);
 		await page.waitForTimeout(500);
 
-		// Now fetch the SSE stream and collect events
+		// Fetch the SSE stream to get the latest event ID.
+		// The handler folds all events into a projected state with the latest
+		// sequence as the SSE event ID on the last datastar-patch-elements event.
 		const firstFetch = await page.evaluate(async () => {
 			const controller = new AbortController();
 			const timeout = setTimeout(() => controller.abort(), 3000);
-			const events: Array<{ id: string; data: string }> = [];
+			let lastId: string | null = null;
+			let rawText = "";
 
 			try {
 				const response = await fetch("/todos/api/feed", {
 					signal: controller.signal,
 				});
 				if (!response.body) {
-					return { events: [], error: "No response body" };
+					return { lastId: null, rawText: "", error: "No response body" };
 				}
 
 				const reader = response.body.getReader();
 				const decoder = new TextDecoder();
-				let buffer = "";
 
 				while (true) {
 					const { done, value } = await reader.read();
 					if (done) break;
 
-					buffer += decoder.decode(value);
-					const lines = buffer.split("\n");
-					buffer = lines.pop() || "";
+					const chunk = decoder.decode(value);
+					rawText += chunk;
 
-					let currentEvent: { id?: string; data?: string } = {};
-					for (const line of lines) {
+					// Parse id: lines from the stream
+					for (const line of chunk.split("\n")) {
 						if (line.startsWith("id:")) {
-							currentEvent.id = line.slice(3).trim();
-						} else if (line.startsWith("data:")) {
-							currentEvent.data = line.slice(5).trim();
-						} else if (line === "") {
-							// End of event
-							if (currentEvent.id && currentEvent.data) {
-								events.push({
-									id: currentEvent.id,
-									data: currentEvent.data,
-								});
-							}
-							currentEvent = {};
+							lastId = line.slice(3).trim();
 						}
 					}
 				}
 
-				return { events, error: null };
+				return { lastId, rawText, error: null };
 			} catch (e) {
 				clearTimeout(timeout);
 				return {
-					events,
+					lastId,
+					rawText,
 					error: e instanceof Error ? e.message : String(e),
 				};
 			} finally {
@@ -189,19 +178,28 @@ test.describe("SSE connection lifecycle", () => {
 			}
 		});
 
-		// Should have received at least 2 events (the Created events)
-		expect(firstFetch.events.length).toBeGreaterThanOrEqual(2);
+		// Should have received a sequence ID (the latest event sequence)
+		expect(firstFetch.lastId).toBeTruthy();
+		// The stream should contain datastar-patch-elements events
+		expect(firstFetch.rawText).toContain("event: datastar-patch-elements");
+		// Both todos should be in the rendered HTML
+		expect(firstFetch.rawText).toContain("First todo");
+		expect(firstFetch.rawText).toContain("Second todo");
 
-		// Get the first event ID
-		const firstEventId = firstFetch.events[0]?.id;
-		expect(firstEventId).toBeTruthy();
+		// Create a third todo so there is something new after the last ID
+		await page.fill(inputSelector, "Third todo");
+		await page.click(submitButtonSelector);
+		await page.waitForTimeout(500);
 
-		// Now reconnect with Last-Event-ID header
+		// Reconnect with the Last-Event-ID from the first fetch.
+		// The handler should replay events after that ID, producing HTML
+		// that includes the third todo.
 		const secondFetch = await page.evaluate(
 			async ({ lastEventId }) => {
 				const controller = new AbortController();
 				const timeout = setTimeout(() => controller.abort(), 3000);
-				const events: Array<{ id: string; data: string }> = [];
+				let newLastId: string | null = null;
+				let rawText = "";
 
 				try {
 					const response = await fetch("/todos/api/feed", {
@@ -209,61 +207,55 @@ test.describe("SSE connection lifecycle", () => {
 						signal: controller.signal,
 					});
 					if (!response.body) {
-						return { events: [], error: "No response body" };
+						return {
+							newLastId: null,
+							rawText: "",
+							error: "No response body",
+						};
 					}
 
 					const reader = response.body.getReader();
 					const decoder = new TextDecoder();
-					let buffer = "";
 
 					while (true) {
 						const { done, value } = await reader.read();
 						if (done) break;
 
-						buffer += decoder.decode(value);
-						const lines = buffer.split("\n");
-						buffer = lines.pop() || "";
+						const chunk = decoder.decode(value);
+						rawText += chunk;
 
-						let currentEvent: { id?: string; data?: string } = {};
-						for (const line of lines) {
+						for (const line of chunk.split("\n")) {
 							if (line.startsWith("id:")) {
-								currentEvent.id = line.slice(3).trim();
-							} else if (line.startsWith("data:")) {
-								currentEvent.data = line.slice(5).trim();
-							} else if (line === "") {
-								// End of event
-								if (currentEvent.id && currentEvent.data) {
-									events.push({
-										id: currentEvent.id,
-										data: currentEvent.data,
-									});
-								}
-								currentEvent = {};
+								newLastId = line.slice(3).trim();
 							}
 						}
 					}
 
-					return { events, error: null };
+					return { newLastId, rawText, error: null };
 				} catch (e) {
 					clearTimeout(timeout);
 					return {
-						events,
+						newLastId,
+						rawText,
 						error: e instanceof Error ? e.message : String(e),
 					};
 				} finally {
 					clearTimeout(timeout);
 				}
 			},
-			{ lastEventId: firstEventId },
+			{ lastEventId: firstFetch.lastId },
 		);
 
-		// Should only receive events AFTER the Last-Event-ID
-		// All event IDs should be > firstEventId
-		for (const event of secondFetch.events) {
-			const eventIdNum = Number.parseInt(event.id, 10);
-			const lastEventIdNum = Number.parseInt(firstEventId, 10);
-			expect(eventIdNum).toBeGreaterThan(lastEventIdNum);
+		// The new event ID should be greater than the first fetch's ID
+		if (secondFetch.newLastId && firstFetch.lastId) {
+			const newId = Number.parseInt(secondFetch.newLastId, 10);
+			const oldId = Number.parseInt(firstFetch.lastId, 10);
+			expect(newId).toBeGreaterThan(oldId);
 		}
+
+		// The reconnected stream should contain the third todo in rendered HTML
+		expect(secondFetch.rawText).toContain("Third todo");
+		expect(secondFetch.rawText).toContain("event: datastar-patch-elements");
 	});
 
 	test("handles connection interruption gracefully", async ({ page }) => {
