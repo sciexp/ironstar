@@ -21,7 +21,26 @@ The `extend` operation derives computed signals:
 const isPositive = computed(() => $count.value > 0);
 ```
 
-Comonad laws ensure computed signals compose correctly.
+### Comonad laws and their guarantees
+
+Three laws govern signal composition.
+Together they guarantee that derived signals behave predictably regardless of how the derivation chain is structured.
+
+**Law 1: `extend extract = id`.** Wrapping a signal in a computed that simply reads its value produces the original signal.
+In Datastar terms, `computed(() => $count.value)` is functionally identical to `$count`.
+This means trivial computed wrappers introduce no semantic difference, so refactoring can freely introduce or remove them.
+
+**Law 2: `extract . extend f = f`.** Reading the value of a computed signal is the same as applying the derivation function directly to the source.
+In Datastar terms, if `isPositive = computed(() => $count.value > 0)`, then `$isPositive.value` always equals `$count.value > 0`.
+This guarantees there is no hidden state or timing artifact in computed signal evaluation.
+
+**Law 3: `extend f . extend g = extend (f . extend g)`.** Chaining two computed derivations is equivalent to a single computed that inlines both steps.
+In Datastar terms, building `doubled = computed(() => $count.value * 2)` and then `isLarge = computed(() => $doubled.value > 100)` is the same as writing `isLarge = computed(() => ($count.value * 2) > 100)` directly.
+This means signal derivation chains can be refactored between nested and flattened forms without changing behavior.
+
+These laws are verified as executable Rust tests in `crates/ironstar/src/domain/signals.rs` using a minimal `Signal<A>` model that mirrors the comonad interface.
+The model is test-only (`#[cfg(test)]`) since production signals are managed by Datastar's JavaScript runtime.
+Tests exercise the laws with concrete types including `i32`, `String`, `TodoFilter`, and `TodoSignals` to confirm the algebraic properties hold across the signal types used in the application.
 
 ## The contract problem
 
