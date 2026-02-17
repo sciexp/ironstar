@@ -40,8 +40,10 @@ test.describe("Datastar hypermedia interactions", () => {
 		await submitButton.click();
 
 		// Wait for the new todo to appear in the list via SSE update
-		const todoList = page.locator("#todo-list");
-		await expect(todoList.locator("li")).toContainText("Buy groceries");
+		const todoItem = page.locator("#todo-list li", {
+			hasText: "Buy groceries",
+		});
+		await expect(todoItem).toBeVisible();
 
 		// Verify input was cleared after submission (via $input = '')
 		await expect(input).toHaveValue("");
@@ -108,8 +110,10 @@ test.describe("Datastar hypermedia interactions", () => {
 	});
 
 	test("loading spinner shows during fetch", async ({ page }) => {
-		// The loading spinner uses data-show="$isFetching" signal
-		const spinner = page.locator(".loading-spinner");
+		// The loading spinner uses data-show="$isFetching" signal.
+		// Target only the form's spinner to avoid matching per-item spinners
+		// in todo list items from accumulated state.
+		const spinner = page.locator("#todo-app form .loading-spinner");
 
 		// Initially, spinner should not be visible
 		await expect(spinner).not.toBeVisible();
@@ -164,34 +168,45 @@ test.describe("Datastar hypermedia interactions", () => {
 		const input = page.locator("#todo-app form input");
 		const submitButton = page.locator('#todo-app form button[type="submit"]');
 
+		// Capture the initial active count from the footer (may have accumulated state)
+		const footer = page.locator("#todo-app footer");
+		const todoList = page.locator("#todo-list");
+		const initialCount = await todoList.locator("li").count();
+
 		// Add first todo
-		await input.fill("Todo 1");
+		await input.fill("FooterTest A");
 		await submitButton.click();
 
-		// Wait for footer to appear
-		const footer = page.locator("#todo-app footer");
+		// Wait for the new todo to appear and footer to be visible
+		const todoA = page.locator("#todo-list li", {
+			hasText: "FooterTest A",
+		});
+		await expect(todoA).toBeVisible();
 		await expect(footer).toBeVisible();
 
-		// Should show "1 item left"
-		await expect(footer).toContainText("1");
-		await expect(footer).toContainText("item left");
+		// Footer should reflect the new count (initial + 1)
+		await expect(footer).toContainText(`${initialCount + 1}`);
 
 		// Add second todo
-		await input.fill("Todo 2");
+		await input.fill("FooterTest B");
 		await submitButton.click();
 
-		// Should update to "2 items left"
-		await expect(footer).toContainText("2");
+		const todoB = page.locator("#todo-list li", {
+			hasText: "FooterTest B",
+		});
+		await expect(todoB).toBeVisible();
+
+		// Footer should reflect two more items than initial
+		await expect(footer).toContainText(`${initialCount + 2}`);
 		await expect(footer).toContainText("items left");
 
-		// Complete one todo
-		const firstTodo = page.locator("#todo-list li").first();
-		const checkbox = firstTodo.locator('input[type="checkbox"]');
-		await checkbox.check();
+		// Complete one of the todos we created (target by text, not position)
+		const checkboxA = todoA.locator('input[type="checkbox"]');
+		await checkboxA.check();
 
-		// Should update to "1 item left" and show "Clear completed"
-		await expect(footer).toContainText("1");
-		await expect(footer).toContainText("item left");
+		// Active count should drop by one
+		await expect(footer).toContainText(`${initialCount + 1}`);
+		await expect(footer).toContainText("item");
 		await expect(
 			footer.locator("button", { hasText: "Clear completed" }),
 		).toBeVisible();
@@ -201,6 +216,10 @@ test.describe("Datastar hypermedia interactions", () => {
 		const input = page.locator("#todo-app form input");
 		const submitButton = page.locator('#todo-app form button[type="submit"]');
 
+		// Capture initial count to handle accumulated state
+		const todoList = page.locator("#todo-list");
+		const initialCount = await todoList.locator("li").count();
+
 		// Rapidly submit multiple todos
 		const todos = ["Rapid 1", "Rapid 2", "Rapid 3"];
 
@@ -209,13 +228,14 @@ test.describe("Datastar hypermedia interactions", () => {
 			await submitButton.click();
 		}
 
-		// Wait for all todos to appear
-		const todoList = page.locator("#todo-list");
-		await expect(todoList.locator("li")).toHaveCount(todos.length);
+		// Wait for all new todos to appear (initial + 3)
+		await expect(todoList.locator("li")).toHaveCount(
+			initialCount + todos.length,
+		);
 
-		// Verify all todos are present
+		// Verify all submitted todos are present by text
 		for (const todoText of todos) {
-			await expect(todoList).toContainText(todoText);
+			await expect(todoList.locator("li", { hasText: todoText })).toBeVisible();
 		}
 	});
 });
