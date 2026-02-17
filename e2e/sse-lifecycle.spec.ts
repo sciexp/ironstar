@@ -290,10 +290,11 @@ test.describe("SSE connection lifecycle", () => {
 	});
 
 	test("handles connection interruption gracefully", async ({ page }) => {
-		test.fixme(); // ironstar-wp5: abort after completed read does not throw AbortError
 		await page.goto("/todos");
 
-		// Establish an SSE connection and then abort it
+		// Establish an SSE connection then abort it while a read is pending.
+		// The test verifies that aborting an active SSE stream produces a
+		// clean AbortError rather than hanging or corrupting state.
 		const result = await page.evaluate(async () => {
 			const controller = new AbortController();
 			let connectionEstablished = false;
@@ -308,14 +309,32 @@ test.describe("SSE connection lifecycle", () => {
 					connectionEstablished = true;
 				}
 
-				// Read a bit to ensure connection is active
 				if (response.body) {
 					const reader = response.body.getReader();
-					const { done } = await reader.read();
-					if (!done) {
-						// Abort the connection mid-stream
-						controller.abort();
+
+					// Drain initial SSE data (replay + any queued events).
+					// Read chunks until one takes longer than 200ms, indicating
+					// we've exhausted the buffered data and the next read will
+					// block waiting for a new SSE event.
+					let drained = false;
+					while (!drained) {
+						const readResult = await Promise.race([
+							reader.read().then((r) => ({ ...r, timedOut: false })),
+							new Promise<{ done: boolean; timedOut: boolean }>((resolve) =>
+								setTimeout(() => resolve({ done: false, timedOut: true }), 200),
+							),
+						]);
+						if (readResult.done || readResult.timedOut) {
+							drained = true;
+						}
 					}
+
+					// Now start a read that will block on the next event, then
+					// abort while it is pending. This ensures the AbortError
+					// fires on an in-progress read.
+					const pendingRead = reader.read();
+					controller.abort();
+					await pendingRead;
 				}
 			} catch (e) {
 				if (
