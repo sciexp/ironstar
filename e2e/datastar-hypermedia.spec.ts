@@ -16,8 +16,8 @@ test.describe("Datastar hypermedia interactions", () => {
 			"@get('/todos/api/feed')",
 		);
 
-		// Wait for the page to settle after SSE connection
-		await page.waitForLoadState("networkidle");
+		// Wait for DOM to be ready (networkidle is incompatible with SSE connections)
+		await page.waitForLoadState("domcontentloaded");
 
 		// Verify SSE connection by checking for the EventSource in browser context
 		const hasEventSource = await page.evaluate(() => {
