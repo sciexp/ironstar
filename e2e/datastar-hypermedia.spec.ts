@@ -1,15 +1,16 @@
 import { expect, test } from "@playwright/test";
 
-test.describe("Datastar hypermedia interactions", () => {
-	// Serialize tests within each browser project to prevent one test's
-	// beforeEach purge from deleting another test's in-progress items.
-	// Cross-project (cross-browser) interference is mitigated by using
-	// unique per-test item names that avoid locator collisions.
-	test.describe.configure({ mode: "serial" });
+/** Generate a short unique suffix for test item names. */
+function uid(): string {
+	return Math.random().toString(36).slice(2, 8);
+}
 
-	test.beforeEach(async ({ page, request }) => {
-		// Clean slate: purge all todo events before each test
-		await request.delete("http://localhost:3000/todos/api");
+test.describe("Datastar hypermedia interactions", () => {
+	// Each test generates unique item names using uid() to prevent locator
+	// collisions across parallel browser projects and accumulated state from
+	// prior test runs. No event store purge is needed because text-filtered
+	// locators match only items created by this specific test invocation.
+	test.beforeEach(async ({ page }) => {
 		await page.goto("/todos");
 	});
 
@@ -38,17 +39,15 @@ test.describe("Datastar hypermedia interactions", () => {
 	test("add todo via data-on-submit command", async ({ page }) => {
 		const input = page.locator("#todo-app form input");
 		const submitButton = page.locator('#todo-app form button[type="submit"]');
-		const prefix = test.info().project.name;
+		const name = `AddTest ${uid()}`;
 
-		await input.fill(`${prefix} AddTest groceries`);
+		await input.fill(name);
 
 		// Submit form (triggers data-on:submit.prevent)
 		await submitButton.click();
 
 		// Wait for the new todo to appear in the list via SSE update
-		const todoItem = page.locator("#todo-list li", {
-			hasText: `${prefix} AddTest groceries`,
-		});
+		const todoItem = page.locator("#todo-list li", { hasText: name });
 		await expect(todoItem).toBeVisible();
 
 		// Verify input was cleared after submission (via $input = '')
@@ -58,15 +57,13 @@ test.describe("Datastar hypermedia interactions", () => {
 	test("complete todo via data-on-change checkbox", async ({ page }) => {
 		const input = page.locator("#todo-app form input");
 		const submitButton = page.locator('#todo-app form button[type="submit"]');
-		const prefix = test.info().project.name;
+		const name = `CompleteTest ${uid()}`;
 
-		await input.fill(`${prefix} CompleteTest walk dog`);
+		await input.fill(name);
 		await submitButton.click();
 
 		// Wait for todo to appear
-		const todoItem = page.locator("#todo-list li", {
-			hasText: `${prefix} CompleteTest walk dog`,
-		});
+		const todoItem = page.locator("#todo-list li", { hasText: name });
 		await expect(todoItem).toBeVisible();
 
 		// Click the checkbox to complete (triggers data-on:change)
@@ -85,15 +82,13 @@ test.describe("Datastar hypermedia interactions", () => {
 	test("delete todo via data-on-click button", async ({ page }) => {
 		const input = page.locator("#todo-app form input");
 		const submitButton = page.locator('#todo-app form button[type="submit"]');
-		const prefix = test.info().project.name;
+		const name = `DeleteTest ${uid()}`;
 
-		await input.fill(`${prefix} DeleteTest remove item`);
+		await input.fill(name);
 		await submitButton.click();
 
 		// Wait for todo to appear
-		const todoItem = page.locator("#todo-list li", {
-			hasText: `${prefix} DeleteTest remove item`,
-		});
+		const todoItem = page.locator("#todo-list li", { hasText: name });
 		await expect(todoItem).toBeVisible();
 
 		// Click delete button (triggers data-on:click)
@@ -111,11 +106,12 @@ test.describe("Datastar hypermedia interactions", () => {
 		await expect(input).toHaveAttribute("data-bind:input");
 
 		// Type into the input field
-		await input.fill("BindTest reactive input");
+		const value = `BindTest ${uid()}`;
+		await input.fill(value);
 
 		// The data-bind:input should update the $input signal in Datastar
 		// We can verify this by checking the input value is reflected
-		await expect(input).toHaveValue("BindTest reactive input");
+		await expect(input).toHaveValue(value);
 	});
 
 	test("loading spinner shows during fetch", async ({ page }) => {
@@ -131,7 +127,7 @@ test.describe("Datastar hypermedia interactions", () => {
 		const input = page.locator("#todo-app form input");
 		const submitButton = page.locator('#todo-app form button[type="submit"]');
 
-		await input.fill(`${test.info().project.name} SpinnerTest loading`);
+		await input.fill(`SpinnerTest ${uid()}`);
 		// Don't await the click to catch the loading state
 		const submitPromise = submitButton.click();
 
@@ -149,58 +145,48 @@ test.describe("Datastar hypermedia interactions", () => {
 		const todoList = page.locator("#todo-list");
 		const input = page.locator("#todo-app form input");
 		const submitButton = page.locator('#todo-app form button[type="submit"]');
-		const prefix = test.info().project.name;
+		const tag = uid();
 
 		// Add first todo and verify it appears via SSE fragment merge
-		await input.fill(`${prefix} MergeTest first`);
+		const first = `MergeTest ${tag} first`;
+		await input.fill(first);
 		await submitButton.click();
-		await expect(
-			todoList.locator("li", { hasText: `${prefix} MergeTest first` }),
-		).toBeVisible();
+		await expect(todoList.locator("li", { hasText: first })).toBeVisible();
 
 		// Add second todo and verify both are present
-		await input.fill(`${prefix} MergeTest second`);
+		const second = `MergeTest ${tag} second`;
+		await input.fill(second);
 		await submitButton.click();
-		await expect(
-			todoList.locator("li", { hasText: `${prefix} MergeTest second` }),
-		).toBeVisible();
+		await expect(todoList.locator("li", { hasText: second })).toBeVisible();
 
 		// Both todos remain visible after the second merge
-		await expect(
-			todoList.locator("li", { hasText: `${prefix} MergeTest first` }),
-		).toBeVisible();
+		await expect(todoList.locator("li", { hasText: first })).toBeVisible();
 	});
 
 	test("footer counts update reactively", async ({ page }) => {
 		// r62.18: The footer element is only rendered in the initial HTML when
-		// total > 0. After a purge (beforeEach), the page loads with 0 todos
-		// and no <footer> in the DOM. The SSE PatchElements event targets
-		// "#todo-app footer" but Datastar cannot morph a non-existent element.
+		// total > 0. After a purge, the page loads with 0 todos and no <footer>
+		// in the DOM. The SSE PatchElements event targets "#todo-app footer"
+		// but Datastar cannot morph a non-existent element.
 		// Fix requires the server template to always render a footer container.
 		test.fixme();
 		const input = page.locator("#todo-app form input");
 		const submitButton = page.locator('#todo-app form button[type="submit"]');
 
-		// Capture the initial active count from the footer (may have accumulated state)
 		const footer = page.locator("#todo-app footer");
 		const todoList = page.locator("#todo-list");
 		const initialCount = await todoList.locator("li").count();
 
-		// Add first todo
 		await input.fill("FooterTest A");
 		await submitButton.click();
 
-		// Wait for the new todo to appear and footer to be visible
 		const todoA = page.locator("#todo-list li", {
 			hasText: "FooterTest A",
 		});
 		await expect(todoA).toBeVisible();
 		await expect(footer).toBeVisible();
-
-		// Footer should reflect the new count (initial + 1)
 		await expect(footer).toContainText(`${initialCount + 1}`);
 
-		// Add second todo
 		await input.fill("FooterTest B");
 		await submitButton.click();
 
@@ -208,16 +194,12 @@ test.describe("Datastar hypermedia interactions", () => {
 			hasText: "FooterTest B",
 		});
 		await expect(todoB).toBeVisible();
-
-		// Footer should reflect two more items than initial
 		await expect(footer).toContainText(`${initialCount + 2}`);
 		await expect(footer).toContainText("items left");
 
-		// Complete one of the todos we created (target by text, not position)
 		const checkboxA = todoA.locator('input[type="checkbox"]');
 		await checkboxA.check();
 
-		// Active count should drop by one
 		await expect(footer).toContainText(`${initialCount + 1}`);
 		await expect(footer).toContainText("item");
 		await expect(
@@ -229,13 +211,13 @@ test.describe("Datastar hypermedia interactions", () => {
 		const input = page.locator("#todo-app form input");
 		const submitButton = page.locator('#todo-app form button[type="submit"]');
 		const todoList = page.locator("#todo-list");
-		const prefix = test.info().project.name;
+		const tag = uid();
 
-		// Rapidly submit multiple todos with project-scoped names
+		// Rapidly submit multiple todos with unique names
 		const todos = [
-			`${prefix} RapidTest A`,
-			`${prefix} RapidTest B`,
-			`${prefix} RapidTest C`,
+			`RapidTest ${tag} A`,
+			`RapidTest ${tag} B`,
+			`RapidTest ${tag} C`,
 		];
 
 		for (const todoText of todos) {
