@@ -13,7 +13,7 @@ test.describe("Datastar hypermedia interactions", () => {
 		await expect(todoApp).toBeVisible();
 		await expect(todoApp).toHaveAttribute(
 			"data-init",
-			"@get('/todos/api/feed')",
+			"@get('/todos/api/feed',{requestCancellation:'disabled'})",
 		);
 
 		// Wait for DOM to be ready (networkidle is incompatible with SSE connections)
