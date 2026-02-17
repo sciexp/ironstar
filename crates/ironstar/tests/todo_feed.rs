@@ -198,17 +198,19 @@ async fn feed_sends_keepalive_comments() {
     // Wait for first keep-alive (default is 15 seconds, but we can check structure)
     // In a real test with configurable keep-alive, we'd use a shorter interval.
     // For now, just verify the stream is functional by collecting first chunk.
+    // With an empty event store, the first chunk is a datastar-patch-elements event
+    // for the empty todo list (no sequence ID since latest_seq is 0).
     let first_chunk = tokio::time::timeout(Duration::from_secs(20), stream.next()).await;
 
-    // Either we get a keep-alive within timeout, or the stream is at least responding
-    // The important thing is that the connection stayed open
+    // Either we get a PatchElements event, keep-alive, or the stream is responding
     match first_chunk {
         Ok(Some(Ok(chunk))) => {
             let text = String::from_utf8_lossy(&chunk);
-            // Keep-alive comments start with ":"
             assert!(
-                text.contains(": keepalive") || text.is_empty() || text.starts_with("id:"),
-                "Expected keep-alive or event, got: {text}"
+                text.contains(": keepalive")
+                    || text.is_empty()
+                    || text.contains("datastar-patch-elements"),
+                "Expected keep-alive or datastar-patch-elements event, got: {text}"
             );
         }
         Ok(Some(Err(e))) => {
@@ -226,6 +228,11 @@ async fn feed_sends_keepalive_comments() {
 }
 
 /// Test Last-Event-ID reconnection replays events after the specified sequence.
+///
+/// The handler folds historical events into a TodoViewState and emits Datastar
+/// PatchElements events with the latest sequence as the SSE event ID.
+/// With Last-Event-ID: 1, events 2 and 3 are replayed into a projected state
+/// containing "Second todo" and "Third todo", with id: 3 on the last event.
 #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
 async fn feed_replays_events_after_last_event_id() {
     let pool = create_test_pool().await;
@@ -294,7 +301,7 @@ async fn feed_replays_events_after_last_event_id() {
         .nest("/todos", todo_routes())
         .with_state(state);
 
-    // Request with Last-Event-ID: 1 should replay events 2 and 3
+    // Request with Last-Event-ID: 1 should replay events 2 and 3 as projected state
     let response = app
         .oneshot(
             Request::builder()
@@ -311,39 +318,12 @@ async fn feed_replays_events_after_last_event_id() {
     // Collect SSE events with short timeout (replay events come immediately)
     let text = collect_sse_events(response.into_body(), 500).await;
 
-    // The response should contain events with id: 2 and id: 3
-    // SSE format: "id: N\nevent: Created\ndata: {...}\n\n"
-
-    // Parse SSE events from the response
-    let events: Vec<&str> = text.split("\n\n").filter(|s| !s.is_empty()).collect();
-
-    // Count events with sequence IDs (not keep-alives)
-    let data_events: Vec<&str> = events
-        .iter()
-        .filter(|e| e.starts_with("id:") || e.contains("\nid:"))
-        .copied()
-        .collect();
-
-    // Should have exactly 2 events (sequences 2 and 3)
-    assert!(
-        data_events.len() >= 2,
-        "Expected at least 2 replay events, got {}. Full response:\n{}",
-        data_events.len(),
-        text
-    );
-
-    // Verify the events have correct sequence IDs
-    let has_id_2 = text.contains("id: 2") || text.contains("id:2");
+    // The handler folds events 2 and 3 into a projected view state, then emits
+    // Datastar PatchElements with the latest sequence (3) as the SSE event ID.
     let has_id_3 = text.contains("id: 3") || text.contains("id:3");
-
-    assert!(
-        has_id_2,
-        "Expected event with id: 2 in replay. Response:\n{}",
-        text
-    );
     assert!(
         has_id_3,
-        "Expected event with id: 3 in replay. Response:\n{}",
+        "Expected event with id: 3 (latest sequence after replay). Response:\n{}",
         text
     );
 
@@ -351,14 +331,27 @@ async fn feed_replays_events_after_last_event_id() {
     let has_id_1 = text.contains("id: 1\n") || text.contains("id:1\n");
     assert!(
         !has_id_1,
-        "Should NOT replay event id: 1 (before Last-Event-ID). Response:\n{}",
+        "Should NOT have event id: 1 (before Last-Event-ID). Response:\n{}",
+        text
+    );
+
+    // The projected state should contain the two todos from events 2 and 3
+    // (not the first todo which is before the Last-Event-ID cutoff)
+    assert!(
+        text.contains("Second todo"),
+        "Expected 'Second todo' in projected HTML. Response:\n{}",
+        text
+    );
+    assert!(
+        text.contains("Third todo"),
+        "Expected 'Third todo' in projected HTML. Response:\n{}",
         text
     );
 }
 
-/// Test that SSE events include proper event type names.
+/// Test that SSE events use the Datastar PatchElements event type.
 #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
-async fn feed_events_include_event_type() {
+async fn feed_events_use_datastar_patch_elements_type() {
     let pool = create_test_pool().await;
     let session = Arc::new(open_embedded_session().await.expect("session should open"));
     let event_bus = Arc::new(ZenohEventBus::new(session));
@@ -408,17 +401,20 @@ async fn feed_events_include_event_type() {
     // Collect SSE events with short timeout
     let text = collect_sse_events(response.into_body(), 500).await;
 
-    // Should have event type "Created" for the Created event
+    // Should have the Datastar event type for HTML fragment patching
     assert!(
-        text.contains("event: Created") || text.contains("event:Created"),
-        "Expected 'event: Created' in SSE output. Response:\n{}",
+        text.contains("event: datastar-patch-elements"),
+        "Expected 'event: datastar-patch-elements' in SSE output. Response:\n{}",
         text
     );
 }
 
-/// Test that SSE events include JSON data payload.
+/// Test that SSE events include HTML fragments with Datastar data lines.
+///
+/// Datastar PatchElements events use `data: selector <css>` and
+/// `data: elements <html>` lines instead of JSON payloads.
 #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
-async fn feed_events_include_json_data() {
+async fn feed_events_include_html_fragments() {
     let pool = create_test_pool().await;
     let session = Arc::new(open_embedded_session().await.expect("session should open"));
     let event_bus = Arc::new(ZenohEventBus::new(session));
@@ -443,7 +439,7 @@ async fn feed_events_include_json_data() {
         NO_EVENT_BUS,
         TodoCommand::Create {
             id,
-            text: "JSON test todo".to_string(),
+            text: "HTML test todo".to_string(),
             created_at: now,
         },
     )
@@ -467,34 +463,39 @@ async fn feed_events_include_json_data() {
     // Collect SSE events with short timeout
     let text = collect_sse_events(response.into_body(), 500).await;
 
-    // Should have data field with JSON containing the todo text
+    // Should have Datastar selector data line targeting #todo-list
     assert!(
-        text.contains("data:") || text.contains("data: "),
-        "Expected 'data:' field in SSE output. Response:\n{}",
+        text.contains("data: selector #todo-list"),
+        "Expected 'data: selector #todo-list' in SSE output. Response:\n{}",
         text
     );
 
-    // The JSON should contain the todo text
+    // Should have Datastar elements data line with HTML content
     assert!(
-        text.contains("JSON test todo"),
-        "Expected todo text in data payload. Response:\n{}",
+        text.contains("data: elements"),
+        "Expected 'data: elements' prefix in SSE output. Response:\n{}",
         text
     );
 
-    // Verify it's valid JSON by finding and parsing the data line
-    for line in text.lines() {
-        if line.starts_with("data:") || line.starts_with("data: ") {
-            let json_str = line.trim_start_matches("data:").trim();
-            let parsed: Result<serde_json::Value, _> = serde_json::from_str(json_str);
-            assert!(
-                parsed.is_ok(),
-                "Data payload should be valid JSON. Got: {json_str}"
-            );
-        }
-    }
+    // The HTML should contain the todo text
+    assert!(
+        text.contains("HTML test todo"),
+        "Expected todo text in HTML fragment. Response:\n{}",
+        text
+    );
+
+    // With one todo, there should also be a footer event
+    assert!(
+        text.contains("data: selector #todo-app footer"),
+        "Expected footer selector in SSE output. Response:\n{}",
+        text
+    );
 }
 
-/// Test that reconnection with Last-Event-ID: 0 gets all events.
+/// Test that reconnection with Last-Event-ID: 0 gets all events projected as HTML.
+///
+/// The handler folds all events into a single TodoViewState and emits
+/// Datastar PatchElements. The latest sequence (2) is the SSE event ID.
 #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
 async fn feed_with_last_event_id_zero_gets_all_events() {
     let pool = create_test_pool().await;
@@ -544,7 +545,7 @@ async fn feed_with_last_event_id_zero_gets_all_events() {
         .nest("/todos", todo_routes())
         .with_state(state);
 
-    // Request with Last-Event-ID: 0 should get all events
+    // Request with Last-Event-ID: 0 should get all events projected as HTML
     let response = app
         .oneshot(
             Request::builder()
@@ -559,13 +560,26 @@ async fn feed_with_last_event_id_zero_gets_all_events() {
     // Collect SSE events with short timeout
     let text = collect_sse_events(response.into_body(), 500).await;
 
-    // Should have both events
-    let has_id_1 = text.contains("id: 1") || text.contains("id:1");
+    // Both events are folded into the projected state, so the latest sequence
+    // (2) is set as the SSE event ID on the last PatchElements event.
     let has_id_2 = text.contains("id: 2") || text.contains("id:2");
-
     assert!(
-        has_id_1 && has_id_2,
-        "Expected events 1 and 2 with Last-Event-ID: 0. Response:\n{}",
+        has_id_2,
+        "Expected id: 2 (latest sequence) with Last-Event-ID: 0. Response:\n{}",
+        text
+    );
+
+    // Both todos should appear in the rendered HTML
+    assert!(
+        text.contains("First") && text.contains("Second"),
+        "Expected both todos in projected HTML. Response:\n{}",
+        text
+    );
+
+    // Should use Datastar event type
+    assert!(
+        text.contains("event: datastar-patch-elements"),
+        "Expected Datastar PatchElements event type. Response:\n{}",
         text
     );
 }
