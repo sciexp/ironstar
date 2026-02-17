@@ -12,6 +12,11 @@ test.describe("Datastar hypermedia interactions", () => {
 	// locators match only items created by this specific test invocation.
 	test.beforeEach(async ({ page }) => {
 		await page.goto("/todos");
+		// Wait for the SSE connection to be established before tests interact
+		// with the form. Datastar initiates @get on the data-init attribute,
+		// which needs a moment to connect under parallel test load.
+		await page.waitForLoadState("domcontentloaded");
+		await page.locator("#todo-list").waitFor({ state: "attached" });
 	});
 
 	test("SSE connection established on page load", async ({ page }) => {
