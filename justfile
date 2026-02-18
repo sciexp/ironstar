@@ -1038,6 +1038,13 @@ dev-cleanup:
     pkill -f "rolldown.*watch" 2>/dev/null || true
     lsof -ti :3000,:9090,:3001 2>/dev/null | xargs kill 2>/dev/null || true
     sleep 2
+    # Escalate to SIGKILL for processes that ignored SIGTERM
+    pkill -9 -f "process-compose" 2>/dev/null || true
+    pkill -9 -f "target/debug/ironstar" 2>/dev/null || true
+    pkill -9 -f "cargo.watch" 2>/dev/null || true
+    pkill -9 -f "rolldown.*watch" 2>/dev/null || true
+    lsof -ti :3000,:9090,:3001 2>/dev/null | xargs kill -9 2>/dev/null || true
+    sleep 1
     echo ""
     echo "Remaining:"
     pgrep -afl "process-compose|target/debug/ironstar|cargo.watch|rolldown.*watch" \
