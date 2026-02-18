@@ -84,16 +84,15 @@ impl ToDatastarEvents for TodoViewState {
             None,
         ));
 
-        // Render the footer only when there are todos present.
-        // This matches the conditional rendering in todo_app().
-        if self.count > 0 {
-            let active = self.active_count();
-            events.push(render_patch_elements_with_selector(
-                todo_footer(active, self.completed_count),
-                "#todo-app footer",
-                None,
-            ));
-        }
+        // Always render the footer so Datastar can morph the element
+        // even when transitioning from zero to non-zero todos. The
+        // todo_footer template handles visibility internally.
+        let active = self.active_count();
+        events.push(render_patch_elements_with_selector(
+            todo_footer(active, self.completed_count),
+            "#todo-app footer",
+            None,
+        ));
 
         events
     }
@@ -114,13 +113,14 @@ mod tests {
     }
 
     #[test]
-    fn empty_view_state_produces_list_event() {
+    fn empty_view_state_produces_list_and_footer_events() {
         let state = TodoViewState::default();
         let events = state.to_datastar_events();
 
-        // Empty state still renders the <ul> container, producing one event.
-        // No footer is rendered because count == 0.
-        assert_eq!(events.len(), 1);
+        // Empty state renders both the <ul> container and an empty hidden
+        // <footer>, producing two events. The footer is always present so
+        // Datastar can morph it when todos are added.
+        assert_eq!(events.len(), 2);
     }
 
     #[test]
