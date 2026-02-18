@@ -40,9 +40,7 @@ pub fn todo_app(todos: &[TodoItemView]) -> impl Renderable {
 
             (todo_list(todos))
 
-            @if total > 0 {
-                (todo_footer(active, completed))
-            }
+            (todo_footer(active, completed))
         }
     }
 }
@@ -135,24 +133,35 @@ pub fn todo_item(todo: &TodoItemView) -> impl Renderable {
 }
 
 /// Footer with item count and filter buttons.
+///
+/// The `<footer>` element is always rendered so that Datastar's
+/// PatchElements can morph it via the `#todo-app footer` selector,
+/// even when the page initially loads with zero todos. When there
+/// are no todos (active + completed == 0), the footer is rendered
+/// as an empty element with `display: none`.
 pub fn todo_footer(active: usize, completed: usize) -> impl Renderable {
+    let total = active + completed;
     let item_word = if active == 1 { "item" } else { "items" };
 
     maud! {
-        footer class="cluster" {
-            span class="text-2" {
-                strong { (active) }
-                " " (item_word) " left"
-            }
+        @if total > 0 {
+            footer class="cluster" {
+                span class="text-2" {
+                    strong { (active) }
+                    " " (item_word) " left"
+                }
 
-            @if completed > 0 {
-                (button(
-                    "Clear completed",
-                    "outlined",
-                    Some("small"),
-                    r#"data-on:click="@delete('/todos/api/completed')""#
-                ))
+                @if completed > 0 {
+                    (button(
+                        "Clear completed",
+                        "outlined",
+                        Some("small"),
+                        r#"data-on:click="@delete('/todos/api/completed')""#
+                    ))
+                }
             }
+        } @else {
+            footer class="cluster" style="display:none" {}
         }
     }
 }
@@ -233,5 +242,16 @@ mod tests {
         assert!(body.contains("1"));
         assert!(body.contains("item left"));
         assert!(!body.contains("Clear completed"));
+    }
+
+    #[test]
+    fn todo_footer_empty_renders_hidden() {
+        let html = todo_footer(0, 0).render();
+        let body = html.as_inner();
+
+        assert!(body.contains("<footer"));
+        assert!(body.contains("display:none"));
+        assert!(!body.contains("items left"));
+        assert!(!body.contains("item left"));
     }
 }
