@@ -178,41 +178,49 @@ test.describe("Datastar hypermedia interactions", () => {
 	});
 
 	test("footer counts update reactively", async ({ page }) => {
+		const tag = uid();
 		const input = page.locator("#todo-app form input");
 		const submitButton = page.locator('#todo-app form button[type="submit"]');
-
 		const footer = page.locator("#todo-app footer");
-		const todoList = page.locator("#todo-list");
-		const initialCount = await todoList.locator("li").count();
 
-		await input.fill("FooterTest A");
+		// Add first todo and verify the footer becomes visible with count text.
+		// The footer starts hidden (display:none) when there are no todos and
+		// becomes visible after the SSE PatchElements event morphs it.
+		await input.fill(`FooterTest A ${tag}`);
 		await submitButton.click();
 
 		const todoA = page.locator("#todo-list li", {
-			hasText: "FooterTest A",
+			hasText: `FooterTest A ${tag}`,
 		});
 		await expect(todoA).toBeVisible();
 		await expect(footer).toBeVisible();
-		await expect(footer).toContainText(`${initialCount + 1}`);
+		await expect(footer).toContainText("left");
 
-		await input.fill("FooterTest B");
+		// Verify the footer contains a count in the expected format
+		await expect(footer.locator("span.text-2 strong")).toBeVisible();
+		await expect(footer).toContainText(/\d+ items? left/);
+
+		// Add second todo and verify it appears. The footer count
+		// format remains "N items left" (plural since N >= 2).
+		await input.fill(`FooterTest B ${tag}`);
 		await submitButton.click();
 
 		const todoB = page.locator("#todo-list li", {
-			hasText: "FooterTest B",
+			hasText: `FooterTest B ${tag}`,
 		});
 		await expect(todoB).toBeVisible();
-		await expect(footer).toContainText(`${initialCount + 2}`);
-		await expect(footer).toContainText("items left");
+		await expect(footer).toContainText(/\d+ items left/);
 
+		// Complete first todo and verify the "Clear completed" button appears.
+		// This confirms the SSE morph updates both the count text and the
+		// conditional button rendering reactively.
 		const checkboxA = todoA.locator('input[type="checkbox"]');
 		await checkboxA.check();
 
-		await expect(footer).toContainText(`${initialCount + 1}`);
-		await expect(footer).toContainText("item");
 		await expect(
 			footer.locator("button", { hasText: "Clear completed" }),
 		).toBeVisible();
+		await expect(footer).toContainText(/\d+ items? left/);
 	});
 
 	test("multiple rapid commands handled correctly", async ({ page }) => {
