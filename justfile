@@ -1003,12 +1003,12 @@ dev:
 # Could be pushed into nix config via PC_DISABLE_TUI env var in the wrapper script.
 [group('nix')]
 dev-services:
-  nix run .#dev -- up -t=false
+  exec nix run .#dev -- up -t=false
 
 # Start dev services with process-compose TUI
 [group('nix')]
 dev-services-tui:
-  nix run .#dev
+  exec nix run .#dev
 
 # Remove all dev runtime state (event store, observability data, test artifacts).
 # The data directory is recreated empty so cargo run works without process-compose.
