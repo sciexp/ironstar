@@ -268,30 +268,21 @@ fn view_state_to_sse_events(
         None
     };
 
-    // If there are no todos, emit just the list (with the sequence ID).
-    // If there are todos, emit list then footer (sequence ID on the last event).
-    if view_state.count > 0 {
-        // List without ID
-        events.push(Ok(render_patch_elements_with_selector(
-            todo_list(&view_state.todos),
-            "#todo-list",
-            None,
-        )));
-        // Footer with the sequence ID (last event gets the ID for reconnection)
-        let active = view_state.active_count();
-        events.push(Ok(render_patch_elements_with_selector(
-            todo_footer(active, view_state.completed_count),
-            "#todo-app footer",
-            id_str.as_deref(),
-        )));
-    } else {
-        // Only the list event; attach the sequence ID to it
-        events.push(Ok(render_patch_elements_with_selector(
-            todo_list(&view_state.todos),
-            "#todo-list",
-            id_str.as_deref(),
-        )));
-    }
+    // Always emit both list and footer events. The footer element is
+    // always present in the DOM (hidden when empty) so Datastar can
+    // morph it when transitioning from zero to non-zero todos. The
+    // sequence ID goes on the last event for reconnection support.
+    events.push(Ok(render_patch_elements_with_selector(
+        todo_list(&view_state.todos),
+        "#todo-list",
+        None,
+    )));
+    let active = view_state.active_count();
+    events.push(Ok(render_patch_elements_with_selector(
+        todo_footer(active, view_state.completed_count),
+        "#todo-app footer",
+        id_str.as_deref(),
+    )));
 
     events
 }
