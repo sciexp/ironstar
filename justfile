@@ -1010,6 +1010,13 @@ dev-services:
 dev-services-tui:
   nix run .#dev
 
+# Remove all dev runtime state (event store, observability data, test artifacts).
+# The data directory is recreated empty so cargo run works without process-compose.
+[group('nix')]
+dev-reset:
+  rm -rf data test-results playwright-report
+  mkdir -p data
+
 # Show stale dev processes and ports, then clean them up.
 # Useful when a prior dev-services session left zombies (cargo-watch, ironstar, observability).
 [group('nix')]
