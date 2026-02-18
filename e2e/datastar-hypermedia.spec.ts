@@ -11,12 +11,14 @@ test.describe("Datastar hypermedia interactions", () => {
 	// prior test runs. No event store purge is needed because text-filtered
 	// locators match only items created by this specific test invocation.
 	test.beforeEach(async ({ page }) => {
+		// Set up SSE connection listener before navigation so we detect the
+		// @get('/todos/api/feed') request regardless of timing.
+		const sseReady = page.waitForResponse(
+			(resp) => resp.url().includes("/todos/api/feed") && resp.status() === 200,
+		);
 		await page.goto("/todos");
-		// Wait for the SSE connection to be established before tests interact
-		// with the form. Datastar initiates @get on the data-init attribute,
-		// which needs a moment to connect under parallel test load.
 		await page.waitForLoadState("domcontentloaded");
-		await page.locator("#todo-list").waitFor({ state: "attached" });
+		await sseReady;
 	});
 
 	test("SSE connection established on page load", async ({ page }) => {
