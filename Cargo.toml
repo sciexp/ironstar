@@ -50,7 +50,7 @@ uuid = { version = "1.19", features = ["serde", "v4", "v7"] }
 chrono = { version = "0.4", features = ["serde"] }
 
 # Session ID generation
-rand = { version = "0.9", features = ["std_rng"] }
+rand = { version = "0.10", features = ["std_rng"] }
 base64 = "0.22"
 
 # Analytics caching (from architecture-decisions.md)
