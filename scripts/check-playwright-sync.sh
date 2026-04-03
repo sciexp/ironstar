@@ -1,42 +1,51 @@
 #!/usr/bin/env bash
-# Check if @playwright/test version matches playwright-web-flake pin
+# Check if playwright package versions match playwright-web-flake pin
 set -euo pipefail
 
-# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
 # Get playwright-web-flake version from flake.nix
 FLAKE_VERSION=$(grep "playwright-web-flake.url" flake.nix | sed 's/.*\/\([0-9.]*\)".*/\1/')
 
-# Get @playwright/test version from package.json (strip ^, ~, etc.)
-NPM_VERSION=$(jq -r '.devDependencies."@playwright/test"' packages/docs/package.json | sed 's/[^0-9.]//g')
+MISMATCH=0
 
-# Extract major.minor for comparison (ignore patch)
-FLAKE_MAJ_MIN=$(echo "$FLAKE_VERSION" | cut -d. -f1-2)
-NPM_MAJ_MIN=$(echo "$NPM_VERSION" | cut -d. -f1-2)
+check_version() {
+  local file="$1"
+  local pkg="$2"
+  local version
+  version=$(jq -r ".devDependencies.\"$pkg\" // empty" "$file" | sed 's/[^0-9.]//g')
+  if [ -z "$version" ]; then
+    return
+  fi
+  local flake_maj_min npm_maj_min
+  flake_maj_min=$(echo "$FLAKE_VERSION" | cut -d. -f1-2)
+  npm_maj_min=$(echo "$version" | cut -d. -f1-2)
+  if [ "$flake_maj_min" != "$npm_maj_min" ]; then
+    echo -e "  ${RED}x${NC} $file $pkg: $version (expected $FLAKE_VERSION)"
+    MISMATCH=1
+  else
+    echo -e "  ${GREEN}ok${NC} $file $pkg: $version"
+  fi
+}
 
-echo "Version Check:"
-echo "  playwright-web-flake: $FLAKE_VERSION"
-echo "  @playwright/test:     $NPM_VERSION"
+echo "playwright-web-flake: $FLAKE_VERSION"
 echo ""
 
-if [ "$FLAKE_MAJ_MIN" = "$NPM_MAJ_MIN" ]; then
-    echo -e "${GREEN}✓ Versions synchronized${NC}"
-    exit 0
+check_version package.json "@playwright/test"
+check_version packages/docs/package.json "@playwright/test"
+check_version packages/docs/package.json "playwright"
+check_version packages/eventcatalog/package.json "@playwright/test"
+check_version packages/eventcatalog/package.json "playwright"
+
+echo ""
+if [ "$MISMATCH" -eq 0 ]; then
+  echo -e "${GREEN}Versions synchronized${NC}"
+  exit 0
 else
-    echo -e "${RED}✗ Version mismatch detected!${NC}"
-    echo ""
-    echo -e "${YELLOW}Action required:${NC}"
-    if [[ "$FLAKE_VERSION" > "$NPM_VERSION" ]]; then
-        echo "  1. Update @playwright/test to match flake:"
-        echo "     just deps-update-playwright"
-    else
-        echo "  1. Update playwright-web-flake in flake.nix to $NPM_MAJ_MIN.x"
-        echo "  2. Run: nix flake update playwright-web-flake"
-        echo "  3. Test: just docs-test"
-    fi
-    exit 1
+  echo -e "${RED}Version mismatch detected${NC}"
+  echo -e "${YELLOW}Run: just update-playwright${NC}"
+  exit 1
 fi
