@@ -21,7 +21,8 @@
     nix-unit.inputs.treefmt-nix.follows = "treefmt-nix";
 
     git-hooks.url = "github:cachix/git-hooks.nix";
-    git-hooks.flake = false;
+    git-hooks.inputs.nixpkgs.follows = "nixpkgs";
+    git-hooks.inputs.flake-compat.follows = "";
 
     rust-overlay.url = "github:oxalica/rust-overlay";
     rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
