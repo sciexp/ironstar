@@ -2,7 +2,7 @@
 {
   imports = [
     inputs.treefmt-nix.flakeModule
-    (inputs.git-hooks + /flake-module.nix)
+    inputs.git-hooks.flakeModule
   ];
 
   perSystem =
@@ -28,12 +28,20 @@
         programs.biome = {
           enable = true;
           includes = [
-            "*.ts"
-            "*.tsx"
-            "*.js"
-            "*.jsx"
-            "*.json"
-            "*.astro"
+            # packages: TS/JS/JSON/Astro source
+            "packages/**/*.ts"
+            "packages/**/*.tsx"
+            "packages/**/*.js"
+            "packages/**/*.jsx"
+            "packages/**/*.json"
+            "packages/**/*.astro"
+            # web-components: TS/JS/JSON source
+            "web-components/**/*.ts"
+            "web-components/**/*.js"
+            "web-components/**/*.json"
+            # root and CI config
+            "package.json"
+            ".github/**/*.json"
           ];
           excludes = [
             ".github/renovate.json"
@@ -43,6 +51,7 @@
       };
 
       pre-commit.settings = {
+        package = pkgs.prek;
         hooks.treefmt.enable = true;
         hooks.gitleaks = {
           enable = true;
