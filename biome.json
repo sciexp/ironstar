@@ -9,6 +9,12 @@
 			"packages/*/*.config.mjs",
 			"packages/*/*.config.ts",
 			"packages/*/package.json",
+			"web-components/components/**",
+			"web-components/bindings/**",
+			"web-components/__tests__/**",
+			"web-components/*.ts",
+			"web-components/package.json",
+			"web-components/tsconfig.json",
 			"package.json",
 			".github/**/*.json"
 		]
