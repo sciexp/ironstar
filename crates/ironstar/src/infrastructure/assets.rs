@@ -4,7 +4,6 @@
 //! - Development: ServeDir from filesystem with no-cache headers
 //! - Production: rust-embed with immutable cache headers for hashed assets
 
-#[cfg(not(debug_assertions))]
 use axum::routing::get;
 use axum::{
     Router,
@@ -135,22 +134,22 @@ fn is_hashed_filename(path: &str) -> bool {
 
 /// Create router for static asset serving.
 ///
-/// In debug builds, serves from filesystem for hot reload.
-/// In release builds, serves embedded assets.
+/// In debug builds, serves from filesystem when `static/dist` exists (hot reload),
+/// falling back to embedded assets when absent (nix dev binary).
+/// In release builds, always serves embedded assets.
 pub fn create_static_router() -> Router {
     #[cfg(debug_assertions)]
     {
-        use tower_http::services::ServeDir;
-        Router::new().nest_service(
-            "/static",
-            ServeDir::new("static/dist").append_index_html_on_directories(false),
-        )
+        if std::path::Path::new("static/dist").exists() {
+            use tower_http::services::ServeDir;
+            return Router::new().nest_service(
+                "/static",
+                ServeDir::new("static/dist").append_index_html_on_directories(false),
+            );
+        }
     }
 
-    #[cfg(not(debug_assertions))]
-    {
-        Router::new().route("/static/{*path}", get(static_file_handler))
-    }
+    Router::new().route("/static/{*path}", get(static_file_handler))
 }
 
 #[cfg(test)]
