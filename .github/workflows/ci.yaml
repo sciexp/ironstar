@@ -518,7 +518,7 @@ jobs:
         uses: ./.github/actions/cached-ci-job
         with:
           check-name: binary-build
-          hash-sources: 'crates/**/*.rs **/Cargo.toml Cargo.lock web-components/**/*.ts web-components/**/*.js static/**/*'
+          hash-sources: '**/*.nix flake.lock crates/**/*.rs **/Cargo.toml Cargo.lock web-components/**/*.ts web-components/**/*.js static/**/*'
           force-run: ${{ inputs.force_run || 'false' }}
 
       - name: Setup Nix
@@ -586,7 +586,7 @@ jobs:
         uses: ./.github/actions/cached-ci-job
         with:
           check-name: e2e
-          hash-sources: 'e2e/**/*.ts playwright.config.ts package.json packages/**/package.json **/*.lock crates/**/*.rs **/Cargo.toml Cargo.lock static/**/*'
+          hash-sources: '**/*.nix flake.lock crates/**/*.rs **/Cargo.toml Cargo.lock web-components/**/*.ts web-components/**/*.js static/**/* e2e/**/*.ts playwright.config.ts package.json packages/**/package.json bun.lock'
           force-run: ${{ inputs.force_run || 'false' }}
 
       - name: Setup Nix
