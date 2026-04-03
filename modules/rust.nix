@@ -49,9 +49,12 @@
       # Crane library overridden with our toolchain (replaces config.rust-project.crane-lib)
       crane-lib = (inputs.crane.mkLib pkgs).overrideToolchain rustToolchain;
 
-      # Source filtering (replaces config.rust-project.src)
-      src = lib.cleanSourceWith {
-        src = self;
+      # Source filtering: builtins.path with a fixed name produces a content-addressed
+      # store path whose hash depends only on filtered content, not on the flake's
+      # self identity, preventing full rebuilds when unrelated files change.
+      src = builtins.path {
+        path = self;
+        name = "ironstar-src";
         filter =
           path: type:
           # Include SQL files for include_str! macros
