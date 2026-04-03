@@ -497,14 +497,16 @@ jobs:
       SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
 
   # job 7: binary-build
-  # Build ironstar binary via nix and push to cachix for e2e tests.
-  # Runs in parallel with flake-check so the binary is cached before e2e starts.
+  # Build ironstar release binary via nix and push to cachix.
+  # Only runs for release tags or manual dispatch — not needed for routine CI.
+  # E2E tests use the dev binary (.#ironstar) built inline from nix job cache.
   binary-build:
     needs: [secrets-scan, set-variables]
     runs-on: ubuntu-latest
     if: |
       !cancelled() &&
       needs.set-variables.outputs.skip_ci != 'true' &&
+      (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch') &&
       (github.event_name != 'workflow_dispatch' ||
        inputs.job == '' ||
        inputs.job == 'binary-build')
@@ -566,9 +568,10 @@ jobs:
 
   # job 8: e2e
   # Runs Playwright E2E tests with Chromium browser from nix flake.
-  # Depends on binary-build to ensure the ironstar binary is cached in cachix.
+  # Depends on nix job (flake-check) which caches cargoArtifacts via cachix.
+  # Uses dev binary (.#ironstar) with debug-embed for rust-embed asset serving.
   e2e:
-    needs: [secrets-scan, set-variables, binary-build]
+    needs: [secrets-scan, set-variables, nix]
     runs-on: ubuntu-latest
     if: |
       !cancelled() &&
@@ -610,10 +613,10 @@ jobs:
         if: steps.cache.outputs.should-run == 'true' && needs.set-variables.outputs.debug == 'true'
         uses: mxschmitt/action-tmate@c0afd6f790e3a5564914980036ebf83216678101 # v3
 
-      - name: Build ironstar binary from cache
+      - name: Build ironstar dev binary
         if: steps.cache.outputs.should-run == 'true'
-        run: nix build --accept-flake-config .#ironstar-release -L
-        timeout-minutes: 2
+        run: nix build --accept-flake-config .#ironstar -L
+        timeout-minutes: 5
 
       - name: Run Playwright tests
         if: steps.cache.outputs.should-run == 'true'
