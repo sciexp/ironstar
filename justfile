@@ -144,22 +144,27 @@ outdated:
 check-playwright:
   @./scripts/check-playwright-sync.sh
 
-# Update @playwright/test to match playwright-web-flake, update lockfile, and test
+# Update playwright packages to match playwright-web-flake, update lockfile, and test
 [group('workspace')]
 update-playwright: check-playwright
   #!/usr/bin/env bash
   set -euo pipefail
   FLAKE_VERSION=$(grep "playwright-web-flake.url" flake.nix | sed 's/.*\/\([0-9.]*\)".*/\1/')
-  echo "Updating @playwright/test to ^$FLAKE_VERSION..."
-  cd packages/docs
-  # Use jq to update package.json
-  jq ".devDependencies.\"@playwright/test\" = \"^$FLAKE_VERSION\"" package.json > package.json.tmp
+  echo "Pinning playwright packages to $FLAKE_VERSION..."
+  # Root package.json
+  jq ".devDependencies.\"@playwright/test\" = \"$FLAKE_VERSION\"" package.json > package.json.tmp
   mv package.json.tmp package.json
-  cd ../..
-  echo "Running bun install to update lockfile..."
-  bun install
+  # packages/docs
+  jq ".devDependencies.\"@playwright/test\" = \"$FLAKE_VERSION\" | .devDependencies.\"playwright\" = \"$FLAKE_VERSION\"" packages/docs/package.json > packages/docs/package.json.tmp
+  mv packages/docs/package.json.tmp packages/docs/package.json
+  # packages/eventcatalog
+  jq ".devDependencies.\"@playwright/test\" = \"$FLAKE_VERSION\" | .devDependencies.\"playwright\" = \"$FLAKE_VERSION\"" packages/eventcatalog/package.json > packages/eventcatalog/package.json.tmp
+  mv packages/eventcatalog/package.json.tmp packages/eventcatalog/package.json
+  echo "Running reinstall to update lockfile..."
+  bun run reinstall
   echo "Running tests to verify..."
   just docs-test
+  just eventcatalog-test
 
 # Clean all workspace build artifacts
 [group('workspace')]
