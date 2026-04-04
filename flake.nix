@@ -3,8 +3,7 @@
 
   inputs = {
     nixpkgs.url = "https://channels.nixos.org/nixpkgs-unstable/nixexprs.tar.xz";
-    systems.url = "path:./systems.nix";
-    systems.flake = false;
+    systems.url = "path:./systems";
 
     flake-parts = {
       url = "github:hercules-ci/flake-parts";
