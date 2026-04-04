@@ -50,6 +50,37 @@ stdenv.mkDerivation (finalAttrs: {
     runHook postInstall
   '';
 
+  passthru.tests.unit = stdenv.mkDerivation {
+    pname = "ironstar-docs-unit";
+    version = finalAttrs.version;
+    inherit (finalAttrs) src;
+
+    nativeBuildInputs = [
+      bun2nix.hook
+    ];
+
+    bunDeps = finalAttrs.bunDeps;
+    dontUseBunBuild = true;
+    dontUseBunInstall = true;
+    dontRunLifecycleScripts = true;
+
+    buildPhase = ''
+      runHook preBuild
+      cd packages/docs
+      bun run test:unit
+      cd ../..
+      runHook postBuild
+    '';
+
+    installPhase = ''
+      touch $out
+    '';
+
+    meta = {
+      description = "Vitest unit tests for ironstar-docs";
+    };
+  };
+
   passthru.tests.e2e = stdenv.mkDerivation {
     pname = "ironstar-docs-e2e";
     version = finalAttrs.version;
