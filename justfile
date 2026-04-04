@@ -1080,6 +1080,11 @@ nix-flake-io:
   printf "\n## inputs\n"
   nix flake metadata --json 2>/dev/null | jq -r '.locks.nodes | keys[] | select(. != "root")'
 
+# Show derivation details for a flake output (e.g. just nix-derivation-show ironstar)
+[group('nix')]
+nix-derivation-show output="ironstar":
+  nix derivation show .#{{ output }} | jq '.[]'
+
 # Build the documentation package with Nix
 [group('nix')]
 nix-build:
