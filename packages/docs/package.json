@@ -15,7 +15,7 @@
 		"start": "astro dev",
 		"build": "astro build",
 		"preview": "astro build && wrangler dev",
-		"preview:ci": "bunx serve dist -l 4321 --no-clipboard",
+		"preview:ci": "serve dist -l 4321 --no-clipboard",
 		"deploy": "astro build && wrangler deploy",
 		"linkcheck": "CHECK_LINKS=true astro build",
 		"cf-typegen": "wrangler types",
