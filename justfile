@@ -1057,6 +1057,29 @@ dev-cleanup:
     lsof -nP -i :3000,:9090,:3001 2>/dev/null | grep LISTEN || echo "  All ports free"
   fi
 
+# List all flake inputs and per-system outputs (checks, packages, devShells, apps, overlays, modules)
+[group('nix')]
+nix-flake-io:
+  #!/usr/bin/env bash
+  set -euo pipefail
+  sys=$(nix eval --impure --raw --expr 'builtins.currentSystem')
+  printf "## checks\n"
+  nix eval ".#checks.${sys}" --apply builtins.attrNames --json 2>/dev/null | jq -r '.[]'
+  printf "\n## packages\n"
+  nix eval ".#packages.${sys}" --apply builtins.attrNames --json 2>/dev/null | jq -r '.[]'
+  printf "\n## devShells\n"
+  nix eval ".#devShells.${sys}" --apply builtins.attrNames --json 2>/dev/null | jq -r '.[]'
+  printf "\n## apps\n"
+  nix eval ".#apps.${sys}" --apply builtins.attrNames --json 2>/dev/null | jq -r '.[]'
+  printf "\n## overlays\n"
+  nix eval .#overlays --apply builtins.attrNames --json 2>/dev/null | jq -r '.[]'
+  printf "\n## nixosModules\n"
+  nix eval .#nixosModules --apply builtins.attrNames --json 2>/dev/null | jq -r '.[]'
+  printf "\n## formatter\n"
+  nix eval ".#formatter.${sys}.name" 2>/dev/null
+  printf "\n## inputs\n"
+  nix flake metadata --json 2>/dev/null | jq -r '.locks.nodes | keys[] | select(. != "root")'
+
 # Build the documentation package with Nix
 [group('nix')]
 nix-build:
