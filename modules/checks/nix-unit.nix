@@ -11,7 +11,6 @@
       nix-unit.inputs = {
         inherit (inputs)
           nixpkgs
-          systems
           flake-parts
           treefmt-nix
           import-tree
