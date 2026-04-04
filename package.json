@@ -20,6 +20,9 @@
 		"test:e2e:list": "playwright test --list",
 		"test-release": "semantic-release --dry-run --no-ci"
 	},
+	"overrides": {
+		"ajv": "8.17.1"
+	},
 	"devDependencies": {
 		"@playwright/test": "1.57.0",
 		"@semantic-release/changelog": "^6.0.3",
