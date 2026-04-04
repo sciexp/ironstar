@@ -48,6 +48,7 @@
     # sync this when upgrading @playwright/test in packages/docs/package.json
     playwright-web-flake.url = "github:pietdevries94/playwright-web-flake/1.57.0";
     playwright-web-flake.inputs.nixpkgs.follows = "nixpkgs";
+    playwright-web-flake.inputs.flake-utils.inputs.systems.follows = "systems";
   };
 
   outputs =
