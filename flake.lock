@@ -312,13 +312,12 @@
       }
     },
     "systems": {
-      "flake": false,
       "locked": {
-        "path": "./systems.nix",
+        "path": "./systems",
         "type": "path"
       },
       "original": {
-        "path": "./systems.nix",
+        "path": "./systems",
         "type": "path"
       },
       "parent": []
