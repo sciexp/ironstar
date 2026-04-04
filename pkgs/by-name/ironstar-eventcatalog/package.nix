@@ -7,6 +7,11 @@
 }:
 let
   bun2nix = inputs.bun2nix.packages.${stdenv.system}.default;
+  playwrightDriver = inputs.playwright-web-flake.packages.${stdenv.system}.playwright-driver;
+in
+stdenv.mkDerivation (finalAttrs: {
+  pname = "ironstar-eventcatalog";
+  version = "0.0.0-development";
 
   src = lib.fileset.toSource {
     root = ../../..;
@@ -17,12 +22,6 @@ let
       ../../../packages/eventcatalog
     ];
   };
-in
-stdenv.mkDerivation {
-  pname = "ironstar-eventcatalog";
-  version = "0.0.0-development";
-
-  inherit src;
 
   nativeBuildInputs = [
     bun2nix.hook
@@ -111,4 +110,96 @@ stdenv.mkDerivation {
     cp -R packages/eventcatalog/dist/* $out/
     runHook postInstall
   '';
-}
+
+  passthru.tests.unit = stdenv.mkDerivation {
+    pname = "ironstar-eventcatalog-unit";
+    version = finalAttrs.version;
+    inherit (finalAttrs) src;
+
+    nativeBuildInputs = [
+      bun2nix.hook
+    ];
+
+    bunDeps = finalAttrs.bunDeps;
+    dontUseBunBuild = true;
+    dontUseBunInstall = true;
+    dontRunLifecycleScripts = true;
+
+    # Match the main derivation's linker mode so hoisted
+    # node_modules resolve correctly for vitest
+    bunInstallFlags = finalAttrs.bunInstallFlags;
+
+    buildPhase = ''
+      runHook preBuild
+      cd packages/eventcatalog
+      bun run test:unit
+      cd ../..
+      runHook postBuild
+    '';
+
+    installPhase = ''
+      touch $out
+    '';
+
+    meta = {
+      description = "Vitest unit tests for ironstar-eventcatalog";
+    };
+  };
+
+  passthru.tests.e2e = stdenv.mkDerivation {
+    pname = "ironstar-eventcatalog-e2e";
+    version = finalAttrs.version;
+    inherit (finalAttrs) src;
+
+    nativeBuildInputs = [
+      bun2nix.hook
+      nodejs
+    ];
+
+    bunDeps = finalAttrs.bunDeps;
+    dontUseBunBuild = true;
+    dontUseBunInstall = true;
+    dontRunLifecycleScripts = true;
+    __darwinAllowLocalNetworking = true;
+
+    # Match the main derivation's linker mode so hoisted
+    # node_modules resolve correctly for Playwright
+    bunInstallFlags = finalAttrs.bunInstallFlags;
+
+    env = {
+      CI = "true";
+      PLAYWRIGHT_BROWSERS_PATH = "${playwrightDriver.browsers}";
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1";
+      PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
+    };
+
+    buildPhase = ''
+      runHook preBuild
+      mkdir -p packages/eventcatalog/dist
+      cp -r ${finalAttrs.finalPackage}/* packages/eventcatalog/dist/
+
+      # Add workspace root node_modules/.bin to PATH for serve binary
+      export PATH="$PWD/node_modules/.bin:$PATH"
+
+      cd packages/eventcatalog
+      # Run Playwright via node directly — bun's child_process.fork() IPC
+      # is incompatible with Playwright's worker model
+      ${nodejs}/bin/node ../../node_modules/@playwright/test/cli.js test
+      cd ../..
+      runHook postBuild
+    '';
+
+    installPhase = ''
+      touch $out
+    '';
+
+    meta = {
+      description = "Playwright E2E tests for ironstar-eventcatalog";
+    };
+  };
+
+  meta = {
+    description = "Ironstar EventCatalog site for event-driven architecture documentation";
+    license = lib.licenses.mit;
+  };
+})
