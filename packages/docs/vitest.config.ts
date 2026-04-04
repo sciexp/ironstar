@@ -9,6 +9,15 @@ export default getViteConfig({
 		// Test environment
 		environment: "node",
 
+		// Inline astro and zod so vitest resolves them through Vite's
+		// module graph rather than the filesystem — required for bun's
+		// isolated linker mode used in nix derivations.
+		server: {
+			deps: {
+				inline: ["astro", "zod"],
+			},
+		},
+
 		// Global test APIs (describe, it, expect) without imports
 		globals: true,
 
