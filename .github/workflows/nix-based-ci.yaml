@@ -11,6 +11,7 @@ concurrency:
 
 permissions:
   contents: read
+  checks: write
 
 jobs:
   nix-check:
@@ -49,6 +50,15 @@ jobs:
             --result-format junit \
             --result-file nix-checks.xml
         timeout-minutes: 45
+
+      - name: Publish check report
+        if: always()
+        uses: mikepenz/action-junit-report@bccf2e31636835cf0874589931c4116687171386 # v6.4.0
+        with:
+          report_paths: nix-checks.xml
+          check_name: Nix Checks
+          include_passed: true
+          detailed_summary: true
 
       - name: Upload check results
         if: always()
