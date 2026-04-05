@@ -984,6 +984,11 @@ check:
     nix flake check --impure
   fi
 
+# Validate flake checks via nix-fast-build (failure isolation, parallel eval+build, nom output)
+[group('nix')]
+check-fast:
+  nix-fast-build --no-link --option accept-flake-config true
+
 # Format all files with treefmt (via nix fmt)
 [group('nix')]
 fmt:
