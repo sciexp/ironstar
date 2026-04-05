@@ -303,3 +303,21 @@ jobs:
           else
             echo "::notice title=Next Version (${{ matrix.package.name }})::No release pending"
           fi
+
+  preview-site-deploy:
+    needs: [set-variables, nix-check]
+    if: "!cancelled() && github.event_name == 'pull_request'"
+    strategy:
+      fail-fast: false
+      matrix:
+        site: [docs, eventcatalog]
+    permissions:
+      contents: read
+      deployments: write
+    uses: ./.github/workflows/deploy-site.yaml
+    with:
+      site_name: ${{ matrix.site }}
+      branch: ${{ github.head_ref }}
+      environment: preview
+      debug_enabled: ${{ needs.set-variables.outputs.debug }}
+    secrets: inherit
