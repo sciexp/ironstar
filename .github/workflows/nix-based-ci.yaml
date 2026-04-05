@@ -42,10 +42,21 @@ jobs:
             --no-nom \
             --skip-cached \
             --no-link \
+            --max-jobs 2 \
             --option accept-flake-config true \
-            --flake ".#checks" \
-            --cachix-cache ${{ vars.CACHIX_CACHE_NAME }}
+            --flake ".#checks.x86_64-linux" \
+            --cachix-cache ${{ vars.CACHIX_CACHE_NAME }} \
+            --result-format junit \
+            --result-file nix-checks.xml
         timeout-minutes: 45
+
+      - name: Upload check results
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        with:
+          name: nix-check-results
+          path: nix-checks.xml
+          retention-days: 7
 
       - name: Report disk usage
         if: always()
