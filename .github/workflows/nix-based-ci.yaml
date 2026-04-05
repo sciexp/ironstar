@@ -37,15 +37,24 @@ jobs:
     steps:
       - name: Compute CI variables
         id: vars
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          GIT_REF: ${{ github.ref }}
+          HEAD_REF: ${{ github.head_ref }}
+          REF_NAME: ${{ github.ref_name }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PUSH_SHA: ${{ github.sha }}
+          PR_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          INPUT_DEBUG: ${{ inputs.debug_enabled || false }}
+          INPUT_DEPLOY: ${{ inputs.deploy_enabled || false }}
         run: |
           # debug: from workflow_dispatch input or false
-          echo "debug=${{ inputs.debug_enabled || false }}" >> "$GITHUB_OUTPUT"
+          echo "debug=${INPUT_DEBUG}" >> "$GITHUB_OUTPUT"
 
           # skip_ci: true if PR has skip-ci label
           SKIP_CI=false
-          if [[ '${{ github.event_name }}' == 'pull_request' ]]; then
-            LABELS='${{ toJSON(github.event.pull_request.labels.*.name) }}'
-            if echo "$LABELS" | grep -q '"skip-ci"'; then
+          if [[ "${EVENT_NAME}" == 'pull_request' ]]; then
+            if echo "${PR_LABELS}" | grep -q '"skip-ci"'; then
               SKIP_CI=true
             fi
           fi
@@ -53,37 +62,36 @@ jobs:
 
           # deploy_enabled: push to main, PR with docs-preview label, or workflow_dispatch input
           DEPLOY_ENABLED=false
-          if [[ '${{ github.event_name }}' == 'push' && '${{ github.ref }}' == 'refs/heads/main' ]]; then
+          if [[ "${EVENT_NAME}" == 'push' && "${GIT_REF}" == 'refs/heads/main' ]]; then
             DEPLOY_ENABLED=true
-          elif [[ '${{ github.event_name }}' == 'pull_request' ]]; then
-            LABELS='${{ toJSON(github.event.pull_request.labels.*.name) }}'
-            if echo "$LABELS" | grep -q '"docs-preview"'; then
+          elif [[ "${EVENT_NAME}" == 'pull_request' ]]; then
+            if echo "${PR_LABELS}" | grep -q '"docs-preview"'; then
               DEPLOY_ENABLED=true
             fi
-          elif [[ '${{ github.event_name }}' == 'workflow_dispatch' ]]; then
-            DEPLOY_ENABLED=${{ inputs.deploy_enabled || false }}
+          elif [[ "${EVENT_NAME}" == 'workflow_dispatch' ]]; then
+            DEPLOY_ENABLED=${INPUT_DEPLOY}
           fi
           echo "deploy_enabled=${DEPLOY_ENABLED}" >> "$GITHUB_OUTPUT"
 
           # deploy_environment: production for push to main, preview otherwise
           DEPLOY_ENV=preview
-          if [[ '${{ github.event_name }}' == 'push' && '${{ github.ref }}' == 'refs/heads/main' ]]; then
+          if [[ "${EVENT_NAME}" == 'push' && "${GIT_REF}" == 'refs/heads/main' ]]; then
             DEPLOY_ENV=production
           fi
           echo "deploy_environment=${DEPLOY_ENV}" >> "$GITHUB_OUTPUT"
 
           # checkout_ref: head_ref for PRs, ref_name for pushes
-          if [[ '${{ github.event_name }}' == 'pull_request' ]]; then
-            echo "checkout_ref=${{ github.head_ref }}" >> "$GITHUB_OUTPUT"
+          if [[ "${EVENT_NAME}" == 'pull_request' ]]; then
+            echo "checkout_ref=${HEAD_REF}" >> "$GITHUB_OUTPUT"
           else
-            echo "checkout_ref=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+            echo "checkout_ref=${REF_NAME}" >> "$GITHUB_OUTPUT"
           fi
 
           # checkout_rev: PR head SHA for PRs, github.sha for pushes
-          if [[ '${{ github.event_name }}' == 'pull_request' ]]; then
-            echo "checkout_rev=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+          if [[ "${EVENT_NAME}" == 'pull_request' ]]; then
+            echo "checkout_rev=${HEAD_SHA}" >> "$GITHUB_OUTPUT"
           else
-            echo "checkout_rev=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+            echo "checkout_rev=${PUSH_SHA}" >> "$GITHUB_OUTPUT"
           fi
 
   nix-check:
@@ -179,9 +187,10 @@ jobs:
 
       - name: Test bootstrap.sh one-liner (remote curl)
         if: steps.cache.outputs.should-run == 'true'
+        env:
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+          REPO: ${{ github.repository }}
         run: |
-          BRANCH="${{ github.head_ref || github.ref_name }}"
-          REPO="${{ github.repository }}"
           URL="https://raw.githubusercontent.com/${REPO}/${BRANCH}/scripts/bootstrap.sh"
           echo "Testing remote one-liner pattern..."
           echo "URL: ${URL}"
@@ -202,7 +211,7 @@ jobs:
             exit 1
           fi
           echo "nix found at: $(command -v nix)"
-          echo "nix store path: $(readlink -f $(which nix))"
+          echo "nix store path: $(readlink -f "$(which nix)")"
           nix --version
 
       - name: Verify direnv configured
