@@ -19,8 +19,10 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
-  contents: read
-  checks: write
+  contents: write     # preview-release-version, production-release-packages
+  checks: write       # nix-check JUnit report
+  deployments: write  # preview-site-deploy, production-site-deploy
+  id-token: write     # production-release-packages
 
 jobs:
   set-variables:
