@@ -95,7 +95,15 @@ jobs:
           fi
 
   nix-check:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - system: x86_64-linux
+            runner: ubuntu-latest
+          # - system: aarch64-linux
+          #   runner: ubuntu-24.04-arm
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -106,7 +114,7 @@ jobs:
         uses: ./.github/actions/setup-nix
         with:
           installer: full
-          system: x86_64-linux
+          system: ${{ matrix.system }}
           enable-cachix: true
           cachix-name: ${{ vars.CACHIX_CACHE_NAME }}
           cachix-auth-token: ${{ secrets.CACHIX_AUTH_TOKEN }}
@@ -125,7 +133,7 @@ jobs:
             --no-link \
             --max-jobs 2 \
             --option accept-flake-config true \
-            --flake ".#checks.x86_64-linux" \
+            --flake ".#checks.${{ matrix.system }}" \
             --cachix-cache ${{ vars.CACHIX_CACHE_NAME }} \
             --result-format junit \
             --result-file nix-checks.xml
