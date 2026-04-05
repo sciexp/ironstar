@@ -141,3 +141,110 @@ jobs:
       - name: Report disk usage
         if: always()
         run: df -h
+
+  bootstrap-verification:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
+
+      - name: Check execution cache
+        id: cache
+        uses: ./.github/actions/cached-ci-job
+        with:
+          check-name: ${{ github.job }}
+          hash-sources: 'scripts/bootstrap.sh Makefile .envrc .github/actions/setup-nix/action.yml'
+
+      - name: Test bootstrap.sh --help
+        if: steps.cache.outputs.should-run == 'true'
+        run: |
+          echo "Testing --help flag..."
+          bash scripts/bootstrap.sh --help
+
+      - name: Test bootstrap.sh --version
+        if: steps.cache.outputs.should-run == 'true'
+        run: |
+          echo "Testing --version flag..."
+          bash scripts/bootstrap.sh --version
+
+      - name: Test bootstrap.sh --dry-run (local)
+        if: steps.cache.outputs.should-run == 'true'
+        run: |
+          echo "Testing --dry-run mode (local script)..."
+          bash scripts/bootstrap.sh --dry-run --yes
+
+      - name: Test bootstrap.sh one-liner (remote curl)
+        if: steps.cache.outputs.should-run == 'true'
+        run: |
+          BRANCH="${{ github.head_ref || github.ref_name }}"
+          REPO="${{ github.repository }}"
+          URL="https://raw.githubusercontent.com/${REPO}/${BRANCH}/scripts/bootstrap.sh"
+          echo "Testing remote one-liner pattern..."
+          echo "URL: ${URL}"
+          echo ""
+          bash <(curl --proto '=https' --tlsv1.2 -sSf "${URL}") --dry-run --yes
+
+      - name: Run bootstrap.sh (actual installation)
+        if: steps.cache.outputs.should-run == 'true'
+        run: |
+          echo "Running bootstrap script..."
+          bash scripts/bootstrap.sh --yes
+
+      - name: Verify nix installed
+        if: steps.cache.outputs.should-run == 'true'
+        run: |
+          if ! command -v nix &> /dev/null; then
+            echo "nix not found in PATH"
+            exit 1
+          fi
+          echo "nix found at: $(command -v nix)"
+          echo "nix store path: $(readlink -f $(which nix))"
+          nix --version
+
+      - name: Verify direnv configured
+        if: steps.cache.outputs.should-run == 'true'
+        run: |
+          if ! command -v direnv &> /dev/null; then
+            echo "direnv not found in PATH"
+            exit 1
+          fi
+          echo "direnv found at: $(command -v direnv)"
+
+      - name: Run make verify
+        if: steps.cache.outputs.should-run == 'true'
+        run: make verify
+
+      - name: Verify age key generated
+        if: steps.cache.outputs.should-run == 'true'
+        run: |
+          if [ ! -f ~/.config/sops/age/keys.txt ]; then
+            echo "age key not generated"
+            exit 1
+          fi
+          echo "age key generated successfully"
+          . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && \
+          nix shell nixpkgs#age -c age-keygen -y ~/.config/sops/age/keys.txt
+
+      - name: Create job result marker
+        if: success() && steps.cache.outputs.should-run == 'true' && steps.cache.outputs.cache-source == 'none'
+        shell: bash
+        run: |
+          mkdir -p "${{ steps.cache.outputs.cache-path }}"
+          cat > "${{ steps.cache.outputs.cache-path }}/marker" <<EOF
+          {
+            "success": true,
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "commit": "${{ github.sha }}",
+            "run_id": "${{ github.run_id }}",
+            "run_attempt": "${{ github.run_attempt }}"
+          }
+          EOF
+
+      - name: Save execution cache
+        if: success() && steps.cache.outputs.should-run == 'true' && steps.cache.outputs.cache-source == 'none'
+        uses: actions/cache/save@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+        with:
+          path: ${{ steps.cache.outputs.cache-path }}
+          key: ${{ steps.cache.outputs.cache-key }}
