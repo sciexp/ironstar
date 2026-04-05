@@ -2,6 +2,7 @@
 
 The ironstar Cargo workspace contains 11 crates organized into four role-based layers.
 Edges in the diagram represent workspace-internal path dependencies only.
+Each crate has its own README with module structure, type documentation, and cross-links to the corresponding [Idris2 specification](../spec/README.md).
 
 ```mermaid
 flowchart TD
@@ -62,6 +63,22 @@ flowchart TD
     style Infrastructure fill:#f5eef8,stroke:#8e44ad
     style Binary fill:#eafaf1,stroke:#27ae60
 ```
+
+## Crate documentation
+
+| Crate | README | Spec counterpart |
+|-------|--------|-----------------|
+| ironstar-core | [README](ironstar-core/README.md) | [spec/Core/](../spec/Core/README.md) |
+| ironstar-shared-kernel | [README](ironstar-shared-kernel/README.md) | [spec/SharedKernel/](../spec/SharedKernel/README.md) |
+| ironstar-todo | [README](ironstar-todo/README.md) | [spec/Todo/](../spec/Todo/README.md) |
+| ironstar-session | [README](ironstar-session/README.md) | [spec/Session/](../spec/Session/README.md) |
+| ironstar-analytics | [README](ironstar-analytics/README.md) | [spec/Analytics/](../spec/Analytics/README.md) |
+| ironstar-workspace | [README](ironstar-workspace/README.md) | [spec/Workspace/](../spec/Workspace/README.md) |
+| ironstar-event-store | [README](ironstar-event-store/README.md) | [spec/Core/Effect](../spec/Core/README.md) |
+| ironstar-event-bus | [README](ironstar-event-bus/README.md) | [spec/Core/Effect](../spec/Core/README.md) |
+| ironstar-analytics-infra | [README](ironstar-analytics-infra/README.md) | (no spec counterpart) |
+| ironstar-session-store | [README](ironstar-session-store/README.md) | (no spec counterpart) |
+| ironstar | [README](ironstar/README.md) | (composition root, outside spec scope) |
 
 ## Notes
 
