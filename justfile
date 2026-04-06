@@ -198,11 +198,6 @@ lint:
 biome-check:
   cd packages/docs && bun run check:fix
 
-# Build specific nix category (for CI matrix distribution)
-[group('CI/CD')]
-ci-build-category system category:
-  @./scripts/ci/ci-build-category.sh "{{system}}" "{{category}}"
-
 # Validate flake structure and required recipes
 [group('CI/CD')]
 validate-flake:
@@ -984,6 +979,11 @@ check:
     nix flake check --impure
   fi
 
+# Validate flake checks via nix-fast-build (failure isolation, parallel eval+build, nom output)
+[group('nix')]
+check-fast:
+  nix-fast-build --no-link --option accept-flake-config true
+
 # Format all files with treefmt (via nix fmt)
 [group('nix')]
 fmt:
@@ -1056,6 +1056,34 @@ dev-cleanup:
       | grep -v "just dev-cleanup" || echo "  (none)"
     lsof -nP -i :3000,:9090,:3001 2>/dev/null | grep LISTEN || echo "  All ports free"
   fi
+
+# List all flake inputs and per-system outputs (checks, packages, devShells, apps, overlays, modules)
+[group('nix')]
+nix-flake-io:
+  #!/usr/bin/env bash
+  set -euo pipefail
+  sys=$(nix eval --impure --raw --expr 'builtins.currentSystem')
+  printf "## checks\n"
+  nix eval ".#checks.${sys}" --apply builtins.attrNames --json 2>/dev/null | jq -r '.[]'
+  printf "\n## packages\n"
+  nix eval ".#packages.${sys}" --apply builtins.attrNames --json 2>/dev/null | jq -r '.[]'
+  printf "\n## devShells\n"
+  nix eval ".#devShells.${sys}" --apply builtins.attrNames --json 2>/dev/null | jq -r '.[]'
+  printf "\n## apps\n"
+  nix eval ".#apps.${sys}" --apply builtins.attrNames --json 2>/dev/null | jq -r '.[]'
+  printf "\n## overlays\n"
+  nix eval .#overlays --apply builtins.attrNames --json 2>/dev/null | jq -r '.[]'
+  printf "\n## nixosModules\n"
+  nix eval .#nixosModules --apply builtins.attrNames --json 2>/dev/null | jq -r '.[]'
+  printf "\n## formatter\n"
+  nix eval ".#formatter.${sys}.name" 2>/dev/null
+  printf "\n## inputs\n"
+  nix flake metadata --json 2>/dev/null | jq -r '.locks.nodes | keys[] | select(. != "root")'
+
+# Show derivation details for a flake output (e.g. just nix-derivation-show ironstar)
+[group('nix')]
+nix-derivation-show output="ironstar":
+  nix derivation show .#{{ output }} | jq '.[]'
 
 # Build the documentation package with Nix
 [group('nix')]

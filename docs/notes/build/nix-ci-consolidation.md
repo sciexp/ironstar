@@ -1,12 +1,12 @@
 ---
 title: Nix CI consolidation
 cynefin: complicated
-status: planning
+status: complete
 ---
 
 # Nix CI consolidation
 
-This document captures the design for consolidating ironstar's CI/CD pipeline into nix flake checks, reducing imperative GitHub Actions YAML to a minimal shell around `nix flake check`.
+This document captures the design for consolidating ironstar's CI/CD pipeline into nix flake checks, reducing imperative GitHub Actions YAML to a minimal shell around `nix-fast-build` evaluating `.#checks`.
 The work serves a dual purpose: improving ironstar's CI and experimentally validating the nix-first CI pattern for the sciexp monorepo architecture.
 
 ## Motivation
@@ -15,8 +15,8 @@ Ironstar's current CI (`ci.yaml`, ~800 lines) orchestrates validation through a 
 Several validation concerns (secrets scanning, JS/TS package tests, binary builds) run outside of nix's build graph, forfeiting the content-addressed caching that nix provides.
 The result is redundant computation, brittle YAML wiring, and a pipeline that is difficult to maintain.
 
-The target state is that `nix flake check` becomes the single validation command, exercising all checks through nix derivations.
-This creates full optionality: the same `.#checks` attribute set works unchanged under GitHub Actions (single-runner `nix flake check`), a future buildbot-nix deployment (per-check fan-out with shared nix store), or local development (`nix flake check -L` or piped through nom).
+The target state is that all validation is expressed as `.#checks` attributes, evaluated and built via `nix-fast-build` in CI and `nix flake check` locally.
+This creates full optionality: the same `.#checks` attribute set works unchanged under GitHub Actions (`nix-fast-build` with cachix integration), a future buildbot-nix deployment (per-check fan-out with shared nix store), or local development (`nix flake check -L` or piped through nom).
 
 This initiative also informs the sciexp monorepo architecture evaluation.
 If ironstar demonstrates that a Rust + JS/TS project can express its entire validation pipeline as nix flake checks with acceptable performance, the pattern generalizes to the sciexp monorepo where buildbot-nix would evaluate `.#checks` across all constituent projects.
@@ -43,7 +43,8 @@ Running `nix flake check` on a single runner preserves shared `cargoArtifacts` a
 
 ### What CI does today
 
-The `nix` job already runs `nix flake check --accept-flake-config --system x86_64-linux -L` via `just ci-build-category`, covering the six checks above.
+The `nix` job in the existing `ci.yaml` runs `nix flake check --accept-flake-config --system x86_64-linux -L` via `just ci-build-category`, covering the six checks above.
+The new `nix-based-ci.yaml` replaces this with `nix-fast-build` for failure isolation, parallel eval+build, and native cachix integration.
 The remaining jobs run outside the nix build graph:
 
 | CI job | What it does | Path to consolidation |
@@ -53,7 +54,7 @@ The remaining jobs run outside the nix build graph:
 | `bootstrap-verification` | Verifies nix setup | CI plumbing; not needed when nix is the only tool |
 | `binary-build` | `nix build .#ironstar-release` | Eliminate; dev binary sufficient for E2E |
 | `test` (JS/TS) | `just <pkg>-test-coverage`, `just <pkg>-build`, `just <pkg>-test-e2e` | Build packages as nix derivations with checkPhase |
-| `e2e` | Playwright against running ironstar server | Keep impure; server + browser not sandboxable yet |
+| `e2e` | Playwright against running ironstar server | Now a flake check derivation (`ironstar-e2e`); see below |
 | Deployment jobs | Cloudflare Workers, releases | Inherently effectful; remain in YAML |
 
 ### Nix derivation dependency graph for Rust builds
@@ -149,9 +150,9 @@ Requirements for the derivation:
 - Pre-built static site served locally (not Astro dev mode which may attempt network access)
 - The eventcatalog already has `preview:ci` (`bunx serve dist`) for this pattern; docs needs equivalent
 
-The ironstar application E2E (SSE lifecycle, Datastar behavior) remains impure in CI because it requires a running ironstar server with database initialization, which is not sandboxable without a NixOS VM test.
-NixOS VM tests for the application E2E were assessed and rejected for now: 1.5-2.5GB closure, 2-4 minute runtime, SSE timing sensitivity in QEMU.
-A lightweight curl-based service smoke test derivation (health endpoint verification) could be added as a simpler alternative.
+The ironstar application E2E (SSE lifecycle, Datastar behavior) is now also a check derivation (`ironstar-e2e`).
+Rather than a NixOS VM test (rejected due to 1.5-2.5GB closure and SSE timing sensitivity in QEMU), it uses a lightweight approach: the derivation starts the ironstar dev binary as a background process within the nix build sandbox, runs Playwright against it, and collects results.
+Zenoh is enabled for SSE event distribution; analytics (DuckDB) is disabled to reduce build time.
 
 ### Dendritic module composition via import-tree
 
@@ -162,28 +163,69 @@ This is consistent with the existing `modules/checks/nix-unit.nix` pattern.
 
 ### CI YAML design
 
-The `nix-based-ci.yaml` must use the existing `.github/actions/setup-nix` composite action, which handles:
+The `nix-based-ci.yaml` uses `nix-fast-build` instead of `nix flake check` as the CI runner.
+`nix-fast-build` provides three advantages over bare `nix flake check`:
+
+1. Failure isolation: each check is evaluated and built independently, so one failure does not prevent others from completing. `nix flake check` aborts on the first failure.
+2. Parallel evaluation and build: `nix-fast-build` parallelizes both the evaluation and build phases across all 12 checks, whereas `nix flake check` evaluates sequentially.
+3. Native cachix integration: the `--cachix-cache` flag pushes newly-built results to cachix and `--skip-cached` skips derivations already present, replacing the separate cachix push step.
+
+The pipeline is a single job with no separate E2E step.
+The `ironstar-e2e` check derivation (added in a prior commit) runs the full Playwright suite inside a nix build sandbox, so all 12 checks run under `nix-fast-build` in one pass.
+
+The 12 checks:
+
+| Check | What it validates |
+|---|---|
+| `docs-e2e` | Playwright smoke tests against ironstar-docs static site |
+| `docs-unit` | Vitest unit tests for docs package |
+| `eventcatalog-e2e` | Playwright smoke tests against eventcatalog static site |
+| `eventcatalog-unit` | Vitest unit tests for eventcatalog package |
+| `gitleaks` | Secret scanning against full git history |
+| `ironstar-e2e` | Playwright E2E against running ironstar server (Zenoh enabled, analytics disabled) |
+| `nix-unit` | Flake structure metadata assertions |
+| `pre-commit` | treefmt + gitleaks hooks |
+| `treefmt` | nixfmt + rustfmt + biome formatting |
+| `workspace-clippy` | `cargo clippy --all-targets -- -D warnings` |
+| `workspace-fmt` | `cargo fmt --check` |
+| `workspace-test` | `cargo nextest run --workspace` (933 tests) |
+
+The `ironstar-e2e` check derivation runs the ironstar dev binary with `IRONSTAR_ENABLE_ZENOH=true` and `IRONSTAR_ENABLE_ANALYTICS=false`.
+Zenoh must be enabled for SSE event distribution (required by Datastar-formatted SSE tests).
+Analytics is disabled because DuckDB's bundled build is not needed for E2E validation and would add significant build time.
+
+The `nix-based-ci.yaml` uses the existing `.github/actions/setup-nix` composite action, which handles:
 - nothing-but-nix disk clearing (`cleave` protocol, 4GB mnt-safe-haven)
 - `cachix/install-nix-action` with pinned nix version (2.32.4)
 - magic-nix-cache (FlakeHub disabled)
-- cachix push+pull
+- cachix setup (read-only; `cachix-skip-push: true` because `nix-fast-build --cachix-cache` handles push)
 
 All nix commands require `--accept-flake-config` because `flake.nix` declares `nixConfig` with extra substituters (nix-community, crane, pyproject-nix, sciexp caches).
 
-The minimal pipeline:
+The pipeline:
 
 ```
 nix-check (single runner, full installer):
-  setup-nix (nothing-but-nix + cachix)
-  nix flake check --accept-flake-config -L
+  setup-nix (nothing-but-nix + cachix read-only)
+  nix flake show --json --accept-flake-config   # structural validation
+  nix run .#nix-fast-build -- \
+    --no-nom --skip-cached --no-link \
+    --option accept-flake-config true \
+    --flake ".#checks" \
+    --cachix-cache $CACHIX_CACHE_NAME
 
-e2e (depends on nix-check):
-  setup-nix (quick installer + cachix)
-  nix build --accept-flake-config .#ironstar   # cargoArtifacts from cachix
-  playwright against dev binary
-
-deployment jobs (unchanged, effectful)
+deployment jobs (unchanged, effectful — deferred to follow-up)
 ```
+
+Trigger conditions are `pull_request` (opened, reopened, synchronize) and `workflow_dispatch` only.
+`push` to main and `workflow_call` are not yet enabled; the initial deployment runs `nix-based-ci.yaml` alongside the existing `ci.yaml` for controlled comparison (ohy.9 validation).
+Once validated, `nix-based-ci.yaml` replaces `ci.yaml` and inherits the push+workflow_call triggers.
+
+Key flags for `nix-fast-build`:
+- `--no-nom`: streamlined output for CI (nix-output-monitor not needed)
+- `--skip-cached`: skip derivations already in cachix (avoids redundant push)
+- `--no-link`: don't create result symlinks in the working directory
+- `--cachix-cache`: push newly-built results to cachix (reads `CACHIX_AUTH_TOKEN` from environment)
 
 For local development, nom is available via home-manager (not in devshell or CI).
 The justfile already has a conditional guard:
@@ -194,6 +236,9 @@ else
     nix flake check --impure
 fi
 ```
+
+Promotion completed 2026-04-05: `nix-based-ci.yaml` renamed to `ci.yaml` with `push:` trigger on `main` and `paths-ignore` for markdown files.
+The original `ci.yaml`, `package-test.yaml`, and `ci-build-category.sh` are archived in `.github/deprecated/`.
 
 ## Architecture
 
@@ -282,12 +327,12 @@ Issues within the same tier can be worked in parallel.
 - Wire `ironstar-eventcatalog` tests (unit + E2E) into checks via `modules/checks/eventcatalog.nix`
 
 **Tier 3 — CI pipeline (depends on tiers 0-2):**
-- Update E2E job to use `.#ironstar` instead of `.#ironstar-release`
-- Create `nix-based-ci.yaml` using setup-nix composite action
+- ~~Update E2E job to use `.#ironstar` instead of `.#ironstar-release`~~ (done: `ironstar-e2e` check derivation)
+- ~~Create `nix-based-ci.yaml` using setup-nix composite action~~ (done: single-job `nix-fast-build` pipeline)
 
 **Tier 4 — validation and promotion:**
-- Run both `ci.yaml` and `nix-based-ci.yaml` in parallel on PRs; compare results
-- Promote `nix-based-ci.yaml` to `ci.yaml`; archive old pipeline
+- ~~Run both `ci.yaml` and `nix-based-ci.yaml` in parallel on PRs; compare results~~ (done: parallel validation confirmed equivalent results)
+- ~~Promote `nix-based-ci.yaml` to `ci.yaml`; archive old pipeline~~ (done: promoted 2026-04-05, old artifacts archived to `.github/deprecated/`)
 
 **Cross-reference:**
 - sciexp/planning issue documenting evaluation findings for sciexp monorepo architecture

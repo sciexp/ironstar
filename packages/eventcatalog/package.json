@@ -14,7 +14,7 @@
 		"start": "eventcatalog dev",
 		"build": "eventcatalog build",
 		"preview": "eventcatalog build && wrangler dev",
-		"preview:ci": "bunx serve dist -l 3000 --no-clipboard",
+		"preview:ci": "serve dist -l 3000 --no-clipboard",
 		"deploy": "eventcatalog build && wrangler deploy",
 		"generate": "eventcatalog generate",
 		"cf-typegen": "wrangler types",

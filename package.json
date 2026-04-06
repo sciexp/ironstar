@@ -20,6 +20,9 @@
 		"test:e2e:list": "playwright test --list",
 		"test-release": "semantic-release --dry-run --no-ci"
 	},
+	"overrides": {
+		"ajv": "8.17.1"
+	},
 	"devDependencies": {
 		"@playwright/test": "1.57.0",
 		"@semantic-release/changelog": "^6.0.3",
@@ -29,7 +32,8 @@
 		"patch-package": "^8.0.1",
 		"semantic-release": "^25.0.1",
 		"semantic-release-major-tag": "^0.3.2",
-		"semantic-release-monorepo": "^8.0.2"
+		"semantic-release-monorepo": "^8.0.2",
+		"serve": "^14.2.6"
 	},
 	"release": {
 		"extends": "semantic-release-monorepo",

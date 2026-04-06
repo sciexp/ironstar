@@ -1,7 +1,0 @@
-name: "Nix CI (stub)"
-on: workflow_dispatch
-jobs:
-  placeholder:
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "placeholder for nix-based-ci.yaml"

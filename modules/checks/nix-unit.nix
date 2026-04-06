@@ -18,6 +18,8 @@
           git-hooks
           rust-overlay
           crane
+          bun2nix
+          pkgs-by-name-for-flake-parts
           process-compose-flake
           services-flake
           playwright-web-flake

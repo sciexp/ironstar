@@ -16,6 +16,9 @@
       # Playwright driver from versioned flake (synced with package.json)
       playwrightDriver = inputs.playwright-web-flake.packages.${system}.playwright-driver;
 
+      # bun2nix CLI for regenerating bun.nix from bun.lock
+      bun2nix = inputs.bun2nix.packages.${system}.default;
+
       # Git environment setup script (integrated from git-env.nix)
       set-git-env = pkgs.writeShellApplication {
         name = "set-git-env";
@@ -92,6 +95,7 @@
 
             # Core development tools
             bun
+            bun2nix
             nodejs
             just
             git
@@ -106,6 +110,7 @@
             gh
             act
             cachix
+            self'.packages.nix-fast-build
 
             # Process orchestration
             process-compose

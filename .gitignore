@@ -36,6 +36,9 @@ result-*
 .direnv/
 .pre-commit-config.yaml
 
+# jj workspaces
+.worktrees/
+
 # wrangler files
 .wrangler
 .dev.vars*

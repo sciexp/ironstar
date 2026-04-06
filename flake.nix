@@ -3,7 +3,7 @@
 
   inputs = {
     nixpkgs.url = "https://channels.nixos.org/nixpkgs-unstable/nixexprs.tar.xz";
-    systems.url = "github:nix-systems/default";
+    systems.url = "path:./systems";
 
     flake-parts = {
       url = "github:hercules-ci/flake-parts";
@@ -29,6 +29,24 @@
 
     crane.url = "github:ipetkov/crane";
 
+    bun2nix = {
+      url = "github:nix-community/bun2nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-parts.follows = "flake-parts";
+      inputs.import-tree.follows = "import-tree";
+      inputs.systems.follows = "systems";
+      inputs.treefmt-nix.follows = "treefmt-nix";
+    };
+
+    pkgs-by-name-for-flake-parts.url = "github:drupol/pkgs-by-name-for-flake-parts";
+
+    nix-fast-build = {
+      url = "github:Mic92/nix-fast-build";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-parts.follows = "flake-parts";
+      inputs.treefmt-nix.follows = "treefmt-nix";
+    };
+
     process-compose-flake.url = "github:Platonic-Systems/process-compose-flake";
     services-flake.url = "github:juspay/services-flake";
 
@@ -36,6 +54,7 @@
     # sync this when upgrading @playwright/test in packages/docs/package.json
     playwright-web-flake.url = "github:pietdevries94/playwright-web-flake/1.57.0";
     playwright-web-flake.inputs.nixpkgs.follows = "nixpkgs";
+    playwright-web-flake.inputs.flake-utils.inputs.systems.follows = "systems";
   };
 
   outputs =
