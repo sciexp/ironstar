@@ -198,11 +198,6 @@ lint:
 biome-check:
   cd packages/docs && bun run check:fix
 
-# Build specific nix category (for CI matrix distribution)
-[group('CI/CD')]
-ci-build-category system category:
-  @./scripts/ci/ci-build-category.sh "{{system}}" "{{category}}"
-
 # Validate flake structure and required recipes
 [group('CI/CD')]
 validate-flake:
