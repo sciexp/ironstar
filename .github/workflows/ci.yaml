@@ -402,12 +402,20 @@ jobs:
       debug_enabled: ${{ needs.set-variables.outputs.debug }}
     secrets: inherit
 
-  # Placeholder for future Rust binary releases.
+  # Placeholder for future Rust binary releases (GitHub Releases, crates.io).
   # Disabled by default via repository variable; set ENABLE_RUST_RELEASE=true to activate.
-  binary-build:
+  release-build:
     needs: [nix-check]
     if: vars.ENABLE_RUST_RELEASE == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - system: x86_64-linux
+            runner: ubuntu-latest
+          # - system: aarch64-linux
+          #   runner: ubuntu-24.04-arm
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -418,7 +426,7 @@ jobs:
         uses: ./.github/actions/setup-nix
         with:
           installer: full
-          system: x86_64-linux
+          system: ${{ matrix.system }}
           enable-cachix: true
           cachix-name: ${{ vars.CACHIX_CACHE_NAME }}
           cachix-auth-token: ${{ secrets.CACHIX_AUTH_TOKEN }}
