@@ -1,8 +1,15 @@
-name: "Nix CI"
+name: "CI/CD"
 
 on:
   pull_request:
     types: [opened, reopened, synchronize]
+    paths-ignore:
+      - "*.md"
+  push:
+    branches:
+      - "main"
+    paths-ignore:
+      - "*.md"
   workflow_dispatch:
     inputs:
       debug_enabled:
@@ -13,16 +20,21 @@ on:
         description: "Enable deployment"
         type: boolean
         default: false
+      force_run:
+        description: "Force execution even if already successful"
+        type: boolean
+        default: false
 
 concurrency:
-  group: nix-ci-${{ github.event.pull_request.number || github.ref }}
+  group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
-  contents: write     # preview-release-version, production-release-packages
-  checks: write       # nix-check JUnit report
-  deployments: write  # preview-site-deploy, production-site-deploy
-  id-token: write     # production-release-packages
+  contents: read
+  deployments: write
+  actions: write
+  checks: write
+  id-token: write
 
 jobs:
   set-variables:
@@ -174,6 +186,7 @@ jobs:
         with:
           check-name: ${{ github.job }}
           hash-sources: 'scripts/bootstrap.sh Makefile .envrc .github/actions/setup-nix/action.yml'
+          force-run: ${{ inputs.force_run || false }}
 
       - name: Test bootstrap.sh --help
         if: steps.cache.outputs.should-run == 'true'
