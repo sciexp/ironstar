@@ -1,7 +1,7 @@
 ---
 title: Nix CI consolidation
 cynefin: complicated
-status: in-progress
+status: complete
 ---
 
 # Nix CI consolidation
@@ -237,6 +237,9 @@ else
 fi
 ```
 
+Promotion completed 2026-04-05: `nix-based-ci.yaml` renamed to `ci.yaml` with `push:` trigger on `main` and `paths-ignore` for markdown files.
+The original `ci.yaml`, `package-test.yaml`, and `ci-build-category.sh` are archived in `.github/deprecated/`.
+
 ## Architecture
 
 ### New files and directories
@@ -328,8 +331,8 @@ Issues within the same tier can be worked in parallel.
 - ~~Create `nix-based-ci.yaml` using setup-nix composite action~~ (done: single-job `nix-fast-build` pipeline)
 
 **Tier 4 — validation and promotion:**
-- Run both `ci.yaml` and `nix-based-ci.yaml` in parallel on PRs; compare results (triggers limited to `pull_request` + `workflow_dispatch` for controlled comparison)
-- Promote `nix-based-ci.yaml` to `ci.yaml`; archive old pipeline
+- ~~Run both `ci.yaml` and `nix-based-ci.yaml` in parallel on PRs; compare results~~ (done: parallel validation confirmed equivalent results)
+- ~~Promote `nix-based-ci.yaml` to `ci.yaml`; archive old pipeline~~ (done: promoted 2026-04-05, old artifacts archived to `.github/deprecated/`)
 
 **Cross-reference:**
 - sciexp/planning issue documenting evaluation findings for sciexp monorepo architecture
