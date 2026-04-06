@@ -127,6 +127,14 @@
 
       cargoVendorDir = crane-lib.vendorCargoDeps { inherit src; };
 
+      # Read version from the workspace Cargo.toml at eval time.
+      # This avoids IFD: crane reads ./Cargo.toml (a plain file in the flake source)
+      # instead of inferring from combinedSrc (a runCommand derivation).
+      # Single source of truth: [workspace.package] version in Cargo.toml.
+      # pname is set explicitly because workspace root Cargo.toml has no [package] name.
+      cargoTomlContents = builtins.fromTOML (builtins.readFile (self + "/Cargo.toml"));
+      workspaceVersion = cargoTomlContents.workspace.package.version;
+
       # Common args for consistent caching across all crane derivations.
       # Pure crane pattern: single commonArgs shared by all derivations.
       # See: nix-cargo-crane/docs/faq/constant-rebuilds.md
@@ -134,6 +142,7 @@
         src = combinedSrc;
         inherit cargoVendorDir;
         pname = "ironstar";
+        version = workspaceVersion;
         strictDeps = true;
         # Use dev profile for faster compilation during development.
         # Release builds use [profile.release] from Cargo.toml (strip, lto, opt-level=z).
