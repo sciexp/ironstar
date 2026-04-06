@@ -1,5 +1,5 @@
 name: setup-nix
-description: setup nix using nothing-but-nix pattern with space reclamation and magic-nix-cache
+description: setup nix using nothing-but-nix pattern with space reclamation and optional magic-nix-cache
 
 inputs:
   installer:
@@ -18,6 +18,10 @@ inputs:
     description: enable nix sandbox builds
     type: string
     default: "true"
+  enable-magic-nix-cache:
+    description: "enable magic-nix-cache (GitHub Actions cache for nix store paths)"
+    type: boolean
+    default: false
   enable-cachix:
     description: enable cachix binary cache
     type: boolean
@@ -88,6 +92,7 @@ runs:
         install_url: https://releases.nixos.org/nix/nix-${{ inputs.nix-version }}/install
         # build-dir on /nix is workaround for https://github.com/wimpysworld/nothing-but-nix/issues/18
         extra_nix_config: |
+          accept-flake-config = true
           build-dir = /nix/build
           sandbox = ${{ inputs.sandbox }}
           system = ${{ inputs.system }}
@@ -100,7 +105,7 @@ runs:
       run: sudo mkdir -p /nix/build
 
     - name: setup magic-nix-cache
-      if: inputs.installer == 'full'
+      if: inputs.installer == 'full' && inputs.enable-magic-nix-cache == 'true'
       uses: DeterminateSystems/magic-nix-cache-action@1828eb4e5414b8dfe36daae53ea3e4b8c3fdec7a # main
       with:
         # Disable FlakeHub cache (we use Cachix instead)
