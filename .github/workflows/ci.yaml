@@ -130,7 +130,7 @@ jobs:
           enable-cachix: true
           cachix-name: ${{ vars.CACHIX_CACHE_NAME }}
           cachix-auth-token: ${{ secrets.CACHIX_AUTH_TOKEN }}
-          cachix-skip-push: true
+          cachix-skip-push: false
 
       - name: Validate flake structure
         run: nix flake show --json --accept-flake-config > /dev/null
@@ -430,7 +430,7 @@ jobs:
           enable-cachix: true
           cachix-name: ${{ vars.CACHIX_CACHE_NAME }}
           cachix-auth-token: ${{ secrets.CACHIX_AUTH_TOKEN }}
-          cachix-skip-push: true
+          cachix-skip-push: false
 
       - name: Build release binary
         run: nix build .#ironstar-release --accept-flake-config -L
