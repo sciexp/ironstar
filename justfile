@@ -974,9 +974,9 @@ check:
   echo "  - 'not writing modified lock file' (expected for read-only check)"
   echo ""
   if command -v nom &> /dev/null; then
-    nix flake check --impure --log-format internal-json -v |& nom --json
+    nix flake check --accept-flake-config --log-format internal-json -v |& nom --json
   else
-    nix flake check --impure
+    nix flake check --accept-flake-config
   fi
 
 # Validate flake checks via nix-fast-build (failure isolation, parallel eval+build, nom output)
