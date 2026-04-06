@@ -216,9 +216,9 @@ validate-flake:
   done
   echo "Running nix flake check..."
   if command -v nom &> /dev/null; then
-    nix flake check --impure --log-format internal-json -v |& nom --json
+    nix flake check --accept-flake-config --log-format internal-json -v |& nom --json
   else
-    nix flake check --impure
+    nix flake check --accept-flake-config
   fi
 
 # Run pre-commit hooks
