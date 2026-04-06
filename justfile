@@ -980,9 +980,10 @@ check:
   fi
 
 # Validate flake checks via nix-fast-build (failure isolation, parallel eval+build, nom output)
+# --eval-workers 4: reduces SQLite eval-cache contention (harmless but noisy at default=ncpus)
 [group('nix')]
 check-fast:
-  nix-fast-build --no-link --option accept-flake-config true
+  nix-fast-build --no-link --option accept-flake-config true --eval-workers 4 --flake ".#checks.$(nix eval --impure --raw --expr 'builtins.currentSystem')"
 
 # Format all files with treefmt (via nix fmt)
 [group('nix')]
