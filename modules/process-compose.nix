@@ -30,7 +30,7 @@
       '';
     in
     {
-      process-compose.dev = {
+      process-compose.dev-platform = {
         imports = [
           inputs.services-flake.processComposeModules.default
         ];
