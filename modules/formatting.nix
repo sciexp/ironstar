@@ -49,7 +49,86 @@
           excludes = [
             ".github/renovate.json"
             "web-components/vendor/*"
+            "packages/eventcatalog/domains/**/*.json"
           ];
+
+          # Biome 2.4.9 falls back to schema 2.1.2 in treefmt-nix's version mapping,
+          # causing false validation failures against the actual 2.3+ config format.
+          validate.enable = false;
+
+          # Full biome configuration as nix attrset (replaces committed biome.json).
+          # The generated config is passed to biome via --config-path by treefmt-nix,
+          # and symlinked to the project root via shellHook for IDE integration.
+          settings = {
+            files = {
+              ignoreUnknown = false;
+              includes = [
+                "packages/*/src/**"
+                "packages/*/e2e/**"
+                "packages/*/tests/**"
+                "packages/*/*.config.mjs"
+                "packages/*/*.config.ts"
+                "packages/*/package.json"
+                "web-components/components/**"
+                "web-components/bindings/**"
+                "web-components/__tests__/**"
+                "web-components/*.ts"
+                "web-components/package.json"
+                "web-components/tsconfig.json"
+                "package.json"
+                ".github/**/*.json"
+              ];
+            };
+            formatter = {
+              enabled = true;
+              indentStyle = "space";
+              indentWidth = 2;
+              lineWidth = 120;
+            };
+            assist = {
+              actions = {
+                source = {
+                  organizeImports = {
+                    level = "on";
+                  };
+                };
+              };
+            };
+            linter = {
+              enabled = true;
+              rules = {
+                recommended = true;
+                correctness = {
+                  useExhaustiveDependencies = "info";
+                };
+                style = {
+                  useImportType = "off";
+                  noParameterAssign = "error";
+                  useAsConstAssertion = "error";
+                  useDefaultParameterLast = "error";
+                  useEnumInitializers = "error";
+                  useSelfClosingElements = "error";
+                  useSingleVarDeclarator = "error";
+                  noUnusedTemplateLiteral = "error";
+                  useNumberNamespace = "error";
+                  noInferrableTypes = "error";
+                  noUselessElse = "error";
+                };
+              };
+            };
+            overrides = [
+              {
+                includes = [ "**/*.astro" ];
+                linter = {
+                  rules = {
+                    correctness = {
+                      noUnusedVariables = "off";
+                    };
+                  };
+                };
+              }
+            ];
+          };
         };
       };
 
