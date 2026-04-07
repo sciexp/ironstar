@@ -81,6 +81,11 @@
           polylux # presentations
         ]
       );
+
+      # Generate biome.json from nix-declarative config for IDE integration
+      # (mirrors how git-hooks/pre-commit generates .pre-commit-config.yaml)
+      json = pkgs.formats.json { };
+      biomeConfig = json.generate "biome.json" config.treefmt.programs.biome.settings;
     in
     {
       devShells = {
@@ -142,6 +147,12 @@
           shellHook = ''
             export REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
             set-git-env
+
+            # Generate biome.json symlink for IDE integration (mirrors pre-commit pattern)
+            if [[ ! -L "$REPO_ROOT/biome.json" ]] || [[ "$(readlink "$REPO_ROOT/biome.json")" != "${biomeConfig}" ]]; then
+              [ -e "$REPO_ROOT/biome.json" ] && rm "$REPO_ROOT/biome.json"
+              ln -s ${biomeConfig} "$REPO_ROOT/biome.json"
+            fi
 
             # Playwright browser configuration (version-locked via flake input)
             export PLAYWRIGHT_BROWSERS_PATH="${playwrightDriver.browsers}"
