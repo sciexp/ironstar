@@ -70,6 +70,36 @@
           expr = builtins.hasAttr system self.formatter;
           expected = true;
         };
+
+        # Relational Invariant Tests
+
+        # TC-006: Every package has a corresponding check
+        # Validates that all packages (minus explicit exclusions) appear in checks.
+        # Exclusions: default (alias), ironstar-release (expensive opt-in),
+        # nix-fast-build (passthrough input), frontendAssets (build intermediate),
+        # per-crate *-test (redundant with workspace-test),
+        # per-crate *-clippy (redundant with workspace-clippy).
+        testPackagesHaveChecks =
+          let
+            packages = self.packages.${system};
+            checks = self.checks.${system};
+            excluded = [
+              "default"
+              "ironstar-release"
+              "nix-fast-build"
+              "frontendAssets"
+            ];
+            isPerCrateSuffix =
+              name: (builtins.match ".*-test$" name != null) || (builtins.match ".*-clippy$" name != null);
+            packageNames = builtins.attrNames packages;
+            relevantPackages = builtins.filter (
+              name: !(builtins.elem name excluded) && !(isPerCrateSuffix name)
+            ) packageNames;
+          in
+          {
+            expr = builtins.all (name: builtins.hasAttr name checks) relevantPackages;
+            expected = true;
+          };
       };
     };
 }
