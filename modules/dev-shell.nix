@@ -86,7 +86,7 @@
       devShells = {
         default = pkgs.mkShell {
           name = "ironstar-dev";
-          inputsFrom = [ config.pre-commit.devShell ];
+          inputsFrom = [ config.pre-commit.devShell ] ++ builtins.attrValues self'.checks;
           packages = with pkgs; [
             # Rust toolchain (version defined in rust.nix)
             config.ironstar.rustToolchain
