@@ -250,11 +250,6 @@
           inherit (self'.packages) ironstar ironstar-docs ironstar-eventcatalog;
           "dev-platform" = self'.packages.dev-platform;
 
-          workspace-fmt = crane-lib.cargoFmt {
-            inherit src;
-            pname = "ironstar";
-          };
-
           workspace-test = crane-lib.cargoNextest (
             commonArgs
             // {
