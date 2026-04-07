@@ -241,6 +241,8 @@
         # Workspace-level checks run by `nix flake check`.
         # Per-crate checks are in `packages` for ad-hoc debugging via `nix build .#ironstar-core-test`.
         checks = {
+          inherit (self'.packages) ironstar;
+
           workspace-fmt = crane-lib.cargoFmt {
             inherit src;
             pname = "ironstar";
