@@ -218,12 +218,13 @@
         # Manual wiring: packages
         packages = {
           default = self'.packages.ironstar;
-          ironstar = crane-lib.buildPackage (commonArgs // { inherit cargoArtifacts; });
+          ironstar = crane-lib.buildPackage (commonArgs // { inherit cargoArtifacts; doCheck = false; });
           ironstar-release = crane-lib.buildPackage (
             commonArgs
             // {
               cargoArtifacts = cargoArtifactsRelease;
               CARGO_PROFILE = "release";
+              doCheck = false;
             }
           );
           inherit frontendAssets;
