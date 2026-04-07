@@ -9,5 +9,5 @@ useDefault = true
 description = "Allowlist for false positives"
 
 regexes = [
-    '''scouting/gossip/enabled''',   # Zenoh config key path (not a secret)
+  '''scouting/gossip/enabled''', # Zenoh config key path (not a secret)
 ]
