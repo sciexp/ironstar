@@ -1,6 +1,18 @@
 [workspace]
 resolver = "2"
-members = ["crates/ironstar", "crates/ironstar-analytics", "crates/ironstar-analytics-infra", "crates/ironstar-core", "crates/ironstar-event-bus", "crates/ironstar-event-store", "crates/ironstar-session", "crates/ironstar-session-store", "crates/ironstar-shared-kernel", "crates/ironstar-todo", "crates/ironstar-workspace"]
+members = [
+  "crates/ironstar",
+  "crates/ironstar-analytics",
+  "crates/ironstar-analytics-infra",
+  "crates/ironstar-core",
+  "crates/ironstar-event-bus",
+  "crates/ironstar-event-store",
+  "crates/ironstar-session",
+  "crates/ironstar-session-store",
+  "crates/ironstar-shared-kernel",
+  "crates/ironstar-todo",
+  "crates/ironstar-workspace",
+]
 
 [workspace.package]
 version = "0.1.0"
@@ -21,14 +33,29 @@ datastar = { version = "0.3.1", features = ["axum"] }
 # Database and persistence
 sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite", "json"] }
 redb = { version = "3.1" }
-async-duckdb = { version = "0.3", features = ["bundled", "parquet", "json", "chrono", "uuid"] }
+async-duckdb = { version = "0.3", features = [
+  "bundled",
+  "parquet",
+  "json",
+  "chrono",
+  "uuid",
+] }
 
 # TypeScript type generation
 # no-serde-warnings: suppress warnings for serde attrs ts-rs doesn't parse (transparent, try_from, into)
-ts-rs = { version = "11.1", features = ["serde-compat", "uuid-impl", "chrono-impl", "no-serde-warnings"] }
+ts-rs = { version = "11.1", features = [
+  "serde-compat",
+  "uuid-impl",
+  "chrono-impl",
+  "no-serde-warnings",
+] }
 
 # Asset embedding
-rust-embed = { version = "8", features = ["debug-embed", "include-exclude", "interpolate-folder-path"] }
+rust-embed = { version = "8", features = [
+  "debug-embed",
+  "include-exclude",
+  "interpolate-folder-path",
+] }
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
@@ -58,7 +85,10 @@ moka = { version = "0.12", features = ["future"] }
 rkyv = { version = "0.8", features = ["bytecheck"] }
 
 # Event bus (distribution-ready pub/sub)
-zenoh = { version = "1.7", default-features = false, features = ["transport_tcp", "transport_tls"] }
+zenoh = { version = "1.7", default-features = false, features = [
+  "transport_tcp",
+  "transport_tls",
+] }
 
 # Functional event sourcing (Decider pattern)
 # Default features require Send bounds, enabling axum multi-threaded handler compatibility
@@ -84,7 +114,12 @@ tokio-stream = { version = "0.1", features = ["time"] }
 tower = { version = "0.5" }
 
 # HTTP utilities for static file serving
-tower-http = { version = "0.6", features = ["fs", "request-id", "trace", "util"] }
+tower-http = { version = "0.6", features = [
+  "fs",
+  "request-id",
+  "trace",
+  "util",
+] }
 mime_guess = "2"
 http = "1"
 
