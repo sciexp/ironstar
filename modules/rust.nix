@@ -218,7 +218,13 @@
         # Manual wiring: packages
         packages = {
           default = self'.packages.ironstar;
-          ironstar = crane-lib.buildPackage (commonArgs // { inherit cargoArtifacts; doCheck = false; });
+          ironstar = crane-lib.buildPackage (
+            commonArgs
+            // {
+              inherit cargoArtifacts;
+              doCheck = false;
+            }
+          );
           ironstar-release = crane-lib.buildPackage (
             commonArgs
             // {
