@@ -1,0 +1,4 @@
+exclude = ["target/**", ".direnv/**"]
+
+[formatting]
+reorder_keys = false
