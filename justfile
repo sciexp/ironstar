@@ -1005,33 +1005,33 @@ flake-update:
 dev:
   nix develop
 
-# Start all dev services via process-compose with log streaming (no TUI).
+# Start dev platform via process-compose with log streaming (no TUI).
 # Could be pushed into nix config via PC_DISABLE_TUI env var in the wrapper script.
 [group('nix')]
-dev-services:
-  exec nix run .#dev -- up -t=false
+dev-platform:
+  exec nix run .#dev-platform -- up -t=false
 
-# Start dev services with process-compose TUI
+# Start dev platform with process-compose TUI
 [group('nix')]
-dev-services-tui:
-  exec nix run .#dev
+dev-platform-tui:
+  exec nix run .#dev-platform
 
 # Remove all dev runtime state (event store, observability data, test artifacts).
 # The data directory is recreated empty so cargo run works without process-compose.
 [group('nix')]
-dev-reset:
+dev-state-reset:
   rm -rf data test-results playwright-report
   mkdir -p data
 
 # Show stale dev processes and ports, then clean them up.
-# Useful when a prior dev-services session left zombies (cargo-watch, ironstar, observability).
+# Useful when a prior dev-platform session left zombies (cargo-watch, ironstar, observability).
 [group('nix')]
-dev-cleanup:
+dev-platform-cleanup:
   #!/usr/bin/env bash
   set -uo pipefail
   echo "Stale processes:"
   pgrep -afl "process-compose|target/debug/ironstar|cargo.watch|rolldown.*watch" \
-    | grep -v "just dev-cleanup" || echo "  (none)"
+    | grep -v "just dev-platform-cleanup" || echo "  (none)"
   echo ""
   echo "Ports (3000=ironstar, 9090=prometheus, 3001=grafana):"
   lsof -nP -i :3000,:9090,:3001 2>/dev/null | grep LISTEN || echo "  (all free)"
@@ -1054,7 +1054,7 @@ dev-cleanup:
     echo ""
     echo "Remaining:"
     pgrep -afl "process-compose|target/debug/ironstar|cargo.watch|rolldown.*watch" \
-      | grep -v "just dev-cleanup" || echo "  (none)"
+      | grep -v "just dev-platform-cleanup" || echo "  (none)"
     lsof -nP -i :3000,:9090,:3001 2>/dev/null | grep LISTEN || echo "  All ports free"
   fi
 
