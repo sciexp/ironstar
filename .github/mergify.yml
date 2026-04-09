@@ -5,24 +5,13 @@ shared:
     - -conflict
 
   required_checks: &required_checks
-    - check-success=secrets-scan
     - check-success=set-variables
     - check-success=check-fast-forward
     - or:
-        - check-success=flake-validation
-        - check-skipped=flake-validation
-    - or:
         - check-success=bootstrap-verification
         - check-skipped=bootstrap-verification
-    - or:
-        - check-success=nix (x86_64-linux, ubuntu-latest, flake-check)
-        - check-skipped=nix (x86_64-linux, ubuntu-latest, flake-check)
-    - or:
-        - check-success=nix (x86_64-linux, ubuntu-latest, devshells)
-        - check-skipped=nix (x86_64-linux, ubuntu-latest, devshells)
-    - or:
-        - "check-success=test (docs, packages/docs) / test"
-        - "check-skipped=test (docs, packages/docs) / test"
+    - check-success=buildbot/nix-eval
+    - check-success=buildbot/nix-build
 
   human_author_conditions: &human_author_conditions
     - author!=renovate[bot]
