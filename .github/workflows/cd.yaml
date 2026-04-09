@@ -1,4 +1,4 @@
-name: "CI/CD"
+name: "CD"
 
 on:
   pull_request:
@@ -105,73 +105,6 @@ jobs:
           else
             echo "checkout_rev=${PUSH_SHA}" >> "$GITHUB_OUTPUT"
           fi
-
-  nix-check:
-    runs-on: ${{ matrix.runner }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - system: x86_64-linux
-            runner: ubuntu-latest
-          # - system: aarch64-linux
-          #   runner: ubuntu-24.04-arm
-    steps:
-      - run: 'true'
-      # - name: Checkout repository
-      #   uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      #   with:
-      #     fetch-depth: 0
-      #
-      # - name: Setup Nix
-      #   uses: ./.github/actions/setup-nix
-      #   with:
-      #     installer: full
-      #     system: ${{ matrix.system }}
-      #     enable-cachix: true
-      #     cachix-name: ${{ vars.CACHIX_CACHE_NAME }}
-      #     cachix-auth-token: ${{ secrets.CACHIX_AUTH_TOKEN }}
-      #     cachix-skip-push: false
-      #
-      # - name: Validate flake structure
-      #   run: nix flake show --json --accept-flake-config > /dev/null
-      #
-      # - name: Run flake checks
-      #   env:
-      #     CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
-      #   run: |
-      #     nix run .#nix-fast-build -- \
-      #       --no-nom \
-      #       --skip-cached \
-      #       --no-link \
-      #       --max-jobs 2 \
-      #       --option accept-flake-config true \
-      #       --flake ".#checks.${{ matrix.system }}" \
-      #       --cachix-cache ${{ vars.CACHIX_CACHE_NAME }} \
-      #       --result-format junit \
-      #       --result-file nix-checks.xml
-      #   timeout-minutes: 45
-      #
-      # - name: Publish check report
-      #   if: always()
-      #   uses: mikepenz/action-junit-report@bccf2e31636835cf0874589931c4116687171386 # v6.4.0
-      #   with:
-      #     report_paths: nix-checks.xml
-      #     check_name: Nix Checks
-      #     include_passed: true
-      #     detailed_summary: true
-      #
-      # - name: Upload check results
-      #   if: always()
-      #   uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
-      #   with:
-      #     name: nix-check-results
-      #     path: nix-checks.xml
-      #     retention-days: 7
-      #
-      # - name: Report disk usage
-      #   if: always()
-      #   run: df -h
 
   bootstrap-verification:
     runs-on: ubuntu-latest
@@ -283,7 +216,7 @@ jobs:
           key: ${{ steps.cache.outputs.cache-key }}
 
   preview-release-version:
-    needs: [set-variables, nix-check]
+    needs: [set-variables]
     if: github.event_name == 'pull_request'
     strategy:
       fail-fast: false
@@ -338,7 +271,7 @@ jobs:
           fi
 
   preview-site-deploy:
-    needs: [set-variables, nix-check]
+    needs: [set-variables]
     if: "!cancelled() && github.event_name == 'pull_request'"
     strategy:
       fail-fast: false
@@ -357,7 +290,7 @@ jobs:
 
   # Production release: structurally complete but INERT (no push: trigger exists)
   production-release-packages:
-    needs: [set-variables, nix-check]
+    needs: [set-variables]
     if: >-
       github.repository_owner == 'sciexp' &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
@@ -384,7 +317,7 @@ jobs:
 
   # Production deploy: structurally complete but INERT (no push: trigger exists)
   production-site-deploy:
-    needs: [set-variables, nix-check, production-release-packages]
+    needs: [set-variables, production-release-packages]
     if: >-
       !cancelled() &&
       needs.set-variables.outputs.skip_ci != 'true' &&
@@ -406,7 +339,6 @@ jobs:
   # Placeholder for future Rust binary releases (GitHub Releases, crates.io).
   # Disabled by default via repository variable; set ENABLE_RUST_RELEASE=true to activate.
   release-build:
-    needs: [nix-check]
     if: vars.ENABLE_RUST_RELEASE == 'true'
     runs-on: ${{ matrix.runner }}
     strategy:
