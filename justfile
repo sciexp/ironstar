@@ -983,7 +983,12 @@ check:
 # --eval-workers 4: reduces SQLite eval-cache contention (harmless but noisy at default=ncpus)
 [group('nix')]
 check-fast:
-  nix-fast-build --no-link --option accept-flake-config true --eval-workers 4 --flake ".#checks.$(nix eval --impure --raw --expr 'builtins.currentSystem')"
+  nix-fast-build \
+    --no-link \
+    --option accept-flake-config true \
+    --eval-workers 4 \
+    --niks3-server https://niks3.scientistexperience.net \
+    --flake ".#checks.$(nix eval --impure --raw --expr 'builtins.currentSystem')"
 
 # Format all files with treefmt (via nix fmt)
 [group('nix')]
