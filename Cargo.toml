@@ -72,6 +72,25 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 metrics = { version = "0.24" }
 metrics-exporter-prometheus = { version = "0.18" }
 
+# OpenTelemetry (OTel-forward observability)
+opentelemetry = { version = "0.31", features = ["trace", "metrics"] }
+opentelemetry_sdk = { version = "0.31", features = [
+  "trace",
+  "metrics",
+  "rt-tokio",
+] }
+opentelemetry-otlp = { version = "0.31", features = [
+  "grpc-tonic",
+  "trace",
+  "metrics",
+] }
+tonic = { version = "0.14", features = ["tls-native-roots"] }
+tracing-opentelemetry = { version = "0.32" }
+axum-tracing-opentelemetry = { version = "0.33" }
+
+# Error tracking and performance monitoring
+sentry = { version = "0.47", features = ["tracing", "tower-axum-matched-path"] }
+
 # Common utilities
 uuid = { version = "1.19", features = ["serde", "v4", "v7"] }
 chrono = { version = "0.4", features = ["serde"] }
