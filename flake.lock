@@ -299,6 +299,7 @@
         "process-compose-flake": "process-compose-flake",
         "rust-overlay": "rust-overlay",
         "services-flake": "services-flake",
+        "signoz-src": "signoz-src",
         "systems": "systems",
         "treefmt-nix": "treefmt-nix"
       }
@@ -335,6 +336,23 @@
       "original": {
         "owner": "juspay",
         "repo": "services-flake",
+        "type": "github"
+      }
+    },
+    "signoz-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1775654574,
+        "narHash": "sha256-oYJykkOuxBjb5jQmlUbibIz4DmoQDCmK02BNWQJBlDQ=",
+        "owner": "SigNoz",
+        "repo": "signoz",
+        "rev": "8bfadbc1978c3acff9777c65f6152a0ec25087b9",
+        "type": "github"
+      },
+      "original": {
+        "owner": "SigNoz",
+        "repo": "signoz",
+        "rev": "8bfadbc1978c3acff9777c65f6152a0ec25087b9",
         "type": "github"
       }
     },
