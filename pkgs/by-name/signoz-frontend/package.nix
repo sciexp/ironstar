@@ -1,7 +1,7 @@
 {
-  inputs,
   lib,
   stdenv,
+  fetchFromGitHub,
   fetchYarnDeps,
   yarnConfigHook,
   nodejs,
@@ -9,7 +9,13 @@
 }:
 let
   version = "0.0.0-dev";
-  src = "${inputs.signoz-src}/frontend";
+  signozSrc = fetchFromGitHub {
+    owner = "SigNoz";
+    repo = "signoz";
+    rev = "8bfadbc1978c3acff9777c65f6152a0ec25087b9";
+    hash = "sha256-oYJykkOuxBjb5jQmlUbibIz4DmoQDCmK02BNWQJBlDQ=";
+  };
+  src = "${signozSrc}/frontend";
 in
 stdenv.mkDerivation {
   pname = "signoz-frontend";

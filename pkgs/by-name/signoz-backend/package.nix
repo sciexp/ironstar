@@ -1,7 +1,7 @@
 {
-  inputs,
   lib,
   buildGo125Module,
+  fetchFromGitHub,
   ...
 }:
 let
@@ -11,7 +11,12 @@ buildGo125Module {
   pname = "signoz-backend";
   inherit version;
 
-  src = inputs.signoz-src;
+  src = fetchFromGitHub {
+    owner = "SigNoz";
+    repo = "signoz";
+    rev = "8bfadbc1978c3acff9777c65f6152a0ec25087b9";
+    hash = "sha256-oYJykkOuxBjb5jQmlUbibIz4DmoQDCmK02BNWQJBlDQ=";
+  };
 
   vendorHash = "sha256-nrTr8MmLA4E9/f+h7kvHxMmNC+aMmNL41ik53nq0pjU=";
 

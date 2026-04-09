@@ -47,11 +47,6 @@
       inputs.treefmt-nix.follows = "treefmt-nix";
     };
 
-    signoz-src = {
-      url = "github:SigNoz/signoz/8bfadbc1978c3acff9777c65f6152a0ec25087b9";
-      flake = false;
-    };
-
     process-compose-flake.url = "github:Platonic-Systems/process-compose-flake";
     services-flake.url = "github:juspay/services-flake";
 
