@@ -1035,11 +1035,11 @@ dev-platform-cleanup:
   #!/usr/bin/env bash
   set -uo pipefail
   echo "Stale processes:"
-  pgrep -afl "process-compose|target/debug/ironstar|cargo.watch|rolldown.*watch" \
+  pgrep -afl "process-compose|target/debug/ironstar|cargo.watch|rolldown.*watch|clickhouse-server|signoz" \
     | grep -v "just dev-platform-cleanup" || echo "  (none)"
   echo ""
-  echo "Ports (3000=ironstar, 9090=prometheus, 3001=grafana):"
-  lsof -nP -i :3000,:9090,:3001 2>/dev/null | grep LISTEN || echo "  (all free)"
+  echo "Ports (3000=ironstar, 9090=prometheus, 3001=grafana, 8123/9000=clickhouse, 4317/4318=otlp, 8080=signoz, 13133=collector-health):"
+  lsof -nP -i :3000,:9090,:3001,:8123,:9000,:4317,:4318,:8080,:13133 2>/dev/null | grep LISTEN || echo "  (all free)"
   echo ""
   read -rp "Kill stale processes and free ports? [y/N] " confirm
   if [[ "${confirm:-n}" =~ ^[Yy]$ ]]; then
@@ -1047,20 +1047,24 @@ dev-platform-cleanup:
     pkill -f "target/debug/ironstar" 2>/dev/null || true
     pkill -f "cargo.watch" 2>/dev/null || true
     pkill -f "rolldown.*watch" 2>/dev/null || true
-    lsof -ti :3000,:9090,:3001 2>/dev/null | xargs kill 2>/dev/null || true
+    pkill -f "clickhouse-server" 2>/dev/null || true
+    pkill -f "signoz" 2>/dev/null || true
+    lsof -ti :3000,:9090,:3001,:8123,:9000,:4317,:4318,:8080,:13133 2>/dev/null | xargs kill 2>/dev/null || true
     sleep 2
     # Escalate to SIGKILL for processes that ignored SIGTERM
     pkill -9 -f "process-compose" 2>/dev/null || true
     pkill -9 -f "target/debug/ironstar" 2>/dev/null || true
     pkill -9 -f "cargo.watch" 2>/dev/null || true
     pkill -9 -f "rolldown.*watch" 2>/dev/null || true
-    lsof -ti :3000,:9090,:3001 2>/dev/null | xargs kill -9 2>/dev/null || true
+    pkill -9 -f "clickhouse-server" 2>/dev/null || true
+    pkill -9 -f "signoz" 2>/dev/null || true
+    lsof -ti :3000,:9090,:3001,:8123,:9000,:4317,:4318,:8080,:13133 2>/dev/null | xargs kill -9 2>/dev/null || true
     sleep 1
     echo ""
     echo "Remaining:"
-    pgrep -afl "process-compose|target/debug/ironstar|cargo.watch|rolldown.*watch" \
+    pgrep -afl "process-compose|target/debug/ironstar|cargo.watch|rolldown.*watch|clickhouse-server|signoz" \
       | grep -v "just dev-platform-cleanup" || echo "  (none)"
-    lsof -nP -i :3000,:9090,:3001 2>/dev/null | grep LISTEN || echo "  All ports free"
+    lsof -nP -i :3000,:9090,:3001,:8123,:9000,:4317,:4318,:8080,:13133 2>/dev/null | grep LISTEN || echo "  All ports free"
   fi
 
 # List all flake inputs and per-system outputs (checks, packages, devShells, apps, overlays, modules)
