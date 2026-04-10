@@ -23,6 +23,8 @@
 #       ironstar-eventcatalog
 #   - playwright-browsers-nixpkgs: shared e2e dependency, exercised
 #       via ironstar-docs-e2e, ironstar-eventcatalog-e2e, ironstar-e2e
+#   - signoz-backend, signoz-frontend, signoz-otel-collector: SigNoz
+#       packages are transitively checked via dev-platform
 #   - per-crate *-test: redundant with workspace-test
 #   - per-crate *-clippy: redundant with workspace-clippy
 #
@@ -48,6 +50,10 @@
         "ironstar-docs-deps"
         "ironstar-eventcatalog-deps"
         "playwright-browsers-nixpkgs"
+        # SigNoz packages are transitively checked via dev-platform
+        "signoz-backend"
+        "signoz-frontend"
+        "signoz-otel-collector"
       ];
       isPerCrateSuffix =
         name: (builtins.match ".*-test$" name != null) || (builtins.match ".*-clippy$" name != null);
