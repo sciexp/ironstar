@@ -23,6 +23,9 @@ pnpm-debug.log*
 # data
 data/
 
+# ClickHouse runtime artifacts
+queries.active
+
 # environment variables
 .env
 .env.production
