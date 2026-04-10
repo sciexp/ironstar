@@ -47,9 +47,10 @@ stdenv.mkDerivation {
     node scripts/update-registry.cjs
 
     # Set build-time environment variables.
-    # VITE_FRONTEND_API_ENDPOINT uses a relative path so the frontend
-    # uses the same origin as the page, suitable for reverse proxy setups.
-    export VITE_FRONTEND_API_ENDPOINT="/api"
+    # VITE_FRONTEND_API_ENDPOINT must be empty so the frontend uses relative
+    # URLs (/api/v1/...) on the same origin. Setting "/api" causes path
+    # doubling (/api/api/v1/...) because the frontend appends "/api/v1/" internally.
+    export VITE_FRONTEND_API_ENDPOINT=""
 
     yarn --offline build
 
