@@ -20,6 +20,7 @@
             </profiles>
             <users>
                 <default>
+                    <no_password/>
                     <profile>default</profile>
                     <networks><ip>::/0</ip></networks>
                     <quota>default</quota>
@@ -64,7 +65,7 @@
                 <cluster>
                     <shard>
                         <replica>
-                            <host>localhost</host>
+                            <host>127.0.0.1</host>
                             <port>9000</port>
                         </replica>
                     </shard>
@@ -83,7 +84,7 @@
                 <raft_configuration>
                     <server>
                         <id>1</id>
-                        <hostname>localhost</hostname>
+                        <hostname>127.0.0.1</hostname>
                         <port>9234</port>
                     </server>
                 </raft_configuration>
@@ -91,7 +92,7 @@
             <!-- Point zookeeper config to embedded Keeper -->
             <zookeeper>
                 <node>
-                    <host>localhost</host>
+                    <host>127.0.0.1</host>
                     <port>9181</port>
                 </node>
             </zookeeper>
