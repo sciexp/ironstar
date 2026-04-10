@@ -18,7 +18,8 @@ buildGo125Module {
     hash = "sha256-oYJykkOuxBjb5jQmlUbibIz4DmoQDCmK02BNWQJBlDQ=";
   };
 
-  vendorHash = "sha256-nrTr8MmLA4E9/f+h7kvHxMmNC+aMmNL41ik53nq0pjU=";
+  proxyVendor = true;
+  vendorHash = "sha256-NP1k+ED/hVZocGVwz1pLlAkQnTClkF7zIbJsunnY5/8=";
 
   subPackages = [ "cmd/community" ];
 
