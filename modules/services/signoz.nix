@@ -233,13 +233,9 @@
             '';
           };
           readiness_probe = {
-            http_get = {
-              host = "127.0.0.1";
-              port = 8123;
-              path = "/ping";
-            };
+            exec.command = "${pkgs.clickhouse}/bin/clickhouse-client --query 'SELECT 1' --port 9000 --host 127.0.0.1";
             initial_delay_seconds = 3;
-            period_seconds = 5;
+            period_seconds = 10;
             failure_threshold = 10;
           };
           availability = {
@@ -280,6 +276,7 @@
             SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_DSN = "tcp://127.0.0.1:9000";
             SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_CLUSTER = "cluster";
             SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_REPLICATION = "false";
+            SIGNOZ_OTEL_COLLECTOR_TIMEOUT = "60s";
           };
           depends_on.clickhouse.condition = "process_healthy";
           readiness_probe = {
@@ -287,7 +284,7 @@
               host = "127.0.0.1";
               port = 13133;
             };
-            initial_delay_seconds = 5;
+            initial_delay_seconds = 10;
             period_seconds = 10;
             failure_threshold = 10;
           };
