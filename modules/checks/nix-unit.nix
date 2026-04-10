@@ -88,6 +88,10 @@
               "ironstar-release"
               "nix-fast-build"
               "frontendAssets"
+              # SigNoz packages are transitively checked via dev-platform
+              "signoz-backend"
+              "signoz-otel-collector"
+              "signoz-frontend"
             ];
             isPerCrateSuffix =
               name: (builtins.match ".*-test$" name != null) || (builtins.match ".*-clippy$" name != null);
