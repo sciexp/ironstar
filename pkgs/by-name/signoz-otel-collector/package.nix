@@ -18,7 +18,8 @@ buildGo125Module {
     hash = "sha256-Z32qaaYuNiuLs8DzJqvteAKSybv5G8tzSFV7HqtHoDg=";
   };
 
-  vendorHash = "sha256-b5NAlYHKNM3UP5Z5VXGCN+HEJ59iDOPpMqWKvLUzwVQ=";
+  proxyVendor = true;
+  vendorHash = "sha256-LPfiOdfywvK6FBB2BdF5mFEVNDdAJL5BhWn6KtFNXr0=";
 
   subPackages = [ "cmd/signozotelcollector" ];
 
