@@ -59,6 +59,8 @@ stdenv.mkDerivation {
 
   installPhase = ''
     runHook preInstall
+    find build -name '*.gz' -delete
+    find build -name '*.map' -delete
     mv build $out
     runHook postInstall
   '';
