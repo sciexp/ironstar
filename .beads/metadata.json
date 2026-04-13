@@ -1,6 +1,7 @@
 {
-	"database": "dolt",
-	"backend": "dolt",
-	"dolt_mode": "server",
-	"dolt_database": "ironstar"
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "server",
+  "dolt_database": "ironstar",
+  "project_id": "f0975b76-b6d5-4d3c-af51-58c2e3acb7dc"
 }
