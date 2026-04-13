@@ -21,7 +21,7 @@
 		"test-release": "semantic-release --dry-run --no-ci"
 	},
 	"overrides": {
-		"ajv": "8.17.1"
+		"ajv": "8.18.0"
 	},
 	"devDependencies": {
 		"@playwright/test": "1.57.0",
