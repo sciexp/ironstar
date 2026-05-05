@@ -4,3 +4,5 @@
 # See: https://www.github.com/nix-community/buildbot-nix/issues/302 (upstream issue)
 # See: https://www.github.com/nix-community/buildbot-nix/pull/318 (per-repo config support)
 attribute = "checks.x86_64-linux"
+effects_branches = ["*"]
+effects_on_pull_requests = true
