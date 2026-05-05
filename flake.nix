@@ -50,6 +50,10 @@
     process-compose-flake.url = "github:Platonic-Systems/process-compose-flake";
     services-flake.url = "github:juspay/services-flake";
 
+    hercules-ci-effects.url = "github:hercules-ci/hercules-ci-effects";
+    hercules-ci-effects.inputs.flake-parts.follows = "flake-parts";
+    hercules-ci-effects.inputs.nixpkgs.follows = "nixpkgs";
+
     # playwright browsers pinned to match package.json (@playwright/test version)
     # sync this when upgrading @playwright/test in packages/docs/package.json
     playwright-web-flake.url = "github:pietdevries94/playwright-web-flake/1.57.0";
