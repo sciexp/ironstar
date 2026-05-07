@@ -14,11 +14,14 @@
 # imposing a network-isolation constraint that was the proximate cause of
 # the obh.10 hercules-ci-effects input-discipline failure.
 #
-# Exclusions (carried forward from TC-006):
+# Exclusions (carried forward from TC-006, plus deps build intermediates):
 #   - default: alias for ironstar
 #   - ironstar-release: expensive opt-in, not a check target
 #   - nix-fast-build: passthrough input, not a build artifact
 #   - frontendAssets: build intermediate, exercised via ironstar
+#   - ironstar-docs-deps: build intermediate, exercised via ironstar-docs
+#   - ironstar-eventcatalog-deps: build intermediate, exercised via
+#       ironstar-eventcatalog
 #   - per-crate *-test: redundant with workspace-test
 #   - per-crate *-clippy: redundant with workspace-clippy
 #
@@ -42,6 +45,8 @@
         "ironstar-release"
         "nix-fast-build"
         "frontendAssets"
+        "ironstar-docs-deps"
+        "ironstar-eventcatalog-deps"
       ];
       isPerCrateSuffix =
         name: (builtins.match ".*-test$" name != null) || (builtins.match ".*-clippy$" name != null);
