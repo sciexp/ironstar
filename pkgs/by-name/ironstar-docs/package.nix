@@ -26,6 +26,7 @@ stdenv.mkDerivation (finalAttrs: {
 
   nativeBuildInputs = [
     bun2nix.hook
+    nodejs-slim
   ];
 
   bunDeps = bun2nix.fetchBunDeps {
@@ -43,10 +44,35 @@ stdenv.mkDerivation (finalAttrs: {
     runHook postBuild
   '';
 
+  # Install layout: payload is the flat dist/ tree at $out (top-level _worker.js/,
+  # _astro/, _routes.json, *.html, ...). A normalized wrangler.json is emitted
+  # alongside it with paths rewritten to match the flat layout: ./dist/...
+  # references in packages/docs/wrangler.jsonc become root-relative (./_worker.js,
+  # ".") so `wrangler --config $out/wrangler.json` resolves all artefacts under
+  # the same prefix. apps.deploy-sites consumes $out as the materialise source
+  # (see modules/apps/deploy-sites/).
+  #
+  # node is used (over jq) to parse the source wrangler.jsonc because jq's
+  # strict-JSON parser rejects // and /* */ comments. The inline JSONC
+  # stripper handles the three forms present in the source: block comments,
+  # line comments, and trailing commas.
   installPhase = ''
     runHook preInstall
     mkdir -p $out
     cp -R packages/docs/dist/* $out/
+    node -e '
+      const fs = require("fs");
+      const src = fs.readFileSync("packages/docs/wrangler.jsonc", "utf8");
+      const stripped = src
+        .replace(/\/\*[\s\S]*?\*\//g, "")
+        .replace(/(^|[^:])\/\/.*$/gm, "$1")
+        .replace(/,(\s*[}\]])/g, "$1");
+      const cfg = JSON.parse(stripped);
+      cfg.main = "./_worker.js/index.js";
+      cfg.assets = cfg.assets || {};
+      cfg.assets.directory = ".";
+      fs.writeFileSync(process.env.out + "/wrangler.json", JSON.stringify(cfg, null, 2) + "\n");
+    '
     runHook postInstall
   '';
 
