@@ -1,0 +1,7 @@
+# Mirror the nix derivation install flags (--linker=isolated --backend=symlink)
+# so per-package `node_modules/.bin/` is populated locally. Required by the
+# playwright webServer command `node ./node_modules/.bin/astro dev` invoked
+# from packages/docs/, which fails under bun's default hoisted layout.
+[install]
+linker = "isolated"
+backend = "symlink"
