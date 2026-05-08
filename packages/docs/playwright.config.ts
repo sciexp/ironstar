@@ -72,9 +72,16 @@ export default defineConfig({
 				},
 			],
 
-	// Run local dev server before starting tests
+	// Run local dev server before starting tests.
+	// In CI: bun run preview:ci → astro preview serves the built worker.
+	// In dev: invoke astro dev under node (not bun) because bun's incomplete
+	// ws shim causes @cloudflare/vite-plugin's configureServer →
+	// startOrUpdateMiniflare to silently stall during dev startup, leaving
+	// astro's listen socket unbound.
 	webServer: {
-		command: process.env.CI ? "bun run preview:ci" : "bun run dev",
+		command: process.env.CI
+			? "bun run preview:ci"
+			: "node ./node_modules/.bin/astro dev",
 		url: "http://localhost:4321",
 		reuseExistingServer: !process.env.CI,
 		timeout: 120000,
