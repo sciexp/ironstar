@@ -61,6 +61,11 @@ export default defineConfig({
 				// The 'cloudflare' option requires the Image Resizing subscription
 				// Reference: https://docs.astro.build/en/guides/integrations-guide/cloudflare/#imageservice
 				imageService: "passthrough",
+				// Use Node-based prerenderer instead of workerd preview server to skip
+				// miniflare/workerd glibc-binary execution in the nix build sandbox.
+				// Reference: @astrojs/cloudflare src/prerenderer.ts (workerd path gated
+				// on prerenderEnvironment === 'workerd').
+				prerenderEnvironment: "node",
 			}),
 
 	/* ROLLDOWN INTEGRATION (DISABLED - Cloudflare Workers Incompatibility)
