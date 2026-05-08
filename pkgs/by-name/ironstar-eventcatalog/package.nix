@@ -67,21 +67,24 @@ stdenv.mkDerivation (finalAttrs: {
     NODE_MODULES_BIN="$(cd ../.. && pwd)/node_modules/.bin"
     export PATH="${nodejs}/bin:$NODE_MODULES_BIN:$PATH"
 
-    # The EventCatalog build has two phases:
-    #   1. catalogToAstro: copies catalog content into .eventcatalog-core/
-    #   2. Astro SSG build: renders pages from .eventcatalog-core/
+    # The EventCatalog build is invoked in two steps:
+    #   1. EventCatalog CLI: materialises catalog content into
+    #      .eventcatalog-core/ via catalogToAstro, then internally
+    #      spawns `npx astro build` from that directory.
+    #   2. Standalone astro build (below): the authoritative SSG
+    #      that produces the rendered pages under Node.js.
     #
-    # Phase 2 fails under Bun because elkjs creates a Worker at
-    # module evaluation time, and Bun's Worker implementation is
-    # incompatible with the elk.bundled.js pattern.
-    #
-    # We run the full EventCatalog CLI (which handles phase 1 and
-    # attempts phase 2). Phase 2 produces 0 pages because Astro
-    # cannot resolve modules without a local node_modules. Then we
-    # re-run the Astro build with proper module resolution.
-
-    # Run EventCatalog CLI for catalogToAstro (phase 2 silently
-    # produces 0 pages, which is fine)
+    # The CLI's internal astro invocation (eventcatalog.js's
+    # runCommandWithFilteredOutput) rejects with a non-zero exit,
+    # which propagates through parseAsync().catch -> process.exit(1).
+    # Two factors cause this: .eventcatalog-core/ has no node_modules
+    # at this point (we link it in below), and bun's Worker shim is
+    # incompatible with elkjs's module-load Worker pattern. The
+    # `|| true` masks this expected failure -- catalogToAstro has
+    # already populated .eventcatalog-core/ before astro is spawned,
+    # so the CLI's side effect is complete by the time it errors.
+    # Removing `|| true` will fail the build; the standalone astro
+    # invocation below is what produces dist/.
     ${nodejs}/bin/node \
       ../../node_modules/@eventcatalog/core/dist/eventcatalog.js \
       build || true
@@ -97,7 +100,7 @@ stdenv.mkDerivation (finalAttrs: {
     export ENABLE_EMBED=false
     export EVENTCATALOG_STARTER=false
     export EVENTCATALOG_SCALE=false
-    ${nodejs}/bin/node ../../../node_modules/astro/astro.js build
+    ${nodejs}/bin/node ../../../node_modules/.bin/astro build
     cd ..
 
     cd ../..
