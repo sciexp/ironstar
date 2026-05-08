@@ -15,7 +15,7 @@
 		"start": "astro dev",
 		"build": "astro build",
 		"preview": "astro build && wrangler dev",
-		"preview:ci": "serve dist -l 4321 --no-clipboard",
+		"preview:ci": "astro preview --host 127.0.0.1 --port 4321",
 		"deploy": "astro build && wrangler deploy",
 		"linkcheck": "CHECK_LINKS=true astro build",
 		"cf-typegen": "wrangler types",
