@@ -18,7 +18,7 @@ stdenv.mkDerivation (finalAttrs: {
     fileset = lib.fileset.unions [
       ../../../package.json
       ../../../bun.lock
-      ../../../patches
+      (lib.fileset.maybeMissing ../../../patches)
       ../../../packages/eventcatalog
     ];
   };

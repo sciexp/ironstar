@@ -19,7 +19,7 @@ stdenv.mkDerivation (finalAttrs: {
       ../../../package.json
       ../../../bun.lock
       ../../../tsconfig.json
-      ../../../patches
+      (lib.fileset.maybeMissing ../../../patches)
       ../../../packages/docs
     ];
   };

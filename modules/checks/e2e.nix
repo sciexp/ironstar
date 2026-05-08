@@ -24,7 +24,7 @@
             ../../package.json
             ../../bun.lock
             ../../tsconfig.json
-            ../../patches
+            (pkgs.lib.fileset.maybeMissing ../../patches)
           ];
         };
 
