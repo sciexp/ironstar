@@ -45,24 +45,23 @@ export default defineConfig({
 				},
 				{
 					label: "Reference",
-					autogenerate: { directory: "reference" },
+					items: [{ autogenerate: { directory: "reference" } }],
 				},
 			],
 		}),
 	],
 
-	adapter: cloudflare({
-		platformProxy: {
-			// Disable during tests to prevent hanging Vite server
-			// The platformProxy creates background processes that don't clean up properly
-			enabled: process.env.VITEST !== "true",
-		},
-
-		// Use 'passthrough' to serve images directly without Cloudflare Image Resizing
-		// The 'cloudflare' option requires the Image Resizing subscription
-		// Reference: https://docs.astro.build/en/guides/integrations-guide/cloudflare/#imageservice
-		imageService: "passthrough",
-	}),
+	// Skip Cloudflare adapter during tests: @cloudflare/vite-plugin (bundled in
+	// adapter v13) rejects Vitest's SSR resolve.external for Node built-ins.
+	// AstroContainer does not require a deployment adapter.
+	adapter: process.env.VITEST
+		? undefined
+		: cloudflare({
+				// Use 'passthrough' to serve images directly without Cloudflare Image Resizing
+				// The 'cloudflare' option requires the Image Resizing subscription
+				// Reference: https://docs.astro.build/en/guides/integrations-guide/cloudflare/#imageservice
+				imageService: "passthrough",
+			}),
 
 	/* ROLLDOWN INTEGRATION (DISABLED - Cloudflare Workers Incompatibility)
 	 *
