@@ -128,7 +128,7 @@
             resvg
             oxipng
 
-            # E2E testing browsers from playwright-web-flake (pinned to 1.56.1)
+            # E2E testing browsers from playwright-web-flake (pinned to 1.59.1)
 
             # Git environment setup
             set-git-env

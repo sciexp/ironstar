@@ -1311,10 +1311,6 @@
     url = "https://registry.npmjs.org/@playform/pipe/-/pipe-0.1.5.tgz";
     hash = "sha512-PYf/h1eUZGUoxEy0sagA3NBdcUp7+Bud/7Tvn7uYnulq1vsGtUCIkcrZF7/HjXD0ejJbTWSz3cXpIdqzceiFOw==";
   };
-  "@playwright/test@1.57.0" = fetchurl {
-    url = "https://registry.npmjs.org/@playwright/test/-/test-1.57.0.tgz";
-    hash = "sha512-6TyEnHgd6SArQO8UO2OMTxshln3QMWBtPGrOCgs3wVEmQmwyuNtB10IZMfmYDE0riwNR1cu4q+pPcxMVtaG3TA==";
-  };
   "@playwright/test@1.59.1" = fetchurl {
     url = "https://registry.npmjs.org/@playwright/test/-/test-1.59.1.tgz";
     hash = "sha512-PG6q63nQg5c9rIi4/Z5lR5IVF7yU5MqmKaPOe0HSc0O2cX1fPi96sUQu5j7eo4gKCkB2AnNGoWt7y4/Xx3Kcqg==";
@@ -6447,17 +6443,9 @@
     url = "https://registry.npmjs.org/pkg-up/-/pkg-up-3.1.0.tgz";
     hash = "sha512-nDywThFk1i4BQK4twPQ6TA4RT8bDY96yeuCVBWL3ePARCiEKDRSrNGbFIgUJpLp+XeIR65v8ra7WuJOFUBtkMA==";
   };
-  "playwright-core@1.57.0" = fetchurl {
-    url = "https://registry.npmjs.org/playwright-core/-/playwright-core-1.57.0.tgz";
-    hash = "sha512-agTcKlMw/mjBWOnD6kFZttAAGHgi/Nw0CZ2o6JqWSbMlI219lAFLZZCyqByTsvVAJq5XA5H8cA6PrvBRpBWEuQ==";
-  };
   "playwright-core@1.59.1" = fetchurl {
     url = "https://registry.npmjs.org/playwright-core/-/playwright-core-1.59.1.tgz";
     hash = "sha512-HBV/RJg81z5BiiZ9yPzIiClYV/QMsDCKUyogwH9p3MCP6IYjUFu/MActgYAvK0oWyV9NlwM3GLBjADyWgydVyg==";
-  };
-  "playwright@1.57.0" = fetchurl {
-    url = "https://registry.npmjs.org/playwright/-/playwright-1.57.0.tgz";
-    hash = "sha512-ilYQj1s8sr2ppEJ2YVadYBN0Mb3mdo9J0wQ+UuDhzYqURwSoW4n1Xs5vs7ORwgDGmyEh33tRMeS8KhdkMoLXQw==";
   };
   "playwright@1.59.1" = fetchurl {
     url = "https://registry.npmjs.org/playwright/-/playwright-1.59.1.tgz";
