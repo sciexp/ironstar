@@ -82,7 +82,7 @@ export default defineConfig({
 	webServer: {
 		command: process.env.CI
 			? "bun run preview:ci"
-			: "node ./node_modules/.bin/astro dev",
+			: "node ../../node_modules/.bin/astro dev",
 		url: "http://localhost:4321",
 		reuseExistingServer: !process.env.CI,
 		timeout: 120000,
