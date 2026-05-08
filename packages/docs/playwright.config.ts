@@ -48,8 +48,13 @@ export default defineConfig({
 		video: "retain-on-failure",
 	},
 
-	// Configure projects for major browsers
-	// Run only chromium in CI for speed, all browsers locally for comprehensive testing
+	// Configure projects for major browsers.
+	// CI: chromium only for speed.
+	// Local: chromium + firefox. Webkit is omitted because the webkit binary
+	// shipped by playwright-web-flake/1.59.1 fails the inspector handshake
+	// with @playwright/test 1.59.1 ("Protocol error (Console.enable):
+	// 'Console' domain was not found"). Re-enable once the flake's webkit
+	// revision aligns with playwright's expected protocol.
 	projects: process.env.CI
 		? [
 				{
@@ -65,10 +70,6 @@ export default defineConfig({
 				{
 					name: "firefox",
 					use: { ...devices["Desktop Firefox"] },
-				},
-				{
-					name: "webkit",
-					use: { ...devices["Desktop Safari"] },
 				},
 			],
 
