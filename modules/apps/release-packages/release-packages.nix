@@ -22,14 +22,22 @@
 #   GIT_COMMITTER_NAME / GIT_COMMITTER_EMAIL.
 #
 # Template bifurcation (writeShellApplication): INTERPOLATION FORM.
-# `text` is a nix string that injects two eval-time-computed paths
-# (IRONSTAR_DOCS_PAYLOAD via config.packages.ironstar-docs,
+# `text` is a nix string that injects two eval-time-computed payload
+# paths (IRONSTAR_DOCS_PAYLOAD via config.packages.ironstar-docs,
 # IRONSTAR_EVENTCATALOG_PAYLOAD via config.packages.ironstar-eventcatalog)
 # into the script preamble before the readFile'd sidecar body.
 # Contrast with the vanixiets release.nix exemplar (PURE READFILE FORM),
 # which only handles a single package and so injects its node_modules path
 # via runtimeEnv only. Here, dispatch over two packages requires both
 # payloads to be visible to the script, so interpolation form is used.
+#
+# Per-package node_modules trees are injected via runtimeEnv (vanixiets
+# modules/apps/release/release.nix:61-63 pattern) so the writeShellApplication
+# wrapper guarantees they are present at script invocation time without
+# requiring re-export inside the .sh body. The deps derivations land at
+# pkgs/by-name/ironstar-{docs,eventcatalog}-deps and produce
+# $out/packages/<pkg>/node_modules/.bin/semantic-release. Mirrors the
+# obh.35 IRONSTAR_*_NODE_MODULES wiring pattern in deploy-sites.nix.
 { ... }:
 {
   perSystem =
@@ -63,6 +71,10 @@
               pkgs.gawk
               pkgs.findutils
             ];
+            runtimeEnv = {
+              IRONSTAR_DOCS_NODE_MODULES = "${config.packages.ironstar-docs-deps}/packages/docs/node_modules";
+              IRONSTAR_EVENTCATALOG_NODE_MODULES = "${config.packages.ironstar-eventcatalog-deps}/packages/eventcatalog/node_modules";
+            };
             text = ''
               export IRONSTAR_DOCS_PAYLOAD=${lib.escapeShellArg config.packages.ironstar-docs}
               export IRONSTAR_EVENTCATALOG_PAYLOAD=${lib.escapeShellArg config.packages.ironstar-eventcatalog}
