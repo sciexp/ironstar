@@ -17,7 +17,6 @@
 # Exclusions (carried forward from TC-006, plus deps build intermediates):
 #   - default: alias for ironstar
 #   - ironstar-release: expensive opt-in, not a check target
-#   - nix-fast-build: passthrough input, not a build artifact
 #   - frontendAssets: build intermediate, exercised via ironstar
 #   - ironstar-docs-deps: build intermediate, exercised via ironstar-docs
 #   - ironstar-eventcatalog-deps: build intermediate, exercised via
@@ -45,7 +44,6 @@
       excluded = [
         "default"
         "ironstar-release"
-        "nix-fast-build"
         "frontendAssets"
         "ironstar-docs-deps"
         "ironstar-eventcatalog-deps"
