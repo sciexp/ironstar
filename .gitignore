@@ -23,6 +23,9 @@ pnpm-debug.log*
 # data
 data/
 
+# Prometheus runtime artifact (services-flake creates data/prom1/queries.active)
+/queries.active
+
 # environment variables
 .env
 .env.production
