@@ -38,6 +38,7 @@
     {
       apps.deploy-sites = {
         type = "app";
+        meta.description = "Deploy an ironstar npm package (ironstar-docs, ironstar-eventcatalog) to Cloudflare Workers in preview or production mode.";
         program = lib.getExe (
           pkgs.writeShellApplication {
             name = "deploy-sites";
