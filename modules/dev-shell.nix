@@ -97,6 +97,7 @@
             config.ironstar.rustToolchain
             cargo-edit
             cargo-nextest
+            cargo-outdated
 
             # Core development tools
             bun
