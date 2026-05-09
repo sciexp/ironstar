@@ -22,6 +22,8 @@
 #   - ironstar-docs-deps: build intermediate, exercised via ironstar-docs
 #   - ironstar-eventcatalog-deps: build intermediate, exercised via
 #       ironstar-eventcatalog
+#   - playwright-browsers-nixpkgs: shared e2e dependency, exercised
+#       via ironstar-docs-e2e, ironstar-eventcatalog-e2e, ironstar-e2e
 #   - per-crate *-test: redundant with workspace-test
 #   - per-crate *-clippy: redundant with workspace-clippy
 #
@@ -47,6 +49,7 @@
         "frontendAssets"
         "ironstar-docs-deps"
         "ironstar-eventcatalog-deps"
+        "playwright-browsers-nixpkgs"
       ];
       isPerCrateSuffix =
         name: (builtins.match ".*-test$" name != null) || (builtins.match ".*-clippy$" name != null);
