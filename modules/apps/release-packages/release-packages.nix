@@ -50,6 +50,7 @@
     {
       apps.release-packages = {
         type = "app";
+        meta.description = "Run semantic-release for an ironstar npm package (publish, dry-run, or info subcommand).";
         program = lib.getExe (
           pkgs.writeShellApplication {
             name = "release-packages";
