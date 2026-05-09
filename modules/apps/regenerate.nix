@@ -14,6 +14,7 @@
     {
       apps.regenerate-bun-nix = {
         type = "app";
+        meta.description = "Regenerate bun.nix from bun.lock using the pinned bun2nix and treefmt-format the result.";
         program = lib.getExe (
           pkgs.writeShellApplication {
             name = "regenerate-bun-nix";
