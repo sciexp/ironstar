@@ -121,6 +121,11 @@ case "$pkg_name" in
     node_modules_path="$IRONSTAR_DOCS_NODE_MODULES"
     preview_host_segment="ironstar-docs"
     production_url="https://ironstar.scientistexperience.net"
+    # @astrojs/cloudflare v13 emits the deploy-authoritative wrangler config
+    # at dist/server/wrangler.json; the source wrangler.jsonc at the payload
+    # root is preserved for reference but is not the file wrangler reads.
+    # See pkgs/by-name/ironstar-docs/package.nix install phase.
+    wrangler_config_relpath="dist/server/wrangler.json"
     ;;
   ironstar-eventcatalog)
     : "${IRONSTAR_EVENTCATALOG_PAYLOAD:?IRONSTAR_EVENTCATALOG_PAYLOAD not set; deploy-sites.nix must inject the nix-built payload}"
@@ -129,6 +134,10 @@ case "$pkg_name" in
     node_modules_path="$IRONSTAR_EVENTCATALOG_NODE_MODULES"
     preview_host_segment="ironstar-events"
     production_url="https://events.ironstar.scientistexperience.net"
+    # eventcatalog flattens dist/ to $out and emits a normalized wrangler.json
+    # at the payload root with assets.directory rewritten to ".".
+    # See pkgs/by-name/ironstar-eventcatalog/package.nix install phase.
+    wrangler_config_relpath="wrangler.json"
     ;;
   *)
     echo "error: unknown pkgName '$pkg_name'; expected ironstar-docs or ironstar-eventcatalog" >&2
@@ -182,15 +191,18 @@ fi
 cp -R "$payload"/. "$tmpdir/"
 chmod -R u+w "$tmpdir"
 
-# The payload derivations bake a normalized wrangler.json at the payload
-# root (see pkgs/by-name/ironstar-docs/package.nix and
-# pkgs/by-name/ironstar-eventcatalog/package.nix install phases). All paths
-# inside that wrangler.json are root-relative so they resolve correctly
-# against the materialised tmpdir copy.
-wrangler_config="$tmpdir/wrangler.json"
+# The payload derivations emit the deploy-authoritative wrangler config at
+# a per-package relative path (see pkgs/by-name/ironstar-docs/package.nix
+# and pkgs/by-name/ironstar-eventcatalog/package.nix install phases):
+#   - ironstar-docs:         dist/server/wrangler.json (@astrojs/cloudflare v13)
+#   - ironstar-eventcatalog: wrangler.json             (normalized at payload root)
+# All paths inside that config are relative so they resolve correctly
+# against the materialised tmpdir copy when wrangler is invoked with
+# --config pointing at the file.
+wrangler_config="$tmpdir/$wrangler_config_relpath"
 [[ -f "$wrangler_config" ]] || {
-  echo "error: payload '$payload' does not contain wrangler.json" >&2
-  echo "       expected at \$out/wrangler.json from pkgs/by-name/$pkg_name/package.nix install phase" >&2
+  echo "error: payload '$payload' does not contain $wrangler_config_relpath" >&2
+  echo "       expected at \$out/$wrangler_config_relpath from pkgs/by-name/$pkg_name/package.nix install phase" >&2
   exit 1
 }
 
