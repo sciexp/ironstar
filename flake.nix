@@ -2,7 +2,7 @@
   description = "Rust + Datastar template for reactive, event-sourced hypermedia applications";
 
   inputs = {
-    nixpkgs.url = "https://channels.nixos.org/nixpkgs-unstable/nixexprs.tar.xz";
+    nixpkgs.url = "https://channels.nixos.org/nixos-unstable-small/nixexprs.tar.xz";
     systems.url = "github:nix-systems/default/future-26.11";
 
     flake-parts = {
