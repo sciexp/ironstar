@@ -17,7 +17,6 @@
 
     nix-unit.url = "github:nix-community/nix-unit";
     nix-unit.inputs.nixpkgs.follows = "nixpkgs";
-    nix-unit.inputs.flake-parts.follows = "flake-parts";
     nix-unit.inputs.treefmt-nix.follows = "treefmt-nix";
 
     git-hooks.url = "github:cachix/git-hooks.nix";
