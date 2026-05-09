@@ -1393,15 +1393,16 @@ test-release-all:
     cd "$pkg" && bun run test-release && cd ../..; \
   done
 
-# Preview semantic-release version after merging current branch to target
+# Preview semantic-release version after merging current branch to target.
+# Argv: <target-branch> <pkgName> where pkgName is ironstar-docs or ironstar-eventcatalog.
 [group('release')]
 preview-version target="main" package="":
   #!/usr/bin/env bash
   set -euo pipefail
   if [ -n "{{package}}" ]; then
-    ./scripts/preview-version.sh "{{target}}" "{{package}}"
+    nix run --accept-flake-config --no-warn-dirty .#preview-version -- "{{target}}" "{{package}}"
   else
-    ./scripts/preview-version.sh "{{target}}"
+    nix run --accept-flake-config --no-warn-dirty .#preview-version -- "{{target}}"
   fi
 
 # Release specific package with semantic-release
