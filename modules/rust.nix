@@ -33,7 +33,7 @@
       ...
     }:
     let
-      rustToolchainVersion = "1.92.0";
+      rustToolchainVersion = "1.94.1";
 
       # Rust toolchain via rust-overlay (replaces rust-flake config.rust-project.toolchain)
       rustToolchain = pkgs.rust-bin.stable.${rustToolchainVersion}.default.override {
