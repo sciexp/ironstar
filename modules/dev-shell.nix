@@ -115,7 +115,7 @@
             gh
             act
             cachix
-            self'.packages.nix-fast-build
+            nix-fast-build
 
             # Process orchestration
             process-compose
