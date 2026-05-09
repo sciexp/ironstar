@@ -3,8 +3,9 @@
 # Per-package fanout: `builtins.readDir ./packages` + `lib.listToAttrs`
 # generates one `effects.release-${pkgName}` attribute per directory under
 # `packages/`. Each attribute runs in its own bwrap sandbox and dispatches
-# either production semantic-release (on `isMain`) or a direct
-# `scripts/preview-version.sh main <pkg-path>` invocation (otherwise).
+# either production semantic-release (on `isMain`) or `apps.preview-version`
+# (otherwise) — both are flake apps consumed via eval-time-resolved
+# program store paths.
 #
 # Topology divergence from vanixiets: vanixiets's release-packages.nix uses
 # a single `effects.release-packages` attribute that loops at runtime over
@@ -14,16 +15,11 @@
 # evidence and isolation, matching the obh.15 deploy-sites topology.
 #
 # The effect-name vocabulary is the bare directory name (`release-docs`,
-# `release-eventcatalog`); the `apps.release-packages` argv vocabulary is
-# the `ironstar-`-prefixed package name (`ironstar-docs`,
-# `ironstar-eventcatalog`). The `pkgArg` let-binding localises the
-# prefix-mapping at the dispatch boundary (resolution S1).
-#
-# Non-main dispatch (S3 = (b)): direct invocation of
-# `scripts/preview-version.sh main packages/<pkg>` from inside the cloned
-# tree. Elevation to a parametric `apps.preview-version` flake app is
-# tracked separately as obh.33; see the divergence note in the closure
-# narrative.
+# `release-eventcatalog`); the `apps.release-packages` and
+# `apps.preview-version` argv vocabularies are the `ironstar-`-prefixed
+# package name (`ironstar-docs`, `ironstar-eventcatalog`). The `pkgArg`
+# let-binding localises the prefix-mapping at the dispatch boundary
+# (resolution S1).
 #
 # Substrate exemplars:
 # `~/projects/nix-workspace/vanixiets/modules/effects/vanixiets/herculesCI/release-packages.nix`
@@ -77,6 +73,7 @@
             # Eval-time store-path resolution per obh.21 (no `nix run .#`
             # under bwrap; no nix daemon, no network).
             releasePackagesProgram = config.apps.release-packages.program;
+            previewVersionProgram = config.apps.preview-version.program;
 
             # S1: prefix application at the dispatch boundary.
             packageArg = pkgArg pkgName;
@@ -215,6 +212,7 @@
               # Why: bwrap sandbox does not bind working tree; .# cannot
               # resolve. Use eval-time /nix/store paths (obh.21).
               RELEASE_PACKAGES=${releasePackagesProgram}
+              PREVIEW_VERSION=${previewVersionProgram}
 
               # Operate from the cloned tree so semantic-release's
               # git-aware operations (tag, push, refs) target the right
@@ -242,18 +240,13 @@
                   ''
                 else
                   ''
-                    # Preview path: direct invocation of preview-version.sh
-                    # against the cloned tree. S3=(b) — script-direct, not
-                    # flake-app; elevation to apps.preview-version tracked
-                    # as obh.33. The script itself uses `nix develop -c bun`
-                    # internally; bwrap has no daemon access, so the
-                    # rehearsal exercises the script's argv contract and
-                    # its non-nix code paths, with the nix-develop-bound
-                    # semantic-release invocation gated on iteration-loop
-                    # observation (post obh.26+obh.27 magnetite restart).
+                    # Preview path: apps.preview-version dispatches the
+                    # parametric semantic-release dry-run wrapper for
+                    # ${packageArg}. Eval-time-injected node_modules trees
+                    # avoid any nix-daemon invocation under bwrap (obh.33).
                     preview_log="$(mktemp -t release-${pkgName}-preview.XXXXXX.log)"
                     set +e
-                    bash scripts/preview-version.sh main ${lib.escapeShellArg packagePath} 2>&1 | tee "$preview_log"
+                    "$PREVIEW_VERSION" main ${lib.escapeShellArg packageArg} 2>&1 | tee "$preview_log"
                     preview_rc=''${PIPESTATUS[0]}
                     set -e
                     if [ "$preview_rc" -ne 0 ]; then
