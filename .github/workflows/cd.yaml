@@ -1,113 +1,55 @@
-name: "CD"
-
+name: CD
 on:
-  pull_request:
-    types: [opened, reopened, synchronize]
-    paths-ignore:
-      - "*.md"
-  push:
-    branches:
-      - "main"
-    paths-ignore:
-      - "*.md"
   workflow_dispatch:
     inputs:
+      job:
+        description: specific job to run (leave empty to run all)
+        required: false
+        type: string
       debug_enabled:
-        description: "Enable debug logging"
-        type: boolean
-        default: false
-      deploy_enabled:
-        description: "Enable deployment"
+        description: "Run the workflow with tmate.io debugging enabled"
+        required: false
         type: boolean
         default: false
       force_run:
-        description: "Force execution even if already successful"
+        description: "Force execution even if already successful for this commit"
+        required: false
         type: boolean
         default: false
 
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
 
 permissions:
   contents: read
-  deployments: write
-  actions: write
-  checks: write
-  id-token: write
 
 jobs:
   set-variables:
     runs-on: ubuntu-latest
+    if: |
+      !cancelled() &&
+      (inputs.job == '' || inputs.job == 'set-variables')
     outputs:
-      debug: ${{ steps.vars.outputs.debug }}
-      skip_ci: ${{ steps.vars.outputs.skip_ci }}
-      deploy_enabled: ${{ steps.vars.outputs.deploy_enabled }}
-      deploy_environment: ${{ steps.vars.outputs.deploy_environment }}
-      checkout_ref: ${{ steps.vars.outputs.checkout_ref }}
-      checkout_rev: ${{ steps.vars.outputs.checkout_rev }}
+      debug: ${{ steps.set-variables.outputs.debug }}
+
     steps:
-      - name: Compute CI variables
-        id: vars
+      - name: Set action variables
+        id: set-variables
         env:
-          EVENT_NAME: ${{ github.event_name }}
-          GIT_REF: ${{ github.ref }}
-          HEAD_REF: ${{ github.head_ref }}
-          REF_NAME: ${{ github.ref_name }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          PUSH_SHA: ${{ github.sha }}
-          PR_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
-          INPUT_DEBUG: ${{ inputs.debug_enabled || false }}
-          INPUT_DEPLOY: ${{ inputs.deploy_enabled || false }}
-        run: |
-          # debug: from workflow_dispatch input or false
-          echo "debug=${INPUT_DEBUG}" >> "$GITHUB_OUTPUT"
-
-          # skip_ci: true if PR has skip-ci label
-          SKIP_CI=false
-          if [[ "${EVENT_NAME}" == 'pull_request' ]]; then
-            if echo "${PR_LABELS}" | grep -q '"skip-ci"'; then
-              SKIP_CI=true
-            fi
-          fi
-          echo "skip_ci=${SKIP_CI}" >> "$GITHUB_OUTPUT"
-
-          # deploy_enabled: push to main, PR with docs-preview label, or workflow_dispatch input
-          DEPLOY_ENABLED=false
-          if [[ "${EVENT_NAME}" == 'push' && "${GIT_REF}" == 'refs/heads/main' ]]; then
-            DEPLOY_ENABLED=true
-          elif [[ "${EVENT_NAME}" == 'pull_request' ]]; then
-            if echo "${PR_LABELS}" | grep -q '"docs-preview"'; then
-              DEPLOY_ENABLED=true
-            fi
-          elif [[ "${EVENT_NAME}" == 'workflow_dispatch' ]]; then
-            DEPLOY_ENABLED=${INPUT_DEPLOY}
-          fi
-          echo "deploy_enabled=${DEPLOY_ENABLED}" >> "$GITHUB_OUTPUT"
-
-          # deploy_environment: production for push to main, preview otherwise
-          DEPLOY_ENV=preview
-          if [[ "${EVENT_NAME}" == 'push' && "${GIT_REF}" == 'refs/heads/main' ]]; then
-            DEPLOY_ENV=production
-          fi
-          echo "deploy_environment=${DEPLOY_ENV}" >> "$GITHUB_OUTPUT"
-
-          # checkout_ref: head_ref for PRs, ref_name for pushes
-          if [[ "${EVENT_NAME}" == 'pull_request' ]]; then
-            echo "checkout_ref=${HEAD_REF}" >> "$GITHUB_OUTPUT"
-          else
-            echo "checkout_ref=${REF_NAME}" >> "$GITHUB_OUTPUT"
-          fi
-
-          # checkout_rev: PR head SHA for PRs, github.sha for pushes
-          if [[ "${EVENT_NAME}" == 'pull_request' ]]; then
-            echo "checkout_rev=${HEAD_SHA}" >> "$GITHUB_OUTPUT"
-          else
-            echo "checkout_rev=${PUSH_SHA}" >> "$GITHUB_OUTPUT"
-          fi
+          INPUT_DEBUG: ${{ inputs.debug_enabled }}
+        run: echo "debug=${INPUT_DEBUG}" >> "$GITHUB_OUTPUT"
 
   bootstrap-verification:
+    needs: [set-variables]
     runs-on: ubuntu-latest
+    if: |
+      !cancelled() &&
+      (inputs.job == '' || inputs.job == 'bootstrap-verification')
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -214,101 +156,3 @@ jobs:
         with:
           path: ${{ steps.cache.outputs.cache-path }}
           key: ${{ steps.cache.outputs.cache-key }}
-
-  preview-site-deploy:
-    needs: [set-variables]
-    if: "!cancelled() && github.event_name == 'pull_request'"
-    strategy:
-      fail-fast: false
-      matrix:
-        site: [docs, eventcatalog]
-    permissions:
-      contents: read
-      deployments: write
-    uses: ./.github/workflows/deploy-site.yaml
-    with:
-      site_name: ${{ matrix.site }}
-      branch: ${{ github.head_ref }}
-      environment: preview
-      debug_enabled: ${{ needs.set-variables.outputs.debug }}
-    secrets: inherit
-
-  # Production release: structurally complete but INERT (no push: trigger exists)
-  production-release-packages:
-    needs: [set-variables]
-    if: >-
-      github.repository_owner == 'sciexp' &&
-      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/beta') &&
-      needs.set-variables.outputs.skip_ci != 'true'
-    strategy:
-      fail-fast: false
-      matrix:
-        package:
-          - {name: docs, path: packages/docs}
-          - {name: eventcatalog, path: packages/eventcatalog}
-    permissions:
-      contents: write
-      id-token: write
-    uses: ./.github/workflows/package-release.yaml
-    with:
-      package-path: ${{ matrix.package.path }}
-      package-name: ${{ matrix.package.name }}
-      release-dry-run: false
-      debug-enabled: ${{ needs.set-variables.outputs.debug == 'true' }}
-      checkout-ref: ${{ needs.set-variables.outputs.checkout_ref }}
-    secrets:
-      SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
-
-  # Production deploy: structurally complete but INERT (no push: trigger exists)
-  production-site-deploy:
-    needs: [set-variables, production-release-packages]
-    if: >-
-      !cancelled() &&
-      needs.set-variables.outputs.skip_ci != 'true' &&
-      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/beta') &&
-      needs.set-variables.outputs.deploy_enabled == 'true'
-    strategy:
-      fail-fast: false
-      matrix:
-        site: [docs, eventcatalog]
-    uses: ./.github/workflows/deploy-site.yaml
-    with:
-      site_name: ${{ matrix.site }}
-      branch: ${{ needs.set-variables.outputs.checkout_ref }}
-      environment: production
-      debug_enabled: ${{ needs.set-variables.outputs.debug }}
-    secrets: inherit
-
-  # Placeholder for future Rust binary releases (GitHub Releases, crates.io).
-  # Disabled by default via repository variable; set ENABLE_RUST_RELEASE=true to activate.
-  release-build:
-    if: vars.ENABLE_RUST_RELEASE == 'true'
-    runs-on: ${{ matrix.runner }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - system: x86_64-linux
-            runner: ubuntu-latest
-          # - system: aarch64-linux
-          #   runner: ubuntu-24.04-arm
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-        with:
-          fetch-depth: 0
-
-      - name: Setup Nix
-        uses: ./.github/actions/setup-nix
-        with:
-          installer: full
-          system: ${{ matrix.system }}
-          enable-cachix: true
-          cachix-name: ${{ vars.CACHIX_CACHE_NAME }}
-          cachix-auth-token: ${{ secrets.CACHIX_AUTH_TOKEN }}
-          cachix-skip-push: false
-
-      - name: Build release binary
-        run: nix build .#ironstar-release --accept-flake-config -L
