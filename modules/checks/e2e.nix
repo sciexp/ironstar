@@ -9,7 +9,6 @@
     }:
     let
       bun2nix = inputs.bun2nix.packages.${system}.default;
-      playwrightDriver = inputs.playwright-web-flake.packages.${system}.playwright-driver;
       nodejs-slim = pkgs.nodejs-slim;
     in
     {
@@ -44,7 +43,7 @@
 
         env = {
           CI = "true";
-          PLAYWRIGHT_BROWSERS_PATH = "${playwrightDriver.browsers}";
+          PLAYWRIGHT_BROWSERS_PATH = "${self'.packages.playwright-browsers-nixpkgs}";
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1";
           PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
           IRONSTAR_ENABLE_ANALYTICS = "false";
