@@ -1,0 +1,291 @@
+## Context
+
+Ironstar's 11-crate Rust workspace builds through crane.
+Crane vendors the whole workspace's dependencies once and produces a single workspace-wide `cargoArtifacts` blob via `buildDepsOnly`, which every downstream derivation shares: the dev binary, the release binary, the `workspace-test` and `workspace-clippy` checks, and twenty ad-hoc per-crate `*-test`/`*-clippy` packages.
+This yields coarse cache granularity.
+A Renovate bump of one dependency invalidates the entire `cargoArtifacts` cone, so the niks3 cache at cache.scientistexperience.net re-stores a large blob rather than the single dependency crate that changed.
+
+This change moves the Rust build substrate to crate2nix in its committed-`Cargo.nix` classic model, with no import-from-derivation anywhere.
+Crate2nix emits one `buildRustCrate` derivation per crate, so a single-dependency bump invalidates only that dependency's cone in the cache.
+
+Every keystone fact in this document was re-verified against the local crate2nix clone (tip b873ca5) and the ironstar tree.
+The decisive per-member-src fact was confirmed empirically by generating a `Cargo.nix` for crate2nix's own `workspace_with_nondefault_lib` sample, whose `crates/<name>` layout is identical to ironstar's.
+
+Constraints carried from the existing tree:
+ironstar deliberately avoids IFD — `modules/rust.nix` reads the workspace version via `fromTOML`/`readFile` of a plain file precisely so eval does not depend on a derivation build.
+The pinned Rust toolchain is 1.94.1 via rust-overlay, and this single-toolchain invariant must hold across the build, the devshell, and treefmt-driven fmt.
+The check surface is 14 and must stay 14 to keep the devshell closure class stable, since `devShell.inputsFrom = builtins.attrValues self'.checks`.
+`Cargo.lock` has 576 packages, 0 git sources, 0 alternate registries, and 565 crates.io checksums; the 11-package difference is the local path crates.
+
+## Goals / Non-Goals
+
+**Goals:**
+
+Replace crane with crate2nix as the Rust build substrate, achieving per-dependency-crate nix cache granularity so a single Renovate dependency bump invalidates one crate's cone rather than the whole workspace blob.
+Commit a `Cargo.nix` kept in lockstep with `Cargo.lock`, generated with no IFD.
+Preserve the pinned 1.94.1 toolchain across all per-crate builds.
+Preserve the workspace test and clippy correctness gate at 911-test parity.
+Preserve the 14-check surface and the embedded-assets behavior (non-empty static/dist manifest; ducklake-catalogs catalog).
+Keep the migration additive and reversible until the substrate swap, removing crane and its substituter only at the end.
+
+**Non-Goals:**
+
+Crate decomposition changes (the v4y track), the bun/JS substrate, toolchain version bumps, and adoption of a `--profile ci` for the test gate are all out of scope.
+Sourcing a real ducklake catalog is out of scope: today the `.db` is gitignored and filtered, so `ironstar-analytics-infra` silently embeds an empty catalog, and this design preserves that empty-embed behavior, recording catalog provenance as a discovered follow-up.
+Per-local-member source-cache granularity for the two asset-reaching members is explicitly not a goal; the robust win is per-dependency-crate caching.
+
+## Decisions
+
+### D1: committed Cargo.nix, no IFD
+
+**Choice.**
+Add `crate2nix.url = "github:nix-community/crate2nix"` with `crate2nix.inputs.nixpkgs.follows = "nixpkgs"`.
+Do not add `nixConfig.allow-import-from-derivation`.
+Generate with default features (`rootFeatures = ["default"]`) via `just regenerate-cargo-nix` running `nix run github:nix-community/crate2nix -- generate` at the repo root, committing `./Cargo.nix`.
+
+**Rationale.**
+Ironstar avoids IFD by design, so committing `Cargo.nix` rather than using crate2nix's `generatedCargoNix` (which is IFD) keeps `nix flake check` and `nix build` fully offline.
+Every third-party crate's sha256 comes from `Cargo.lock` and bakes into `Cargo.nix` at generation time, so no `crate-hashes.json` is produced or needed.
+`crate2nix generate` does not prefetch from the network for ironstar: `src/lock.rs:49-76` pulls hashes from `Cargo.lock`, and `src/sources.rs` prefetch fires only for sources lacking a lockfile checksum (git or alternate registry), of which there are none.
+Generate once on the dev host; a single committed `Cargo.nix` encodes per-target cfg at nix-eval time, so it builds on both aarch64-darwin and x86_64-linux without per-target regeneration.
+
+**Alternatives considered.**
+IFD via `appliedCargoNix`/`generatedCargoNix` — rejected for contradicting the deliberate IFD-avoidance pattern.
+Committing per-target `Cargo.nix` variants — rejected because a single `Cargo.nix` encodes per-target cfg at eval time; Design A's "generate on build target" wording risked this and is not adopted.
+
+### D2: rust.nix consumption with the pinned toolchain threaded in
+
+**Choice.**
+Import `./Cargo.nix` with `buildRustCrateForPkgs` overriding `rustc` and `cargo` to the pinned 1.94.1 `rustToolchain`, and merging `ironstarCrateOverrides` onto `pkgs.defaultCrateOverrides`:
+
+```
+cargoNix = import ./Cargo.nix {
+  inherit pkgs;
+  buildRustCrateForPkgs = p: p.buildRustCrate.override {
+    rustc = rustToolchain; cargo = rustToolchain;
+    defaultCrateOverrides = p.defaultCrateOverrides // ironstarCrateOverrides p;
+  };
+};
+```
+
+`packages.ironstar` is `cargoNix.workspaceMembers."ironstar".build` with `.override { release = false; }` (release is crate2nix's default, so dev needs the explicit false), and `packages.ironstar-release` is the same with `release = true`.
+
+**Rationale.**
+Threading the toolchain through `buildRustCrateForPkgs` preserves the single-toolchain invariant so per-crate builds match fmt and the devshell.
+A pure workspace has no `rootCrate`; crate2nix exposes `workspaceMembers` and `allWorkspaceMembers`, so member builds use `workspaceMembers.<name>.build`.
+
+**Alternatives considered.**
+Using a `rootCrate` — not applicable; verified crate2nix exposes no `rootCrate` for a pure workspace.
+
+### D3: per-member src and the source-injection mechanism
+
+**Choice.**
+For a `crates/<name>` workspace, the generated `Cargo.nix` sets each local member's `src = lib.cleanSourceWith { filter = sourceFilter; src = ./crates/<name>; }` with `workspace_member = null` — the member's own subdirectory, not `./.`.
+The `include_str!` migration reads from `crates/ironstar/src/...` resolve to `crates/ironstar/migrations`, inside the ironstar member tree, so they are safe under per-member src with no extra work.
+The two rust-embed reads reach the workspace root and break unless src is overridden: `#[folder = "$CARGO_MANIFEST_DIR/../../static/dist"]` in `crates/ironstar/src/infrastructure/assets.rs:25` and `#[folder = "$CARGO_MANIFEST_DIR/../../assets/ducklake-catalogs"]` in `crates/ironstar-analytics-infra/src/embedded_catalogs.rs:40`.
+
+For exactly those two members, override `src` to a `combinedSrc`-derived subtree that re-establishes the `../../` parent layout above the crate root.
+Concretely, a per-member derived tree `memberSrc.<name> = runCommand ... '' mkdir -p $out/crates; cp -r ${combinedSrc}/crates/<name> $out/crates/<name>; mkdir -p $out/static $out/assets; cp -r ${combinedSrc}/static/dist $out/static/dist; cp -r ${ducklakeCatalogsSrc} $out/assets/ducklake-catalogs ''`, set as that member's `src` via the override.
+The other nine members keep the generated `./crates/<name>` src.
+
+**Rationale.**
+This was confirmed empirically: generating `Cargo.nix` for `workspace_with_nondefault_lib` (members `crates/main`, `crates/somelib`) produced `src = ./crates/main` and `src = ./crates/somelib` with `workspace_member = null`.
+`src/resolve.rs:83` sets the package path to the manifest's parent directory, `:575` returns `./.` only when the package path equals the `Cargo.nix` directory (a single root crate), and `templates/Cargo.nix.tera:161/163` corroborate.
+`buildRustCrate` unpacks only the member subdir, with no cd-into-member-from-workspace-root behavior.
+The override re-establishes the parent layout, making the parent-relative reads work exactly as crane does today.
+This is a deliberate, documented choice: it forgoes per-local-member source-cache granularity for the two affected crates, but the per-dependency-crate cache win is unaffected.
+Crate2nix's `sourceFilter` is a denylist (it excludes only `.git`/`target`/IDE/`Cargo.nix`/editor-backups), so `.sql` files inside member dirs are retained automatically, and crane's bespoke `.sql` allowlist special-case becomes unnecessary.
+
+**Alternatives considered.**
+Design A's "materializes the parents" hand-wave and Design B's "reuse combinedSrc verbatim, near-identity port" framing — both rejected.
+Design B's keystone (classic `Cargo.nix` sets every member `src=./.` with `workspace_member=crates/<name>`) is false per the empirical generation.
+
+### D4: crate overrides inventory
+
+**Choice.**
+A single `ironstarCrateOverrides = pkgs: { ... }` attrset merged onto `pkgs.defaultCrateOverrides`:
+`libduckdb-sys` gets `nativeBuildInputs ++ [ pkgs.stdenv.cc ]` and `HOME = "/tmp"` (bundled C++ amalgamation; HOME guards any build-time DuckDB write);
+`aws-lc-sys` gets `nativeBuildInputs ++ [ pkgs.cmake pkgs.perl ]`, mandatory;
+`ring` gets `nativeBuildInputs ++ [ pkgs.perl ]` (asm build; cheap insurance);
+`libsqlite3-sys` relies on the nixpkgs default (pkg-config plus sqlite) and gets nothing added.
+Do not add a workspace-wide pkg-config.
+Provisionally drop the Linux `openssl` buildInput; add an `openssl-sys` override only if a transitive surfaces.
+Darwin frameworks rely on the modern nixpkgs apple-sdk, with a per-crate buildInput added only if an aarch64-darwin build error surfaces.
+
+**Rationale.**
+Verified `-sys` inventory from `Cargo.lock`: `libduckdb-sys`, `libsqlite3-sys`, `aws-lc-rs` plus `aws-lc-sys`, and `ring` are present; `openssl-probe` is present but there is no `openssl-sys`.
+Both `ring` and `aws-lc-rs` are active on the resolved graph, so `aws-lc-sys` is on the critical path and its override is mandatory, not optional — this elevates it above 8g3's enumerated override list.
+Crane carried a workspace-wide pkg-config; under crate2nix only `libsqlite3-sys` needs it, and the default covers it.
+The TLS stack is rustls via ring/aws-lc-rs and no `openssl-sys` is in the lock, so the Linux openssl buildInput is dropped provisionally; the test/clippy gate and the swap-gate builds catch any transitive surfacing.
+
+### D5: packages — transitional and post-swap
+
+**Choice.**
+Transitional packages (additive, crane untouched): `ironstar-c2n` (dev), `ironstar-release-c2n` (release), and optionally `allWorkspaceMembers-c2n = cargoNix.allWorkspaceMembers` for a cheap compile-everything signal.
+Post-swap, rename to `ironstar`/`ironstar-release` and delete the crane attrs.
+Delete the twenty ad-hoc per-crate `*-test`/`*-clippy` packages, reducing the package surface.
+
+**Rationale.**
+The twenty per-crate items live in `packages`, not `checks` (`modules/rust.nix:238-244`), generated by `genAttrs` over ten `libCrates`; deleting them shrinks the package surface.
+The package-set-invariant already excludes `*-test`/`*-clippy` suffixes and lists `ironstar-release` and `frontendAssets` as excluded; during the transition, add `ironstar-c2n`/`ironstar-release-c2n` to `excluded` and remove them at the swap when the names revert.
+
+### D6: test and clippy strategy — hybrid, 14-check invariance
+
+**Choice.**
+Keep one workspace `cargo nextest` and one workspace `cargo clippy` as the single correctness gate.
+Build no per-crate wrappers and do not use `buildRustCrate runTests=true`.
+After crane removal, the gate is a crane-free derivation running `cargo nextest run --workspace --no-tests=pass` (default nextest profile for parity) and `cargo clippy --workspace --all-targets -- -D warnings` against `combinedSrc`, with the pinned toolchain plus native deps (cc/cmake/perl/sqlite, pkg-config) in `nativeBuildInputs` and `HOME=/tmp`.
+Doctest stays disabled.
+
+**Rationale.**
+All three verdicts and both designs converge here.
+Per-crate nextest/clippy wrappers compile from source and do not consume `buildRustCrate`'s rlib artifacts, buying reporting granularity for zero cache value at roughly eighteen extra derivations.
+`runTests=true` runs experimental cargo-test rather than nextest, losing `--no-tests=pass`, the `[profile.ci]` retries/junit contract, and the 911-test baseline shape.
+The genuine cache win — per-dependency-crate build derivations — accrues automatically.
+`.config/nextest.toml` does exist with a `[profile.ci]` (retries=2, junit.xml), but `--profile ci` is used nowhere today; the crane gate uses the default profile, so parity means default, and selecting `--profile ci` for buildbot junit is a deliberate future choice, not a port.
+The check count stays 14 → 14.
+
+**Alternatives considered.**
+8g3's 2 → 20 per-crate check expansion — rejected (reporting-only, no cache value).
+`buildRustCrate runTests=true` — rejected (experimental cargo-test, loses the nextest contract).
+Documented fallback: if the gate's dependency-recompile cost bites, retain a single crane `buildDepsOnly` feeding only the test/clippy derivations, so crane survives as a deps-provider sliver.
+
+### D7: drift detection
+
+**Choice.**
+Primary: extend `.github/workflows/regenerate-lock-files.yaml` to regenerate `Cargo.nix` when `Cargo.lock` or `Cargo.toml` change (new trigger path plus a generate-and-amend step mirroring the existing flake.lock/bun.nix steps; reuse or adapt the concurrency group), running `crate2nix generate` with network allowed in GitHub Actions and auto-committing.
+Secondary: a cheap no-network flake check `cargo-nix-lock-sync`, a pure derivation diffing the `[[package]] name@version` set in `Cargo.lock` against the `crateName/version` pairs in `Cargo.nix` and failing on a stale `Cargo.nix`.
+
+**Rationale.**
+The workflow currently triggers only on `bun.lock`, `package.json`, `packages/**/package.json`, and `flake.nix`, with concurrency group `regenerate-bun-nix-*`, so adding the trigger path and the generate-and-amend step is real work.
+The corrected hermeticity reasoning: an in-sandbox regenerate is offline-feasible for ironstar — `src/lock.rs:49-76` reads sha256s from `Cargo.lock` and `src/sources.rs` prefetch fires only for non-lockfile sources, of which there are none (565 crates.io checksums present).
+So the reason to keep regeneration in CI is IFD plus buildbot nix-eval-jobs fanout, not network — correcting the cargo-economics and correctness verdicts' network claim, per the operations verdict.
+
+**Alternatives considered.**
+A sandboxed full regenerate-and-diff check — rejected because the rejection rests on IFD plus nix-eval-jobs fanout, and the cheap no-network staleness check covers staleness more cheaply.
+
+### D8: devshell and auxiliary surfaces
+
+**Choice.**
+Near-zero port.
+Thread the pinned 1.94.1 toolchain into `buildRustCrateForPkgs` so per-crate builds match fmt and the devshell.
+Hold the check count at 14 to keep the devshell closure class stable.
+
+**Rationale.**
+There is no `craneLib.devShell` (`modules/dev-shell.nix` uses plain `pkgs.mkShell`), rustfmt runs via treefmt (`modules/formatting.nix`) not crane, and there is no crane `cargoDoc` (`cargoDocTest` is commented out; doctest is false).
+The only coupling is `devShell.inputsFrom = builtins.attrValues self'.checks`; holding 14 checks keeps the closure class stable, and deleting the twenty per-crate packages reduces fan-out.
+`frontendAssets` (pnpm/Rolldown), gitleaks, docs/eventcatalog (bun2nix), e2e (Playwright), treefmt, and the structure-package-set-invariant are all non-crane and unchanged.
+The e2e check consumes the dev binary (`self'.packages.ironstar`); post-swap that becomes the crate2nix dev build, so the `/bin/ironstar` path identity must be verified.
+
+## Risks / Trade-offs
+
+[Risk] Parent-relative asset injection (highest).
+The per-member derived src that re-establishes `../../static/dist` and `../../assets/ducklake-catalogs` above `crates/ironstar` and `crates/ironstar-analytics-infra` is the load-bearing unknown; `assets.rs` silently embeds nothing if the folder is absent, so a wrong relative depth produces a binary that builds and runs but serves no UI or catalog.
+→ Mitigation: task-2 acceptance asserts the embedded manifest and catalog are non-empty (smoke run or explicit assertion), not merely "compiles"; empirical depth verification before declaring task 2 done; e2e in task 5 catches end-to-end.
+
+[Risk] Ducklake-catalogs provenance.
+The catalog embeds empty today (gitignored `.db`, filtered out); if a real catalog is expected, the migration would need to source it, and a gitignored `.db` cannot come from the flake source.
+→ Mitigation: default to preserving the empty-embed status quo; surfaced as an open question.
+
+[Risk] Feature divergence (zenoh `default-features=false`; ring-vs-aws-lc-rs).
+A default-features `Cargo.nix` could resolve `transport_tls` or the crypto path differently from cargo's workspace unification, breaking SSE/Zenoh at runtime.
+→ Mitigation: a full 911-test pass plus e2e on both aarch64-darwin and x86_64-linux is the swap gate; do not swap until both platforms are green.
+
+[Risk] Eval and cache fanout.
+Roughly 576 dependency-crate derivations grow nix-eval-jobs instantiation cost and the niks3 object count (many small paths vs two large blobs), raising cold-cache CI fetch latency.
+→ Mitigation: record eval time and cold-cache fetch time in task-1/2 acceptance; gate the swap on eval ≤ ~2x crane; if exceeded, reconsider the hybrid fallback.
+
+[Risk] Test-gate dependency recompile.
+The crane-free workspace-test/clippy derivation recompiles all deps when it changes (no per-crate cache in the gate).
+→ Mitigation: documented fallback — retain one crane `buildDepsOnly` feeding only these two derivations.
+
+[Risk] Darwin framework gaps.
+`security-framework-sys`/`core-foundation-sys` framework needs on aarch64-darwin are unverified.
+→ Mitigation: detected by the task-2 darwin build; add a single per-crate buildInput override on the offending `-sys` crate.
+
+[Risk] Cargo.nix staleness on non-Renovate PRs.
+A developer bumping `Cargo.lock` locally without regenerating, on a PR the CI trigger paths do not catch.
+→ Mitigation: the `cargo-nix-lock-sync` staleness check (task 4) is the belt-and-suspenders; CI auto-regen handles Renovate.
+
+[Risk] Content-addressed name stability.
+The `combinedSrc`-derived per-member srcs must keep fixed `name`s or unrelated commits trigger full rebuilds (crane uses `name="ironstar-src"` for this).
+→ Mitigation: preserve fixed names in the derived-src runCommands; a no-op commit should not rebuild.
+
+[Risk] nix-unit input removal.
+Removing the input could break a transitive follows (`treefmt-nix.follows`).
+→ Mitigation: gate removal on confirming no load-bearing consumer (verified only comment-level references today); `nix flake check` after removal.
+
+[Trade-off] Per-local-member source-cache granularity is forgone for the two asset-reaching members, which share a derived `combinedSrc` subtree.
+→ Accepted because the robust win is per-dependency-crate caching, which is unaffected, and the two members must re-establish the parent layout anyway.
+
+## Migration Plan
+
+The migration is staged across six tasks, additive and reversible until the substrate swap.
+
+Tasks 1 through 5 are additive: parallel `ironstar-c2n` and `ironstar-release-c2n` packages build alongside the untouched crane packages, with crane (a self-contained input carrying its own `crane.cachix.org` substituter) fully functional throughout.
+Task 1 bootstraps the crate2nix input and the committed `Cargo.nix`.
+Task 2 adds crate overrides, the parallel packages, and the source injection for the two parent-reaching members.
+Task 3 migrates the workspace test and clippy gate off crane and deletes the twenty per-crate packages.
+Task 4 adds drift detection.
+Task 5 is the substrate swap: rename the `-c2n` packages, point `default`, the e2e check binary, and CD at the crate2nix builds, and remove the transition exclusions.
+Task 6 removes crane, the `crane.cachix.org` substituter, and stale docs, and demonstrates the cache-granularity payoff.
+
+The swap (task 5) is gated on all 14 checks green and the 911-test pass plus e2e on both aarch64-darwin and x86_64-linux, with a human go/no-go informed by the eval-time and cold-cache measurements captured in tasks 1 and 2.
+
+Rollback.
+Pre-swap rollback drops the `-c2n` packages.
+Post-swap rollback reverts the single swap commit; crane code remains in git history and `Cargo.nix` is inert.
+`crane.cachix.org` is kept transitionally and removed only in the final cleanup.
+Mergify required_checks is invariant: the buildbot umbrella names `buildbot/nix-build` and `buildbot/nix-eval` are stable under check-matrix expansion, so no mergify edits are needed.
+
+## Deviations from beads epic ironstar-8g3
+
+The prior planning session's epic ironstar-8g3 (seven children) is the input; the user's directive was to refactor it, and the epic is now frozen.
+The following deviations are deliberate.
+
+1. Source model.
+8g3's single combinedSrc overlay injecting frontend assets and SQL migrations into the binary crate is retained in spirit but re-scoped: under crate2nix's per-member src, the `include_str!` migration reads are already safe (inside `crates/ironstar/migrations`), so only the two rust-embed reads reaching the workspace root need a per-member derived-src override.
+The final design uses a targeted per-member src override for exactly two crates and lets the other nine use the generated subdir src.
+
+2. Check surface 2 → 20 rejected.
+8g3 planned per-crate test and clippy derivations promoted to first-class checks.
+The final design keeps one workspace nextest and one workspace clippy (14 → 14) and deletes the twenty per-crate packages, because per-crate wrappers compile from source and reuse no `buildRustCrate` artifacts.
+8g3's "2 → 20" conflated packages and checks; the twenty already exist as packages, not checks.
+
+3. Nextest config-file flag dropped.
+8g3 specified `cargo nextest run -p <crate> --config-file .config/nextest.toml --profile ci`.
+The final design uses the default profile for the workspace gate, since `--profile ci` is used nowhere today, so default equals parity with the current crane check; selecting `--profile ci` for buildbot junit is deferred.
+
+4. Drift.
+8g3's "both sandboxed cargo-nix-fresh and CI auto-regen" becomes CI auto-regen plus a cheap no-network staleness check; the sandboxed full regenerate is dropped because the rejection rests on IFD plus nix-eval-jobs fanout, not network.
+
+5. pkg-config workspace-wide dropped.
+8g3 carried crane's global pkg-config; the final design adds it per-crate only where needed (`libsqlite3-sys`, covered by the nixpkgs default).
+
+6. openssl buildInput on Linux provisionally dropped.
+8g3 kept crane's `optionals isLinux [openssl]`; the TLS stack is rustls via ring/aws-lc-rs with no `openssl-sys` in the lock.
+
+7. aws-lc-sys override elevated to mandatory (absent from 8g3's enumerated list), since ring and aws-lc-rs are both active.
+
+8. Ducklake-catalogs injection added.
+8g3 and combinedSrc today do not inject `assets/ducklake-catalogs`; the per-member src override for `ironstar-analytics-infra` must inject it, preserving the empty-embed status quo.
+
+9. IFD posture made explicit.
+8g3 said "committed Cargo.nix (no IFD)"; the final design grounds this in the verified existing IFD-avoidance pattern and explicitly forbids `allow-import-from-derivation` and `generatedCargoNix`.
+
+10. Docs cleanup (workflows/README.md 12 → 14, nix-unit input removal) folded into task 6, beyond 8g3's scope; nix-unit removal gated on confirming no load-bearing follows.
+
+## Open Questions
+
+These are recorded for the human go/no-go and were settled by orchestrator rulings where noted.
+
+Migration scope: full crane replacement versus hybrid.
+Per-member source isolation means the per-local-member cache benefit of crate2nix for ironstar is near-zero (the two asset-reaching members share a derived subtree anyway); the robust win is purely per-dependency-crate caching.
+A hybrid where crane keeps building the binary and a single `buildDepsOnly` feeds the test/clippy gate, with crate2nix added only for dependency-crate granularity, is materially lower-risk on the asset-injection hazard.
+Orchestrator ruling: full replacement; the hybrid as a whole is rejected as incoherent because nothing would consume the per-dependency derivations, and the only legitimate fallback is the single retained `buildDepsOnly` feeding the gate (D6).
+
+Ducklake-catalogs intent: whether `ironstar-analytics-infra` is supposed to embed a real catalog at build time (silently shipping nothing today) or whether empty-embed is intended.
+Orchestrator ruling: preserve the empty-embed status quo; sourcing a real catalog is out of scope and recorded as a discovered follow-up.
+
+Caching-payoff measurement gate: whether to require a measured demonstration that a single Renovate dependency bump under crane today rebuilds a large `cargoArtifacts` blob versus crate2nix's single-cone rebuild.
+Orchestrator ruling: capture the delta as recorded evidence in tasks 1 and 2 (eval time vs ~2x crane; synthetic one-dep bump rebuild demo), informing a human go/no-go before task 5, not an automatic abort.
