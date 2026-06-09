@@ -10,11 +10,11 @@ Goal: add the crate2nix flake input (nixpkgs follows), add the `just regenerate-
 Do not add `allow-import-from-derivation`.
 Depends on: none.
 
-- [ ] 1.1 Add `crate2nix.url = "github:nix-community/crate2nix"` with `crate2nix.inputs.nixpkgs.follows = "nixpkgs"` to `flake.nix`.
-- [ ] 1.2 Add a `just regenerate-cargo-nix` recipe running `nix run github:nix-community/crate2nix -- generate` at the repo root.
-- [ ] 1.3 Generate `./Cargo.nix` with default features and commit it; confirm it references all 11 local members, each with `src = ./crates/<name>` (per-member, confirming the keystone in-repo), and that no `crate-hashes.json` is emitted and no IFD is added.
-- [ ] 1.4 Verify: `nix flake metadata | rg crate2nix`; `nix eval .#packages.aarch64-darwin --apply builtins.attrNames` still evaluates; the `rg -c '^\[\[package\]\]' Cargo.lock` count reconciles with the distinct `crateName/version` pairs in `Cargo.nix`.
-- [ ] 1.5 Measure and record the `nix eval .#packages.<sys>.ironstar-c2n` eval time as the baseline for the ≤2x gate, and capture crane's current eval time for comparison.
+- [x] 1.1 Add `crate2nix.url = "github:nix-community/crate2nix"` with `crate2nix.inputs.nixpkgs.follows = "nixpkgs"` to `flake.nix`.
+- [x] 1.2 Add a `just regenerate-cargo-nix` recipe running `nix run --inputs-from . crate2nix -- generate` (then `treefmt Cargo.nix`) at the repo root. Refinement: `--inputs-from .` pins the generator to flake.lock's crate2nix revision instead of the floating `github:` ref, satisfying closure-operator determinism; verified to resolve (crate2nix 0.15.0).
+- [x] 1.3 Generate `./Cargo.nix` with default features and commit it; confirm it references all 11 local members, each with `src = ./crates/<name>` (per-member, confirming the keystone in-repo), and that no `crate-hashes.json` is emitted and no IFD is added.
+- [x] 1.4 Verify: `nix flake metadata | rg crate2nix`; `nix eval .#packages.aarch64-darwin --apply builtins.attrNames` still evaluates; the `rg -c '^\[\[package\]\]' Cargo.lock` count reconciles with the distinct `crateName/version` pairs in `Cargo.nix`. Reconciliation: 576 Cargo.lock packages == 576 distinct Cargo.nix `crateName@version` pairs (11 local + 565 third-party), bidirectional `comm` diff empty; crate2nix locked at rev `c994c83`.
+- [x] 1.5 Capture crane's current eval time and a raw `Cargo.nix` instantiation timing in `measurements.md`; the `ironstar-c2n` eval timing for the ≤2x gate is deferred to task 2.5. Staging: `ironstar-c2n` does not exist until task 2 wires `Cargo.nix` into `modules/rust.nix`, so its eval cannot be timed at task 1.
 
 ## 2. Crate overrides, parallel dev/release packages, and source injection for the two parent-reaching members
 

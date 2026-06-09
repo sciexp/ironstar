@@ -1311,6 +1311,13 @@ rust-update:
   cargo update
   @echo "Cargo.lock updated. Run 'just rust-check' to verify."
 
+# Regenerate Cargo.nix from Cargo.lock with the locked crate2nix and format with treefmt.
+# --inputs-from . pins the generator to flake.lock's crate2nix revision for determinism.
+[group('rust')]
+regenerate-cargo-nix:
+  nix run --inputs-from . crate2nix -- generate
+  treefmt Cargo.nix
+
 # Run all Rust checks (fmt, clippy, test)
 [group('rust')]
 rust-check: rust-fmt-check rust-clippy rust-test
