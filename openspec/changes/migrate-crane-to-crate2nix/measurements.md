@@ -206,3 +206,129 @@ Both files were perturbed one exemplar at a time and restored from byte-identica
 - sha256 before (step 1): `Cargo.lock` `eb391826f18e20b55a67c35c027422c53420400553cb6932b04aa6b10e6106eb`; `Cargo.nix` `32b9eb098f00731764ec57f1313a77cf052c9d46d852052f7e49a271f6d94342`.
 - sha256 after final restoration: `Cargo.lock` `eb391826f18e20b55a67c35c027422c53420400553cb6932b04aa6b10e6106eb`; `Cargo.nix` `32b9eb098f00731764ec57f1313a77cf052c9d46d852052f7e49a271f6d94342` — identical to before.
 - `git status --porcelain -- Cargo.lock Cargo.nix` empty (both files unmodified). The pending `modules/checks/package-set-invariant.nix` modification noted in the dispatch is unrelated to this measurement and was not touched.
+
+## Per-crate runTests parity experiment
+
+This experiment probed whether crate2nix `buildRustCrate` test mode (`.build.override { runTests = true; }`) over the 11 workspace members can replace the monolithic `workspace-test` nextest gate with full behavioral parity.
+Baseline envelope (measurements task 3, "Test-count parity vs the baseline"): the `workspace-test` gate runs `cargo nextest run --cargo-profile dev --no-tests=pass` and reports `933 passed, 5 skipped` over 938 defined tests; the 5 skipped are the network `#[ignore]` tests at `crates/ironstar-analytics-infra/src/analytics.rs:371,409` and `crates/ironstar/tests/{duckdb_integration.rs:23,102, chart_integration.rs:119}`.
+
+### Mechanics (file:line citations)
+
+The runtime that wires `runTests` lives in the crate2nix template `nix/crate2nix/default.nix` (local clone `~/projects/nix-workspace/crate2nix/crate2nix/templates/nix/crate2nix/default.nix`).
+`buildRustCrateWithFeatures` (lines 225-304) accepts `runTests`, `testInputs`, `testPreRun`, `testPostRun`, `testCrateFlags`; when `runTests = true` it builds the crate twice (a normal `drv` and a `testDrv` carrying `buildTests = true`) and routes through `crateWithTest` (lines 138-222).
+`crateWithTest` overrides the crate with `buildTests = true` (line 159), then in a `set -e` `buildPhase` (lines 181-205) copies the crate's real binaries from `${crate}/bin/*` into `target/debug` (lines 191-193, to keep `std::env::current_exe()` off the store path), and finally iterates `for file in ${drv}/tests/*` (line 200) running each test binary as `$f $testCrateFlags 2>&1 | tee -a $out` (line 167) wrapped by `testPreRun`/`testPostRun`.
+`testInputs` become `buildInputs` (line 179); no `HOME` is set by the runner, so a writable `HOME` must be injected via `testPreRun` to match the gate.
+
+The decisive "lib tests only, or integration tests too?" question is answered by the pinned nixpkgs `build-rust-crate` (rev `8b90d0d58fd7`, store path `/nix/store/5aymqh1g0h15azwh6qjbzbw2ladj2g9a-source`), which builds both.
+In `build-crate.nix` under `buildTests`: lib unit tests are built via `build_lib_test` (lines 157-163); every top-level `tests/*.rs` file and every `tests/*/main.rs` is built as a test binary (lines 200-218); and, before the tests, the real (non-test) bins are built to `target/cargo-bin-exe/` and exported as `CARGO_BIN_EXE_<name>` (lines 114-155) so integration tests that exec the binary resolve.
+`install-crate.nix` (lines 35-59) then installs all test harness executables from `target/bin` and `target/lib` into `$out/tests`, which is exactly the directory `crateWithTest` iterates.
+This pinned nixpkgs vintage therefore supersedes crate2nix's historically lib-tests-only reputation: `tests/` integration targets are first-class, so surface-back trigger #1 (runTests cannot run `tests/` targets) does NOT fire.
+
+Only the `ironstar` binary crate has a `tests/` directory (4 files: `chart_integration.rs`, `duckdb_integration.rs`, `layout_integration.rs`, `todo_feed.rs`); the other 10 members carry tests solely as inline `#[cfg(test)]` lib tests.
+
+### Override shape that worked
+
+A `linkFarm` over the 11 members, each member's dev-profile build overridden and the `passthru.test` derivation (the run-log file the runner `tee`s) captured:
+
+```nix
+ironstar-c2n-tests =
+  let
+    members = [ "ironstar" "ironstar-core" "ironstar-shared-kernel" "ironstar-todo"
+      "ironstar-session" "ironstar-analytics" "ironstar-workspace" "ironstar-event-store"
+      "ironstar-event-bus" "ironstar-analytics-infra" "ironstar-session-store" ];
+    memberTest = name:
+      (cargoNixDev.workspaceMembers.${name}.build.override {
+        runTests = true;
+        testPreRun = "export HOME=/tmp";
+      }).passthru.test;
+  in
+  pkgs.linkFarm "ironstar-c2n-tests"
+    (map (name: { inherit name; path = memberTest name; }) members);
+```
+
+`testPreRun = "export HOME=/tmp"` mirrors the `workspace-test`/`mkWorkspaceGate` `HOME = "/tmp"` (modules/rust.nix:232; commonArgs HOME at modules/rust.nix:150-153) needed for DuckDB extension writes.
+The `src`/`workspace_member` injection for `ironstar` and `ironstar-analytics-infra` (modules/rust.nix:346-353) propagates into the test build automatically because `crateWithTest` does `inherit (crate) src` and the testCrate inherits the same `crateOverrides`; no override of `Cargo.nix` was required, so surface-back trigger #3 (hand-editing Cargo.nix) does NOT fire.
+This shape requires no edits to the generated `Cargo.nix`.
+
+### Per-member result table
+
+The counts below are read from each member's realized `passthru.test` `$out` log (the authoritative captured run output), default test flags (no `--ignored`).
+
+| Member | passed | failed | ignored | test binaries | note |
+|---|---|---|---|---|---|
+| ironstar-core | 41 | 0 | 0 | 1 (lib) | |
+| ironstar-shared-kernel | 8 | 0 | 0 | 1 (lib) | |
+| ironstar-todo | 63 | 0 | 0 | 1 (lib) | |
+| ironstar-session | 49 | 0 | 0 | 1 (lib) | |
+| ironstar-analytics | 139 | 0 | 0 | 1 (lib) | |
+| ironstar-workspace | 263 | 0 | 0 | 1 (lib) | |
+| ironstar-event-store | 21 | 0 | 0 | 1 (lib) | |
+| ironstar-event-bus | 54 | 0 | 0 | 1 (lib) | |
+| ironstar-session-store | 14 | 0 | 0 | 1 (lib) | |
+| ironstar-analytics-infra | 44 | 0 | 2 | 1 (lib) | 2 ignored = the 2 known network tests |
+| **10-member subtotal** | **696** | **0** | **2** | | |
+| ironstar (binary) | — | — | — | — | BLOCKED: did not run (see divergence) |
+
+The 2 ignored in `ironstar-analytics-infra` are exactly `analytics::tests::initialize_extensions_loads_on_all_connections` and `analytics::tests::initialize_extensions_succeeds_with_pool` (the `analytics.rs:371,409` baseline ignores), and the runner skipped them by default — confirming `#[ignore]` parity with the no-`--run-ignored` gate.
+
+### Total vs baseline
+
+The 10 runnable members yield 696 passed + 2 ignored = 698 defined.
+By baseline arithmetic the missing `ironstar` binary member accounts for the remainder: 938 − 698 = 240 defined, 933 − 696 = 237 passed, 5 − 2 = 3 ignored (the chart/duckdb network integration ignores).
+The 10-member sum matches the baseline exactly for every member that ran; the 11th could not be measured because of the blocker below, not because of a count discrepancy.
+
+### Divergence (the key finding): ironstar binary member blocked on macOS dSYM
+
+The `ironstar` member's test derivation failed in `crateWithTest`'s `buildPhase` at the binary-staging copy (`nix/crate2nix/default.nix:191-193`):
+
+```
+run-tests-rust_ironstar> cp: -r not specified; omitting directory '/nix/store/…-rust_ironstar-0.1.0/bin/ironstar.dSYM'
+error: builder failed with exit code 1.
+```
+
+On aarch64-darwin the dev profile (`-C debuginfo=2`) emits split debug symbols, so the non-test `ironstar` crate's `bin/` output contains both the `ironstar` executable AND an `ironstar.dSYM` **directory**.
+The runner's `for i in ${crate}/bin/*; do cp "$i" "$testRoot"; done` uses a non-recursive `cp`, which errors on the `.dSYM` directory and, under `set -e`, aborts before any `ironstar` test runs.
+This is a darwin-specific defect in the crate2nix runtime template, triggered only for the single member that produces a `bin/` output (the binary crate); all 10 library members are unaffected (no `bin/` dir).
+It is a mechanical packaging bug, not a test-content parity gap: `ironstar`'s lib and `tests/` integration binaries compiled successfully (the failing step is staging the real binary for `current_exe()`, after compilation).
+
+Fix options, none of which require editing the generated `Cargo.nix`:
+- change the runner's `cp "$i"` to `cp -r "$i"` (upstream crate2nix template patch — the correct general fix);
+- suppress dSYM generation for the dev profile (`[profile.dev] split-debuginfo = "off"` or `strip = "debuginfo"` in the workspace `Cargo.toml`, or an `extraRustcOpts`/profile tweak threaded through the dev import) so `bin/` holds only the executable;
+- a `crateOverrides.ironstar` post-build hook that removes `*.dSYM` from the bin output before the test derivation consumes it.
+
+No member needed network or other sandbox-incompatible resources beyond the known 5 ignored, so surface-back trigger #2 does not fire.
+No cargo-test-threading vs nextest-process-isolation divergences surfaced: every runnable member passed cleanly under the cargo test harness (the runner executes each compiled test binary directly, which is process-per-binary like nextest at the crate granularity, though intra-binary tests run on the libtest thread pool rather than nextest's per-test process isolation — a latent difference that did not manifest as any failure here but is the class of risk to watch when `ironstar` is unblocked, since its `todo_feed.rs` SSE tests use `multi_thread` tokio runtimes).
+Doctests are disabled workspace-wide (`doctest = false`), so there is no doctest divergence to reconcile.
+
+### Granularity result
+
+With the experiment attr wired, appending a one-line comment to `crates/ironstar-todo/src/lib.rs` and running `nix build --dry-run .#ironstar-c2n-tests` rebuilt exactly 8 derivations, of which the test derivations are precisely two members:
+
+- `run-tests-rust_ironstar-todo` (plus its `rust_ironstar-todo` lib and `rust_ironstar-todo-…-test` harness) — the touched member;
+- `run-tests-rust_ironstar` (plus its `rust_ironstar` lib and `rust_ironstar-…-test` harness) — the binary member, because it depends on `ironstar-todo`.
+
+The other 9 members' test derivations did not rebuild.
+This is the per-crate cache granularity the migration targets: a change to one domain crate reruns only that crate's tests plus its reverse-dependency cone's tests, versus the monolithic `workspace-test` gate which recompiles and reruns all 938 tests on any source change.
+
+### Build wall-clock
+
+Full 11-member attempt: `real 516s` (~8.6 min) on this aarch64-darwin host.
+This figure is dominated by a surprise: despite the dev per-crate dependency graph being warm from prior `ironstar-c2n` builds, `runTests = true` triggered recompilation of a large slice of the dependency closure (≈180+ crates, including the entire zenoh link/transport tree, observed in the build log) before any member test ran.
+The cause is that the `-test` build path threads `buildTests`/test-mode flags that were not previously cached for this override combination, so the cache hit rate for the first per-crate test build is low; this is a one-time warming cost, after which member test derivations are individually cached and re-run only on reverse-dep change (per the granularity result).
+The 3 library members rerun after that warming, with their dependency closures already built, completed in `real 58s` (~1 min) total — representative of the steady-state per-member test cost.
+
+### Conclusion
+
+Parity is achievable with one listed fix.
+For the 10 library members, the per-crate `runTests = true` approach reproduces the `workspace-test` gate's behavior exactly: 696 passed + 2 ignored matching the baseline per-member, with `#[ignore]` network tests skipped by default identically to the no-`--run-ignored` gate, and with both lib unit tests and (where present) `tests/` integration targets built by the pinned nixpkgs `build-rust-crate`.
+The single `ironstar` binary member is blocked solely by the macOS `.dSYM` non-recursive-copy bug in the crate2nix test runner; it is a mechanical, well-localized defect fixable by `cp -r` upstream or by dev-profile dSYM suppression, neither of which touches the generated `Cargo.nix`.
+Once that fix lands, the linkFarm-of-`passthru.test` shape is a viable replacement for the monolithic gate and adds per-crate test cache granularity (a one-line-comment change to `ironstar-todo` reruns 2 of 11 member test suites instead of the whole 938-test workspace).
+The warming-cost observation (first per-crate test build recompiles a large dependency slice) is the one operational caveat to weigh against the granularity benefit; on warm CI caches the steady-state cost is the per-member figure, not the full-warming figure.
+
+### Restoration evidence (per-crate runTests experiment)
+
+The experiment added one temporary attr to `modules/rust.nix` and one temporary comment line to `crates/ironstar-todo/src/lib.rs`, both restored byte-identically.
+
+- `modules/rust.nix` sha256 before and after: `7a0ff50a162fc10292766b0a881b4bc4ef084298d903abcb74763422cb53e835` (identical).
+- `crates/ironstar-todo/src/lib.rs` sha256 before and after: `021763d5a99c96ffe8a31b8b57c2972147a41b37d4ba173d1cd51c2d1b0c9797` (identical; 2094 bytes restored from the 2119-byte probe state).
+- `git status --porcelain` (excluding the pre-existing `.jjconflict-*/` snapshot noise) shows only the orchestrator-owned `UU modules/checks/package-set-invariant.nix` and the pre-existing `D JJ-CONFLICT-README`; neither `modules/rust.nix` nor `crates/ironstar-todo/src/lib.rs` appears as modified. `modules/checks/package-set-invariant.nix` was not touched.
