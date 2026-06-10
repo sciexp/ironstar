@@ -164,3 +164,45 @@ GitHub Actions SHA discipline: no new third-party action was introduced. The cra
 ### (c) DEFERRED — live regenerate-and-auto-commit dry-run
 
 The live workflow dry-run (push a test branch with a trivial `Cargo.lock` change, observe auto-regen of `Cargo.nix` and auto-commit by `github-actions[bot]`) requires a pushed branch, which is user-gated in this WO session (the orchestrator routes commits/pushes). It fires on the eventual CI run after push. The auto-commit mechanism is the same `github-actions[bot]` config + `git add`/`commit`/`push` the flake.lock and bun.nix steps already use in production, so the new step replicates a proven mechanism (surface-back trigger #2, auth/signing the new step cannot replicate, does NOT fire — the new step reuses the existing mechanism verbatim).
+
+## Task-5 gate evidence: synthetic dep-bump rebuild sets (pre-swap)
+
+This is the pre-swap go/no-go measurement comparing the rebuild set produced by a single-dependency version bump under crane (`.#ironstar`) versus crate2nix (`.#ironstar-c2n`).
+The method is a temporary, byte-restored in-tree perturbation of `Cargo.lock` and `Cargo.nix` that simulates a Renovate patch bump (version field plus one altered hex char of the checksum/sha256, applied consistently to both files), followed by `nix build --dry-run` against each target.
+A dry-run never fetches, so the fake versions and altered hashes are sufficient to drive evaluation and enumerate the would-build derivation set without any network access.
+The crate2nix build graph contains 504 crate `rec` definitions total; the cone sizes below are read against that denominator.
+
+### Baseline (clean tree)
+
+On the clean working copy both targets are fully cached: `nix build --dry-run .#ironstar` and `nix build --dry-run .#ironstar-c2n` each report zero derivations to build (only the dirty-git-tree warning, which is incidental to the unrelated pending `modules/checks/package-set-invariant.nix` edit and the untracked measurement artifacts).
+This confirms the rebuild sets recorded below are caused solely by the per-exemplar perturbation, not by pre-existing cache misses.
+
+### Exemplar selection
+
+Two exemplars were chosen by inspecting `packageId` reverse-dependency references in `Cargo.nix`:
+
+- (a) `libc` (deep, widely-depended-on): 64 direct `packageId = "libc"` references in `Cargo.nix`. Bumping it should invalidate a large reverse-dependency closure.
+- (b) `adler2` (shallow, small reverse-dependency cone): exactly 1 direct reference (`miniz_oxide`). Tracing the transitive cone before perturbing: `adler2 → miniz_oxide → flate2 → {zip, libduckdb-sys, zenoh}`, so an expected cone on the order of ~13 crates — small, because adler2 reaches the duckdb/zenoh subtrees only through flate2 and does not touch their non-flate2 siblings (sqlx, arrow, axum, reqwest, etc.).
+
+### Rebuild-set evidence table
+
+| Exemplar | crane drv count (`.#ironstar`) | c2n drv count (`.#ironstar-c2n`) | salient names |
+|---|---|---|---|
+| (a) `libc` 0.2.180 → 0.2.181 (deep) | 7 | 135 | crane: `ironstar-src`, `cargo-src-libc`, `cargo-package-libc`, `vendor-registry`, `vendor-cargo-deps`, `ironstar-deps`, `ironstar` (whole-workspace blob). c2n: `rust_libc` plus its full reverse-dep cone — `getrandom`, `tokio`, `mio`, `socket2`, `rustix`, the entire `zenoh-*` link/transport tree, `aws-lc-rs`/`ring`/`rustls`, the `arrow-*`/`duckdb`/`libduckdb-sys` tree, `sqlx-*`, `reqwest`/`hyper`/`h2`, and every `rust_ironstar-*` workspace crate up to `rust_ironstar` (135 of 504 crates, ≈27% of the graph). |
+| (b) `adler2` 2.0.1 → 2.0.2 (shallow) | 7 | 13 | crane: identical 7-derivation blob (`ironstar-src`, `cargo-src-adler2`, `cargo-package-adler2`, `vendor-registry`, `vendor-cargo-deps`, `ironstar-deps`, `ironstar`). c2n: exactly the cone — `adler2.tar.gz`, `rust_adler2`, `rust_miniz_oxide`, `rust_flate2`, `rust_zip`, `rust_libduckdb-sys`, `rust_zenoh`, `rust_duckdb`, `rust_async-duckdb`, `rust_ironstar-event-store`, `rust_ironstar-event-bus`, `rust_ironstar-analytics-infra`, `rust_ironstar` (13 of 504 crates, ≈2.6% of the graph). |
+
+### Interpretation
+
+The per-dependency-crate granularity delivers the claimed cache benefit, and the contrast is precisely the one the migration predicts.
+Crane's rebuild set is invariant to the perturbed crate's position in the graph: both a deep crate (`libc`) and a shallow one (`adler2`) produce the same 7-derivation set, because crane vendors and compiles the entire dependency closure as one monolithic `ironstar-deps` blob that is invalidated by any change to the vendored set — the bumped crate's identity is irrelevant to the rebuild size.
+Crate2nix instead rebuilds exactly the bumped crate plus its transitive reverse-dependency cone and nothing else: a shallow bump (`adler2`) touches 13 of 504 crates (≈2.6%) while a deep bump (`libc`) touches 135 (≈27%), and in both cases every crate not downstream of the bumped one stays cached.
+For the common Renovate case of a leaf or near-leaf patch bump, this is a large reduction in rebuilt compilation units versus crane's all-or-nothing dependency blob; the benefit shrinks toward parity only for genuinely foundational bumps whose reverse-dep cone approaches the whole graph, which is the expected and acceptable degenerate case.
+The measurement therefore supports a go decision on the cache-granularity criterion for the crate-to-crate2nix swap.
+
+### Restoration evidence
+
+Both files were perturbed one exemplar at a time and restored from byte-identical backups (`/tmp/Cargo.lock.orig`, `/tmp/Cargo.nix.orig`) between exemplars and at the end.
+
+- sha256 before (step 1): `Cargo.lock` `eb391826f18e20b55a67c35c027422c53420400553cb6932b04aa6b10e6106eb`; `Cargo.nix` `32b9eb098f00731764ec57f1313a77cf052c9d46d852052f7e49a271f6d94342`.
+- sha256 after final restoration: `Cargo.lock` `eb391826f18e20b55a67c35c027422c53420400553cb6932b04aa6b10e6106eb`; `Cargo.nix` `32b9eb098f00731764ec57f1313a77cf052c9d46d852052f7e49a271f6d94342` — identical to before.
+- `git status --porcelain -- Cargo.lock Cargo.nix` empty (both files unmodified). The pending `modules/checks/package-set-invariant.nix` modification noted in the dispatch is unrelated to this measurement and was not touched.
