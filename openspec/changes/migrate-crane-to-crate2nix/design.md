@@ -204,6 +204,55 @@ The only coupling is `devShell.inputsFrom = builtins.attrValues self'.checks`; h
 `frontendAssets` (pnpm/Rolldown), gitleaks, docs/eventcatalog (bun2nix), e2e (Playwright), treefmt, and the structure-package-set-invariant are all non-crane and unchanged.
 The e2e check consumes the dev binary (`self'.packages.ironstar`); post-swap that becomes the crate2nix dev build, so the `/bin/ironstar` path identity must be verified.
 
+### D9: build-graph observability — baseline-zero and the graph-drift regulator
+
+This is the task-4b minimal slice: lock the current build-graph topology as baseline-zero and add a graph-drift regulator, so the substrate swap (task 5) and crane removal (task 6) produce measured, gated deltas rather than unobserved churn.
+The full observability program (per-commit CI effects, a cache-hit metric, a time-series store, and fanout serialization) is a separate follow-up change and out of scope here.
+
+**Choice.**
+Three committed and wired artifacts plus a justfile recipe and a workflow lockstep extension.
+
+The snapshot generator is a flake app, `apps.build-graph-snapshot`, modeled on `apps.regenerate-cargo-nix` in `modules/apps/regenerate.nix`.
+It runs `nix derivation show -r` over the canonical roots (pinned to system `x86_64-linux`), normalizes the output to a hash-free key with an embedded `python3` script, and writes a small deterministic committed JSON at `modules/checks/build-graph-snapshot.json`.
+The committed snapshot has sorted keys, no store hashes, and no timestamps, so running the app twice produces byte-identical output.
+
+The committed baseline is `modules/checks/build-graph-baseline.json`: the accepted ceilings the regulator gates against.
+The graph-drift regulator is `modules/checks/build-graph-invariants.nix`: a pure `runCommand` content-addressed via `builtins.path` on exactly the snapshot and the baseline (the same discipline as `cargo-nix-lock-sync`), with no recursive nix and no IFD.
+
+**Hermeticity constraint (the load-bearing correction).**
+A flake check derivation runs inside the nix build sandbox, which cannot invoke `nix eval` or `nix derivation show` (no recursive nix).
+So the graph cannot be re-derived inside the regulator the way `cargo-nix-lock-sync` re-derives the `Cargo.lock`/`Cargo.nix` package sets from plain files.
+The design splits the work accordingly: the app re-derives the graph projection outside the sandbox (where recursive nix is available) and commits the snapshot; the regulator is a pure derivation that validates the committed snapshot against the committed baseline.
+The snapshot is the envelope, the regulator is the gate; the app is the means of refreshing the envelope.
+
+**Canonical system and root decisions.**
+The committed baseline is pinned to a single canonical system, `x86_64-linux`, which is what buildbot CI evaluates and which evals purely from the committed `Cargo.nix` with no IFD.
+Cross-system eval of every canonical root from a darwin host was confirmed: `nix derivation show -r` over each x86_64-linux root succeeds without a linux builder because the crate2nix roots carry no import-from-derivation.
+The canonical roots are Rust-core only: `packages.ironstar-c2n`, `packages.ironstar-release-c2n`, `checks.workspace-clippy`, `checks.workspace-test`, `checks.cargo-nix-lock-sync`, and the 11 per-member `*-test` checks.
+The crane packages `packages.ironstar`/`packages.ironstar-release` and `checks.ironstar-e2e` are excluded: they are IFD-bound on linux (they require building the bun2nix frontend asset during eval, which fails with no linux builder), and crane is removed at task 6.
+
+**Normalized key and what a ceiling means.**
+Each node is keyed on the hash-free tuple `(system, logical_pname, version, build_class, profile, member_scope)`, dropping the store hash entirely.
+`logical_pname`/`version` come from the crate2nix `crateName`/`crateVersion` env for crate-compile nodes and from the derivation name otherwise; `build_class` is one of `crate-compile`, `crate-test-compile`, `test-runner`, `vendor-blob`, `other`, derived from the `crateName`/`buildTests` env and the name; `profile` is `dev`/`release`/`test`/`na` parsed from the `release` and `buildTests` env booleans, not from the hash; `member_scope` is the workspace member whose `buildTests=1` variant produced a node, else `shared`.
+Duplication is measured as the count of distinct store hashes that collapse onto one logical key — the distinct-compile multiplicity of that crate at that profile.
+The gated duplication ceilings are scoped to `build_class ∈ {crate-compile, crate-test-compile}` only; nixpkgs stdenv-stage bootstrap variance (clang-wrapper, perl, source-fetch drvs appearing 5-9 times across bootstrap stages) is non-actionable, not ironstar-specific, and is recorded report-only rather than gated, because it drifts on any nixpkgs bump.
+
+**Pinned-as-baseline policy for persistent duplication.**
+Two duplication classes are intrinsic to crate2nix and survive crane removal: the dev/release profile split (a release artifact is a full second compile of the dependency closure, sharing essentially nothing with the dev compile) and per-member test-variant feature unification (each member's `buildTests=1` variant unifies dev-deps differently, producing distinct compile derivations of shared dependency crates).
+These are encoded as the accepted baseline level, not as reduction targets: the regulator fails on growth above the committed ceiling, not on the duplication's existence.
+The heavy-crate distinct-compile table (zenoh, tokio, sqlx and its sub-crates, the DuckDB/SQLite C-binding crates, arrow, moka, rkyv) is gated the same way — a ceiling per crate that fails on growth.
+The `vendor_monolith_count` field records the distinct vendor-blob derivations the snapshot actually sees, which under the canonical (crane-excluded) roots is only what `workspace-clippy`'s `importCargoLock` vendor contributes; it is gated against growth rather than required to drop, because `workspace-clippy`'s vendoring is independent of crane and persists past task 6.
+
+**CCV framing.**
+The snapshot is the operating envelope (the realized build-graph shape the system must stay within); the regulator is the regulator (it fails when the realized snapshot leaves the committed envelope).
+Together they form one envelope-plus-regulator pair that composes into ironstar's existing closure operator alongside `cargo-nix-lock-sync` and `structure-package-set-invariant`.
+The graph-drift regulator is a sibling of `cargo-nix-lock-sync`, not a replacement: `cargo-nix-lock-sync` gates the crate *set* (every `Cargo.lock` package appears in `Cargo.nix`), while this regulator gates the crate set's *duplication structure* and workspace-member presence, which the set-level check cannot see.
+Regulator integrity requires a red demonstration: a deliberate ceiling perturbation must make the check fail with an actionable message before the green state is trusted.
+
+**Follow-up program (out of scope).**
+Per-commit snapshot upload via a herculesCI effect, a per-invocation cache-hit-rate metric on buildbot, a DuckDB time-series over per-commit invariants for trend queries, and fanout serialization to cure the nix-eval-jobs closure-edge over-count are all deferred to a separate observability change.
+This slice locks baseline-zero and gates against duplication regrowth; the time-series and CI-effect machinery build on top of it.
+
 ## Risks / Trade-offs
 
 [Risk] Parent-relative asset injection (highest).

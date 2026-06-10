@@ -64,6 +64,22 @@ Depends on: 1.
   - [x] 4.3b LOCAL static: validate the workflow YAML (actionlint) and confirm trigger paths, step ordering, and concurrency semantics match the file's existing patterns.
   - [ ] 4.3c DEFERRED: dry-run the workflow on a pushed test branch with a trivial `Cargo.lock` change and confirm auto-regen + auto-commit of `Cargo.nix` (fires on the eventual CI run after push; recorded as deferred in `measurements.md`).
 
+## 4b. Build-graph baseline and graph-drift regulator
+
+Goal: lock the current build-graph topology as baseline-zero (the coexistence shape) and add a graph-drift regulator, so tasks 5-6 produce measured, gated deltas.
+This is the minimal slice of a larger observability program: the snapshot is the operating envelope, the regulator is its gate, and `cargo-nix-lock-sync`'s set-level check gains a sibling that gates duplication structure.
+The hermeticity correction governs the shape — a flake check cannot run recursive nix, so the snapshot is generated outside the sandbox by an app and the regulator validates committed JSON.
+The canonical system is `x86_64-linux` and the canonical roots are Rust-core only (crane and e2e excluded, IFD-bound on linux and removed at task 6).
+Depends on: 1, 2, 3, 4.
+
+- [x] 4b.1 design.md addendum: add the build-graph observability subsection (D9) recording the minimal-slice design, the hermeticity constraint (no recursive nix in the sandbox; app generates outside, regulator validates committed JSON), the canonical system/root decisions, the hash-free normalized key and what a duplication ceiling means, the pinned-as-baseline policy for the persistent dev/release and per-member test-variant duplication, the CCV envelope/regulator framing as a `cargo-nix-lock-sync` sibling, and that the full program (CI effects, cache-hit metric, time-series, fanout serialization) is a follow-up change.
+- [x] 4b.2 Add `apps.build-graph-snapshot` (a `writeShellApplication` in `modules/apps/`, alongside `regenerate-cargo-nix`): runs `nix derivation show -r` over the 16 canonical x86_64-linux roots, normalizes via an embedded `python3` script to the hash-free key `(system, logical_pname, version, build_class, profile, member_scope)`, and writes the deterministic committed `modules/checks/build-graph-snapshot.json` (sorted keys, no store hashes, no timestamps). Add a `just regenerate-build-graph-snapshot` recipe wrapping the app.
+- [x] 4b.3 Generate `modules/checks/build-graph-snapshot.json` and commit the accepted ceilings to `modules/checks/build-graph-baseline.json`: per-root logical node/edge counts; per-class duplication ceilings (dev/release split, per-member test-variant uniques); the heavy-crate distinct-compile table; workspace-member presence (all 11); and `vendor_monolith_count`. Encode ceilings so growth fails and planned shrinkage passes.
+- [x] 4b.4 Add `modules/checks/build-graph-invariants.nix`: a pure `runCommand` (content-addressed via `builtins.path` on exactly the snapshot + baseline, mirroring `cargo-nix-lock-sync`) validating snapshot-internal invariants against baseline ceilings, failing with an actionable message naming `just regenerate-build-graph-snapshot` and pointing at the baseline for deliberate ceiling changes.
+- [x] 4b.5 Workflow lockstep: extend `.github/workflows/regenerate-lock-files.yaml` to regenerate the snapshot after regenerating `Cargo.nix` (same renovate-gated job, same generate-and-amend step pattern, reusing existing pinned actions only).
+- [x] 4b.6 Verify: run the app twice and confirm the committed snapshot is byte-identical (sha256 evidence); `nix build .#checks.aarch64-darwin.build-graph-invariants` green on a clean tree; the RED demo — perturb a ceiling, show the check fails with the actionable message, restore byte-identical; confirm the check does not rebuild on a no-op unrelated change (content-addressing scope); `nix eval .#checks.aarch64-darwin --apply builtins.attrNames` count goes 26 → 27 and the name list confirms `build-graph-invariants`.
+- [x] 4b.7 measurements.md: append the baseline-zero record (the committed invariant values) and the verification evidence (determinism, red/green, 27-name list).
+
 ## 5. Substrate swap
 
 Goal: rename `ironstar-c2n`→`ironstar` and `ironstar-release-c2n`→`ironstar-release`; point `default`, the e2e check binary, and CD at the crate2nix builds; remove the transition exclusions.
