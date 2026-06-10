@@ -169,42 +169,94 @@
         }
       );
 
-      # Per-crate library names for isolated test and clippy derivations.
-      # All share the workspace cargoArtifacts for cache efficiency.
-      libCrates = [
-        "ironstar-analytics"
-        "ironstar-analytics-infra"
-        "ironstar-core"
-        "ironstar-event-bus"
-        "ironstar-event-store"
-        "ironstar-session"
-        "ironstar-session-store"
-        "ironstar-shared-kernel"
-        "ironstar-todo"
-        "ironstar-workspace"
+      # Crane-free workspace test and clippy gate.
+      #
+      # The two correctness regulators (workspace-test, workspace-clippy) run one
+      # workspace-wide cargo invocation each, replicating the crane check's exact
+      # commands without depending on crane. Offline vendored deps come from the
+      # canonical nixpkgs idiom rustPlatform.importCargoLock + cargoSetupHook,
+      # reading the same ./Cargo.lock crane vendors today (no IFD: the lockfile is
+      # a plain file read at eval time, and all 565 crates.io checksums plus 0 git
+      # sources make vendoring fully offline with no outputHashes).
+      #
+      # The pinned 1.94.1 rustToolchain (which carries the clippy extension)
+      # supplies cargo/rustc/clippy so the gate matches fmt and the devshell. The
+      # native deps are the full set the single-derivation workspace compile needs:
+      # cc (libduckdb-sys C++ amalgamation), cmake + perl (aws-lc-sys), perl (ring),
+      # pkg-config + sqlite (libsqlite3-sys). HOME=/tmp guards any build-time
+      # DuckDB extension write, exactly as crane's commonArgs HOME=/tmp does.
+      # Pin the lockfile to a content-addressed store path of Cargo.lock alone, so
+      # the vendor dir's hash tracks only the lockfile content. Reading `self +
+      # "/Cargo.lock"` would tie it to the whole flake-source identity, rebuilding
+      # the vendor dir on any unrelated commit (the content-addressed name stability
+      # risk in design.md). This mirrors crane's content-addressed src discipline.
+      cargoLockSrc = builtins.path {
+        path = self + "/Cargo.lock";
+        name = "ironstar-cargo-lock";
+      };
+      cargoVendorDeps = pkgs.rustPlatform.importCargoLock {
+        lockFile = cargoLockSrc;
+      };
+
+      workspaceGateNativeBuildInputs = [
+        rustToolchain
+        pkgs.rustPlatform.cargoSetupHook
+        pkgs.stdenv.cc
+        pkgs.cmake
+        pkgs.perl
+        pkgs.pkg-config
       ];
 
-      perCrateTest =
-        name:
-        crane-lib.cargoNextest (
-          commonArgs
-          // {
-            inherit cargoArtifacts;
-            pname = name;
-            cargoNextestExtraArgs = "-p ${name} --no-tests=pass";
-          }
-        );
+      # The crane gate set CARGO_PROFILE=dev in commonArgs, so nextest ran with
+      # `--cargo-profile dev` and clippy with `--profile dev` (cargoWithProfile).
+      # The default nextest test profile is preserved (no `.config/nextest.toml`
+      # `--profile ci`), matching the crane check exactly per the design's
+      # default-profile-for-parity ruling. Ignored tests are NOT run (the crane
+      # check uses no `--run-ignored`), so network/ignored tests are skipped here
+      # exactly as today.
+      mkWorkspaceGate =
+        {
+          pnameSuffix,
+          extraNativeBuildInputs ? [ ],
+          buildCommand,
+        }:
+        pkgs.stdenv.mkDerivation {
+          pname = "ironstar${pnameSuffix}";
+          version = workspaceVersion;
+          src = combinedSrc;
+          cargoDeps = cargoVendorDeps;
+          strictDeps = true;
+          nativeBuildInputs = workspaceGateNativeBuildInputs ++ extraNativeBuildInputs;
+          buildInputs = lib.optionals pkgs.stdenv.isLinux [ pkgs.sqlite ];
+          # libsqlite3-sys finds sqlite via pkg-config; provide the dev lib on Linux.
+          HOME = "/tmp";
+          # cmake's setup hook injects a configurePhase that does not apply to a
+          # cargo workspace; neutralize it so cargoSetupHook's vendoring stands.
+          dontUseCmakeConfigure = true;
+          buildPhase = ''
+            runHook preBuild
+            cargo --version
+            ${buildCommand}
+            runHook postBuild
+          '';
+          installPhase = ''
+            runHook preInstall
+            mkdir -p $out
+            runHook postInstall
+          '';
+          doCheck = false;
+        };
 
-      perCrateClippy =
-        name:
-        crane-lib.cargoClippy (
-          commonArgs
-          // {
-            inherit cargoArtifacts;
-            pname = name;
-            cargoClippyExtraArgs = "-p ${name} --all-targets -- --deny warnings";
-          }
-        );
+      workspaceTest = mkWorkspaceGate {
+        pnameSuffix = "-nextest";
+        extraNativeBuildInputs = [ pkgs.cargo-nextest ];
+        buildCommand = "cargo nextest run --cargo-profile dev --no-tests=pass";
+      };
+
+      workspaceClippy = mkWorkspaceGate {
+        pnameSuffix = "-clippy";
+        buildCommand = "cargo clippy --profile dev --locked --all-targets -- --deny warnings";
+      };
 
       # crate2nix substrate (additive; crane above is untouched).
       #
@@ -353,40 +405,19 @@
           # ironstar/ironstar-release at the substrate swap in task 5).
           ironstar-c2n = cargoNixDev.workspaceMembers."ironstar".build;
           ironstar-release-c2n = cargoNixRelease.workspaceMembers."ironstar".build;
-        }
-        # Per-crate test and clippy for ad-hoc debugging (e.g. `nix build .#ironstar-core-test`)
-        // lib.genAttrs (map (n: "${n}-test") libCrates) (
-          attr: perCrateTest (lib.removeSuffix "-test" attr)
-        )
-        // lib.genAttrs (map (n: "${n}-clippy") libCrates) (
-          attr: perCrateClippy (lib.removeSuffix "-clippy" attr)
-        );
+        };
 
         # Manual wiring: checks
         # Workspace-level checks run by `nix flake check`.
-        # Per-crate checks are in `packages` for ad-hoc debugging via `nix build .#ironstar-core-test`.
         checks = {
           inherit (self'.packages) ironstar ironstar-docs ironstar-eventcatalog;
           "dev-platform" = self'.packages.dev-platform;
 
-          workspace-test = crane-lib.cargoNextest (
-            commonArgs
-            // {
-              inherit cargoArtifacts;
-              partitions = 1;
-              partitionType = "count";
-              # Allow empty test suite during early development
-              cargoNextestExtraArgs = "--no-tests=pass";
-            }
-          );
-
-          workspace-clippy = crane-lib.cargoClippy (
-            commonArgs
-            // {
-              inherit cargoArtifacts;
-              cargoClippyExtraArgs = "--all-targets -- --deny warnings";
-            }
-          );
+          # Crane-free workspace gate (see mkWorkspaceGate above). Runs one
+          # workspace-wide cargo nextest and one cargo clippy, replicating the
+          # former crane checks' exact commands offline via importCargoLock.
+          workspace-test = workspaceTest;
+          workspace-clippy = workspaceClippy;
 
           # Doctests disabled: examples as integration tests in crates/*/tests/
           # See CLAUDE.md "Testing conventions" for rationale

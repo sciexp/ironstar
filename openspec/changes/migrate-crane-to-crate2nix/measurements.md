@@ -79,3 +79,44 @@ Injected member tree (`/nix/store/ym9jknj…-ironstar-c2n-member-src`) layout ve
 `ironstar-analytics-infra` member src injects an empty `assets/ducklake-catalogs` tree (the `.db` is gitignored and crane's combinedSrc never injected this path), preserving the empty-embed status quo (design D5 / Open Questions orchestrator ruling). The `DuckLakeCatalogs` rust-embed struct contains no entries; `attach_all` is a no-op, identical to crane.
 
 Verification on the c2n release binary: no `.db` file is embedded. The `space.db` string that appears in the binary is the hardcoded runtime network-ATTACH fallback URI `ducklake:hf://datasets/sciexp/fixtures/lakes/frozen/space.db` from `main.rs`, accompanied by the log strings `No embedded catalogs, trying network ATTACH` and `Attached DuckLake catalog via network` — confirming the embed is empty and the runtime falls back to network, exactly as under crane.
+
+## Task 3 — crane-free workspace-test/clippy gate
+
+Host: aarch64-darwin (Darwin 25.2.0 arm64); nixpkgs `addf7cf5`; pinned rust 1.94.1.
+
+### Gate derivation shapes
+
+Both gates are plain `pkgs.stdenv.mkDerivation` (no crane) built by a shared `mkWorkspaceGate` helper in `modules/rust.nix`:
+
+- src = `combinedSrc` (the same runCommand the crane checks consume).
+- Offline vendored deps: `cargoDeps = rustPlatform.importCargoLock { lockFile = self + "/Cargo.lock"; }` wired via `rustPlatform.cargoSetupHook`. This is the canonical nixpkgs vendoring idiom, fully crane-free, reading the same `Cargo.lock` crane vendors. Fully offline: the lock has 565 crates.io checksums and 0 git sources, so `importCargoLock` needs no `outputHashes` and prefetches nothing. No IFD: the lockfile is a plain file read at eval time.
+- Toolchain: the pinned 1.94.1 `rustToolchain` (carries cargo/rustc/clippy) in `nativeBuildInputs`; build log confirms `cargo 1.94.1 (29ea6fb6a 2026-03-24)`.
+- Native deps: `stdenv.cc` + `cmake` + `perl` + `pkg-config` (the libduckdb-sys/aws-lc-sys/ring `-sys` crates this single-derivation workspace compile needs), plus `sqlite` buildInput on Linux for libsqlite3-sys. `HOME=/tmp` as crane. `dontUseCmakeConfigure=true` neutralizes cmake's setup-hook configurePhase so cargoSetupHook's vendoring stands.
+
+### Exact commands (replicate the crane checks)
+
+- `workspace-test`: `cargo nextest run --cargo-profile dev --no-tests=pass` (crane's `commonArgs` set `CARGO_PROFILE=dev`, so the crane nextest ran with `--cargo-profile dev`; default nextest test profile, no `--profile ci`; no `--run-ignored`, so the network `#[ignore]` tests are skipped exactly as the crane check skips them).
+- `workspace-clippy`: `cargo clippy --profile dev --locked --all-targets -- --deny warnings` (crane's `cargoClippy` defaulted `cargoExtraArgs=--locked` and ran via `cargoWithProfile`, which with `CARGO_PROFILE=dev` injects `--profile dev`; `--deny warnings` is `-D warnings`).
+
+### Build wall-clock (aarch64-darwin, dependency cone substituted, members + binary compiled locally)
+
+Both gates built concurrently from a warm dependency store. Each gate is its own derivation and compiles the full workspace + all deps from source within it (no shared cargo `target` cache between the two, by design — the genuine cache win is per-dependency-crate `buildRustCrate` derivations on the build/release packages, not on these gates).
+
+- `workspace-clippy`: exit 0, clean (no clippy warnings or errors — `--deny warnings` passed). `Finished 'dev' profile [unoptimized + debuginfo] target(s) in 7m 25s`; full derivation wall-clock 530s (~8.8 min).
+- `workspace-test`: exit 0. Compile `Finished 'dev' profile ... in 7m 35s`, then nextest run `Summary [29.525s] 933 tests run: 933 passed, 5 skipped`; full derivation wall-clock 591s (~9.9 min).
+
+Dep-recompile cost assessment: acceptable. The dominant cost is the libduckdb-sys C++ amalgamation and aws-lc-sys/ring compiles under the pinned-toolchain override (not yet in any binary cache, as in task 2.5). On warm CI caches these `-sys` paths become substitutable and the gate wall-clock drops to local member + binary compile + test execution. The documented fallback (a retained crane `buildDepsOnly` feeding only these two gates) is NOT taken: ~9-10 min per gate from a warm dep store is within the prior crane-gate envelope, and the fallback would re-introduce the crane input these tasks exist to remove. See Task 3.5 below.
+
+### Test-count parity vs the baseline (CCV adequacy bar)
+
+`933 tests run: 933 passed, 0 failed, 5 skipped` → 938 tests total defined. The 5 skipped are exactly the 5 network-requiring `#[ignore]` test attributes (`crates/ironstar-analytics-infra/src/analytics.rs:371,409`; `crates/ironstar/tests/duckdb_integration.rs:23,102`; `crates/ironstar/tests/chart_integration.rs:119`). The crane `workspace-test` runs the identical command on the identical `combinedSrc` with the same toolchain and the same no-`--run-ignored` behavior, so it discovers and runs the identical set and skips the identical 5 — exact parity. The CLAUDE.md "911-test baseline" is stale (the workspace grew to 938 total); the `just rust-check-full` path uses `--run-ignored all` and would run all 938. No divergence from the crane gate's behavior; surface-back trigger #2 does not fire.
+
+### Check / package surface
+
+- `nix eval .#checks.aarch64-darwin --apply builtins.attrNames` → 14 names exactly: `dev-platform`, `gitleaks`, `ironstar`, `ironstar-docs`, `ironstar-docs-e2e`, `ironstar-docs-unit`, `ironstar-e2e`, `ironstar-eventcatalog`, `ironstar-eventcatalog-e2e`, `ironstar-eventcatalog-unit`, `structure-package-set-invariant`, `treefmt`, `workspace-clippy`, `workspace-test`. Count 14 → 14 held.
+- `nix eval .#packages.aarch64-darwin --apply builtins.attrNames` → the 20 per-crate `*-test`/`*-clippy` attrs are gone (none remain). Package count 35 → 15 (the full delta of exactly 20 removed attrs; the remaining 15 are `default`, `dev-platform`, `frontendAssets`, `ironstar`, `ironstar-c2n`, `ironstar-docs`, `ironstar-docs-deps`, `ironstar-eventcatalog`, `ironstar-eventcatalog-deps`, `ironstar-release`, `ironstar-release-c2n`, `playwright-browsers-nixpkgs`, `signoz-backend`, `signoz-frontend`, `signoz-otel-collector`). The task ledger's "33 → 13" estimate undercounted the SigNoz + playwright packages contributed by other modules; the load-bearing fact is the 20-attr deletion, which holds.
+- `nix build .#checks.aarch64-darwin.structure-package-set-invariant` → green (exit 0) WITHOUT modifying `modules/checks/package-set-invariant.nix`: the invariant already excludes `*-test`/`*-clippy` suffixes via `isPerCrateSuffix`, so deleting those packages neither adds nor removes a relevant-package-without-check.
+
+### Content-addressed lockfile refinement (cache-name stability)
+
+`importCargoLock`'s `lockFile` is pinned to `builtins.path { path = self + "/Cargo.lock"; name = "ironstar-cargo-lock"; }` rather than `self + "/Cargo.lock"` directly. Reading `self + "/Cargo.lock"` ties the resulting `cargo-vendor-dir` to the whole flake-source identity, so any unrelated commit re-derives the vendor dir (and cascades a full gate recompile); confirmed empirically — editing unrelated files changed the `cargo-vendor-dir.drv` and gate drvPaths. With the content-addressed `builtins.path`, the vendor dir references only `…-ironstar-cargo-lock` (the lockfile content), so it rebuilds only when `Cargo.lock` content changes — honoring the design's content-addressed-name-stability risk mitigation and mirroring crane's `name="ironstar-src"` discipline. A second full gate build after this change reproduced the identical result (`933 passed, 5 skipped`; clippy clean), confirming the change is behaviorally neutral. That rebuild's wall-clock (800s for both gates concurrently) ran higher than the first build (530s clippy / 591s test) due to concurrent nix invocations contending on this aarch64-darwin host; the steady-state per-gate cost from a warm dep store is the ~9-10 min figure, and on warm CI caches the override-touched `-sys` paths substitute and the figure drops further.
