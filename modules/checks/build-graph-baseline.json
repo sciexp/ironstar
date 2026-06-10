@@ -30,8 +30,8 @@
     "checks.ironstar-workspace-test",
     "checks.workspace-clippy",
     "checks.workspace-test",
-    "packages.ironstar-c2n",
-    "packages.ironstar-release-c2n"
+    "packages.ironstar",
+    "packages.ironstar-release"
   ],
   "per_root_logical_node_ceiling": {
     "checks.cargo-nix-lock-sync": 866,
@@ -48,8 +48,8 @@
     "checks.ironstar-workspace-test": 3020,
     "checks.workspace-clippy": 3965,
     "checks.workspace-test": 3955,
-    "packages.ironstar-c2n": 3930,
-    "packages.ironstar-release-c2n": 3930
+    "packages.ironstar": 3930,
+    "packages.ironstar-release": 3930
   },
   "duplication_ceiling": {
     "dev_profile_crates_with_multiplicity": 222,

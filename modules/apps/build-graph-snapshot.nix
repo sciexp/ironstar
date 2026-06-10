@@ -11,8 +11,9 @@
 #
 # Pinned to system x86_64-linux: that is what buildbot CI evaluates, and the
 # crate2nix roots eval purely there (and cross-system from darwin) with no IFD.
-# The crane packages.ironstar/ironstar-release and checks.ironstar-e2e roots are
-# excluded: they are IFD-bound on linux and crane is removed at task 6.
+# packages.ironstar/ironstar-release are now the crate2nix builds (substrate swap,
+# task 5) and are canonical roots. checks.ironstar-e2e remains excluded: it is
+# IFD-bound on linux (it builds the bun2nix frontend asset during eval).
 { ... }:
 {
   perSystem =
@@ -37,8 +38,8 @@
         "ironstar-session-store"
       ];
       canonicalRoots = [
-        "packages.ironstar-c2n"
-        "packages.ironstar-release-c2n"
+        "packages.ironstar"
+        "packages.ironstar-release"
         "checks.workspace-clippy"
         "checks.workspace-test"
         "checks.cargo-nix-lock-sync"

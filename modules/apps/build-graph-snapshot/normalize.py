@@ -57,8 +57,8 @@ HEAVY_CRATES = [
 ]
 
 CANONICAL_ROOTS = [
-    ("packages", "ironstar-c2n"),
-    ("packages", "ironstar-release-c2n"),
+    ("packages", "ironstar"),
+    ("packages", "ironstar-release"),
     ("checks", "workspace-clippy"),
     ("checks", "workspace-test"),
     ("checks", "cargo-nix-lock-sync"),

@@ -44,10 +44,6 @@
       excluded = [
         "default"
         "ironstar-release"
-        # crate2nix transition packages; exercised via the test/clippy gate and the
-        # task-5 swap. Removed at the swap when -c2n names revert to ironstar/-release.
-        "ironstar-c2n"
-        "ironstar-release-c2n"
         "frontendAssets"
         "ironstar-docs-deps"
         "ironstar-eventcatalog-deps"

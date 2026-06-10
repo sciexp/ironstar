@@ -79,11 +79,11 @@
       "logical_edges": 30676,
       "logical_nodes": 3596
     },
-    "packages.ironstar-c2n": {
+    "packages.ironstar": {
       "logical_edges": 28951,
       "logical_nodes": 3573
     },
-    "packages.ironstar-release-c2n": {
+    "packages.ironstar-release": {
       "logical_edges": 28951,
       "logical_nodes": 3573
     }
@@ -103,8 +103,8 @@
     "checks.ironstar-workspace-test",
     "checks.workspace-clippy",
     "checks.workspace-test",
-    "packages.ironstar-c2n",
-    "packages.ironstar-release-c2n"
+    "packages.ironstar",
+    "packages.ironstar-release"
   ],
   "schema_version": 1,
   "system": "x86_64-linux",

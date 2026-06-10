@@ -424,27 +424,15 @@
         # Manual wiring: packages
         packages = {
           default = self'.packages.ironstar;
-          ironstar = crane-lib.buildPackage (
-            commonArgs
-            // {
-              inherit cargoArtifacts;
-              doCheck = false;
-            }
-          );
-          ironstar-release = crane-lib.buildPackage (
-            commonArgs
-            // {
-              cargoArtifacts = cargoArtifactsRelease;
-              CARGO_PROFILE = "release";
-              doCheck = false;
-            }
-          );
-          inherit frontendAssets;
 
-          # crate2nix parallel packages (additive transition; renamed to
-          # ironstar/ironstar-release at the substrate swap in task 5).
-          ironstar-c2n = cargoNixDev.workspaceMembers."ironstar".build;
-          ironstar-release-c2n = cargoNixRelease.workspaceMembers."ironstar".build;
+          # crate2nix is the Rust build substrate (task-5 swap). The dev build is
+          # ironstar, the release build is ironstar-release; the crane buildPackage
+          # definitions they replaced are removed. The crane input and its vendoring
+          # machinery (filterCargoSources, cargoArtifacts, vendorCargoDeps) remain
+          # until task 6.
+          ironstar = cargoNixDev.workspaceMembers."ironstar".build;
+          ironstar-release = cargoNixRelease.workspaceMembers."ironstar".build;
+          inherit frontendAssets;
         };
 
         # Manual wiring: checks

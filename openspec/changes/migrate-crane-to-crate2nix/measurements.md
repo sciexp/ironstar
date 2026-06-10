@@ -464,3 +464,82 @@ The package set is unchanged at 15 (the regulator is a check, the snapshot gener
 `.github/workflows/regenerate-lock-files.yaml` gains a build-graph snapshot regenerate-and-amend step pair after the `Cargo.nix` pair, mirroring the established flake.lock/bun.nix/Cargo.nix pattern byte-for-byte (`nix run .#build-graph-snapshot`, then amend on diff).
 No new third-party action is introduced — the added steps are pure `run:` shell steps reusing the existing pinned `actions/checkout` and local `setup-nix`.
 The renovate-gated job already triggers on `Cargo.lock`/`Cargo.toml`/`crates/**/Cargo.toml` changes (added in task 4.1), so the snapshot is refreshed in the same flow that refreshes `Cargo.nix`.
+
+## Task 5 — substrate swap (the first measured topology delta)
+
+Host: aarch64-darwin (Darwin 25.2.0 arm64); nixpkgs same channel as prior tasks; crate2nix locked at rev `c994c83`; pinned rust 1.94.1.
+
+The swap is a pure RENAME: `packages.ironstar-c2n` becomes `packages.ironstar` (crate2nix dev build), `packages.ironstar-release-c2n` becomes `packages.ironstar-release` (crate2nix release build); the crane `buildPackage` definitions they replaced are deleted, `packages.default` stays `self'.packages.ironstar` (now the c2n dev build), and `checks.ironstar` (which inherits `self'.packages.ironstar`) re-wires automatically to the c2n dev build.
+The crane INPUT and its vendoring machinery (`filterCargoSources`, `cargoArtifacts`, `cargoArtifactsRelease`, `vendorCargoDeps`, `crane.cachix`) are left intact for task 6; only the crane-built package definitions the renames replace are removed.
+
+### Files changed
+
+| File | Change |
+|---|---|
+| `modules/rust.nix` | `packages.ironstar` = `cargoNixDev.workspaceMembers."ironstar".build` (was `ironstar-c2n`); `packages.ironstar-release` = `cargoNixRelease.workspaceMembers."ironstar".build` (was `ironstar-release-c2n`); the two crane `buildPackage` defs and the `-c2n` attr names deleted; `default` and the `checks` block unchanged (the `inherit (self'.packages) ironstar …` line re-wires `checks.ironstar` to c2n by the rename). |
+| `modules/checks/package-set-invariant.nix` | Removed the two-line c2n comment and the `"ironstar-c2n"`/`"ironstar-release-c2n"` `excluded` entries (the block after `"ironstar-release"`); nothing else (the SigNoz entries at the list end are a sibling-arm anchor, untouched). |
+| `modules/apps/build-graph-snapshot.nix` | `canonicalRoots`: `packages.ironstar-c2n` -> `packages.ironstar`, `packages.ironstar-release-c2n` -> `packages.ironstar-release`; the crane-exclusion comment updated (those roots are now the crate2nix builds and canonical; only `checks.ironstar-e2e` stays IFD-excluded). |
+| `modules/apps/build-graph-snapshot/normalize.py` | `CANONICAL_ROOTS`: same two root renames (required so the regenerated snapshot carries the new root keys — the regulator-update completion the CCV no-leak constraint demands; this file was not named in the dispatch but holds the same root list as `build-graph-snapshot.nix`). |
+| `modules/checks/build-graph-baseline.json` | `required_roots` and `per_root_logical_node_ceiling` keys: same two root renames; ceiling VALUES unchanged (`3930`/`3930`). |
+| `modules/checks/build-graph-snapshot.json` | Regenerated via `just regenerate-build-graph-snapshot`; diff is exactly 4 insertions / 4 deletions — the two root-key renames in `roots` and `per_root`, with byte-identical `logical_nodes`/`logical_edges` (3573/28951 for both ironstar packages) and all duplication/heavy/vendor values unchanged. |
+
+`cd.yaml` needs NO edits: the active `.github/workflows/cd.yaml` references neither `.#ironstar-release` nor the c2n names (it tests `bootstrap.sh` and `make verify` only). The `.#ironstar-release` references live in `.github/deprecated/` (inactive) and `.github/workflows/README.md` (a mermaid diagram label), neither of which this swap touches. Surface-back trigger #3 (cd.yaml or a consumer requires edits) does not fire.
+The e2e check (`modules/checks/e2e.nix:62`) reads `IRONSTAR_BINARY="${self'.packages.ironstar}/bin/ironstar"`, so it re-wires to the c2n binary by the rename with no edit.
+
+### Package and check attr lists
+
+`nix eval .#packages.aarch64-darwin --apply builtins.attrNames` -> 13 attrs (was 15; the two `-c2n` names removed, no crane-only attr lost unexpectedly):
+`default`, `dev-platform`, `frontendAssets`, `ironstar`, `ironstar-docs`, `ironstar-docs-deps`, `ironstar-eventcatalog`, `ironstar-eventcatalog-deps`, `ironstar-release`, `playwright-browsers-nixpkgs`, `signoz-backend`, `signoz-frontend`, `signoz-otel-collector`.
+
+`nix eval .#checks.aarch64-darwin --apply builtins.attrNames` -> 27 names (unchanged set):
+`build-graph-invariants`, `cargo-nix-lock-sync`, `dev-platform`, `gitleaks`, `ironstar`, `ironstar-analytics-infra-test`, `ironstar-analytics-test`, `ironstar-core-test`, `ironstar-docs`, `ironstar-docs-e2e`, `ironstar-docs-unit`, `ironstar-e2e`, `ironstar-event-bus-test`, `ironstar-event-store-test`, `ironstar-eventcatalog`, `ironstar-eventcatalog-e2e`, `ironstar-eventcatalog-unit`, `ironstar-session-store-test`, `ironstar-session-test`, `ironstar-shared-kernel-test`, `ironstar-test`, `ironstar-todo-test`, `ironstar-workspace-test`, `structure-package-set-invariant`, `treefmt`, `workspace-clippy`, `workspace-test`.
+The `ironstar` check NAME and the count are stable; surface-back trigger #4 (check count/semantics change) does not fire.
+
+### Zero-rebuild evidence (drv-hash identity — the rename is pure)
+
+Pre-swap c2n drvPaths captured before any edit, then re-read after the rename:
+
+| Attr | pre-swap (`-c2n`) drvPath | post-swap drvPath |
+|---|---|---|
+| `packages.ironstar` (dev) | `kpw3fvb9jsbpn7pz8a5wrzfyw4z45xkh-rust_ironstar-0.1.0.drv` (was `ironstar-c2n`) | `kpw3fvb9jsbpn7pz8a5wrzfyw4z45xkh-rust_ironstar-0.1.0.drv` — IDENTICAL |
+| `packages.ironstar-release` | `bbnzi8rl9rwzpim3hpx0jbkax34yanrm-rust_ironstar-0.1.0.drv` (was `ironstar-release-c2n`) | `bbnzi8rl9rwzpim3hpx0jbkax34yanrm-rust_ironstar-0.1.0.drv` — IDENTICAL |
+| `checks.ironstar` | `ws17rb7mw4ygmxwckbjw2mnvw6jlyk17-ironstar-0.1.0.drv` (crane build) | `kpw3fvb9jsbpn7pz8a5wrzfyw4z45xkh-rust_ironstar-0.1.0.drv` — now the c2n dev drv (re-wired, not a fresh crane build) |
+
+The renamed packages' drv hashes are byte-identical to the pre-swap `-c2n` drv hashes, so the rename moved only attribute names — no underlying derivation changed.
+`nix build --dry-run .#ironstar` is empty (the dev drv was already realized); `nix build --dry-run .#ironstar-release` showed only `bbnzi8rl…-rust_ironstar-0.1.0.drv` (the same release drv, realizing its output for the first time — not a rename-induced rebuild, since the drv hash is the original c2n release hash).
+Surface-back trigger #5 (drv-hash drift) does not fire.
+
+### Result binary identity
+
+`nix build .#ironstar -o /tmp/swap-check` -> `/nix/store/xpjnmfnzm7ypffh8sx7m0d2g8adnn601-rust_ironstar-0.1.0`.
+`bin/` contains ONLY `ironstar` (the `ironstar` postInstall override `rm -rf "$out"/bin/*.dSYM` strips the dev-profile dSYM; parity with crane's bare binary), a valid Mach-O arm64 executable; the `/bin/ironstar` path identity is preserved (the path the e2e check and CD expect).
+Boot-and-kill probe: the binary boots fully — "Starting ironstar port=3000", "Asset manifest loaded" (rust-embed assets present), "Database migrations complete" (`include_str!` migrations resolve), "Zenoh event bus initialized", "DuckDB analytics pool initialized", "DuckDB extensions loaded (httpfs, ducklake)", "No embedded DuckLake catalogs found" -> "No embedded catalogs, trying network ATTACH" (empty-catalog embed parity at runtime). No missing-library/linker failure.
+
+### Affected checks green from the working tree
+
+- `structure-package-set-invariant`: green (`/nix/store/pmlkvarb…`). The two `-c2n` excluded entries removed; `ironstar` now has a matching check, `ironstar-release` stays excluded — invariant holds.
+- `build-graph-invariants`: green (`/nix/store/q4zxr8cz…`). Rebuilt because snapshot+baseline content changed (the root-key rename); the regulator validates the renamed roots against the renamed baseline keys with identical values. Snapshot regeneration is deterministic (re-run sha256 `4116e67e7d126c2cb4f3e851319204ead91866fddb1293a4805e46de48a89270`, byte-identical).
+- `cargo-nix-lock-sync`: green (`/nix/store/9ki24iw0…`). Unaffected by the swap (`Cargo.lock`/`Cargo.nix` untouched).
+
+### E2E against the c2n binary (5.2)
+
+`bunx playwright test` (`just e2e-test`) needs an interactive dev stack and bun-installed Playwright deps absent in this sandboxed session; the hermetic equivalent is the `ironstar-e2e` flake check, which wires `IRONSTAR_BINARY="${self'.packages.ironstar}/bin/ironstar"` — now the c2n dev binary (confirmed: the e2e drv references the exact c2n output path `xpjnmfnzm…-rust_ironstar-0.1.0`).
+`nix build .#checks.aarch64-darwin.ironstar-e2e` ran the full Playwright suite against the c2n binary: "Running 23 tests using 2 workers" -> "22 passed (4.5s), 1 skipped", realized to `/nix/store/pb6lj94…-ironstar-e2e`.
+This is exact parity with the documented baseline (23 tests: 22 active, 1 fixme'd). Surface-back trigger #2 (e2e failures against the c2n binary) does not fire.
+
+### Post-swap cache-granularity cone demo (5.3)
+
+Method (the established perturb-and-restore): byte-identical backups of `Cargo.lock`+`Cargo.nix`; consistent perturbation of the shallow crate `adler2` `2.0.1` -> `2.0.2` (version + one checksum/sha256 hex char in both files); `nix build --dry-run .#ironstar` (a dry-run never fetches, so fake versions/hashes drive evaluation only); restore byte-identical.
+
+- Clean-tree baseline: `nix build --dry-run .#ironstar` empty (fully cached), so the cone below is caused solely by the perturbation.
+- Post-swap cone: exactly 13 derivations, matching the pre-swap `adler2` measurement (`### Rebuild-set evidence table`, row (b), c2n column = 13):
+  `adler2-2.0.2.tar.gz`, `rust_adler2`, `rust_miniz_oxide`, `rust_flate2`, `rust_zip`, `rust_libduckdb-sys`, `rust_duckdb`, `rust_async-duckdb`, `rust_zenoh`, `rust_ironstar-event-bus`, `rust_ironstar-analytics-infra`, `rust_ironstar-event-store`, `rust_ironstar`.
+  The cone is the same `adler2 -> miniz_oxide -> flate2 -> {zip, libduckdb-sys, zenoh}` reverse-dep cone up through the workspace members to the binary; the binary node is now `rust_ironstar` (the crate2nix build the swap points `.#ironstar` at) rather than crane's monolithic blob.
+- Restoration: `Cargo.lock` sha256 `eb391826f18e20b55a67c35c027422c53420400553cb6932b04aa6b10e6106eb` and `Cargo.nix` sha256 `32b9eb098f00731764ec57f1313a77cf052c9d46d852052f7e49a271f6d94342` identical before and after; `git status --porcelain -- Cargo.lock Cargo.nix` empty.
+
+The per-dependency-crate cache granularity that the migration targets survives the swap unchanged: a shallow Renovate-style bump touches 13 of the ~504 crate derivations on the now-canonical `.#ironstar`, the same cone the pre-swap `.#ironstar-c2n` produced.
+
+### Snapshot/baseline root-key migration note
+
+The CCV no-leak obligation for the rename spans four root-key declaration sites, all updated in this change set: `canonicalRoots` (`build-graph-snapshot.nix`), `CANONICAL_ROOTS` (`normalize.py`), `required_roots`+`per_root_logical_node_ceiling` (`build-graph-baseline.json`), and the regenerated `roots`+`per_root` (`build-graph-snapshot.json`).
+The baseline ceiling VALUES are unchanged (the regenerated snapshot proves the swap changed attribute names, not graph content); `build-graph-invariants` is green, confirming no regulator leak.
