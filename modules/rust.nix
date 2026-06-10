@@ -205,6 +205,120 @@
             cargoClippyExtraArgs = "-p ${name} --all-targets -- --deny warnings";
           }
         );
+
+      # crate2nix substrate (additive; crane above is untouched).
+      #
+      # The committed ./Cargo.nix emits one buildRustCrate derivation per crate,
+      # giving per-dependency-crate nix cache granularity. It is imported with the
+      # pinned 1.94.1 rustToolchain threaded into buildRustCrateForPkgs so per-crate
+      # builds match fmt and the devshell, and with ironstarCrateOverrides merged
+      # onto pkgs.defaultCrateOverrides.
+
+      # Per-member derived source trees re-establishing the parent layout that the
+      # two rust-embed reads require. Under crate2nix each local member's src is its
+      # own crates/<name> subdir, so the `$CARGO_MANIFEST_DIR/../../` reads in
+      # assets.rs and embedded_catalogs.rs would resolve above an isolated member
+      # tree and silently embed nothing. These derived trees place the member at
+      # $out/crates/<name> and re-materialize the sibling asset dirs two levels up.
+      #
+      # Fixed derivation names keep these content-addressed: a no-op commit must not
+      # rebuild them (mirrors crane's name="ironstar-src" stability discipline).
+      ironstarMemberSrc = builtins.path {
+        path = inputs.self + "/crates/ironstar";
+        name = "ironstar-member-source";
+        filter = path: type: (lib.hasSuffix ".sql" path) || (crane-lib.filterCargoSources path type);
+      };
+      ironstarAnalyticsInfraMemberSrc = builtins.path {
+        path = inputs.self + "/crates/ironstar-analytics-infra";
+        name = "ironstar-analytics-infra-member-source";
+        filter = path: type: (lib.hasSuffix ".sql" path) || (crane-lib.filterCargoSources path type);
+      };
+
+      # Empty ducklake-catalogs tree: today crane's combinedSrc never injects this
+      # path and the .db files are gitignored, so ironstar-analytics-infra embeds an
+      # empty catalog. This preserves that empty-embed status quo (design D5/Open
+      # Questions orchestrator ruling); a real catalog is out of scope.
+      ducklakeCatalogsSrc = pkgs.runCommand "ironstar-ducklake-catalogs" { } ''
+        mkdir -p $out
+      '';
+
+      # ironstar member tree: crate at $out/crates/ironstar, with $out/static/dist
+      # (the built frontendAssets, matching crane's combinedSrc) two levels up so
+      # `#[folder = "$CARGO_MANIFEST_DIR/../../static/dist"]` resolves. The migrations
+      # dir (crates/ironstar/migrations, include_str!) travels inside the member tree.
+      ironstarSrcInjected = pkgs.runCommand "ironstar-c2n-member-src" { } ''
+        mkdir -p $out/crates $out/static
+        cp -r ${ironstarMemberSrc} $out/crates/ironstar
+        chmod -R u+w $out/crates/ironstar
+        rm -rf $out/crates/ironstar/migrations
+        cp -r ${migrationsSrc} $out/crates/ironstar/migrations
+        cp -r ${frontendAssets} $out/static/dist
+      '';
+
+      # ironstar-analytics-infra member tree: crate at $out/crates/<name>, with
+      # $out/assets/ducklake-catalogs two levels up so
+      # `#[folder = "$CARGO_MANIFEST_DIR/../../assets/ducklake-catalogs"]` resolves.
+      ironstarAnalyticsInfraSrcInjected = pkgs.runCommand "ironstar-analytics-infra-c2n-member-src" { } ''
+        mkdir -p $out/crates $out/assets
+        cp -r ${ironstarAnalyticsInfraMemberSrc} $out/crates/ironstar-analytics-infra
+        cp -r ${ducklakeCatalogsSrc} $out/assets/ducklake-catalogs
+      '';
+
+      # Per-crate overrides merged onto pkgs.defaultCrateOverrides. A crateName-keyed
+      # override is applied as `crate // (override crate)` inside buildRustCrate
+      # (nixpkgs build-rust-crate/default.nix line 329), so it can add native inputs,
+      # set env, and override src.
+      #
+      # In the pinned nixpkgs there is no aws-lc-sys / ring / libduckdb-sys default
+      # override, so these three are additive; libsqlite3-sys keeps the nixpkgs default
+      # (pkg-config + sqlite). No workspace-wide pkg-config; no Linux openssl buildInput.
+      ironstarCrateOverrides = p: {
+        libduckdb-sys = attrs: {
+          nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ p.stdenv.cc ];
+          # libduckdb-sys bundles a C++ amalgamation; HOME guards any build-time write.
+          HOME = "/tmp";
+        };
+        aws-lc-sys = attrs: {
+          nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [
+            p.cmake
+            p.perl
+          ];
+        };
+        ring = attrs: {
+          nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ p.perl ];
+        };
+        # src is the full derived tree (member at crates/<name>, asset dirs two levels
+        # up); workspace_member cd's buildRustCrate into the member subdir so
+        # CARGO_MANIFEST_DIR is crates/<name> and `../../<asset>` resolves to the
+        # re-materialized sibling dirs (configure-crate.nix lines 60-61, 160).
+        ironstar = attrs: {
+          src = ironstarSrcInjected;
+          workspace_member = "crates/ironstar";
+        };
+        ironstar-analytics-infra = attrs: {
+          src = ironstarAnalyticsInfraSrcInjected;
+          workspace_member = "crates/ironstar-analytics-infra";
+        };
+      };
+
+      # `release` is a top-level Cargo.nix argument baked into each crate config at
+      # import time (crate2nix default.nix threads it into buildByPackageIdImpl; it is
+      # not a `.build.override` argument), so dev and release builds need separate
+      # imports. crate2nix defaults release = true, so dev passes release = false.
+      mkCargoNix =
+        release:
+        import (self + "/Cargo.nix") {
+          inherit pkgs release;
+          buildRustCrateForPkgs =
+            p:
+            p.buildRustCrate.override {
+              rustc = rustToolchain;
+              cargo = rustToolchain;
+              defaultCrateOverrides = p.defaultCrateOverrides // ironstarCrateOverrides p;
+            };
+        };
+      cargoNixDev = mkCargoNix false;
+      cargoNixRelease = mkCargoNix true;
     in
     {
       options.ironstar.rustToolchain = lib.mkOption {
@@ -234,6 +348,11 @@
             }
           );
           inherit frontendAssets;
+
+          # crate2nix parallel packages (additive transition; renamed to
+          # ironstar/ironstar-release at the substrate swap in task 5).
+          ironstar-c2n = cargoNixDev.workspaceMembers."ironstar".build;
+          ironstar-release-c2n = cargoNixRelease.workspaceMembers."ironstar".build;
         }
         # Per-crate test and clippy for ad-hoc debugging (e.g. `nix build .#ironstar-core-test`)
         // lib.genAttrs (map (n: "${n}-test") libCrates) (
