@@ -86,3 +86,18 @@ jobs:
           git add Cargo.nix
           git commit -m "chore(deps): regenerate Cargo.nix"
           git push
+
+      - name: Regenerate build-graph snapshot
+        run: nix run .#build-graph-snapshot
+
+      - name: Amend PR branch if build-graph snapshot changed
+        run: |
+          if git diff --quiet -- modules/checks/build-graph-snapshot.json; then
+            echo "build-graph snapshot already up-to-date; nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add modules/checks/build-graph-snapshot.json
+          git commit -m "chore(deps): regenerate build-graph snapshot"
+          git push

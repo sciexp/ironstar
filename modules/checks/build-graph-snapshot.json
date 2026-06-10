@@ -1,0 +1,126 @@
+{
+  "duplication": {
+    "dev_profile_crates_with_multiplicity": 202,
+    "dev_profile_excess_compile_drvs": 386,
+    "release_profile_distinct_compiles": 442,
+    "test_variant_member_compiles": 11
+  },
+  "heavy_crate_distinct_compiles": {
+    "arrow": 3,
+    "arrow-array": 3,
+    "arrow-buffer": 2,
+    "duckdb": 3,
+    "libduckdb-sys": 3,
+    "libsqlite3-sys": 3,
+    "moka": 3,
+    "rkyv": 2,
+    "sqlx": 4,
+    "sqlx-core": 4,
+    "sqlx-sqlite": 4,
+    "tokio": 5,
+    "zenoh": 6
+  },
+  "missing_roots": [],
+  "note": "hash-free build-graph snapshot keyed on (system, logical_pname, version, build_class, profile, member_scope); duplication = distinct store hashes per logical key; regenerate with `just regenerate-build-graph-snapshot`",
+  "per_root": {
+    "checks.cargo-nix-lock-sync": {
+      "logical_edges": 3664,
+      "logical_nodes": 787
+    },
+    "checks.ironstar-analytics-infra-test": {
+      "logical_edges": 26219,
+      "logical_nodes": 3437
+    },
+    "checks.ironstar-analytics-test": {
+      "logical_edges": 17400,
+      "logical_nodes": 2744
+    },
+    "checks.ironstar-core-test": {
+      "logical_edges": 17284,
+      "logical_nodes": 2733
+    },
+    "checks.ironstar-event-bus-test": {
+      "logical_edges": 22956,
+      "logical_nodes": 3192
+    },
+    "checks.ironstar-event-store-test": {
+      "logical_edges": 24770,
+      "logical_nodes": 3316
+    },
+    "checks.ironstar-session-store-test": {
+      "logical_edges": 19519,
+      "logical_nodes": 2942
+    },
+    "checks.ironstar-session-test": {
+      "logical_edges": 17426,
+      "logical_nodes": 2745
+    },
+    "checks.ironstar-shared-kernel-test": {
+      "logical_edges": 17224,
+      "logical_nodes": 2725
+    },
+    "checks.ironstar-test": {
+      "logical_edges": 29381,
+      "logical_nodes": 3575
+    },
+    "checks.ironstar-todo-test": {
+      "logical_edges": 17400,
+      "logical_nodes": 2744
+    },
+    "checks.ironstar-workspace-test": {
+      "logical_edges": 17466,
+      "logical_nodes": 2746
+    },
+    "checks.workspace-clippy": {
+      "logical_edges": 20680,
+      "logical_nodes": 3605
+    },
+    "checks.workspace-test": {
+      "logical_edges": 30676,
+      "logical_nodes": 3596
+    },
+    "packages.ironstar-c2n": {
+      "logical_edges": 28951,
+      "logical_nodes": 3573
+    },
+    "packages.ironstar-release-c2n": {
+      "logical_edges": 28951,
+      "logical_nodes": 3573
+    }
+  },
+  "roots": [
+    "checks.cargo-nix-lock-sync",
+    "checks.ironstar-analytics-infra-test",
+    "checks.ironstar-analytics-test",
+    "checks.ironstar-core-test",
+    "checks.ironstar-event-bus-test",
+    "checks.ironstar-event-store-test",
+    "checks.ironstar-session-store-test",
+    "checks.ironstar-session-test",
+    "checks.ironstar-shared-kernel-test",
+    "checks.ironstar-test",
+    "checks.ironstar-todo-test",
+    "checks.ironstar-workspace-test",
+    "checks.workspace-clippy",
+    "checks.workspace-test",
+    "packages.ironstar-c2n",
+    "packages.ironstar-release-c2n"
+  ],
+  "schema_version": 1,
+  "system": "x86_64-linux",
+  "vendor_monolith_count": 17,
+  "workspace_members_present": [
+    "ironstar",
+    "ironstar-core",
+    "ironstar-shared-kernel",
+    "ironstar-todo",
+    "ironstar-session",
+    "ironstar-analytics",
+    "ironstar-workspace",
+    "ironstar-event-store",
+    "ironstar-event-bus",
+    "ironstar-analytics-infra",
+    "ironstar-session-store"
+  ],
+  "workspace_members_total": 11
+}

@@ -1318,6 +1318,12 @@ regenerate-cargo-nix:
   nix run --inputs-from . crate2nix -- generate
   treefmt Cargo.nix
 
+# Regenerate the committed build-graph snapshot (the graph-drift regulator's envelope).
+# Generated outside the build sandbox because it needs recursive nix derivation show.
+[group('rust')]
+regenerate-build-graph-snapshot:
+  nix run .#build-graph-snapshot
+
 # Run all Rust checks (fmt, clippy, test)
 [group('rust')]
 rust-check: rust-fmt-check rust-clippy rust-test
