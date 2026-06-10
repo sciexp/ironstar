@@ -79,3 +79,10 @@ spec/build/
 .dolt/
 *.db
 .beads-credential-key
+
+# Python bytecode caches
+__pycache__/
+*.pyc
+
+# CLI http cache
+http_cache.sqlite
