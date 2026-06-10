@@ -3,14 +3,15 @@ linear_story_id: 2e4f94e9-7f7b-4a9f-8a83-112978ccfea1
 linear_story_identifier: CAM-15
 linear_story_title: "Migrate ironstar from crane to crate2nix"
 linear_story_url: https://linear.app/cameronraysmith/issue/CAM-15/migrate-ironstar-from-crane-to-crate2nix
-linear_story_state: Todo
+linear_story_state: In Progress
 linear_team: CAM
 linear_project: ironstar-build-performance
-last_synced_state: Todo
-last_synced_at: 2026-06-09T22:57:44Z
+last_synced_state: In Progress
+last_synced_at: 2026-06-09T23:39:49Z
 review_round: 0
 attempt_log:
   - { at: "2026-06-09T22:57:44Z", transition: "Backlog->Todo", outcome: "posted", note: "T1 readiness gate: proposal.md created" }
+  - { at: "2026-06-09T23:39:49Z", transition: "Todo->In Progress", outcome: "posted", note: "T2 apply gate: first tasks.md checkbox checked (task 1 bootstrap complete)" }
 beads_epic: ironstar-8g3
 ---
 
