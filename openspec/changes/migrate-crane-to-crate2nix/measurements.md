@@ -543,3 +543,73 @@ The per-dependency-crate cache granularity that the migration targets survives t
 
 The CCV no-leak obligation for the rename spans four root-key declaration sites, all updated in this change set: `canonicalRoots` (`build-graph-snapshot.nix`), `CANONICAL_ROOTS` (`normalize.py`), `required_roots`+`per_root_logical_node_ceiling` (`build-graph-baseline.json`), and the regenerated `roots`+`per_root` (`build-graph-snapshot.json`).
 The baseline ceiling VALUES are unchanged (the regenerated snapshot proves the swap changed attribute names, not graph content); `build-graph-invariants` is green, confirming no regulator leak.
+
+## Task 6: crane removal, cache-effectiveness verification, docs cleanup
+
+### Removal inventory
+
+`flake.nix`: removed the `crane.url` input, the `nix-unit.url` input plus its two `follows` lines (`nix-unit.inputs.nixpkgs.follows`, `nix-unit.inputs.treefmt-nix.follows`), the `crane.cachix.org-1:…` trusted public key, and the `https://crane.cachix.org` substituter.
+`nix flake lock` then dropped both inputs cleanly:
+
+```
+• Removed input 'crane'
+• Removed input 'nix-unit'
+• Removed input 'nix-unit/nix-github-actions'
+• Removed input 'nix-unit/nix-github-actions/nixpkgs'
+• Removed input 'nix-unit/nixpkgs'
+• Removed input 'nix-unit/treefmt-nix'
+```
+
+`nix flake metadata` succeeds after removal with no dangling `follows` (nix-unit's `treefmt-nix.follows` was internal to the nix-unit input, dropped with it — confirming no load-bearing consumer; surface-back trigger #3 cleared).
+
+`modules/rust.nix`: removed `crane-lib`, `cargoVendorDir` (`crane-lib.vendorCargoDeps`), `commonArgs`, `cargoArtifacts`/`cargoArtifactsRelease` (`crane-lib.buildDepsOnly`), and the commented-out `crane-lib.cargoDocTest` doctest stanza.
+The crane source filter was replaced by a crane-free `cargoSourceFilter` predicate reproducing `filterCargoSources` exactly (directories, `.rs`/`.toml`, `Cargo.lock`, `.cargo/config`) plus the repo's `.sql` allowlist; the whole-repo `src` filter and the two member-src filters now share it.
+Remaining crane-mentioning comments were reworded to drop the (now nonexistent) crane cross-references.
+The kept bindings unaffected by removal: `cargoVendorDeps` (`rustPlatform.importCargoLock`, feeds `workspace-clippy`), `combinedSrc`, `workspaceVersion`.
+
+`.github/workflows/README.md`: rewritten from the stale 12-check inventory (which named nonexistent `workspace-fmt`/`pre-commit`/`nix-unit` checks and crane intermediates `cargoVendorDir`/`cargoArtifacts`/`cargoArtifactsRelease`) to the live 27-check surface, with crate2nix per-crate build-graph mermaid diagrams and the corrected check enumeration. The stale "911 tests" mermaid label is gone.
+
+`modules/checks/build-graph-baseline.json`: the `note` prose updated from "crane+crate2nix coexistence topology" to "crate2nix substrate topology". This is a non-gated documentation field (`build-graph-invariants.py` reads only `required_roots`, `required_members`, `per_root_logical_node_ceiling`, `duplication_ceiling`, `heavy_crate_distinct_compile_ceiling`, `vendor_monolith_ceiling`); no ceiling/logical value changed.
+
+### Acceptance grep (6.4)
+
+`rg -n 'crane|cargoArtifacts|buildDepsOnly|vendorCargoDeps|crane\.cachix' flake.nix modules/ justfile .github/workflows/*.yaml` returns zero matches.
+The two preserved fixed name strings `ironstar-c2n-member-src` and `ironstar-analytics-infra-c2n-member-src` remain in `modules/rust.nix` (binding content-addressed-name-stability constraint; they contain no `crane` substring so they are correctly absent from the grep).
+
+### Content-preservation evidence for the filter swap
+
+The crane-free `cargoSourceFilter` produces a byte-identical filtered file set. Store paths are unchanged across the swap:
+
+| Tree | Store hash (OLD = NEW) | File count | `diff` OLD↔NEW |
+|------|------------------------|-----------|----------------|
+| `combinedSrc` (`ironstar-src`) | `h608hwmbbag5v0vl43z9vg4nn36kz80a` | 185 | identical |
+| ironstar member tree (`-c2n-member-src`) | `ym9jknj64vnlg56f4lajq4qd63pwm4qd` | 65 | identical |
+| analytics-infra member tree (`-c2n-member-src`) | `h1205zvhy6ay7wrfmsam01p8w2cl9fy3` | 8 | identical |
+
+The store hashes being unchanged means the filter swap triggered ZERO rebuild — stronger than the anticipated one-time rebuild. Surface-back trigger #1 (different file set) does not fire.
+
+### Rebuild scope and test counts
+
+`nix build --dry-run .#ironstar .#checks.aarch64-darwin.workspace-clippy .#checks.aarch64-darwin.ironstar-core-test` showed only `workspace-clippy` (its output was unrealized in this session; its drv hash `qnzrbqz2x1qyq0aybv516vyzfzj47lif` is unchanged across the edits — the comment-only rust.nix changes did not alter any derivation).
+`.#ironstar` and `.#ironstar-core-test` are fully cached — the filter swap rebuilt neither the binary nor the member tests.
+The realizing build completed green: exit 0, 277s wall-clock (dominated by `workspace-clippy`'s cold compile).
+`ironstar-core-test` run log: `test result: ok. 41 passed; 0 failed; 0 ignored` — matching the task-3.8 per-member baseline. Aggregate 933 passed / 5 ignored unchanged (member presence and per-member node counts are byte-identical in the regenerated snapshot). Surface-back trigger #4 (count drift) does not fire.
+
+### Snapshot logical-no-change (CCV no-leak)
+
+`just regenerate-build-graph-snapshot` regenerated `modules/checks/build-graph-snapshot.json` to sha256 `4116e67e7d126c2cb4f3e851319204ead91866fddb1293a4805e46de48a89270` — byte-identical to the committed snapshot. Crane removal did not perturb the build-graph topology because the canonical roots were already crate2nix-only after the task-5 swap.
+`nix build .#checks.aarch64-darwin.build-graph-invariants` green. Surface-back trigger #2 (baseline/logical delta) does not fire.
+
+### Final cache-granularity cone demonstration (6.4, the migration's raison d'être)
+
+Method (perturb-and-restore): consistent synthetic bump of the shallow crate `adler2` `2.0.1` → `2.0.2` in both `Cargo.lock` and `Cargo.nix`; `nix build --dry-run .#ironstar`; restore via `git checkout -- Cargo.lock Cargo.nix`.
+
+- Clean-tree baseline: `nix build --dry-run .#ironstar` empty (fully cached), so the cone below is caused solely by the perturbation.
+- Cone: exactly 13 derivations — `adler2-2.0.2.tar.gz`, `rust_adler2`, `rust_miniz_oxide`, `rust_flate2`, `rust_zip`, `rust_zenoh`, `rust_libduckdb-sys`, `rust_duckdb`, `rust_async-duckdb`, `rust_ironstar-event-store`, `rust_ironstar-event-bus`, `rust_ironstar-analytics-infra`, `rust_ironstar`. The `adler2 → miniz_oxide → flate2 → {zip, zenoh, libduckdb-sys}` reverse-dependency cone up through the affected workspace members to the binary; the other ~565 third-party crate derivations and the 7 unaffected local members stay cached. Identical to the pre-swap (task 5.3) and pre-removal cone.
+- Restoration byte-identical: `Cargo.lock` sha256 `eb391826f18e20b55a67c35c027422c53420400553cb6932b04aa6b10e6106eb` and `Cargo.nix` sha256 `32b9eb098f00731764ec57f1313a77cf052c9d46d852052f7e49a271f6d94342` before and after; post-restore clean-tree `.#ironstar` dry-run empty (cone gone).
+
+The per-dependency-crate cache granularity that motivated the crane→crate2nix migration is demonstrated on the crane-free end state: a Renovate-style single-dependency bump invalidates one crate's cone, not a monolithic dependency blob.
+
+### Surface checks post-removal
+
+`nix eval .#checks.{aarch64-darwin,x86_64-linux} --apply builtins.attrNames` → 27 names each (unchanged). `nix eval .#packages.aarch64-darwin --apply builtins.attrNames` → 13 (unchanged). All three pure structural checks (`build-graph-invariants`, `cargo-nix-lock-sync`, `structure-package-set-invariant`) build green; the four rust roots evaluate to drvPaths with no dangling-binding errors. `nix flake check` across all 27 on both systems is deferred to buildbot CI (this WO session runs aarch64-darwin; x86_64-linux build verification needs a linux builder).

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "note": "Accepted build-graph ceilings for the graph-drift regulator (modules/checks/build-graph-invariants.nix). Baseline-zero is the crane+crate2nix coexistence topology on x86_64-linux. Ceilings are upper bounds: growth above them fails the check, planned shrinkage (the dev/release and per-member duplication, the vendor monolith) passes. Member presence is an exact floor: all 11 workspace members must appear. Deliberate ceiling changes are made here after `just regenerate-build-graph-snapshot`, not by relaxing the regulator. nixpkgs stdenv-stage bootstrap variance is intentionally not gated (it drifts on any nixpkgs bump and is not ironstar-specific).",
+  "note": "Accepted build-graph ceilings for the graph-drift regulator (modules/checks/build-graph-invariants.nix). Baseline-zero is the crate2nix substrate topology on x86_64-linux. Ceilings are upper bounds: growth above them fails the check, planned shrinkage (the dev/release and per-member duplication, the vendor monolith) passes. Member presence is an exact floor: all 11 workspace members must appear. Deliberate ceiling changes are made here after `just regenerate-build-graph-snapshot`, not by relaxing the regulator. nixpkgs stdenv-stage bootstrap variance is intentionally not gated (it drifts on any nixpkgs bump and is not ironstar-specific).",
   "system": "x86_64-linux",
   "required_members": [
     "ironstar",

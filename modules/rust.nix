@@ -46,8 +46,20 @@
         ];
       };
 
-      # Crane library overridden with our toolchain (replaces config.rust-project.crane-lib)
-      crane-lib = (inputs.crane.mkLib pkgs).overrideToolchain rustToolchain;
+      # Cargo source filter: directories, `.rs`/`.toml` files, `Cargo.lock`, and
+      # `.cargo/config`, plus the `.sql` allowlist this repo adds for include_str!
+      # macros. Keeping all `.toml` files retains the cargo/nextest/clippy/taplo/
+      # gitleaks configs the workspace build reads. The `.toml`-broad allowlist is
+      # the same file set the prior source filter produced (verified by comparing
+      # the combinedSrc and member-src file listings before and after the swap).
+      cargoSourceFilter =
+        path: type:
+        type == "directory"
+        || lib.hasSuffix ".rs" path
+        || lib.hasSuffix ".toml" path
+        || lib.hasSuffix ".sql" path
+        || baseNameOf path == "Cargo.lock"
+        || (baseNameOf (dirOf path) == ".cargo" && baseNameOf path == "config");
 
       # Source filtering: builtins.path with a fixed name produces a content-addressed
       # store path whose hash depends only on filtered content, not on the flake's
@@ -55,13 +67,7 @@
       src = builtins.path {
         path = self;
         name = "ironstar-src";
-        filter =
-          path: type:
-          # Include SQL files for include_str! macros
-          (lib.hasSuffix ".sql" path)
-          ||
-            # Default crane filter for Rust files
-            (crane-lib.filterCargoSources path type);
+        filter = cargoSourceFilter;
       };
 
       # Content-addressed source paths for derivation hash stability.
@@ -111,8 +117,8 @@
       });
 
       # Combined source: Rust source + frontend assets + migrations.
-      # Crane's cleanCargoSource filters non-Rust files, so we must explicitly
-      # include directories needed by compile-time macros:
+      # cargoSourceFilter drops non-cargo files, so we must explicitly include the
+      # directories needed by compile-time macros:
       # - static/dist/ for rust-embed
       # - crates/ironstar/migrations/ for include_str! in sqlx queries
       combinedSrc = pkgs.runCommand "ironstar-src" { } ''
@@ -125,58 +131,17 @@
         cp -r ${migrationsSrc} $out/crates/ironstar/migrations
       '';
 
-      cargoVendorDir = crane-lib.vendorCargoDeps { inherit src; };
-
-      # Read version from the workspace Cargo.toml at eval time.
-      # This avoids IFD: crane reads ./Cargo.toml (a plain file in the flake source)
-      # instead of inferring from combinedSrc (a runCommand derivation).
+      # Read version from the workspace Cargo.toml at eval time, avoiding IFD:
+      # ./Cargo.toml is a plain file in the flake source, not a derivation output.
       # Single source of truth: [workspace.package] version in Cargo.toml.
-      # pname is set explicitly because workspace root Cargo.toml has no [package] name.
       cargoTomlContents = builtins.fromTOML (builtins.readFile (self + "/Cargo.toml"));
       workspaceVersion = cargoTomlContents.workspace.package.version;
 
-      # Common args for consistent caching across all crane derivations.
-      # Pure crane pattern: single commonArgs shared by all derivations.
-      # See: nix-cargo-crane/docs/faq/constant-rebuilds.md
-      commonArgs = {
-        src = combinedSrc;
-        inherit cargoVendorDir;
-        pname = "ironstar";
-        version = workspaceVersion;
-        strictDeps = true;
-        # Use dev profile for faster compilation during development.
-        # Release builds use [profile.release] from Cargo.toml (strip, lto, opt-level=z).
-        CARGO_PROFILE = "dev";
-        # DuckDB INSTALL writes extensions to ~/.duckdb/extensions/. Nix sandbox
-        # sets HOME=/homeless-shelter (non-writable), so tests that install
-        # extensions fail. Provide a writable HOME for the build sandbox.
-        HOME = "/tmp";
-        nativeBuildInputs = [ pkgs.pkg-config ];
-        # openssl required on Linux for TLS-dependent crates
-        buildInputs = lib.optionals pkgs.stdenv.isLinux [ pkgs.openssl ];
-      };
-
-      # Single cargoArtifacts derivation shared by all crane outputs
-      # Note: buildDepsOnly automatically appends "-deps" suffix to pname
-      cargoArtifacts = crane-lib.buildDepsOnly commonArgs;
-
-      # Release profile artifacts for optimized builds (strip, lto, opt-level=z)
-      # Separate from dev to preserve fast iteration on default package
-      cargoArtifactsRelease = crane-lib.buildDepsOnly (
-        commonArgs
-        // {
-          CARGO_PROFILE = "release";
-        }
-      );
-
-      # Crane-free workspace test and clippy gate.
+      # Workspace clippy gate (single workspace-wide cargo invocation).
       #
-      # The two correctness regulators (workspace-test, workspace-clippy) run one
-      # workspace-wide cargo invocation each, replicating the crane check's exact
-      # commands without depending on crane. Offline vendored deps come from the
-      # canonical nixpkgs idiom rustPlatform.importCargoLock + cargoSetupHook,
-      # reading the same ./Cargo.lock crane vendors today (no IFD: the lockfile is
-      # a plain file read at eval time, and all 565 crates.io checksums plus 0 git
+      # Offline vendored deps come from the canonical nixpkgs idiom
+      # rustPlatform.importCargoLock + cargoSetupHook (no IFD: the lockfile is a
+      # plain file read at eval time, and all 565 crates.io checksums plus 0 git
       # sources make vendoring fully offline with no outputHashes).
       #
       # The pinned 1.94.1 rustToolchain (which carries the clippy extension)
@@ -184,12 +149,12 @@
       # native deps are the full set the single-derivation workspace compile needs:
       # cc (libduckdb-sys C++ amalgamation), cmake + perl (aws-lc-sys), perl (ring),
       # pkg-config + sqlite (libsqlite3-sys). HOME=/tmp guards any build-time
-      # DuckDB extension write, exactly as crane's commonArgs HOME=/tmp does.
+      # DuckDB extension write.
       # Pin the lockfile to a content-addressed store path of Cargo.lock alone, so
       # the vendor dir's hash tracks only the lockfile content. Reading `self +
       # "/Cargo.lock"` would tie it to the whole flake-source identity, rebuilding
       # the vendor dir on any unrelated commit (the content-addressed name stability
-      # risk in design.md). This mirrors crane's content-addressed src discipline.
+      # risk in design.md).
       cargoLockSrc = builtins.path {
         path = self + "/Cargo.lock";
         name = "ironstar-cargo-lock";
@@ -207,11 +172,10 @@
         pkgs.pkg-config
       ];
 
-      # workspace-clippy is the sole remaining monolithic gate. The crane gate set
-      # CARGO_PROFILE=dev in commonArgs, so clippy ran with `--profile dev`
-      # (cargoWithProfile). It is a single workspace-wide cargo clippy over
-      # combinedSrc, the same input the crane check consumed. (The test gate is now
-      # the 11 per-member runTests checks aggregated below, not a monolithic nextest.)
+      # workspace-clippy is the sole monolithic gate: a single workspace-wide cargo
+      # clippy over combinedSrc with `--profile dev` for parity with the dev-profile
+      # binary build. (The test gate is the 11 per-member runTests checks aggregated
+      # below, not a monolithic nextest.)
       workspaceClippy = pkgs.stdenv.mkDerivation {
         pname = "ironstar-clippy";
         version = workspaceVersion;
@@ -239,7 +203,7 @@
         doCheck = false;
       };
 
-      # crate2nix substrate (additive; crane above is untouched).
+      # crate2nix substrate (the Rust build substrate).
       #
       # The committed ./Cargo.nix emits one buildRustCrate derivation per crate,
       # giving per-dependency-crate nix cache granularity. It is imported with the
@@ -255,28 +219,28 @@
       # $out/crates/<name> and re-materialize the sibling asset dirs two levels up.
       #
       # Fixed derivation names keep these content-addressed: a no-op commit must not
-      # rebuild them (mirrors crane's name="ironstar-src" stability discipline).
+      # rebuild them (the name="ironstar-src" stability discipline).
       ironstarMemberSrc = builtins.path {
         path = inputs.self + "/crates/ironstar";
         name = "ironstar-member-source";
-        filter = path: type: (lib.hasSuffix ".sql" path) || (crane-lib.filterCargoSources path type);
+        filter = cargoSourceFilter;
       };
       ironstarAnalyticsInfraMemberSrc = builtins.path {
         path = inputs.self + "/crates/ironstar-analytics-infra";
         name = "ironstar-analytics-infra-member-source";
-        filter = path: type: (lib.hasSuffix ".sql" path) || (crane-lib.filterCargoSources path type);
+        filter = cargoSourceFilter;
       };
 
-      # Empty ducklake-catalogs tree: today crane's combinedSrc never injects this
-      # path and the .db files are gitignored, so ironstar-analytics-infra embeds an
-      # empty catalog. This preserves that empty-embed status quo (design D5/Open
-      # Questions orchestrator ruling); a real catalog is out of scope.
+      # Empty ducklake-catalogs tree: the .db files are gitignored, so
+      # ironstar-analytics-infra embeds an empty catalog. This preserves the
+      # empty-embed status quo (design D5/Open Questions orchestrator ruling); a
+      # real catalog is out of scope.
       ducklakeCatalogsSrc = pkgs.runCommand "ironstar-ducklake-catalogs" { } ''
         mkdir -p $out
       '';
 
       # ironstar member tree: crate at $out/crates/ironstar, with $out/static/dist
-      # (the built frontendAssets, matching crane's combinedSrc) two levels up so
+      # (the built frontendAssets) two levels up so
       # `#[folder = "$CARGO_MANIFEST_DIR/../../static/dist"]` resolves. The migrations
       # dir (crates/ironstar/migrations, include_str!) travels inside the member tree.
       ironstarSrcInjected = pkgs.runCommand "ironstar-c2n-member-src" { } ''
@@ -333,8 +297,7 @@
           # default.nix:191-193) which aborts under set -e on that directory, so the
           # ironstar member's tests never run. buildRustCrate runs postInstall after
           # installing bin/ (extraDerivationAttrs wins the final // merge), so stripping
-          # the dSYM here matches crane's buildPackage output (bare binary, no dSYM) and
-          # unblocks the test stage — parity, not loss.
+          # the dSYM here leaves a bare bin/ironstar and unblocks the test stage.
           postInstall = (attrs.postInstall or "") + ''
             rm -rf "$out"/bin/*.dSYM
           '';
@@ -378,8 +341,7 @@
       # ironstar-analytics-infra propagates into the test build automatically because
       # crateWithTest inherits the crate's src and crateOverrides.
       #
-      # The 5 network #[ignore] tests are skipped by default (no --ignored flag),
-      # exactly as the no-`--run-ignored` crane gate skipped them.
+      # The 5 network #[ignore] tests are skipped by default (no --ignored flag).
       workspaceMemberNames = [
         "ironstar"
         "ironstar-core"
@@ -425,11 +387,8 @@
         packages = {
           default = self'.packages.ironstar;
 
-          # crate2nix is the Rust build substrate (task-5 swap). The dev build is
-          # ironstar, the release build is ironstar-release; the crane buildPackage
-          # definitions they replaced are removed. The crane input and its vendoring
-          # machinery (filterCargoSources, cargoArtifacts, vendorCargoDeps) remain
-          # until task 6.
+          # crate2nix is the Rust build substrate: the dev build is ironstar, the
+          # release build is ironstar-release.
           ironstar = cargoNixDev.workspaceMembers."ironstar".build;
           ironstar-release = cargoNixRelease.workspaceMembers."ironstar".build;
           inherit frontendAssets;
@@ -441,7 +400,7 @@
           inherit (self'.packages) ironstar ironstar-docs ironstar-eventcatalog;
           "dev-platform" = self'.packages.dev-platform;
 
-          # workspace-clippy: single crane-free workspace-wide cargo clippy gate.
+          # workspace-clippy: single workspace-wide cargo clippy gate.
           workspace-clippy = workspaceClippy;
 
           # workspace-test: zero-cost linkFarm aggregate over the 11 per-member
@@ -449,11 +408,8 @@
           # and CI ergonomics; the work is the finer per-member regulators below.
           workspace-test = workspaceTestAggregate;
 
-          # Doctests disabled: examples as integration tests in crates/*/tests/
-          # See CLAUDE.md "Testing conventions" for rationale
-          # rust-doctest = crane-lib.cargoDocTest (
-          #   commonArgs // { inherit cargoArtifacts; }
-          # );
+          # Doctests disabled (doctest = false); examples live as integration tests
+          # in crates/*/tests/. See CLAUDE.md "Testing conventions" for rationale.
         }
         # Per-member test checks (ironstar-core-test ... ironstar-test): finer
         # regulators replacing the monolithic nextest gate. Each reruns only on its
