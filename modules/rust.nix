@@ -207,55 +207,36 @@
         pkgs.pkg-config
       ];
 
-      # The crane gate set CARGO_PROFILE=dev in commonArgs, so nextest ran with
-      # `--cargo-profile dev` and clippy with `--profile dev` (cargoWithProfile).
-      # The default nextest test profile is preserved (no `.config/nextest.toml`
-      # `--profile ci`), matching the crane check exactly per the design's
-      # default-profile-for-parity ruling. Ignored tests are NOT run (the crane
-      # check uses no `--run-ignored`), so network/ignored tests are skipped here
-      # exactly as today.
-      mkWorkspaceGate =
-        {
-          pnameSuffix,
-          extraNativeBuildInputs ? [ ],
-          buildCommand,
-        }:
-        pkgs.stdenv.mkDerivation {
-          pname = "ironstar${pnameSuffix}";
-          version = workspaceVersion;
-          src = combinedSrc;
-          cargoDeps = cargoVendorDeps;
-          strictDeps = true;
-          nativeBuildInputs = workspaceGateNativeBuildInputs ++ extraNativeBuildInputs;
-          buildInputs = lib.optionals pkgs.stdenv.isLinux [ pkgs.sqlite ];
-          # libsqlite3-sys finds sqlite via pkg-config; provide the dev lib on Linux.
-          HOME = "/tmp";
-          # cmake's setup hook injects a configurePhase that does not apply to a
-          # cargo workspace; neutralize it so cargoSetupHook's vendoring stands.
-          dontUseCmakeConfigure = true;
-          buildPhase = ''
-            runHook preBuild
-            cargo --version
-            ${buildCommand}
-            runHook postBuild
-          '';
-          installPhase = ''
-            runHook preInstall
-            mkdir -p $out
-            runHook postInstall
-          '';
-          doCheck = false;
-        };
-
-      workspaceTest = mkWorkspaceGate {
-        pnameSuffix = "-nextest";
-        extraNativeBuildInputs = [ pkgs.cargo-nextest ];
-        buildCommand = "cargo nextest run --cargo-profile dev --no-tests=pass";
-      };
-
-      workspaceClippy = mkWorkspaceGate {
-        pnameSuffix = "-clippy";
-        buildCommand = "cargo clippy --profile dev --locked --all-targets -- --deny warnings";
+      # workspace-clippy is the sole remaining monolithic gate. The crane gate set
+      # CARGO_PROFILE=dev in commonArgs, so clippy ran with `--profile dev`
+      # (cargoWithProfile). It is a single workspace-wide cargo clippy over
+      # combinedSrc, the same input the crane check consumed. (The test gate is now
+      # the 11 per-member runTests checks aggregated below, not a monolithic nextest.)
+      workspaceClippy = pkgs.stdenv.mkDerivation {
+        pname = "ironstar-clippy";
+        version = workspaceVersion;
+        src = combinedSrc;
+        cargoDeps = cargoVendorDeps;
+        strictDeps = true;
+        nativeBuildInputs = workspaceGateNativeBuildInputs;
+        buildInputs = lib.optionals pkgs.stdenv.isLinux [ pkgs.sqlite ];
+        # libsqlite3-sys finds sqlite via pkg-config; provide the dev lib on Linux.
+        HOME = "/tmp";
+        # cmake's setup hook injects a configurePhase that does not apply to a
+        # cargo workspace; neutralize it so cargoSetupHook's vendoring stands.
+        dontUseCmakeConfigure = true;
+        buildPhase = ''
+          runHook preBuild
+          cargo --version
+          cargo clippy --profile dev --locked --all-targets -- --deny warnings
+          runHook postBuild
+        '';
+        installPhase = ''
+          runHook preInstall
+          mkdir -p $out
+          runHook postInstall
+        '';
+        doCheck = false;
       };
 
       # crate2nix substrate (additive; crane above is untouched).
@@ -346,6 +327,17 @@
         ironstar = attrs: {
           src = ironstarSrcInjected;
           workspace_member = "crates/ironstar";
+          # On aarch64-darwin the dev profile (-C debuginfo=2) emits a bin/ironstar.dSYM
+          # directory beside the executable. The crate2nix test runner stages the real
+          # binary with a non-recursive `cp ${crate}/bin/*` (templates/nix/crate2nix
+          # default.nix:191-193) which aborts under set -e on that directory, so the
+          # ironstar member's tests never run. buildRustCrate runs postInstall after
+          # installing bin/ (extraDerivationAttrs wins the final // merge), so stripping
+          # the dSYM here matches crane's buildPackage output (bare binary, no dSYM) and
+          # unblocks the test stage — parity, not loss.
+          postInstall = (attrs.postInstall or "") + ''
+            rm -rf "$out"/bin/*.dSYM
+          '';
         };
         ironstar-analytics-infra = attrs: {
           src = ironstarAnalyticsInfraSrcInjected;
@@ -371,6 +363,54 @@
         };
       cargoNixDev = mkCargoNix false;
       cargoNixRelease = mkCargoNix true;
+
+      # Per-member test checks replacing the monolithic nextest gate.
+      #
+      # Each member's dev-profile crate is reused (one build serves both the binary
+      # and its tests) and overridden with runTests = true, which routes through
+      # crate2nix's crateWithTest: it compiles the lib unit tests and, for the
+      # ironstar binary member, its tests/ integration targets (the pinned nixpkgs
+      # build-rust-crate builds both), then runs each compiled test binary directly,
+      # tee'ing the run log to the captured passthru.test derivation. A test failure
+      # fails that derivation by construction (set -e; non-zero exit propagates), so
+      # each per-member check can fail. testPreRun mirrors the gate's HOME=/tmp for
+      # DuckDB extension writes. The src/workspace_member injection on ironstar and
+      # ironstar-analytics-infra propagates into the test build automatically because
+      # crateWithTest inherits the crate's src and crateOverrides.
+      #
+      # The 5 network #[ignore] tests are skipped by default (no --ignored flag),
+      # exactly as the no-`--run-ignored` crane gate skipped them.
+      workspaceMemberNames = [
+        "ironstar"
+        "ironstar-core"
+        "ironstar-shared-kernel"
+        "ironstar-todo"
+        "ironstar-session"
+        "ironstar-analytics"
+        "ironstar-workspace"
+        "ironstar-event-store"
+        "ironstar-event-bus"
+        "ironstar-analytics-infra"
+        "ironstar-session-store"
+      ];
+      memberTest =
+        name:
+        (cargoNixDev.workspaceMembers.${name}.build.override {
+          runTests = true;
+          testPreRun = "export HOME=/tmp";
+        }).passthru.test;
+      perMemberTestChecks = lib.genAttrs (map (name: "${name}-test") workspaceMemberNames) (
+        checkName: memberTest (lib.removeSuffix "-test" checkName)
+      );
+
+      # Zero-build-cost aggregate preserving the workspace-test check name. A
+      # linkFarm over the 11 per-member test outputs forces each to build (the run
+      # logs are realized) while adding no compiler closure of its own, so the
+      # devshell inputsFrom and CI ergonomics that referenced workspace-test persist
+      # without the monolithic gate's recompile-everything cost.
+      workspaceTestAggregate = pkgs.linkFarm "ironstar-workspace-test" (
+        lib.mapAttrsToList (name: path: { inherit name path; }) perMemberTestChecks
+      );
     in
     {
       options.ironstar.rustToolchain = lib.mkOption {
@@ -413,18 +453,25 @@
           inherit (self'.packages) ironstar ironstar-docs ironstar-eventcatalog;
           "dev-platform" = self'.packages.dev-platform;
 
-          # Crane-free workspace gate (see mkWorkspaceGate above). Runs one
-          # workspace-wide cargo nextest and one cargo clippy, replicating the
-          # former crane checks' exact commands offline via importCargoLock.
-          workspace-test = workspaceTest;
+          # workspace-clippy: single crane-free workspace-wide cargo clippy gate.
           workspace-clippy = workspaceClippy;
+
+          # workspace-test: zero-cost linkFarm aggregate over the 11 per-member
+          # crate2nix runTests checks. The name persists for the devshell inputsFrom
+          # and CI ergonomics; the work is the finer per-member regulators below.
+          workspace-test = workspaceTestAggregate;
 
           # Doctests disabled: examples as integration tests in crates/*/tests/
           # See CLAUDE.md "Testing conventions" for rationale
           # rust-doctest = crane-lib.cargoDocTest (
           #   commonArgs // { inherit cargoArtifacts; }
           # );
-        };
+        }
+        # Per-member test checks (ironstar-core-test ... ironstar-test): finer
+        # regulators replacing the monolithic nextest gate. Each reruns only on its
+        # own member + reverse-dep cone change, delivering per-crate test cache
+        # granularity. workspace-test (above) aggregates all 11 at zero extra cost.
+        // perMemberTestChecks;
       };
     };
 }

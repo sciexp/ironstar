@@ -332,3 +332,85 @@ The experiment added one temporary attr to `modules/rust.nix` and one temporary 
 - `modules/rust.nix` sha256 before and after: `7a0ff50a162fc10292766b0a881b4bc4ef084298d903abcb74763422cb53e835` (identical).
 - `crates/ironstar-todo/src/lib.rs` sha256 before and after: `021763d5a99c96ffe8a31b8b57c2972147a41b37d4ba173d1cd51c2d1b0c9797` (identical; 2094 bytes restored from the 2119-byte probe state).
 - `git status --porcelain` (excluding the pre-existing `.jjconflict-*/` snapshot noise) shows only the orchestrator-owned `UU modules/checks/package-set-invariant.nix` and the pre-existing `D JJ-CONFLICT-README`; neither `modules/rust.nix` nor `crates/ironstar-todo/src/lib.rs` appears as modified. `modules/checks/package-set-invariant.nix` was not touched.
+
+## Gate-shape revision — 11 per-member runTests checks (final, landed)
+
+Host: aarch64-darwin (Darwin 25.2.0 arm64); nixpkgs same channel as prior tasks; crate2nix locked at rev `c994c83`; pinned rust 1.94.1.
+
+This section records the landed gate-shape revision: the monolithic `workspace-test` nextest gate is replaced by 11 per-member `runTests` checks (`ironstar-core-test` ... `ironstar-test`) plus a zero-build-cost `linkFarm` aggregate that retains the `workspace-test` check name.
+`workspace-clippy` is untouched.
+The shape is the one the "Per-crate runTests parity experiment" section above validated; this section records its landed verification with the dSYM blocker fixed.
+
+### Per-member counts (authoritative, read from each `passthru.test` `$out` log)
+
+Counts are the sum of `test result:` lines per member (default flags, no `--ignored`), realized via `nix build .#checks.aarch64-darwin.workspace-test` (the aggregate forces all 11).
+
+| Member (`<name>-test` check) | passed | failed | ignored | test binaries |
+|---|---|---|---|---|
+| ironstar-core | 41 | 0 | 0 | 1 (lib) |
+| ironstar-shared-kernel | 8 | 0 | 0 | 1 (lib) |
+| ironstar-todo | 63 | 0 | 0 | 1 (lib) |
+| ironstar-session | 49 | 0 | 0 | 1 (lib) |
+| ironstar-analytics | 139 | 0 | 0 | 1 (lib) |
+| ironstar-workspace | 263 | 0 | 0 | 1 (lib) |
+| ironstar-event-store | 21 | 0 | 0 | 1 (lib) |
+| ironstar-event-bus | 54 | 0 | 0 | 1 (lib) |
+| ironstar-session-store | 14 | 0 | 0 | 1 (lib) |
+| ironstar-analytics-infra | 44 | 0 | 2 | 1 (lib) |
+| ironstar (binary) | 237 | 0 | 3 | 6 (lib + 4 `tests/` + 1 empty target) |
+| **total** | **933** | **0** | **5** | |
+
+### Total vs baseline (CCV envelope reconstruction)
+
+Sum of passed across all 11 members = `41+8+63+49+139+263+21+54+44+14+237 = 933`.
+Sum of ignored = `2 + 3 = 5`.
+This reconstructs the monolithic `workspace-test` baseline envelope (measurements Task 3: `933 passed, 5 skipped`) exactly — every member that the parity experiment measured matches, and the previously-blocked `ironstar` member now contributes its predicted 237 passed / 3 ignored.
+The 5 ignored are exactly the 5 network `#[ignore]` tests: `analytics-infra` `initialize_extensions_loads_on_all_connections` + `initialize_extensions_succeeds_with_pool` (analytics.rs:371,409); `ironstar` `e2e_huggingface_astronauts_chart` (chart_integration.rs:119) + `attach_and_query_ducklake_catalog` + `attached_catalog_tables_visible` (duckdb_integration.rs:23,102).
+The runner skips them by default (no `--ignored`), identical to the no-`--run-ignored` crane/nextest gate.
+Each per-member check can fail by construction: `crateWithTest`'s `set -e` buildPhase runs each compiled test binary and any non-zero exit aborts the derivation.
+
+### ironstar binary member — integration tests execute (not merely compile)
+
+The `ironstar` member's 4 `tests/` integration files all ran (named tests observed in the realized `passthru.test` log):
+- `chart_integration.rs`: 2 passed + `e2e_huggingface_astronauts_chart` ignored (network).
+- `duckdb_integration.rs`: `duckdb_query_executes_successfully` ok + `attach_and_query_ducklake_catalog`/`attached_catalog_tables_visible` ignored (network) = 0 passed / 2 ignored binary.
+- `layout_integration.rs`: 8 passed (`chart_templates`/`chart` presentation tests).
+- `todo_feed.rs`: 7 passed (`feed_*` SSE tests, including the `multi_thread` tokio-runtime tests the parity experiment flagged as the threading-model risk class — all pass).
+Plus the lib unit binary (220 passed) and one empty test target (0/0). Six test binaries total, 237 passed / 3 ignored.
+
+### Check-surface arithmetic (15 → 26)
+
+`nix eval .#checks.aarch64-darwin --apply builtins.attrNames` → 26 names:
+`cargo-nix-lock-sync`, `dev-platform`, `gitleaks`, `ironstar`, `ironstar-analytics-infra-test`, `ironstar-analytics-test`, `ironstar-core-test`, `ironstar-docs`, `ironstar-docs-e2e`, `ironstar-docs-unit`, `ironstar-e2e`, `ironstar-event-bus-test`, `ironstar-event-store-test`, `ironstar-eventcatalog`, `ironstar-eventcatalog-e2e`, `ironstar-eventcatalog-unit`, `ironstar-session-store-test`, `ironstar-session-test`, `ironstar-shared-kernel-test`, `ironstar-test`, `ironstar-todo-test`, `ironstar-workspace-test`, `structure-package-set-invariant`, `treefmt`, `workspace-clippy`, `workspace-test`.
+Arithmetic: 15 prior checks (post-task-4), of which `workspace-test` becomes the zero-cost aggregate (no net name change), plus 11 new per-member `*-test` checks → 15 + 11 = 26.
+The package-set-invariant (`modules/checks/package-set-invariant.nix`) was NOT modified and stays green: it operates over `self.packages` (the per-member checks add no package) and already excludes `*-test` suffixes via `isPerCrateSuffix`. The devshell (`devShell.inputsFrom = ... ++ builtins.attrValues self'.checks`) evaluates (drvPath `70w5ch7…-ironstar-dev.drv`); the per-member `crateWithTest` test derivations are `stdenvNoCC` with empty `buildInputs`, and the aggregate is a coreutils-only `linkFarm`, so the closure class does not explode — replacing the heavy monolithic test gate with a zero-input aggregate plus lean test derivations net-reduces the devshell closure.
+
+### dSYM fix mechanism (landed)
+
+On aarch64-darwin the dev profile (`-C debuginfo=2`) makes the non-test `ironstar` crate's `bin/` contain both `ironstar` and an `ironstar.dSYM` directory; the crate2nix test runner's non-recursive `cp ${crate}/bin/*` (`templates/nix/crate2nix/default.nix:191-193`) aborts under `set -e` on that directory.
+Landed fix: a `postInstall` hook in `ironstarCrateOverrides.ironstar` running `rm -rf "$out"/bin/*.dSYM`.
+Verified-supported in the pinned nixpkgs `build-rust-crate` (store `5aymqh1g0h…-source`): `postInstall` set in a crate override is not in `processedAttrs` (`default.nix:336-348`) so it flows through `extraDerivationAttrs = removeAttrs crate processedAttrs` (`:350`) and wins the final `// extraDerivationAttrs` merge (`:579`) over the function-arg default; `install-crate.nix` runs `runHook postInstall` after `cp -rP target/bin/* $out/bin`.
+No fork-pin, no `Cargo.toml` profile change (local `cargo` dev-profile debugging is unchanged), no `Cargo.nix` edit.
+Parity, not loss: crane's `buildPackage` output `bin/` holds only `ironstar` (verified: `/nix/store/75m99xskra…-ironstar-0.1.0/bin/` = `ironstar`), while the c2n crate's `bin/` held `ironstar` + `ironstar.dSYM` (verified: `/nix/store/yyx73zq…-rust_ironstar-0.1.0/bin/`); stripping the dSYM makes c2n match crane.
+The same override feeds `packages.ironstar-c2n` harmlessly.
+
+### Granularity evidence (per-crate test cache)
+
+A temporary comment appended to `crates/ironstar-todo/src/lib.rs`, then `nix build --dry-run .#checks.aarch64-darwin.workspace-test`, rebuilt exactly 8 derivations comprising precisely 2 of the 11 member test suites:
+- `run-tests-rust_ironstar-todo` (+ `rust_ironstar-todo` lib, `rust_ironstar-todo-…-test` harness, dev crate) — the touched member;
+- `run-tests-rust_ironstar` (+ `rust_ironstar` lib, `rust_ironstar-…-test` harness) — the binary member, because it depends on `ironstar-todo`.
+The other 9 members' test derivations stayed cached.
+This is the per-crate test cache granularity: a leaf edit reruns 2 of 11 member suites versus the monolithic gate's all-933.
+
+### Build wall-clock
+
+`nix build .#checks.aarch64-darwin.workspace-test` (the aggregate, all 11 members; most library members cached from the parity experiment, the `ironstar` member compiling+running fresh now that the dSYM fix unblocks it): 173s (~2.9 min) wall-clock on this aarch64-darwin host.
+The one-time ≈180-crate `-test` dep-slice warming cost documented in the parity experiment had already been paid in this store; on a cold CI cache that warming is incurred once, after which member test derivations are individually cached and rerun only on reverse-dep change.
+`workspace-clippy` is content-identical to its task-3 form (same `pname=ironstar-clippy`, same `combinedSrc`, same command); it remained cached (`--dry-run` showed nothing to build; output `/nix/store/iv6mcc2zy5jh…-ironstar-clippy-0.1.0` valid).
+
+### Restoration evidence (gate-shape revision)
+
+The granularity probe touched `crates/ironstar-todo/src/lib.rs` (the only application-source touch) and restored it byte-identically.
+- sha256 before and after: `021763d5a99c96ffe8a31b8b57c2972147a41b37d4ba173d1cd51c2d1b0c9797` (identical; 2094 bytes).
+- `jj diff crates/ironstar-todo/src/lib.rs` empty after restore.
+The persistent edits are the intended deliverable surface only: `modules/rust.nix` (per-member checks + aggregate + dSYM `postInstall`; `workspaceTest`/`mkWorkspaceGate` removed, `workspaceClippy` inlined) and the three change docs (`design.md`, `tasks.md`, `measurements.md`). `modules/checks/package-set-invariant.nix` was not touched.
