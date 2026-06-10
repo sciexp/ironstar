@@ -120,3 +120,47 @@ Dep-recompile cost assessment: acceptable. The dominant cost is the libduckdb-sy
 ### Content-addressed lockfile refinement (cache-name stability)
 
 `importCargoLock`'s `lockFile` is pinned to `builtins.path { path = self + "/Cargo.lock"; name = "ironstar-cargo-lock"; }` rather than `self + "/Cargo.lock"` directly. Reading `self + "/Cargo.lock"` ties the resulting `cargo-vendor-dir` to the whole flake-source identity, so any unrelated commit re-derives the vendor dir (and cascades a full gate recompile); confirmed empirically — editing unrelated files changed the `cargo-vendor-dir.drv` and gate drvPaths. With the content-addressed `builtins.path`, the vendor dir references only `…-ironstar-cargo-lock` (the lockfile content), so it rebuilds only when `Cargo.lock` content changes — honoring the design's content-addressed-name-stability risk mitigation and mirroring crane's `name="ironstar-src"` discipline. A second full gate build after this change reproduced the identical result (`933 passed, 5 skipped`; clippy clean), confirming the change is behaviorally neutral. That rebuild's wall-clock (800s for both gates concurrently) ran higher than the first build (530s clippy / 591s test) due to concurrent nix invocations contending on this aarch64-darwin host; the steady-state per-gate cost from a warm dep store is the ~9-10 min figure, and on warm CI caches the override-touched `-sys` paths substitute and the figure drops further.
+
+## Task 4 — drift detection (CI auto-regen + no-network staleness check)
+
+Host: aarch64-darwin (Darwin 25.2.0 arm64); nixpkgs same channel as prior tasks; crate2nix locked at rev `c994c83` (crate2nix 0.15.0).
+
+### Check count delta: 14 -> 15 (flag for task 5)
+
+The `cargo-nix-lock-sync` check raises the flake check surface from 14 to 15. Tasks-ledger task 5 acceptance and design.md still say "14 checks must stay 14" — that wording was authored before this regulator existed and should read 15 once task 4 lands. Per the dispatch instruction this section flags the discrepancy for the orchestrator rather than editing task 5. Concretely, the devshell closure-class invariant (`devShell.inputsFrom = builtins.attrValues self'.checks`) now spans 15 entries; the added entry is a tiny `coreutils`-only `runCommand` with no compiler closure, so the closure-class impact is negligible. The package-set-invariant is unaffected: `cargo-nix-lock-sync` is a check with no same-named package, so it adds neither a relevant-package-without-check nor a check-without-package mismatch.
+
+### Check derivation shape
+
+`modules/checks/cargo-nix-lock-sync.nix` is a pure, no-network, no-IFD `pkgs.runCommand` (nativeBuildInputs `coreutils` only). Inputs are content-addressed on exactly the two files via `builtins.path` with fixed names (`cargo-nix-lock-sync-cargo-lock`, `cargo-nix-lock-sync-cargo-nix`), the same discipline as `modules/rust.nix`'s `ironstar-cargo-lock` pin, so the check rebuilds only when `Cargo.lock` or `Cargo.nix` content changes and not on unrelated commits.
+
+Parsing is package-scoped, not a raw `version =` line count (the surface-back-trigger #1 hazard a prior worker hit as a 577-vs-576 artifact):
+
+- Cargo.lock carries one pre-package format header `version = 4` at line 3, outside any `[[package]]` block. A naive `rg -c '^version = '` yields 577. The check anchors on `sed -n '/^name = /,$p'`, which begins printing only at the first top-level `name =` line, excluding the header; the remaining `name`/`version` lines strictly alternate (verified: 576 `name =` lines, 0 indented `version =` lines, no dependency-table version fields), paired by `paste - -` into `name@version`.
+- Cargo.nix pairs each `crateName = "…";` line with the `version = "…";` line on the immediately-following line (verified: every `version` line is exactly `crateName`+1; all 576 of each are at identical 8-space crate-level indentation; crate2nix dependency entries use `packageId`, never `version`, so no stray version fields interleave).
+
+Both sets are `LC_ALL=C sort -u`'d and compared with `diff -u`; on mismatch the check prints the per-line diff and the actionable line `Run \`just regenerate-cargo-nix\` and commit the updated Cargo.nix.`, then `exit 1`.
+
+### (a) LOCAL green + CCV integrity (red-on-mismatch) — required, DONE
+
+The new check file is untracked, so the dirty git-tree flake source excludes it from `.#checks` (flakes only see tracked/staged files, and git staging is orchestrator-routed in this WO session). Verification was therefore performed against a standalone `nix build --impure --expr` derivation carrying the byte-identical build script, pointed at the real in-tree files (and a `/tmp` perturbed copy for the red case). Once the orchestrator stages/commits the file, the registered `nix build .#checks.aarch64-darwin.cargo-nix-lock-sync` exercises the same logic; that registered-path build is the only step deferred, and it is mechanical (the derivation logic is proven here).
+
+- GREEN (clean tree): standalone derivation against the real `Cargo.lock` + `Cargo.nix` built with exit 0. Output: `Cargo.lock package set: 576 entries`, `Cargo.nix  crate set:  576 entries`, `Cargo.nix is in lockstep with Cargo.lock (576 packages).` The 576==576 reconciliation matches task 1.4's manual `comm` reconciliation.
+- RED (deliberate mismatch): a `/tmp` copy of `Cargo.nix` with adler2's version perturbed `2.0.1` -> `2.0.999` (single crate-level `version` line in the copy; in-tree files untouched). The standalone derivation against the perturbed copy FAILED with `builder failed with exit code 1`, printing the precise diff (`-adler2@2.0.1` / `+adler2@2.0.999`) and the actionable `Run \`just regenerate-cargo-nix\` and commit the updated Cargo.nix.` message. This satisfies the CCV integrity obligation: the regulator demonstrably fails on a stale `Cargo.nix`.
+- RESTORATION evidence: in-tree `Cargo.nix` sha256 `32b9eb098f00731764ec57f1313a77cf052c9d46d852052f7e49a271f6d94342` identical before and after the demo; `git status --short Cargo.nix Cargo.lock` empty (both byte-identical, untouched). Perturbation lived only in `/tmp/Cargo.nix.perturbed`, removed after.
+
+### (b) LOCAL static — workflow YAML validation, DONE
+
+`nix run nixpkgs#actionlint -- .github/workflows/regenerate-lock-files.yaml` exits 0. The single diagnostic printed is at line 41 (`uses: ./.github/actions/setup-nix`), objecting to the `type:` key on a composite-action input inside `.github/actions/setup-nix/action.yml` — pre-existing, unrelated to this change (the `Setup nix` step is byte-identical to the original; composite-action inputs do not support `type:`, only `workflow_dispatch` inputs do). Surface-back trigger #4 (pre-existing actionlint errors) is flagged in the WO report but does not block; it is the local action's metadata, not an error in this edit.
+
+YAML parse (python `yaml.safe_load`) confirms:
+- trigger paths: `bun.lock`, `package.json`, `packages/**/package.json`, `flake.nix`, `Cargo.lock`, `Cargo.toml`, `crates/**/Cargo.toml` (the three Rust paths added; the four pre-existing paths unchanged).
+- concurrency group: `regenerate-lock-files-${{ github.ref }}` (generalized from the bun-specific `regenerate-bun-nix-${{ github.ref }}`; the file now regenerates three lock artifacts, so the group name is no longer bun-specific — `cancel-in-progress: true` unchanged).
+- step order: Checkout -> Setup nix -> Regenerate flake.lock -> Amend flake.lock -> Regenerate bun.nix -> Amend bun.nix -> Regenerate Cargo.nix -> Amend Cargo.nix. The Cargo.nix regenerate+amend pair mirrors the bun.nix pair byte-for-byte in structure (same `git diff --quiet` guard, same `github-actions[bot]` identity, same `git add`/`commit`/`push`). The flake.lock and bun.nix steps are byte-identical to the original.
+
+The regenerate step is `nix run .#regenerate-cargo-nix`, a new in-repo flake app added to `modules/apps/regenerate.nix` parallel to `regenerate-bun-nix`. It wraps `inputs'.crate2nix.packages.default` (the flake-pinned crate2nix `c994c83`, satisfying the design's `--inputs-from`-pinned-generator requirement) and runs `crate2nix generate` then `treefmt ./Cargo.nix`, producing the same output as the `just regenerate-cargo-nix` recipe. App evals green: `nix eval --raw .#apps.aarch64-darwin.regenerate-cargo-nix.program` resolves to a `regenerate-cargo-nix` wrapper, same shape as the bun app.
+
+GitHub Actions SHA discipline: no new third-party action was introduced. The crate2nix step uses an in-repo flake app (`nix run .#regenerate-cargo-nix`), requiring no action SHA. The `actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6` pin and the local `./.github/actions/setup-nix` reference are reused verbatim from the original file. Surface-back trigger #3 (new third-party action) does not fire; no `gh api` SHA verification was needed.
+
+### (c) DEFERRED — live regenerate-and-auto-commit dry-run
+
+The live workflow dry-run (push a test branch with a trivial `Cargo.lock` change, observe auto-regen of `Cargo.nix` and auto-commit by `github-actions[bot]`) requires a pushed branch, which is user-gated in this WO session (the orchestrator routes commits/pushes). It fires on the eventual CI run after push. The auto-commit mechanism is the same `github-actions[bot]` config + `git add`/`commit`/`push` the flake.lock and bun.nix steps already use in production, so the new step replicates a proven mechanism (surface-back trigger #2, auth/signing the new step cannot replicate, does NOT fire — the new step reuses the existing mechanism verbatim).

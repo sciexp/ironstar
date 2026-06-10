@@ -8,13 +8,16 @@ on:
       - package.json
       - "packages/**/package.json"
       - flake.nix
+      - Cargo.lock
+      - Cargo.toml
+      - "crates/**/Cargo.toml"
 
 defaults:
   run:
     shell: bash
 
 concurrency:
-  group: regenerate-bun-nix-${{ github.ref }}
+  group: regenerate-lock-files-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -67,4 +70,19 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add bun.nix
           git commit -m "chore(deps): regenerate bun.nix"
+          git push
+
+      - name: Regenerate Cargo.nix
+        run: nix run .#regenerate-cargo-nix
+
+      - name: Amend PR branch if Cargo.nix changed
+        run: |
+          if git diff --quiet -- Cargo.nix; then
+            echo "Cargo.nix already up-to-date; nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Cargo.nix
+          git commit -m "chore(deps): regenerate Cargo.nix"
           git push
