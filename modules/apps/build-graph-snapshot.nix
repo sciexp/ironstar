@@ -11,9 +11,9 @@
 #
 # Pinned to system x86_64-linux: that is what buildbot CI evaluates, and the
 # crate2nix roots eval purely there (and cross-system from darwin) with no IFD.
-# packages.ironstar/ironstar-release are now the crate2nix builds (substrate swap,
-# task 5) and are canonical roots. checks.ironstar-e2e remains excluded: it is
-# IFD-bound on linux (it builds the bun2nix frontend asset during eval).
+# packages.ironstar/ironstar-release are the crate2nix builds and are canonical
+# roots. checks.ironstar-e2e is excluded: it is IFD-bound on linux (it builds the
+# bun2nix frontend asset during eval).
 { ... }:
 {
   perSystem =

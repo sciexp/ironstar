@@ -49,9 +49,7 @@
       # Cargo source filter: directories, `.rs`/`.toml` files, `Cargo.lock`, and
       # `.cargo/config`, plus the `.sql` allowlist this repo adds for include_str!
       # macros. Keeping all `.toml` files retains the cargo/nextest/clippy/taplo/
-      # gitleaks configs the workspace build reads. The `.toml`-broad allowlist is
-      # the same file set the prior source filter produced (verified by comparing
-      # the combinedSrc and member-src file listings before and after the swap).
+      # gitleaks configs the workspace build reads.
       cargoSourceFilter =
         path: type:
         type == "directory"
@@ -153,8 +151,7 @@
       # Pin the lockfile to a content-addressed store path of Cargo.lock alone, so
       # the vendor dir's hash tracks only the lockfile content. Reading `self +
       # "/Cargo.lock"` would tie it to the whole flake-source identity, rebuilding
-      # the vendor dir on any unrelated commit (the content-addressed name stability
-      # risk in design.md).
+      # the vendor dir on any unrelated commit.
       cargoLockSrc = builtins.path {
         path = self + "/Cargo.lock";
         name = "ironstar-cargo-lock";
@@ -232,9 +229,9 @@
       };
 
       # Empty ducklake-catalogs tree: the .db files are gitignored, so
-      # ironstar-analytics-infra embeds an empty catalog. This preserves the
-      # empty-embed status quo (design D5/Open Questions orchestrator ruling); a
-      # real catalog is out of scope.
+      # ironstar-analytics-infra embeds an empty catalog. rust-embed silently
+      # embeds nothing when the folder is absent, so an empty directory is
+      # required to materialize the intended empty embed rather than a missing one.
       ducklakeCatalogsSrc = pkgs.runCommand "ironstar-ducklake-catalogs" { } ''
         mkdir -p $out
       '';
@@ -327,7 +324,7 @@
       cargoNixDev = mkCargoNix false;
       cargoNixRelease = mkCargoNix true;
 
-      # Per-member test checks replacing the monolithic nextest gate.
+      # Per-member test checks, one per workspace member.
       #
       # Each member's dev-profile crate is reused (one build serves both the binary
       # and its tests) and overridden with runTests = true, which routes through
@@ -412,9 +409,9 @@
           # in crates/*/tests/. See CLAUDE.md "Testing conventions" for rationale.
         }
         # Per-member test checks (ironstar-core-test ... ironstar-test): finer
-        # regulators replacing the monolithic nextest gate. Each reruns only on its
-        # own member + reverse-dep cone change, delivering per-crate test cache
-        # granularity. workspace-test (above) aggregates all 11 at zero extra cost.
+        # regulators at per-member granularity. Each reruns only on its own member +
+        # reverse-dep cone change, delivering per-crate test cache granularity.
+        # workspace-test (above) aggregates all 11 at zero extra cost.
         // perMemberTestChecks;
       };
     };

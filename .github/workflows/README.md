@@ -121,7 +121,7 @@ The `workspace-clippy` check runs a single workspace-wide `cargo clippy --all-ta
 
 Structural regulators gate the build graph itself.
 `cargo-nix-lock-sync` is a pure no-network check diffing the `Cargo.lock` `[[package]]` set against the `Cargo.nix` `crateName/version` set, failing on a stale `Cargo.nix` with an actionable `just regenerate-cargo-nix` message.
-`build-graph-invariants` validates a committed build-graph snapshot against accepted duplication and node-count ceilings, the graph-drift regulator described in the migration design's D9.
+`build-graph-invariants` validates a committed build-graph snapshot against accepted duplication and node-count ceilings, acting as the graph-drift regulator.
 `structure-package-set-invariant` asserts that every package has a corresponding check (and vice versa where intended), computed at outer eval time over the attribute-name lists.
 
 Formatting and secrets run over the unfiltered repository.
