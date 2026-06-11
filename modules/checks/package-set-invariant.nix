@@ -1,18 +1,17 @@
 # Structural invariant: every relevant package has a corresponding check.
 #
-# This carries forward the relational invariant previously expressed as
-# TC-006 in modules/checks/nix-unit.nix (testPackagesHaveChecks). The
-# remaining nix-unit smoke tests (TC-001..TC-005) were tautologies
-# guaranteed by import-tree and the flake-parts module type system; only
-# the package-set <-> check-set coupling carries non-trivial semantic
-# content and is preserved here.
+# This carries forward the relational invariant once expressed as the
+# TC-006 testPackagesHaveChecks structural test. The other smoke tests
+# (TC-001..TC-005) were tautologies guaranteed by import-tree and the
+# flake-parts module type system; only the package-set <-> check-set
+# coupling carries non-trivial semantic content and is preserved here.
 #
 # Implemented as runCommand JSON-diff (via flake.lib.mkStructuralCheck)
-# rather than nix-unit because the assertion target is a pure
-# attribute-name list computed at outer eval time. nix-unit's
-# expression-evaluation harness adds no value over `diff -u` here, while
-# imposing a network-isolation constraint that was the proximate cause of
-# the obh.10 hercules-ci-effects input-discipline failure.
+# because the assertion target is a pure attribute-name list computed at
+# outer eval time, where an expression-evaluation harness adds no value
+# over `diff -u` while imposing a network-isolation constraint that was
+# the proximate cause of the obh.10 hercules-ci-effects input-discipline
+# failure.
 #
 # Exclusions (carried forward from TC-006, plus deps build intermediates):
 #   - default: alias for ironstar

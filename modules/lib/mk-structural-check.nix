@@ -5,12 +5,11 @@
 # Inputs and outputs are JSON-serialized at outer eval time and embedded
 # as `passAsFile` env vars, so the derivation's input-address closure
 # scopes to "did the JSON change?" rather than "did any tracked file in
-# the repo change?". This is the architectural payoff over nix-unit for
-# structural assertions: cache invalidation tracks the assertion target,
-# not `inputs.self`.
+# the repo change?". The architectural payoff for structural assertions:
+# cache invalidation tracks the assertion target, not `inputs.self`.
 #
-# Failure mode emits a unified diff, which is far more readable than
-# nix-unit's `expr != expected` dump for set-equality failures.
+# Failure mode emits a unified diff, which is readable for set-equality
+# failures.
 #
 # Ported verbatim from vanixiets commit 3fd31c0fb
 # (modules/lib/mk-structural-check.nix).

@@ -961,17 +961,15 @@ eventcatalog-tail:
 
 ## Nix
 
-# Validate the Nix flake configuration (all checks including treefmt, nix-unit)
+# Validate the Nix flake configuration (all checks including treefmt)
 [group('nix')]
 check:
   #!/usr/bin/env bash
   set -euo pipefail
   echo "Running nix flake check..."
   echo ""
-  echo "Note: nix-unit warnings are expected and harmless:"
+  echo "Note: these eval warnings are expected and harmless:"
   echo "  - 'unknown setting allowed-users/trusted-users' (daemon settings don't apply in pure eval)"
-  echo "  - '--gc-roots-dir not specified' (nix-unit doesn't persist GC roots)"
-  echo "  - 'input has an override for non-existent input self' (nix-unit internal mechanism)"
   echo "  - 'not writing modified lock file' (expected for read-only check)"
   echo ""
   if command -v nom &> /dev/null; then

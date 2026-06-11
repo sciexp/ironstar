@@ -613,3 +613,10 @@ The per-dependency-crate cache granularity that motivated the crane→crate2nix 
 ### Surface checks post-removal
 
 `nix eval .#checks.{aarch64-darwin,x86_64-linux} --apply builtins.attrNames` → 27 names each (unchanged). `nix eval .#packages.aarch64-darwin --apply builtins.attrNames` → 13 (unchanged). All three pure structural checks (`build-graph-invariants`, `cargo-nix-lock-sync`, `structure-package-set-invariant`) build green; the four rust roots evaluate to drvPaths with no dangling-binding errors. `nix flake check` across all 27 on both systems is deferred to buildbot CI (this WO session runs aarch64-darwin; x86_64-linux build verification needs a linux builder).
+
+## Artifact reconciliation (post-verify)
+
+The verify pass (`verify.md`, FAIL) found the implementation correct and CI-green but the change artifacts drifted from the as-built state.
+The artifacts were amended to the as-built contract with no production-code logic touched: `spec.md` rewrote the test/clippy-gate requirement to the per-member `runTests` shape (933 passed / 5 ignored over 938 defined, offline `importCargoLock` clippy, check surface 27) and added a build-graph envelope/regulator requirement; `proposal.md` body and `design.md` were reconciled to one figure set (check surface 27 = 15 prior + 11 per-member + `build-graph-invariants`; 933/5/938 in place of the stale 911; canonical snapshot roots renamed to `packages.ironstar`/`packages.ironstar-release`).
+Residual nix-unit comment references (nix-unit was removed in this change) were scrubbed from `justfile`, `modules/lib/mk-structural-check.nix`, and `modules/checks/package-set-invariant.nix` (comments only; the excluded list untouched).
+No code logic, `proposal.md` frontmatter, or `verify.md` was modified.

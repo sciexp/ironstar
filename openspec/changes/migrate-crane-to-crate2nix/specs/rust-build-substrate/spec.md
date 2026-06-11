@@ -73,31 +73,66 @@ The migration files referenced from `crates/ironstar/src/...` MUST be present in
 - **WHEN** the `ironstar` crate is compiled under crate2nix
 - **THEN** the `include_str!("../../migrations/...")` and `include_str!("../../../migrations/...")` reads resolve to `crates/ironstar/migrations` and compile successfully
 
-### Requirement: workspace test and clippy gate preserved at 911-test parity
+### Requirement: per-member test checks and workspace clippy gate preserve test parity
 
-The build SHALL retain a single workspace test gate and a single workspace clippy gate as the correctness gate.
-The test gate MUST run `cargo nextest run --workspace --no-tests=pass` at the 911-test baseline, and the clippy gate MUST run `cargo clippy --workspace --all-targets -- -D warnings`.
-No per-crate test or clippy wrappers MAY be promoted to checks, and `buildRustCrate runTests=true` MUST NOT be used.
+The build SHALL gate test correctness through per-member test checks on the per-crate build graph and SHALL gate lint correctness through a single workspace clippy gate.
+Each of the 11 workspace members MUST have a test check derived from `(cargoNix.workspaceMembers.<name>.build.override { runTests = true; testPreRun = "export HOME=/tmp"; }).passthru.test`, reusing that member's existing `buildRustCrate` build rather than compiling from source.
+The aggregate check name `workspace-test` MUST be preserved as a zero-build-cost `linkFarm` over the 11 per-member outputs, so the devshell `inputsFrom` and the buildbot/Mergify umbrella names are untouched.
+The clippy gate MUST run `cargo clippy --profile dev --locked --all-targets -- --deny warnings` against offline `importCargoLock`-vendored dependencies, with no network and no IFD.
+The behavioral envelope MUST be exact parity with the prior cargo-workspace test gate: the per-member sum reconstructs 933 passed / 5 ignored over 938 defined tests, with the 5 network `#[ignore]` tests skipped by default (no `--run-ignored`).
 
-#### Scenario: workspace test gate runs the baseline
+#### Scenario: per-member test checks reconstruct the parity envelope
 
-- **WHEN** the `workspace-test` check runs
-- **THEN** it executes the 911-test baseline via nextest with `--no-tests=pass` and passes
+- **WHEN** the 11 per-member `*-test` checks run and their per-member passed/ignored counts are summed
+- **THEN** the sum is 933 passed and 5 ignored over 938 defined tests, exact parity with the prior cargo-workspace test gate, and each per-member check fails by construction on any non-zero test-binary exit
 
-#### Scenario: workspace clippy gate denies warnings
+#### Scenario: network ignore tests are skipped by default
+
+- **WHEN** the per-member test checks run without `--run-ignored`
+- **THEN** exactly the 5 network `#[ignore]` tests are skipped (2 in `ironstar-analytics-infra`, 3 in the `ironstar` binary member), matching the prior gate's no-`--run-ignored` behavior
+
+#### Scenario: workspace clippy gate denies warnings offline
 
 - **WHEN** the `workspace-clippy` check runs
-- **THEN** it executes `cargo clippy --workspace --all-targets -- -D warnings` and passes with no warnings
+- **THEN** it executes `cargo clippy --profile dev --locked --all-targets -- --deny warnings` over the `importCargoLock`-vendored dependency set with no network access, and passes with no warnings
 
-#### Scenario: check surface stays at 14
+#### Scenario: check surface enumerates the named member test checks at count 27
 
 - **WHEN** `nix eval .#checks.<system> --apply builtins.attrNames` is evaluated after the migration
-- **THEN** exactly 14 check names are present, unchanged from before the migration
+- **THEN** the 11 per-member checks `ironstar-core-test` ... `ironstar-test` and the aggregate `workspace-test` are present, and the total check count is 27 (15 prior + 11 per-member + `build-graph-invariants`)
 
 #### Scenario: per-crate test and clippy packages are removed
 
 - **WHEN** `nix eval .#packages.<system> --apply builtins.attrNames` is evaluated after the migration
 - **THEN** the 20 ad-hoc per-crate `*-test`/`*-clippy` package attributes are absent
+
+### Requirement: build-graph envelope and drift regulator gate duplication and member presence
+
+The build substrate SHALL commit a build-graph snapshot kept in lockstep with the realized graph and SHALL gate it against committed baseline ceilings.
+A committed `modules/checks/build-graph-snapshot.json` MUST record the hash-free build-graph projection over the canonical Rust-core roots, regenerated via the `build-graph-snapshot` flake app whenever the graph changes.
+A committed `modules/checks/build-graph-baseline.json` MUST hold the accepted ceilings, and a pure `build-graph-invariants` check (no IFD, no recursive nix) MUST validate the committed snapshot against the committed baseline.
+Duplication ceilings are upper bounds: growth above a ceiling MUST fail, while planned shrinkage MUST pass.
+Workspace-member presence MUST be an exact floor of 11 members.
+
+#### Scenario: snapshot stays in lockstep with the realized graph
+
+- **WHEN** the `build-graph-snapshot` flake app is run twice over the canonical roots
+- **THEN** it produces byte-identical sorted, hash-free, timestamp-free JSON, and the committed snapshot equals that output
+
+#### Scenario: duplication growth fails the regulator
+
+- **WHEN** a heavy-crate distinct-compile count, a duplication count, or a per-root node count exceeds its committed ceiling
+- **THEN** the `build-graph-invariants` check fails with an actionable message naming `just regenerate-build-graph-snapshot` and `modules/checks/build-graph-baseline.json`
+
+#### Scenario: planned shrinkage passes the regulator
+
+- **WHEN** the realized snapshot's duplication or vendor-monolith counts fall below their committed ceilings
+- **THEN** the `build-graph-invariants` check passes, because the ceilings are upper bounds rather than equalities
+
+#### Scenario: member-presence floor is enforced
+
+- **WHEN** the snapshot records fewer than the 11 required workspace members
+- **THEN** the `build-graph-invariants` check fails, because member presence is an exact floor
 
 ### Requirement: per-dependency-crate cache granularity
 

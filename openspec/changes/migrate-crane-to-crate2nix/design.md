@@ -14,7 +14,7 @@ The decisive per-member-src fact was confirmed empirically by generating a `Carg
 Constraints carried from the existing tree:
 ironstar deliberately avoids IFD — `modules/rust.nix` reads the workspace version via `fromTOML`/`readFile` of a plain file precisely so eval does not depend on a derivation build.
 The pinned Rust toolchain is 1.94.1 via rust-overlay, and this single-toolchain invariant must hold across the build, the devshell, and treefmt-driven fmt.
-The check surface is 14 and must stay 14 to keep the devshell closure class stable, since `devShell.inputsFrom = builtins.attrValues self'.checks`.
+The check surface entered this change at 14 and lands at 27 (15 prior + 11 per-member `*-test` + `build-graph-invariants`); the devshell closure class stays stable because `devShell.inputsFrom = builtins.attrValues self'.checks` and the added checks carry lean closures (the per-member `crateWithTest` derivations are `stdenvNoCC` with empty `buildInputs`, the aggregate is a coreutils-only `linkFarm`, and `build-graph-invariants` is a pure `runCommand`).
 `Cargo.lock` has 576 packages, 0 git sources, 0 alternate registries, and 565 crates.io checksums; the 11-package difference is the local path crates.
 
 ## Goals / Non-Goals
@@ -24,8 +24,8 @@ The check surface is 14 and must stay 14 to keep the devshell closure class stab
 Replace crane with crate2nix as the Rust build substrate, achieving per-dependency-crate nix cache granularity so a single Renovate dependency bump invalidates one crate's cone rather than the whole workspace blob.
 Commit a `Cargo.nix` kept in lockstep with `Cargo.lock`, generated with no IFD.
 Preserve the pinned 1.94.1 toolchain across all per-crate builds.
-Preserve the workspace test and clippy correctness gate at 911-test parity.
-Preserve the 14-check surface and the embedded-assets behavior (non-empty static/dist manifest; ducklake-catalogs catalog).
+Preserve the test and clippy correctness gate at 933-passed/5-ignored parity, re-shaped as 11 per-member `runTests` checks plus a zero-cost `workspace-test` aggregate and a single workspace clippy gate.
+Land the check surface at 27 (15 prior + 11 per-member `*-test` + `build-graph-invariants`) and preserve the embedded-assets behavior (non-empty static/dist manifest; ducklake-catalogs catalog).
 Keep the migration additive and reversible until the substrate swap, removing crane and its substituter only at the end.
 
 **Non-Goals:**
@@ -143,7 +143,7 @@ Doctest stays disabled.
 **Original rationale (superseded for the test gate).**
 Per-crate nextest/clippy wrappers compile from source and do not consume `buildRustCrate`'s rlib artifacts, buying reporting granularity for zero cache value at roughly eighteen extra derivations.
 This rationale held against *nextest wrappers* specifically; it did not anticipate the crate2nix `runTests` path, which reuses each crate's existing `buildRustCrate` build rather than compiling from source (one build of each crate serves the binary and its tests), so the per-member test checks do gain cache value, contradicting the original "zero cache value" finding for that mechanism.
-`runTests=true` was rejected for running "experimental cargo-test rather than nextest, losing `--no-tests=pass`, the `[profile.ci]` retries/junit contract, and the 911-test baseline shape"; the parity experiment (measurements.md, "Per-crate runTests parity experiment") found nextest's process-per-test isolation empirically unnecessary for parity — the cargo-test harness reproduces the gate's 933 passed / 5 ignored envelope exactly, including the `#[ignore]` network skips, and the pinned nixpkgs `build-rust-crate` builds both lib unit tests and `tests/` integration targets, so `--no-tests=pass` (a guard against empty test sets) is unneeded.
+`runTests=true` was rejected for running "experimental cargo-test rather than nextest, losing `--no-tests=pass`, the `[profile.ci]` retries/junit contract, and the 933-passed/5-ignored (938 defined) baseline shape"; the parity experiment (measurements.md, "Per-crate runTests parity experiment") found nextest's process-per-test isolation empirically unnecessary for parity — the cargo-test harness reproduces the gate's 933 passed / 5 ignored envelope exactly, including the `#[ignore]` network skips, and the pinned nixpkgs `build-rust-crate` builds both lib unit tests and `tests/` integration targets, so `--no-tests=pass` (a guard against empty test sets) is unneeded.
 
 **Gate-shape revision (the current test-side end state).**
 The monolithic nextest test gate is replaced by 11 per-member `runTests` checks — one per workspace member, named `ironstar-core-test` ... `ironstar-test` — plus a zero-build-cost aggregate that preserves the `workspace-test` check name.
@@ -168,8 +168,8 @@ The first per-member `-test` build path threads `buildTests`/test-mode flags not
 On warm CI caches the steady-state cost is the per-member figure, not the full-warming figure.
 
 **Check-surface arithmetic note.**
-This revision raises the flake check surface from 15 to 26: the 15 prior checks are unchanged except that `workspace-test` becomes the zero-cost aggregate (no net name change), and 11 per-member `*-test` checks are added (15 + 11 = 26).
-The prior baseline was 14; task 4's `cargo-nix-lock-sync` raised it to 15 (flagged in measurements.md); this revision raises it to 26.
+The flake check surface lands at 27: the 15 prior checks are unchanged except that `workspace-test` becomes the zero-cost aggregate (no net name change), 11 per-member `*-test` checks are added (15 + 11 = 26), and task 4b's `build-graph-invariants` regulator (D9) adds the 27th (26 + 1 = 27).
+The prior baseline was 14; task 4's `cargo-nix-lock-sync` raised it to 15 (flagged in measurements.md); the per-member revision raised it to 26; `build-graph-invariants` raises it to the final 27.
 The per-member checks are a separate namespace from packages, so the package-set-invariant (`modules/checks/package-set-invariant.nix`) is unaffected — it operates over `self.packages` and already excludes `*-test` suffixes; no edit there is needed.
 
 **Alternatives considered.**
@@ -196,11 +196,11 @@ A sandboxed full regenerate-and-diff check — rejected because the rejection re
 **Choice.**
 Near-zero port.
 Thread the pinned 1.94.1 toolchain into `buildRustCrateForPkgs` so per-crate builds match fmt and the devshell.
-Hold the check count at 14 to keep the devshell closure class stable.
+Keep the devshell closure class stable across the check-surface growth to 27 by adding only lean-closure checks.
 
 **Rationale.**
 There is no `craneLib.devShell` (`modules/dev-shell.nix` uses plain `pkgs.mkShell`), rustfmt runs via treefmt (`modules/formatting.nix`) not crane, and there is no crane `cargoDoc` (`cargoDocTest` is commented out; doctest is false).
-The only coupling is `devShell.inputsFrom = builtins.attrValues self'.checks`; holding 14 checks keeps the closure class stable, and deleting the twenty per-crate packages reduces fan-out.
+The only coupling is `devShell.inputsFrom = builtins.attrValues self'.checks`; the 27 checks keep the closure class stable because the added per-member test derivations are `stdenvNoCC` with empty `buildInputs`, the `workspace-test` aggregate is a coreutils-only `linkFarm`, and `build-graph-invariants` is a pure `runCommand`, while deleting the twenty per-crate packages reduces fan-out.
 `frontendAssets` (pnpm/Rolldown), gitleaks, docs/eventcatalog (bun2nix), e2e (Playwright), treefmt, and the structure-package-set-invariant are all non-crane and unchanged.
 The e2e check consumes the dev binary (`self'.packages.ironstar`); post-swap that becomes the crate2nix dev build, so the `/bin/ironstar` path identity must be verified.
 
@@ -228,8 +228,9 @@ The snapshot is the envelope, the regulator is the gate; the app is the means of
 **Canonical system and root decisions.**
 The committed baseline is pinned to a single canonical system, `x86_64-linux`, which is what buildbot CI evaluates and which evals purely from the committed `Cargo.nix` with no IFD.
 Cross-system eval of every canonical root from a darwin host was confirmed: `nix derivation show -r` over each x86_64-linux root succeeds without a linux builder because the crate2nix roots carry no import-from-derivation.
-The canonical roots are Rust-core only: `packages.ironstar-c2n`, `packages.ironstar-release-c2n`, `checks.workspace-clippy`, `checks.workspace-test`, `checks.cargo-nix-lock-sync`, and the 11 per-member `*-test` checks.
-The crane packages `packages.ironstar`/`packages.ironstar-release` and `checks.ironstar-e2e` are excluded: they are IFD-bound on linux (they require building the bun2nix frontend asset during eval, which fails with no linux builder), and crane is removed at task 6.
+The canonical roots are Rust-core only: post-swap (task 5) these are `packages.ironstar`, `packages.ironstar-release`, `checks.workspace-clippy`, `checks.workspace-test`, `checks.cargo-nix-lock-sync`, and the 11 per-member `*-test` checks (during the additive transition tasks 1 through 4 these two package roots carried the `-c2n` suffix, renamed at the swap).
+`checks.ironstar-e2e` is excluded: it is IFD-bound on linux (it requires building the bun2nix frontend asset during eval, which fails with no linux builder).
+The two member-source derivation names retain the frozen historical `-c2n-member-src` token deliberately (`ironstar-c2n-member-src` and `ironstar-analytics-infra-c2n-member-src`): they are content-addressed names whose stability the build relies on, and renaming them would force member rebuilds, so the token persists past crane removal as a fixed-name string with no remaining crane reference.
 
 **Normalized key and what a ceiling means.**
 Each node is keyed on the hash-free tuple `(system, logical_pname, version, build_class, profile, member_scope)`, dropping the store hash entirely.
@@ -241,7 +242,7 @@ The gated duplication ceilings are scoped to `build_class ∈ {crate-compile, cr
 Two duplication classes are intrinsic to crate2nix and survive crane removal: the dev/release profile split (a release artifact is a full second compile of the dependency closure, sharing essentially nothing with the dev compile) and per-member test-variant feature unification (each member's `buildTests=1` variant unifies dev-deps differently, producing distinct compile derivations of shared dependency crates).
 These are encoded as the accepted baseline level, not as reduction targets: the regulator fails on growth above the committed ceiling, not on the duplication's existence.
 The heavy-crate distinct-compile table (zenoh, tokio, sqlx and its sub-crates, the DuckDB/SQLite C-binding crates, arrow, moka, rkyv) is gated the same way — a ceiling per crate that fails on growth.
-The `vendor_monolith_count` field records the distinct vendor-blob derivations the snapshot actually sees, which under the canonical (crane-excluded) roots is only what `workspace-clippy`'s `importCargoLock` vendor contributes; it is gated against growth rather than required to drop, because `workspace-clippy`'s vendoring is independent of crane and persists past task 6.
+The `vendor_monolith_count` field records the distinct vendor-blob derivations the snapshot actually sees, which under the canonical roots is only what `workspace-clippy`'s `importCargoLock` vendor contributes; it is gated against growth rather than required to drop, because `workspace-clippy`'s vendoring is independent of crane and persists past task 6.
 
 **CCV framing.**
 The snapshot is the operating envelope (the realized build-graph shape the system must stay within); the regulator is the regulator (it fails when the realized snapshot leaves the committed envelope).
@@ -265,7 +266,7 @@ The catalog embeds empty today (gitignored `.db`, filtered out); if a real catal
 
 [Risk] Feature divergence (zenoh `default-features=false`; ring-vs-aws-lc-rs).
 A default-features `Cargo.nix` could resolve `transport_tls` or the crypto path differently from cargo's workspace unification, breaking SSE/Zenoh at runtime.
-→ Mitigation: a full 911-test pass plus e2e on both aarch64-darwin and x86_64-linux is the swap gate; do not swap until both platforms are green.
+→ Mitigation: a full 933-passed/5-ignored (938 defined) test pass plus e2e on both aarch64-darwin and x86_64-linux is the swap gate; do not swap until both platforms are green.
 
 [Risk] Eval and cache fanout.
 Roughly 576 dependency-crate derivations grow nix-eval-jobs instantiation cost and the niks3 object count (many small paths vs two large blobs), raising cold-cache CI fetch latency.
@@ -308,7 +309,7 @@ Task 4 adds drift detection.
 Task 5 is the substrate swap: rename the `-c2n` packages, point `default`, the e2e check binary, and CD at the crate2nix builds, and remove the transition exclusions.
 Task 6 removes crane, the `crane.cachix.org` substituter, and stale docs, and demonstrates the cache-granularity payoff.
 
-The swap (task 5) is gated on all 14 checks green and the 911-test pass plus e2e on both aarch64-darwin and x86_64-linux, with a human go/no-go informed by the eval-time and cold-cache measurements captured in tasks 1 and 2.
+The swap (task 5) is gated on all 27 checks green and the 933-passed/5-ignored (938 defined) test pass plus e2e on both aarch64-darwin and x86_64-linux, with a human go/no-go informed by the eval-time and cold-cache measurements captured in tasks 1 and 2.
 
 Rollback.
 Pre-swap rollback drops the `-c2n` packages.
@@ -328,7 +329,7 @@ The final design uses a targeted per-member src override for exactly two crates 
 2. Check surface.
 8g3 planned per-crate test and clippy *nextest-wrapper* derivations promoted to first-class checks; those wrappers compile from source and reuse no `buildRustCrate` artifacts, so the design rejected them and deleted the twenty per-crate packages.
 The gate-shape revision (D6) instead promotes 11 per-member *`runTests`* test checks — distinct from 8g3's wrappers in that they reuse each crate's existing `buildRustCrate` build and thus carry real cache value — plus a zero-cost aggregate preserving the `workspace-test` name; clippy stays a single workspace gate.
-Net surface after this revision is 26 (15 prior, of which `workspace-test` becomes the aggregate, plus 11 per-member `*-test`), not the 14 the original design and task-5 acceptance assert.
+Net surface after this revision is 27 (15 prior, of which `workspace-test` becomes the aggregate, plus 11 per-member `*-test`, plus the task-4b `build-graph-invariants` regulator), not the 14 the original design and task-5 acceptance assert.
 8g3's "2 → 20" still correctly noted that the twenty *packages* it conflated with checks already existed as packages and were deleted; the new per-member checks are a separate namespace and add no packages.
 
 3. Nextest config-file flag dropped.
@@ -352,7 +353,7 @@ The final design uses the default profile for the workspace gate, since `--profi
 9. IFD posture made explicit.
 8g3 said "committed Cargo.nix (no IFD)"; the final design grounds this in the verified existing IFD-avoidance pattern and explicitly forbids `allow-import-from-derivation` and `generatedCargoNix`.
 
-10. Docs cleanup (workflows/README.md 12 → 14, nix-unit input removal) folded into task 6, beyond 8g3's scope; nix-unit removal gated on confirming no load-bearing follows.
+10. Docs cleanup (workflows/README.md 12 → 27, nix-unit input removal) folded into task 6, beyond 8g3's scope; nix-unit removal gated on confirming no load-bearing follows.
 
 ## Open Questions
 
