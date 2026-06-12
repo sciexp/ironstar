@@ -67,9 +67,11 @@
             text = ''
               repo_root=$(git rev-parse --show-toplevel)
               cd "$repo_root"
-              raw_dir=$(mktemp -d)
+              raw_dir="$repo_root/logs/build-graph/raw"
+              rm -rf "$raw_dir"
+              mkdir -p "$raw_dir"
               drv_paths_file=$(mktemp)
-              trap 'rm -rf "$raw_dir" "$drv_paths_file"' EXIT
+              trap 'rm -f "$drv_paths_file"' EXIT
               echo "Extracting build-graph for ${system} from the canonical roots..."
               for root in ${lib.escapeShellArgs canonicalRoots}; do
                 cat=''${root%%.*}
