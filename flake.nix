@@ -5,10 +5,8 @@
     nixpkgs.url = "https://channels.nixos.org/nixos-unstable-small/nixexprs.tar.xz";
     systems.url = "github:nix-systems/default/future-26.11";
 
-    flake-parts = {
-      url = "github:hercules-ci/flake-parts";
-      inputs.nixpkgs-lib.follows = "nixpkgs";
-    };
+    flake-parts.url = "github:hercules-ci/flake-parts";
+    flake-parts.inputs.nixpkgs-lib.follows = "nixpkgs";
 
     import-tree.url = "github:vic/import-tree";
 
@@ -25,14 +23,12 @@
     crate2nix.url = "github:nix-community/crate2nix";
     crate2nix.inputs.nixpkgs.follows = "nixpkgs";
 
-    bun2nix = {
-      url = "github:nix-community/bun2nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.flake-parts.follows = "flake-parts";
-      inputs.import-tree.follows = "import-tree";
-      inputs.systems.follows = "systems";
-      inputs.treefmt-nix.follows = "treefmt-nix";
-    };
+    bun2nix.url = "github:nix-community/bun2nix";
+    bun2nix.inputs.nixpkgs.follows = "nixpkgs";
+    bun2nix.inputs.flake-parts.follows = "flake-parts";
+    bun2nix.inputs.import-tree.follows = "import-tree";
+    bun2nix.inputs.systems.follows = "systems";
+    bun2nix.inputs.treefmt-nix.follows = "treefmt-nix";
 
     pkgs-by-name-for-flake-parts.url = "github:drupol/pkgs-by-name-for-flake-parts";
 
