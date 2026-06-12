@@ -1322,6 +1322,12 @@ regenerate-cargo-nix:
 regenerate-build-graph-snapshot:
   nix run .#build-graph-snapshot
 
+# Build the queryable DuckDB build-graph compendium and rendered review artifacts.
+# Materializes nodes/edges/root_membership and graph-viz renders under logs/build-graph/ (gitignored).
+[group('rust')]
+build-graph-report:
+  nix run .#build-graph-compendium
+
 # Run all Rust checks (fmt, clippy, test)
 [group('rust')]
 rust-check: rust-fmt-check rust-clippy rust-test
