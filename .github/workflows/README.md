@@ -1,13 +1,13 @@
 # Nix CI build system
 
 This document describes the nix-based CI pipeline that `nix-fast-build` (or `nix flake check`) evaluates.
-The build graph has three layers: filtered source inputs, shared intermediate artifacts, and the 27 check derivations that gate every merge.
+The build graph has three layers: filtered source inputs, shared intermediate artifacts, and the 26 check derivations that gate every merge.
 
 The Rust build substrate is crate2nix: the committed `Cargo.nix` emits one `buildRustCrate` derivation per crate, so a single dependency bump invalidates only that crate's reverse-dependency cone rather than a monolithic dependency blob.
 
 ## CI check dependency graph
 
-The following diagram shows how repository content flows through source filters, intermediate build artifacts, and into the 27 checks that constitute the CI gate.
+The following diagram shows how repository content flows through source filters, intermediate build artifacts, and into the 26 checks that constitute the CI gate.
 
 ```mermaid
 flowchart TD
@@ -39,7 +39,7 @@ flowchart TD
         playwrightBrowsers["Playwright browsers<br/>(chromium-headless-shell)"]
     end
 
-    subgraph checks ["The 27 checks"]
+    subgraph checks ["The 26 checks"]
         ironstar_pkg["ironstar<br/>(dev binary build)"]
         dev_platform["dev-platform<br/>(process-compose stack)"]
         workspace_test["workspace-test<br/>(zero-cost aggregate over 11 per-member tests)"]
@@ -48,7 +48,6 @@ flowchart TD
         treefmt["treefmt<br/>(nixfmt + rustfmt + biome)"]
         gitleaks["gitleaks<br/>(secret scanning)"]
         cargo_nix_lock_sync["cargo-nix-lock-sync<br/>(Cargo.lock ↔ Cargo.nix set diff)"]
-        build_graph_invariants["build-graph-invariants<br/>(graph-drift regulator)"]
         structure_invariant["structure-package-set-invariant<br/>(package/check parity)"]
         docs_unit["ironstar-docs-unit<br/>(Vitest)"]
         docs_e2e["ironstar-docs-e2e<br/>(Playwright)"]
@@ -89,7 +88,6 @@ flowchart TD
     src_self --> gitleaks
     src_cargolock --> cargo_nix_lock_sync
     src_cargonix --> cargo_nix_lock_sync
-    src_self --> build_graph_invariants
     src_self --> structure_invariant
     src_docs --> docs_unit
     bunDeps_docs --> docs_unit
@@ -109,7 +107,7 @@ flowchart TD
     playwrightBrowsers --> ironstar_e2e
 ```
 
-## The 27 checks
+## The 26 checks
 
 The check surface groups into Rust correctness, structural regulators, formatting and secrets, and the docs/eventcatalog/e2e site suites.
 
@@ -121,7 +119,6 @@ The `workspace-clippy` check runs a single workspace-wide `cargo clippy --all-ta
 
 Structural regulators gate the build graph itself.
 `cargo-nix-lock-sync` is a pure no-network check diffing the `Cargo.lock` `[[package]]` set against the `Cargo.nix` `crateName/version` set, failing on a stale `Cargo.nix` with an actionable `just regenerate-cargo-nix` message.
-`build-graph-invariants` validates a committed build-graph snapshot against accepted duplication and node-count ceilings, acting as the graph-drift regulator.
 `structure-package-set-invariant` asserts that every package has a corresponding check (and vice versa where intended), computed at outer eval time over the attribute-name lists.
 
 Formatting and secrets run over the unfiltered repository.
@@ -173,7 +170,7 @@ This per-crate granularity is the property the crate2nix substrate was adopted t
 The per-member `*-test` checks form a finer regulator than a monolithic workspace test.
 Restoring a single comment in one crate's source rebuilds only that crate's `*-test` check (and any reverse-dependent members), not the whole workspace.
 
-The `treefmt`, `gitleaks`, `build-graph-invariants`, and `structure-package-set-invariant` checks use the unfiltered `self` source or small content-addressed slices.
+The `treefmt`, `gitleaks`, and `structure-package-set-invariant` checks use the unfiltered `self` source or small content-addressed slices.
 They are sensitive to repository changes but involve no Rust or frontend compilation, so they complete quickly.
 
 E2E checks form the deepest dependency chains in the graph.

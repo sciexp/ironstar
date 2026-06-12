@@ -14,7 +14,7 @@ The decisive per-member-src fact was confirmed empirically by generating a `Carg
 Constraints carried from the existing tree:
 ironstar deliberately avoids IFD — `modules/rust.nix` reads the workspace version via `fromTOML`/`readFile` of a plain file precisely so eval does not depend on a derivation build.
 The pinned Rust toolchain is 1.94.1 via rust-overlay, and this single-toolchain invariant must hold across the build, the devshell, and treefmt-driven fmt.
-The check surface entered this change at 14 and lands at 27 (15 prior + 11 per-member `*-test` + `build-graph-invariants`); the devshell closure class stays stable because `devShell.inputsFrom = builtins.attrValues self'.checks` and the added checks carry lean closures (the per-member `crateWithTest` derivations are `stdenvNoCC` with empty `buildInputs`, the aggregate is a coreutils-only `linkFarm`, and `build-graph-invariants` is a pure `runCommand`).
+The check surface entered this change at 14 and lands at 26 (15 prior + 11 per-member `*-test`); the devshell closure class stays stable because `devShell.inputsFrom = builtins.attrValues self'.checks` and the added checks carry lean closures (the per-member `crateWithTest` derivations are `stdenvNoCC` with empty `buildInputs`, and the aggregate is a coreutils-only `linkFarm`).
 `Cargo.lock` has 576 packages, 0 git sources, 0 alternate registries, and 565 crates.io checksums; the 11-package difference is the local path crates.
 
 ## Goals / Non-Goals
@@ -25,7 +25,7 @@ Replace crane with crate2nix as the Rust build substrate, achieving per-dependen
 Commit a `Cargo.nix` kept in lockstep with `Cargo.lock`, generated with no IFD.
 Preserve the pinned 1.94.1 toolchain across all per-crate builds.
 Preserve the test and clippy correctness gate at 933-passed/5-ignored parity, re-shaped as 11 per-member `runTests` checks plus a zero-cost `workspace-test` aggregate and a single workspace clippy gate.
-Land the check surface at 27 (15 prior + 11 per-member `*-test` + `build-graph-invariants`) and preserve the embedded-assets behavior (non-empty static/dist manifest; ducklake-catalogs catalog).
+Land the check surface at 26 (15 prior + 11 per-member `*-test`) and preserve the embedded-assets behavior (non-empty static/dist manifest; ducklake-catalogs catalog).
 Keep the migration additive and reversible until the substrate swap, removing crane and its substituter only at the end.
 
 **Non-Goals:**
@@ -168,8 +168,9 @@ The first per-member `-test` build path threads `buildTests`/test-mode flags not
 On warm CI caches the steady-state cost is the per-member figure, not the full-warming figure.
 
 **Check-surface arithmetic note.**
-The flake check surface lands at 27: the 15 prior checks are unchanged except that `workspace-test` becomes the zero-cost aggregate (no net name change), 11 per-member `*-test` checks are added (15 + 11 = 26), and task 4b's `build-graph-invariants` regulator (D9) adds the 27th (26 + 1 = 27).
-The prior baseline was 14; task 4's `cargo-nix-lock-sync` raised it to 15 (flagged in measurements.md); the per-member revision raised it to 26; `build-graph-invariants` raises it to the final 27.
+The flake check surface lands at 26: the 15 prior checks are unchanged except that `workspace-test` becomes the zero-cost aggregate (no net name change), and 11 per-member `*-test` checks are added (15 + 11 = 26).
+The prior baseline was 14; task 4's `cargo-nix-lock-sync` raised it to 15 (flagged in measurements.md); the per-member revision raised it to the final 26.
+Task 4b's `build-graph-invariants` regulator (D9) briefly carried the surface to 27 before the task-7 demotion retracted it back to 26 (see the D9 amendment below).
 The per-member checks are a separate namespace from packages, so the package-set-invariant (`modules/checks/package-set-invariant.nix`) is unaffected — it operates over `self.packages` and already excludes `*-test` suffixes; no edit there is needed.
 
 **Alternatives considered.**
@@ -196,11 +197,11 @@ A sandboxed full regenerate-and-diff check — rejected because the rejection re
 **Choice.**
 Near-zero port.
 Thread the pinned 1.94.1 toolchain into `buildRustCrateForPkgs` so per-crate builds match fmt and the devshell.
-Keep the devshell closure class stable across the check-surface growth to 27 by adding only lean-closure checks.
+Keep the devshell closure class stable across the check-surface growth to 26 by adding only lean-closure checks.
 
 **Rationale.**
 There is no `craneLib.devShell` (`modules/dev-shell.nix` uses plain `pkgs.mkShell`), rustfmt runs via treefmt (`modules/formatting.nix`) not crane, and there is no crane `cargoDoc` (`cargoDocTest` is commented out; doctest is false).
-The only coupling is `devShell.inputsFrom = builtins.attrValues self'.checks`; the 27 checks keep the closure class stable because the added per-member test derivations are `stdenvNoCC` with empty `buildInputs`, the `workspace-test` aggregate is a coreutils-only `linkFarm`, and `build-graph-invariants` is a pure `runCommand`, while deleting the twenty per-crate packages reduces fan-out.
+The only coupling is `devShell.inputsFrom = builtins.attrValues self'.checks`; the 26 checks keep the closure class stable because the added per-member test derivations are `stdenvNoCC` with empty `buildInputs` and the `workspace-test` aggregate is a coreutils-only `linkFarm`, while deleting the twenty per-crate packages reduces fan-out.
 `frontendAssets` (pnpm/Rolldown), gitleaks, docs/eventcatalog (bun2nix), e2e (Playwright), treefmt, and the structure-package-set-invariant are all non-crane and unchanged.
 The e2e check consumes the dev binary (`self'.packages.ironstar`); post-swap that becomes the crate2nix dev build, so the `/bin/ironstar` path identity must be verified.
 
@@ -253,6 +254,13 @@ Regulator integrity requires a red demonstration: a deliberate ceiling perturbat
 **Follow-up program (out of scope).**
 Per-commit snapshot upload via a herculesCI effect, a per-invocation cache-hit-rate metric on buildbot, a DuckDB time-series over per-commit invariants for trend queries, and fanout serialization to cure the nix-eval-jobs closure-edge over-count are all deferred to a separate observability change.
 This slice locks baseline-zero and gates against duplication regrowth; the time-series and CI-effect machinery build on top of it.
+
+**Amendment (2026-06-12): the drift regulator is demoted to an on-demand committed record.**
+The `build-graph-invariants` check, the committed `modules/checks/build-graph-baseline.json`, and the Renovate auto-regeneration step are removed; the check surface returns to 26.
+The snapshot survives as a deterministic, non-gating committed record at its new path `modules/apps/build-graph-snapshot/snapshot.json`, regenerated on demand via the `build-graph-snapshot` flake app and reviewed on a human cadence rather than enforced by a check.
+Rationale: the CI-churn and bot-commit surface the regulator imposed on Renovate PRs (every dependency bump forced a baseline-regeneration commit and a gating diff) outweighed the regulator's marginal value, because workspace-member presence — the property the regulator's exact floor protected — is already hard-gated by the per-member `*-test` checks, so the build graph cannot silently lose a member without a check failing.
+The duplication-ceiling observability the regulator provided moves to the follow-on `add-build-graph-compendium` change, which builds the human-cadence review surface (compendium document plus the on-demand snapshot instrument) on top of the retained record rather than as a CI gate.
+The CCV envelope-plus-regulator pairing described above is therefore retired for the build graph: the snapshot is now an observability record, not an operating envelope with a gating regulator, and the closure operator for this change rests on `cargo-nix-lock-sync`, `structure-package-set-invariant`, and the per-member `*-test` floor.
 
 ## Risks / Trade-offs
 
@@ -309,7 +317,7 @@ Task 4 adds drift detection.
 Task 5 is the substrate swap: rename the `-c2n` packages, point `default`, the e2e check binary, and CD at the crate2nix builds, and remove the transition exclusions.
 Task 6 removes crane, the `crane.cachix.org` substituter, and stale docs, and demonstrates the cache-granularity payoff.
 
-The swap (task 5) is gated on all 27 checks green and the 933-passed/5-ignored (938 defined) test pass plus e2e on both aarch64-darwin and x86_64-linux, with a human go/no-go informed by the eval-time and cold-cache measurements captured in tasks 1 and 2.
+The swap (task 5) is gated on all 26 checks green and the 933-passed/5-ignored (938 defined) test pass plus e2e on both aarch64-darwin and x86_64-linux, with a human go/no-go informed by the eval-time and cold-cache measurements captured in tasks 1 and 2.
 
 Rollback.
 Pre-swap rollback drops the `-c2n` packages.
@@ -329,7 +337,7 @@ The final design uses a targeted per-member src override for exactly two crates 
 2. Check surface.
 8g3 planned per-crate test and clippy *nextest-wrapper* derivations promoted to first-class checks; those wrappers compile from source and reuse no `buildRustCrate` artifacts, so the design rejected them and deleted the twenty per-crate packages.
 The gate-shape revision (D6) instead promotes 11 per-member *`runTests`* test checks — distinct from 8g3's wrappers in that they reuse each crate's existing `buildRustCrate` build and thus carry real cache value — plus a zero-cost aggregate preserving the `workspace-test` name; clippy stays a single workspace gate.
-Net surface after this revision is 27 (15 prior, of which `workspace-test` becomes the aggregate, plus 11 per-member `*-test`, plus the task-4b `build-graph-invariants` regulator), not the 14 the original design and task-5 acceptance assert.
+Net surface after this revision is 26 (15 prior, of which `workspace-test` becomes the aggregate, plus 11 per-member `*-test`), not the 14 the original design and task-5 acceptance assert; the task-4b `build-graph-invariants` regulator that briefly raised this to 27 was retracted by the task-7 demotion (see the D9 amendment).
 8g3's "2 → 20" still correctly noted that the twenty *packages* it conflated with checks already existed as packages and were deleted; the new per-member checks are a separate namespace and add no packages.
 
 3. Nextest config-file flag dropped.
@@ -353,7 +361,7 @@ The final design uses the default profile for the workspace gate, since `--profi
 9. IFD posture made explicit.
 8g3 said "committed Cargo.nix (no IFD)"; the final design grounds this in the verified existing IFD-avoidance pattern and explicitly forbids `allow-import-from-derivation` and `generatedCargoNix`.
 
-10. Docs cleanup (workflows/README.md 12 → 27, nix-unit input removal) folded into task 6, beyond 8g3's scope; nix-unit removal gated on confirming no load-bearing follows.
+10. Docs cleanup (workflows/README.md 12 → 26, nix-unit input removal) folded into task 6, beyond 8g3's scope; nix-unit removal gated on confirming no load-bearing follows.
 
 ## Open Questions
 

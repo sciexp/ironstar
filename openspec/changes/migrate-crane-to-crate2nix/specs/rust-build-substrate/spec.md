@@ -96,43 +96,31 @@ The behavioral envelope MUST be exact parity with the prior cargo-workspace test
 - **WHEN** the `workspace-clippy` check runs
 - **THEN** it executes `cargo clippy --profile dev --locked --all-targets -- --deny warnings` over the `importCargoLock`-vendored dependency set with no network access, and passes with no warnings
 
-#### Scenario: check surface enumerates the named member test checks at count 27
+#### Scenario: check surface enumerates the named member test checks at count 26
 
 - **WHEN** `nix eval .#checks.<system> --apply builtins.attrNames` is evaluated after the migration
-- **THEN** the 11 per-member checks `ironstar-core-test` ... `ironstar-test` and the aggregate `workspace-test` are present, and the total check count is 27 (15 prior + 11 per-member + `build-graph-invariants`)
+- **THEN** the 11 per-member checks `ironstar-core-test` ... `ironstar-test` and the aggregate `workspace-test` are present, and the total check count is 26 (15 prior + 11 per-member)
 
 #### Scenario: per-crate test and clippy packages are removed
 
 - **WHEN** `nix eval .#packages.<system> --apply builtins.attrNames` is evaluated after the migration
 - **THEN** the 20 ad-hoc per-crate `*-test`/`*-clippy` package attributes are absent
 
-### Requirement: build-graph envelope and drift regulator gate duplication and member presence
+### Requirement: build-graph snapshot is a committed, deterministic, non-gating record
 
-The build substrate SHALL commit a build-graph snapshot kept in lockstep with the realized graph and SHALL gate it against committed baseline ceilings.
-A committed `modules/checks/build-graph-snapshot.json` MUST record the hash-free build-graph projection over the canonical Rust-core roots, regenerated via the `build-graph-snapshot` flake app whenever the graph changes.
-A committed `modules/checks/build-graph-baseline.json` MUST hold the accepted ceilings, and a pure `build-graph-invariants` check (no IFD, no recursive nix) MUST validate the committed snapshot against the committed baseline.
-Duplication ceilings are upper bounds: growth above a ceiling MUST fail, while planned shrinkage MUST pass.
-Workspace-member presence MUST be an exact floor of 11 members.
+The build substrate SHALL commit a build-graph snapshot as a deterministic, non-gating observability record rather than a CI gate.
+A committed `modules/apps/build-graph-snapshot/snapshot.json` MUST record the hash-free, sorted, timestamp-free build-graph projection over the canonical Rust-core roots, regenerated on demand via the `build-graph-snapshot` flake app whenever the graph changes.
+The snapshot is reviewed on a human cadence, not enforced by a check derivation; workspace-member presence remains hard-gated by the per-member `*-test` checks, so the build graph cannot silently lose a member without a check failing.
 
-#### Scenario: snapshot stays in lockstep with the realized graph
+#### Scenario: snapshot regeneration is deterministic
 
-- **WHEN** the `build-graph-snapshot` flake app is run twice over the canonical roots
-- **THEN** it produces byte-identical sorted, hash-free, timestamp-free JSON, and the committed snapshot equals that output
+- **WHEN** the `build-graph-snapshot` flake app is run twice over an unchanged substrate
+- **THEN** it produces byte-identical sorted, hash-free JSON equal to the committed `modules/apps/build-graph-snapshot/snapshot.json`
 
-#### Scenario: duplication growth fails the regulator
+#### Scenario: no build-graph check gates the surface
 
-- **WHEN** a heavy-crate distinct-compile count, a duplication count, or a per-root node count exceeds its committed ceiling
-- **THEN** the `build-graph-invariants` check fails with an actionable message naming `just regenerate-build-graph-snapshot` and `modules/checks/build-graph-baseline.json`
-
-#### Scenario: planned shrinkage passes the regulator
-
-- **WHEN** the realized snapshot's duplication or vendor-monolith counts fall below their committed ceilings
-- **THEN** the `build-graph-invariants` check passes, because the ceilings are upper bounds rather than equalities
-
-#### Scenario: member-presence floor is enforced
-
-- **WHEN** the snapshot records fewer than the 11 required workspace members
-- **THEN** the `build-graph-invariants` check fails, because member presence is an exact floor
+- **WHEN** `nix eval .#checks.x86_64-linux --apply builtins.attrNames` is evaluated
+- **THEN** `build-graph-invariants` is absent and the total check count is 26
 
 ### Requirement: per-dependency-crate cache granularity
 

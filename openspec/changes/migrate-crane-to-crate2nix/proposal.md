@@ -50,7 +50,7 @@ This change adopts crate2nix's per-crate `buildRustCrate` derivations so a singl
 
 ### New Capabilities
 
-- `rust-build-substrate`: the durable requirements governing how the Rust workspace is built under nix — a committed `Cargo.nix` kept in lockstep with `Cargo.lock`, no IFD, the pinned toolchain threaded into per-crate builds, non-empty embedded-asset assertions, the per-member test checks and workspace clippy gate at 933-passed/5-ignored parity, the build-graph envelope-and-regulator pair, and the per-dependency-crate cache-granularity property.
+- `rust-build-substrate`: the durable requirements governing how the Rust workspace is built under nix — a committed `Cargo.nix` kept in lockstep with `Cargo.lock`, no IFD, the pinned toolchain threaded into per-crate builds, non-empty embedded-asset assertions, the per-member test checks and workspace clippy gate at 933-passed/5-ignored parity, a committed deterministic non-gating build-graph snapshot record with on-demand regeneration instrumentation, and the per-dependency-crate cache-granularity property.
 
 ### Modified Capabilities
 
