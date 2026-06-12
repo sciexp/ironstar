@@ -10,9 +10,16 @@ identical rebuilds across commits collapse to one logical key, while the actiona
 crate2nix profile/test/member distinctions are preserved. Duplication is the count
 of distinct store hashes that collapse onto one logical key.
 
-The snapshot is the operating envelope the graph-drift regulator gates against. It
-carries no store hashes and no timestamps and sorts every collection, so two runs
-over the same roots produce byte-identical output.
+The snapshot is a committed, non-gating record of the build-graph shape, reviewed
+through its git diff. It carries no store hashes and no timestamps and sorts every
+collection, so two runs over the same roots produce byte-identical output.
+
+The emitted ``provenance`` object fingerprints the substrate the snapshot was
+derived from. ``root_drv_paths_sha256`` is the precise substrate fingerprint: it
+hashes the sorted root ``.drv`` store paths, which are themselves a function of
+Cargo.nix, flake.lock, and the nix expressions, so it changes whenever any of those
+inputs change. ``cargo_nix_sha256`` is a human-meaningful pointer to one of those
+inputs and does not on its own identify the substrate.
 """
 
 from __future__ import annotations
@@ -118,11 +125,17 @@ def logical_key(name: str, env: dict, system: str, members: set[str]):
 
 
 def main() -> int:
-    if len(sys.argv) != 3:
-        print("usage: normalize.py <raw-dir> <system>", file=sys.stderr)
+    if len(sys.argv) != 5:
+        print(
+            "usage: normalize.py <raw-dir> <system> "
+            "<cargo-nix-sha256> <root-drv-paths-sha256>",
+            file=sys.stderr,
+        )
         return 2
     raw_dir = Path(sys.argv[1])
     system = sys.argv[2]
+    cargo_nix_sha256 = sys.argv[3]
+    root_drv_paths_sha256 = sys.argv[4]
     members = set(WORKSPACE_MEMBERS)
 
     key_hashes: dict[tuple, set[str]] = defaultdict(set)
@@ -198,6 +211,10 @@ def main() -> int:
             "duplication = distinct store hashes per logical key; "
             "regenerate with `just regenerate-build-graph-snapshot`"
         ),
+        "provenance": {
+            "cargo_nix_sha256": cargo_nix_sha256,
+            "root_drv_paths_sha256": root_drv_paths_sha256,
+        },
         "roots": sorted(f"{cat}.{name}" for cat, name in CANONICAL_ROOTS),
         "missing_roots": sorted(missing),
         "per_root": {

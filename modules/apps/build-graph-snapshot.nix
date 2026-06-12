@@ -2,12 +2,17 @@
 #
 # nix run .#build-graph-snapshot
 #
-# The snapshot is the operating envelope the graph-drift regulator
-# (modules/checks/build-graph-invariants.nix) gates against. It is generated
-# OUTSIDE the build sandbox because it needs recursive nix (`nix derivation
-# show -r`), which a flake check derivation cannot invoke. The output is keyed
-# on a hash-free tuple and carries no store hashes or timestamps, so two runs
-# produce byte-identical output and the regulator is content-addressed.
+# The snapshot is a committed, byte-deterministic, NON-GATING record of the
+# build-graph shape. It is not a flake check and gates nothing: it is a tracked
+# artifact whose git diff is the review surface. Regenerate it on an explicit
+# human decision — when a dependency is added or removed, or the workspace is
+# rearchitected — and never per-PR. Review changes to it through its git diff
+# per docs/notes/reference/build-graph-review-runbook.md.
+#
+# It is generated OUTSIDE the build sandbox because it needs recursive nix
+# (`nix derivation show -r`), which a flake check derivation cannot invoke. The
+# output is keyed on a hash-free tuple and carries no store hashes or timestamps,
+# so two runs produce byte-identical output.
 #
 # Pinned to system x86_64-linux: that is what buildbot CI evaluates, and the
 # crate2nix roots eval purely there (and cross-system from darwin) with no IFD.
@@ -63,7 +68,8 @@
               repo_root=$(git rev-parse --show-toplevel)
               cd "$repo_root"
               raw_dir=$(mktemp -d)
-              trap 'rm -rf "$raw_dir"' EXIT
+              drv_paths_file=$(mktemp)
+              trap 'rm -rf "$raw_dir" "$drv_paths_file"' EXIT
               echo "Extracting build-graph for ${system} from the canonical roots..."
               for root in ${lib.escapeShellArgs canonicalRoots}; do
                 cat=''${root%%.*}
@@ -71,12 +77,17 @@
                 echo "  nix derivation show -r .#$cat.${system}.$name"
                 nix derivation show -r ".#$cat.${system}.$name" \
                   > "$raw_dir/''${cat}__''${name}.json"
+                nix eval --raw ".#$cat.${system}.$name.drvPath" >> "$drv_paths_file"
+                printf '\n' >> "$drv_paths_file"
               done
+              cargo_nix_sha256=$(sha256sum Cargo.nix | cut -d' ' -f1)
+              root_drv_paths_sha256=$(sort "$drv_paths_file" | sha256sum | cut -d' ' -f1)
               echo "Normalizing to the committed hash-free snapshot..."
               python3 ${normalizer} "$raw_dir" "${system}" \
-                > modules/checks/build-graph-snapshot.json
-              echo "Wrote modules/checks/build-graph-snapshot.json"
-              git --no-pager diff --stat -- modules/checks/build-graph-snapshot.json || true
+                "$cargo_nix_sha256" "$root_drv_paths_sha256" \
+                > modules/apps/build-graph-snapshot/snapshot.json
+              echo "Wrote modules/apps/build-graph-snapshot/snapshot.json"
+              git --no-pager diff --stat -- modules/apps/build-graph-snapshot/snapshot.json || true
             '';
           }
         );

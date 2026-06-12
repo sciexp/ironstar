@@ -88,6 +88,10 @@
       "logical_nodes": 3573
     }
   },
+  "provenance": {
+    "cargo_nix_sha256": "32b9eb098f00731764ec57f1313a77cf052c9d46d852052f7e49a271f6d94342",
+    "root_drv_paths_sha256": "e0c594990496eca99650a14dcf2ac0725de4d88a00ddaf175646a79d445dd537"
+  },
   "roots": [
     "checks.cargo-nix-lock-sync",
     "checks.ironstar-analytics-infra-test",
