@@ -646,6 +646,9 @@ def write_index(
             + (f", [{rel(member.pdf)}]({rel(member.pdf)})" if member.pdf else "")
             + "."
         )
+        if member.png is not None:
+            lines.append("")
+            lines.append(f"![{rel(member.png)}]({rel(member.png)})")
         lines.append("")
     overview = arch_by_stem.get("crate-overview")
     if overview is not None:
@@ -664,6 +667,9 @@ def write_index(
             + (f", [{rel(overview.pdf)}]({rel(overview.pdf)})" if overview.pdf else "")
             + "."
         )
+        if overview.png is not None:
+            lines.append("")
+            lines.append(f"![{rel(overview.png)}]({rel(overview.png)})")
         lines.append("")
     lines.append("## Cone views (cache-story rebuild sets)")
     lines.append("")
@@ -693,6 +699,9 @@ def write_index(
                 + (f", [{rel(render.pdf)}]({rel(render.pdf)})" if render.pdf else "")
                 + "."
             )
+            if render.png is not None:
+                lines.append("")
+                lines.append(f"![{rel(render.png)}]({rel(render.png)})")
         lines.append("")
     if skipped_seeds:
         lines.append(
