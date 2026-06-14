@@ -52,6 +52,10 @@
       emitEdges = ./build-graph-report/emit_edges.py;
       loadDuckdb = ./build-graph-report/load_duckdb.sql;
       render = ./build-graph-report/render.py;
+      normalizeLib = pkgs.runCommandLocal "build-graph-normalize-lib" { } ''
+        mkdir -p "$out"
+        cp ${./build-graph-snapshot/normalize.py} "$out/normalize.py"
+      '';
     in
     {
       apps.build-graph-report = {
@@ -89,6 +93,7 @@
               fi
 
               echo "Emitting hash-free node and edge tables..."
+              export PYTHONPATH="${normalizeLib}''${PYTHONPATH:+:$PYTHONPATH}"
               python3 ${emitEdges} "$raw_dir" "${system}" "$out_dir"
 
               echo "Loading DuckDB database..."
