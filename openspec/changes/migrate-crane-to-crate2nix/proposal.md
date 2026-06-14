@@ -38,13 +38,13 @@ This change adopts crate2nix's per-crate `buildRustCrate` derivations so a singl
 - Impact: a new generation step in the lock-file workflow; one new flake check, balanced by the deletions below.
 
 **Check and package surface**
-- The check surface lands at 27 (15 prior + 11 per-member `*-test` + `build-graph-invariants`); the monolithic test gate is replaced crane-free by 11 per-member `runTests` checks plus a zero-cost `workspace-test` aggregate, and the clippy gate stays a single workspace gate, at 933-passed/5-ignored parity.
+- The check surface lands at 26 (15 prior + 11 per-member `*-test`); the monolithic test gate is replaced crane-free by 11 per-member `runTests` checks plus a zero-cost `workspace-test` aggregate, and the clippy gate stays a single workspace gate, at 933-passed/5-ignored parity.
 - The 20 ad-hoc per-crate `*-test`/`*-clippy` packages are deleted, shrinking the package surface.
 
 **Removals (final task)**
 - The crane flake input and its `cargoArtifacts`/`buildDepsOnly`/`vendorCargoDeps`/`cargoVendorDir` usage are deleted.
 - The `crane.cachix.org` substituter is dropped.
-- Stale docs are corrected (`.github/workflows/README.md` 12 → 27 checks) and the dead nix-unit input is removed once confirmed non-load-bearing.
+- Stale docs are corrected (`.github/workflows/README.md` 12 → 26 checks) and the dead nix-unit input is removed once confirmed non-load-bearing.
 
 ## Capabilities
 
