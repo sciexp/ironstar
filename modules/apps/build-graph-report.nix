@@ -1,17 +1,17 @@
-# Build the build-graph compendium: a queryable DuckDB projection of the
+# Build the build-graph report: a queryable DuckDB projection of the
 # inputs.drvs build closure plus rendered review artifacts.
 #
-# nix run .#build-graph-compendium
+# nix run .#build-graph-report
 #
 # Where build-graph-snapshot emits a single committed scalar envelope reviewed
-# through its git diff, the compendium materializes the same hash-free build-graph
+# through its git diff, the report materializes the same hash-free build-graph
 # projection in a relational shape (nodes, edges, root_membership) so DuckDB can
 # answer the duplication, ego-neighborhood, divergence, and member-condensation
 # questions the scalar snapshot cannot. Its outputs land under logs/build-graph/
 # (gitignored) and are regenerated on demand, not committed.
 #
 # Node and edge identity is normalize.py's hash-free six-tuple, imported as a
-# module by emit_edges.py so the compendium's node identity cannot drift from the
+# module by emit_edges.py so the report's node identity cannot drift from the
 # committed snapshot's node identity.
 #
 # Pinned to system x86_64-linux for the same reasons as build-graph-snapshot: that
@@ -49,17 +49,17 @@
         "checks.cargo-nix-lock-sync"
       ]
       ++ perMemberTestRoots;
-      emitEdges = ./build-graph-compendium/emit_edges.py;
-      loadDuckdb = ./build-graph-compendium/load_duckdb.sql;
-      render = ./build-graph-compendium/render.py;
+      emitEdges = ./build-graph-report/emit_edges.py;
+      loadDuckdb = ./build-graph-report/load_duckdb.sql;
+      render = ./build-graph-report/render.py;
     in
     {
-      apps.build-graph-compendium = {
+      apps.build-graph-report = {
         type = "app";
-        meta.description = "Build the queryable DuckDB build-graph compendium (inputs.drvs closure projection) and rendered review artifacts under logs/build-graph/.";
+        meta.description = "Build the queryable DuckDB build-graph report (inputs.drvs closure projection) and rendered review artifacts under logs/build-graph/.";
         program = lib.getExe (
           pkgs.writeShellApplication {
-            name = "build-graph-compendium";
+            name = "build-graph-report";
             runtimeInputs = [
               pkgs.nix
               pkgs.git
@@ -100,11 +100,11 @@
               python3 ${render} "$raw_dir" "$out_dir/graph-viz"
 
               echo ""
-              echo "Build-graph compendium written to $out_dir:"
+              echo "Build-graph report written to $out_dir:"
               echo "  nodes.ndjson, edges.ndjson, root_membership.ndjson"
               echo "  build-graph.duckdb"
               echo "  graph-viz/ (rendered DAGs and ego cones)"
-              echo "Canned review queries: ${./build-graph-compendium/queries.sql}"
+              echo "Canned review queries: ${./build-graph-report/queries.sql}"
               echo "Query interactively: duckdb $out_dir/build-graph.duckdb"
             '';
           }

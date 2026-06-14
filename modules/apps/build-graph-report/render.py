@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Render the build-graph compendium from a committed raw derivation-show snapshot.
+"""Render the build-graph report from a committed raw derivation-show snapshot.
 
 Reads ``logs/build-graph/raw/`` (the ``<cat>__<name>.json`` files produced by the
 ``build-graph-snapshot`` extraction) and emits graphviz ``.dot`` sources plus rendered
 SVG/PNG/PDF artifacts under ``logs/build-graph/graph-viz/``.
 
-Two incommensurable edge relations live in the raw derivations, and each compendium
+Two incommensurable edge relations live in the raw derivations, and each report
 view is built from exactly one of them:
 
   env.dependencies / env.buildDependencies
@@ -575,7 +575,7 @@ def write_index(
 
     lines: list[str] = []
     lines.append("---")
-    lines.append("title: Ironstar build-graph compendium index")
+    lines.append("title: Ironstar build-graph report index")
     lines.append("---")
     lines.append("")
     lines.append(
@@ -584,7 +584,7 @@ def write_index(
     )
     lines.append(
         "Everything here lives under `logs/build-graph/graph-viz/`, which is gitignored; "
-        "regenerate it from `logs/build-graph/raw/` with the build-graph-compendium app."
+        "regenerate it from `logs/build-graph/raw/` with the build-graph-report app."
     )
     lines.append("")
     lines.append("## Edge semantics (read this first)")

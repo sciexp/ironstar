@@ -4,7 +4,7 @@ title: Build-graph review-session runbook
 
 This runbook governs the periodic human review of ironstar's Nix build graph.
 It exists because the build graph is no longer gated by an automated check: the former graph-drift regulator was retired with the crate2nix migration, and its place is taken by a deliberate, infrequent review session driven by the tooling described here.
-The deterministic review surface is the committed snapshot diff; the queryable and visual substrate is the on-demand compendium.
+The deterministic review surface is the committed snapshot diff; the queryable and visual substrate is the on-demand build-graph report.
 Nothing in this workflow runs per pull request, and nothing here imposes a failure condition.
 
 ## When to run
@@ -16,11 +16,13 @@ This is always an explicit human decision, never an automated gate and never a p
 The review session has three steps.
 First, regenerate the committed snapshot with `just regenerate-build-graph-snapshot`.
 Second, inspect the change with `git diff -- modules/apps/build-graph-snapshot/snapshot.json`; this diff is the review surface (see the next section).
-Third, build the queryable and visual compendium with `just build-graph-report` and work through the queries and checklist below.
+Third, build the queryable and visual build-graph report with `just build-graph-report` and work through the queries and checklist below.
 
 ## Diff substrate
 
 The snapshot diff is the deterministic review surface because the snapshot is a single committed scalar envelope projected from a hash-free six-tuple node identity, so an unchanged substrate produces a byte-identical file.
+This repo is jj-colocated, so run `git diff -- modules/apps/build-graph-snapshot/snapshot.json` before any other `jj` command, because a `jj` invocation auto-snapshots the regenerated change into `@` and afterward `git diff` shows nothing.
+To sidestep that timing entirely, use `jj diff -- modules/apps/build-graph-snapshot/snapshot.json`, which surveys `@` directly.
 Within the snapshot's `provenance` block, `root_drv_paths_sha256` is the precise substrate fingerprint: it hashes the realized root derivation paths, so a changed hash means the realized substrate moved and the rest of the diff is worth reading closely.
 The sibling `cargo_nix_sha256` is only a human-meaningful pointer to one input, the generated `Cargo.nix`; do not read a stable `cargo_nix_sha256` as evidence that a change is generator-only, because the realized substrate can move while that one input's hash holds.
 
@@ -29,11 +31,11 @@ For a visual delta, regenerate the renderings and compare `logs/build-graph/grap
 
 ## The four canned DuckDB queries
 
-The compendium loads `logs/build-graph/build-graph.duckdb` with `nodes`, `edges`, and `root_membership`, and the canned review queries live in `modules/apps/build-graph-compendium/queries.sql`.
+The build-graph report loads `logs/build-graph/build-graph.duckdb` with `nodes`, `edges`, and `root_membership`, and the canned review queries live in `modules/apps/build-graph-report/queries.sql`.
 Run them all against the loaded database with:
 
 ```bash
-duckdb logs/build-graph/build-graph.duckdb < modules/apps/build-graph-compendium/queries.sql
+duckdb logs/build-graph/build-graph.duckdb < modules/apps/build-graph-report/queries.sql
 ```
 
 The four queries answer the questions the scalar snapshot cannot.
@@ -52,20 +54,20 @@ New heavy-crate multiplicities: compare fresh heavy-crate distinct-compile count
 
 ## Reference data
 
-The retired baseline ceilings live at `modules/apps/build-graph-compendium/reference/ceilings.json`.
-They are orientation-only: no check consumes the file and the compendium never gates on it, so they are never a failure condition.
+The retired baseline ceilings live at `modules/apps/build-graph-report/reference/ceilings.json`.
+They are orientation-only: no check consumes the file and the build-graph report never gates on it, so they are never a failure condition.
 Read them as a comparison anchor when judging whether a fresh multiplicity or node count has drifted from the crate2nix baseline-zero topology.
 
 ## Edge-semantics note
 
-Two incommensurable edge semantics appear in the compendium, and conflating them produces nonsense comparisons.
+Two incommensurable edge semantics appear in the build-graph report, and conflating them produces nonsense comparisons.
 The NDJSON edge list and the DuckDB `edges` table carry the `inputs.drvs` build-closure projection: an edge means one derivation is a build input of another.
 The member-dag and crate-overview renderings carry the `env.dependencies` crate DAG parse: an edge means one crate declares a dependency on another in the resolved crate graph.
 These are different graphs over different node populations; do not diff one against the other or read a count from one as if it constrained the other.
 
 ## Manual nixgraph escape hatch
 
-For an ad-hoc provenance query outside the canned compendium, sbomnix's `nixgraph` is the off-the-shelf alternative, but it is locked to `dot -Kdot` hierarchical layout and degrades on dense scopes, so a shallow inverse query is the only safe default:
+For an ad-hoc provenance query outside the canned build-graph report, sbomnix's `nixgraph` is the off-the-shelf alternative, but it is locked to `dot -Kdot` hierarchical layout and degrades on dense scopes, so a shallow inverse query is the only safe default:
 
 ```bash
 DRV=$(nix eval --raw .#packages.x86_64-linux.ironstar-release.drvPath)
