@@ -14,4 +14,12 @@ projects:
     id: "dc8ba512-4677-428e-acf2-05b49fdebf99"
     name: "Improve ironstar Rust build performance and DX"
     teams: ["CAM"]
-    archive_documents: {}
+    archive_documents:
+      "rust-build-substrate":
+        id: "8d9182cc-fda2-4b47-8498-a47fbe8da107"
+        url: "https://linear.app/cameronraysmith/document/openspec-rust-build-substrate-84898892a2a7"
+        title: "OpenSpec: rust-build-substrate"
+      "build-graph-observability":
+        id: "128abbde-2282-48d9-8fe9-6ccd5f92cbac"
+        url: "https://linear.app/cameronraysmith/document/openspec-build-graph-observability-513a1bc744d3"
+        title: "OpenSpec: build-graph-observability"

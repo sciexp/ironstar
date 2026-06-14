@@ -3,17 +3,18 @@ linear_story_id: 2e4f94e9-7f7b-4a9f-8a83-112978ccfea1
 linear_story_identifier: CAM-15
 linear_story_title: "Migrate ironstar from crane to crate2nix"
 linear_story_url: https://linear.app/cameronraysmith/issue/CAM-15/migrate-ironstar-from-crane-to-crate2nix
-linear_story_state: In Review
+linear_story_state: Done
 linear_team: CAM
 linear_project: ironstar-build-performance
-last_synced_state: In Review
-last_synced_at: 2026-06-11T19:21:23Z
+last_synced_state: Done
+last_synced_at: 2026-06-14T19:37:13Z
 review_round: 1
 attempt_log:
   - { at: "2026-06-09T22:57:44Z", transition: "Backlog->Todo", outcome: "posted", note: "T1 readiness gate: proposal.md created" }
   - { at: "2026-06-09T23:39:49Z", transition: "Todo->In Progress", outcome: "posted", note: "T2 apply gate: first tasks.md checkbox checked (task 1 bootstrap complete)" }
   - { at: "2026-06-11T19:21:22Z", transition: "In Progress->In Review", outcome: "dropped", note: "verify.md checked FAIL (artifact drift); re-queued to In Progress before posting" }
   - { at: "2026-06-11T19:21:23Z", transition: "In Progress->In Review", outcome: "posted", note: "T3 In-Review gate: verify.md checked PASS after artifact reconciliation" }
+  - { at: "2026-06-14T19:37:13Z", transition: "In Review->Done", outcome: "posted", note: "T4 archive gate: synced+archived in PR #477 follow-up" }
 beads_epic: ironstar-8g3
 ---
 

@@ -1,15 +1,17 @@
 ---
-linear_story_id: TBD
-linear_story_identifier: TBD
+linear_story_id: 84355c11-3118-424d-8867-3afb27536f96
+linear_story_identifier: CAM-16
 linear_story_title: "Add an on-demand build-graph compendium replacing the build-graph drift regulator"
-linear_story_url: TBD
-linear_story_state: TBD
+linear_story_url: https://linear.app/cameronraysmith/issue/CAM-16/add-an-on-demand-build-graph-compendium-replacing-the-build-graph
+linear_story_state: Done
 linear_team: CAM
 linear_project: ironstar-build-performance
-last_synced_state: TBD
-last_synced_at: TBD
+last_synced_state: Done
+last_synced_at: 2026-06-14T19:37:26Z
 review_round: 0
-attempt_log: []
+attempt_log:
+  - { at: "2026-06-14T19:37:00Z", transition: "Backlog(bind)", outcome: "posted", note: "T4 archive gate: issue CAM-16 created retroactively, description seeded from proposal.md Why+What Changes" }
+  - { at: "2026-06-14T19:37:26Z", transition: "Backlog->Done", outcome: "posted", note: "T4 archive gate: retroactive catch-up straight to Done; work complete and merged in PR #477" }
 beads_epic: TBD
 ---
 
