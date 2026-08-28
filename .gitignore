@@ -86,3 +86,12 @@ __pycache__/
 
 # CLI http cache
 http_cache.sqlite
+
+# Machine-local project-context files. In this project AGENTS.md and CLAUDE.md
+# are symlinks into a separate planning repository, so they are deliberately
+# untracked here rather than absent by oversight.
+# Stopgap: remove this entry when this repository lands its own committed
+# project-context files, so that committing them is possible again without the
+# staging silently doing nothing.
+AGENTS.md
+CLAUDE.md
