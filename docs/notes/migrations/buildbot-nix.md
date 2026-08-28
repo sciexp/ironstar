@@ -6,6 +6,9 @@ Per-repo migration brief covering ironstar's continued participation in the GHAâ
 This brief is the authoritative scoping document for the corresponding beads epic; the epic plan derives from it during `/session-plan`.
 The skeleton this brief follows lives at `~/projects/sciexp/planning/docs/notes/orientation/ci-cd-migration-briefing-skeleton.md` and the eight-component refactoring contract it draws on lives at `~/projects/sciexp/planning/docs/notes/orientation/ci-cd-refactoring-pattern-reference.md`.
 
+This brief records state as of the buildbot-nix migration and is not retro-edited.
+References below to `buildbot-nix.toml` name the per-repo configuration file as it stood then; it was later renamed to `nixbot.toml` when nixbot took over CI for this repository.
+
 ## 1. Repo summary
 
 Ironstar is the Rust + Datastar template at `~/projects/rust-workspace/ironstar/` (`github.com/sciexp/ironstar`, default branch `main`).

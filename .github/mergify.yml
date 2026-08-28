@@ -5,10 +5,13 @@ shared:
     - -conflict
 
   required_checks: &required_checks
-    # Buildbot-nix checks
-    - check-success=buildbot/nix-eval
-    - check-success=buildbot/nix-build
-    - check-success=buildbot/nix-effects
+    # nixbot checks. The per-effect `nixbot/effect <flake-ref>#<attr>` contexts
+    # are deliberately not required: their names change whenever an effect is
+    # added or removed, and a required context that never arrives blocks merge
+    # indefinitely.
+    - check-success=nixbot/nix-eval
+    - check-success=nixbot/nix-build
+    - check-success=nixbot/effects
 
   human_author_conditions: &human_author_conditions
     - author!=renovate[bot]
