@@ -162,20 +162,33 @@
         path = self + "/Cargo.lock";
         name = "ironstar-cargo-lock";
       };
-      # extraRegistries re-keys the crates.io index entry, so this replaces the
-      # pinned nixpkgs default download URL (https://crates.io/api/v1/crates)
-      # rather than adding a registry. The api/v1 endpoint rejects the
-      # `curl/<ver> Nix/<ver>` user agent fetchurl sends, returning 403 on every
-      # crate; the static CDN serves the same bytes unconditionally. The value is
-      # verbatim from the upstream fix (nixpkgs c0a89c37, NixOS/nixpkgs#524985),
-      # which our pin predates; a nixpkgs bump past it makes this argument a
-      # redundant no-op and retires it.
+      # nixpkgs' importCargoLock resolves crates.io to the api/v1 download
+      # endpoint, which rejects the `curl/<ver> Nix/<ver>` user agent fetchurl
+      # sends and answers 403 on every crate; the static CDN serves the same
+      # bytes to any user agent. Upstream fixed this by re-pointing the registry
+      # default (nixpkgs c0a89c37, NixOS/nixpkgs#524985), which our pin predates.
+      # That default is not exposed as a parameter, and `extraRegistries` cannot
+      # stand in for it: keys there only add registries, and each one also appends
+      # a `[source."<url>"]` stanza to the generated .cargo/config.toml, so naming
+      # the crates.io index makes cargo abort with `crates-io` defined twice.
+      # Rewriting the URL inside the fetchurl this builder receives yields
+      # upstream's URLs alongside upstream's unmodified cargo config. A nixpkgs
+      # bump past c0a89c37 makes the wrapper a no-op and retires it.
       # See https://github.com/rust-lang/crates.io/issues/13482
-      cargoVendorDeps = pkgs.rustPlatform.importCargoLock {
+      importCargoLock = pkgs.rustPlatform.importCargoLock.override {
+        fetchurl =
+          args:
+          pkgs.fetchurl (
+            args
+            // {
+              url = lib.replaceStrings [ "https://crates.io/api/v1/crates/" ] [
+                "https://static.crates.io/crates/"
+              ] args.url;
+            }
+          );
+      };
+      cargoVendorDeps = importCargoLock {
         lockFile = cargoLockSrc;
-        extraRegistries = {
-          "https://github.com/rust-lang/crates.io-index" = "https://static.crates.io/crates";
-        };
       };
 
       workspaceGateNativeBuildInputs = [
