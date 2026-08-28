@@ -96,6 +96,15 @@
             # NIXBOT_ID_TOKEN_REQUEST_URL / _TOKEN.
             idTokenAudiences = builtins.toJSON [ self.lib.effectIdTokenAudience ];
 
+            # Only destinations named here are written into
+            # $HERCULES_CI_SECRETS_JSON; an omitted map grants nothing under
+            # the current build service. The previous service ignored the map
+            # and passed the whole composed secrets file, so declaring one
+            # narrows what the sandbox sees there rather than changing it.
+            # Left name is what the script reads; right name is the key in
+            # the composed secrets file.
+            secretsMap.GITHUB_TOKEN = "GITHUB_TOKEN";
+
             effectScript = ''
               set -euo pipefail
 

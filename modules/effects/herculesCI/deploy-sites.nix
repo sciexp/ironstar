@@ -78,6 +78,18 @@
             # NIXBOT_ID_TOKEN_REQUEST_URL / _TOKEN.
             idTokenAudiences = builtins.toJSON [ self.lib.effectIdTokenAudience ];
 
+            # Only destinations named here are written into
+            # $HERCULES_CI_SECRETS_JSON; an omitted map grants nothing under
+            # the current build service. The previous service ignored the map
+            # and passed the whole composed secrets file, so declaring one
+            # narrows what the sandbox sees there rather than changing it.
+            # Left names are what the script reads; right names are keys in
+            # the composed secrets file.
+            secretsMap = {
+              CLOUDFLARE_API_TOKEN = "CLOUDFLARE_API_TOKEN";
+              CLOUDFLARE_ACCOUNT_ID = "CLOUDFLARE_ACCOUNT_ID";
+            };
+
             effectScript = ''
               set -euo pipefail
 
