@@ -62,6 +62,12 @@
       # Source filtering: builtins.path with a fixed name produces a content-addressed
       # store path whose hash depends only on filtered content, not on the flake's
       # self identity, preventing full rebuilds when unrelated files change.
+      #
+      # The filter admits every directory unconditionally, so a directory is
+      # retained even when nothing inside it survives the file predicate. Adding
+      # a directory anywhere in the repository therefore changes this source and
+      # invalidates the workspace gates built from it, while adding a filtered-out
+      # file beside existing files does not.
       src = builtins.path {
         path = self;
         name = "ironstar-src";

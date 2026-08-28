@@ -4,12 +4,18 @@
 # a pull request whose reported branch is its TARGET branch must not select
 # production. That situation is indistinguishable from a default-branch push
 # by branch name alone, so the check drives the resolver against a stub
-# identity-token endpoint (modules/checks/effect-run-context/) and asserts the
-# selected mode for each combination of event kind and token presence.
+# identity-token endpoint (effect-run-context-stub-id-token-server.py) and
+# asserts the selected mode for each combination of event kind and token
+# presence.
 #
 # The stub rejects a wrong method, path, bearer credential, content type, or
 # audience, so the token-present cases also pin the client side of the
 # contract rather than only the decision logic.
+#
+# The fixture is a sibling file rather than a subdirectory because
+# `cargoSourceFilter` in modules/rust.nix retains every directory regardless
+# of content, so a new directory anywhere in the repository perturbs the
+# content-addressed source of the workspace gates and forces them to rebuild.
 { self, ... }:
 {
   perSystem =
@@ -26,7 +32,7 @@
               pkgs.python3
               runContext
             ];
-            stubServer = ./effect-run-context/stub-id-token-server.py;
+            stubServer = ./effect-run-context-stub-id-token-server.py;
             audience = self.lib.effectIdTokenAudience;
             meta.description = "check: herculesCI effects resolve production vs preview from the run context";
           }
