@@ -162,8 +162,20 @@
         path = self + "/Cargo.lock";
         name = "ironstar-cargo-lock";
       };
+      # extraRegistries re-keys the crates.io index entry, so this replaces the
+      # pinned nixpkgs default download URL (https://crates.io/api/v1/crates)
+      # rather than adding a registry. The api/v1 endpoint rejects the
+      # `curl/<ver> Nix/<ver>` user agent fetchurl sends, returning 403 on every
+      # crate; the static CDN serves the same bytes unconditionally. The value is
+      # verbatim from the upstream fix (nixpkgs c0a89c37, NixOS/nixpkgs#524985),
+      # which our pin predates; a nixpkgs bump past it makes this argument a
+      # redundant no-op and retires it.
+      # See https://github.com/rust-lang/crates.io/issues/13482
       cargoVendorDeps = pkgs.rustPlatform.importCargoLock {
         lockFile = cargoLockSrc;
+        extraRegistries = {
+          "https://github.com/rust-lang/crates.io-index" = "https://static.crates.io/crates";
+        };
       };
 
       workspaceGateNativeBuildInputs = [
