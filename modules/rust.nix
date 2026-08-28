@@ -181,9 +181,9 @@
           pkgs.fetchurl (
             args
             // {
-              url = lib.replaceStrings [ "https://crates.io/api/v1/crates/" ] [
-                "https://static.crates.io/crates/"
-              ] args.url;
+              url =
+                lib.replaceString "https://crates.io/api/v1/crates/" "https://static.crates.io/crates/"
+                  args.url;
             }
           );
       };
