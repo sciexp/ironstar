@@ -31,20 +31,32 @@
 #
 # Optional (CI-mode signalling; required by env-ci on the effect path):
 #   CI                   "true" tells semantic-release / env-ci that the
-#                        run is non-interactive CI. Required in the
-#                        buildbot-effects bwrap sandbox (not a recognised
-#                        CI provider; semantic-release would otherwise
-#                        abort `running on a CI environment is required`).
+#                        run is non-interactive CI. Still required under
+#                        nixbot: its effect sandbox sets no `CI` variable
+#                        and no provider marker beyond
+#                        IN_HERCULES_CI_EFFECT and HERCULES_CI_*, and
+#                        whether env-ci maps those to a recognised provider
+#                        is not determinable from nixbot's source. Without
+#                        it semantic-release aborts `running on a CI
+#                        environment is required`.
 #
 # Optional (repo-root resolution; env-first with errexit-tolerant fallback):
 #   RELEASE_REPO_ROOT    absolute path to the working tree's repo root.
-#                        Required in the bwrap sandbox (no .git bind-mount;
-#                        `git rev-parse --show-toplevel` would fail).
+#                        nixbot mounts no repository into the sandbox (this
+#                        effect does not set `__nixbot_effect_checkout`), so
+#                        the effect clones one itself and points this at the
+#                        clone. The git fallback would also resolve there,
+#                        since the effect preamble cd's into the clone
+#                        first; env-first keeps this script independent of
+#                        cwd rather than working around a missing .git.
 #                        Fallback: git rev-parse --show-toplevel || pwd.
 #
-# Optional (git identity; env-first, NO .git/config writes — bwrap mounts
-# /nix/store ro-bind, so `git config user.email …` would fail to lock
-# .git/config). git honours these natively without any config write.
+# Optional (git identity; env-first, no .git/config writes). git honours these
+# natively, so the script needs no write access to — and makes no assumption
+# about — the repository config of whatever tree it is pointed at. A config
+# write would in fact succeed under nixbot, whose effect clone lives on the
+# writable /build bind mount; this is a portability choice, not a sandbox
+# restriction.
 # Defaults applied if unset:
 #   GIT_AUTHOR_NAME      / GIT_AUTHOR_EMAIL    (semantic-release@ironstar.local)
 #   GIT_COMMITTER_NAME   / GIT_COMMITTER_EMAIL (semantic-release@ironstar.local)
@@ -234,12 +246,13 @@ done
 # --- repo root + cd into package -----------------------------------------
 #
 # Repo-root resolution: env-first, then error-tolerant git fallback, then
-# pwd. Required because the buildbot-effects bwrap sandbox does not bind-
-# mount the working tree's .git, so `git rev-parse --show-toplevel` would
-# fail with `fatal: not a git repository` (exit 128) and abort the script.
-# The effect preamble sets RELEASE_REPO_ROOT="$clone_dir" so this branch
-# resolves without invoking git. Local-shell callers leave RELEASE_REPO_ROOT
-# unset, exercising the git fallback against the live worktree.
+# pwd. nixbot mounts no repository into the effect sandbox, so the effect
+# clones one itself and sets RELEASE_REPO_ROOT="$clone_dir"; this branch then
+# resolves without invoking git. The git fallback would also resolve, because
+# the effect preamble cd's into that clone before dispatching here, so the env
+# path is a decoupling from cwd rather than a workaround for a missing .git.
+# Local-shell callers leave RELEASE_REPO_ROOT unset, exercising the git
+# fallback against the live worktree.
 
 repo_root="${RELEASE_REPO_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 cd "$repo_root"
@@ -251,12 +264,13 @@ if [ ! -d "$package_path" ]; then
 fi
 
 # Git identity: exported via GIT_AUTHOR_* / GIT_COMMITTER_* env vars rather
-# than written to .git/config. Required because the buildbot-effects bwrap
-# sandbox renders .git read-only (mounts /nix/store ro-bind only) and
-# `git config user.email "…"` would fail with `error: could not lock config
-# file .git/config`. git honours these env vars natively without any config
-# write. Each export uses parameter-expansion default chaining so a pre-set
-# value (effect preamble or caller env) is preserved unchanged.
+# than written to .git/config. git honours these natively, so this script never
+# needs write access to the config of whatever tree it is pointed at, and
+# behaves identically against an effect clone and a developer worktree. This is
+# not a sandbox restriction: under nixbot the effect's clone lives on the
+# writable /build bind mount, so a `git config` write would succeed. Each
+# export uses parameter-expansion default chaining so a pre-set value (effect
+# preamble or caller env) is preserved unchanged.
 export GIT_AUTHOR_NAME="${GIT_AUTHOR_NAME:-semantic-release}"
 export GIT_AUTHOR_EMAIL="${GIT_AUTHOR_EMAIL:-semantic-release@ironstar.local}"
 export GIT_COMMITTER_NAME="${GIT_COMMITTER_NAME:-semantic-release}"

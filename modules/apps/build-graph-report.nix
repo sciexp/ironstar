@@ -14,10 +14,12 @@
 # module by emit_edges.py so the report's node identity cannot drift from the
 # committed snapshot's node identity.
 #
-# Pinned to system x86_64-linux for the same reasons as build-graph-snapshot: that
-# is what buildbot CI evaluates, the crate2nix roots eval purely there with no IFD,
-# and checks.ironstar-e2e is excluded as IFD-bound on linux. The canonical root
-# list is kept in sync with build-graph-snapshot.nix by construction below.
+# Pinned to system x86_64-linux: the nixbot worker set offers only that
+# system-platform combination, so it is the only system CI evaluates
+# (nixbot.toml scopes `attribute` to `checks.x86_64-linux`), the crate2nix
+# roots eval purely there with no IFD, and checks.ironstar-e2e is excluded as
+# IFD-bound on linux. The canonical root list is kept in sync with
+# build-graph-snapshot.nix by construction below.
 { ... }:
 {
   perSystem =

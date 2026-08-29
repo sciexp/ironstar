@@ -22,16 +22,24 @@
 #
 # Optional (env-first with git-fallback): every GIT_* consumer is
 # `${GIT_X:-$(git … 2>/dev/null || true)}` so the script runs both inside the
-# buildbot-effects bwrap sandbox (no .git bind-mounted; env pre-populated by
-# the effect preamble) and from a live worktree (env unset; git fallback
-# resolves locally):
+# nixbot effect sandbox (env pre-populated by the effect preamble) and from a
+# live worktree (env unset; git fallback resolves locally):
 #   GIT_REV, GIT_REV_SHORT, GIT_REV_SHORT12, GIT_BRANCH, GIT_COMMIT_MSG,
 #   GIT_WORKTREE_STATUS.
-# Optional (env-first with bash-builtin / shelled-fallback): the bwrap
-# sandbox lacks `hostname`/`whoami` on PATH, so DEPLOY_HOST falls back to
-# `${HOSTNAME%%.*}` (bash builtin populated from gethostname(2)) and
-# DEPLOY_DEPLOYER falls back to GITHUB_ACTOR → `whoami 2>/dev/null` →
-# "unknown".
+# The env-first path is the one that runs in CI. nixbot's bwrap sandbox mounts
+# no repository unless the effect derivation sets `__nixbot_effect_checkout`
+# (deploy-sites does not), so cwd is an empty `/build` with no `.git` and every
+# git fallback yields empty; nixbot exports no GIT_* variables of its own, so
+# modules/effects/herculesCI/deploy-sites.nix supplies them at eval time.
+# Optional (env-first with bash-builtin / shelled-fallback): PATH inside the
+# sandbox is the effect's own store closure — nixbot invokes the effect under
+# `nix develop -i`, which clears the host environment, and binds `/nix/store`
+# read-only as the only store access — so `hostname`/`whoami` are absent unless
+# declared as inputs. DEPLOY_HOST falls back to `${HOSTNAME%%.*}` (bash builtin
+# from gethostname(2), which inside the sandbox reports its own `hercules-ci`
+# rather than the deploy host) and DEPLOY_DEPLOYER falls back to GITHUB_ACTOR →
+# `whoami 2>/dev/null` → "unknown". The effect preamble sets both explicitly,
+# so neither fallback is exercised in CI.
 # Optional (caller debugging / overrides):
 #   WRANGLER, DEPLOY_SITES_DEBUG, GITHUB_ACTIONS / GITHUB_ACTOR /
 #   GITHUB_WORKFLOW (when GITHUB_ACTIONS is set, the production deploy

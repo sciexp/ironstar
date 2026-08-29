@@ -63,10 +63,12 @@
               pkgs.gnugrep
               # Explicitly declare every host-PATH binary that
               # release-packages.sh OR any transitive semantic-release
-              # plugin / node_modules helper might shell out to. The
-              # buildbot-effects bwrap sandbox provides only /nix/store
-              # ro-bind + writeShellApplication runtimeInputs PATH (no
-              # host PATH binaries); a missing input surfaces only at
+              # plugin / node_modules helper might shell out to. No host
+              # PATH reaches the effect: nixbot invokes it under
+              # `nix develop -i`, which clears the host environment, and
+              # its bwrap sandbox binds `/nix/store` read-only as the only
+              # store access, so PATH is this closure plus mkEffect's own
+              # nativeBuildInputs. A missing input surfaces only at
               # runtime as `command not found`.
               pkgs.gnused
               pkgs.gawk
