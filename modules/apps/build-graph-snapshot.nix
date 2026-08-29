@@ -14,8 +14,10 @@
 # output is keyed on a hash-free tuple and carries no store hashes or timestamps,
 # so two runs produce byte-identical output.
 #
-# Pinned to system x86_64-linux: that is what buildbot CI evaluates, and the
-# crate2nix roots eval purely there (and cross-system from darwin) with no IFD.
+# Pinned to system x86_64-linux: the nixbot worker set offers only that
+# system-platform combination, so it is the only system CI evaluates
+# (nixbot.toml scopes `attribute` to `checks.x86_64-linux`), and the crate2nix
+# roots eval purely there (and cross-system from darwin) with no IFD.
 # packages.ironstar/ironstar-release are the crate2nix builds and are canonical
 # roots. checks.ironstar-e2e is excluded: it is IFD-bound on linux (it builds the
 # bun2nix frontend asset during eval).

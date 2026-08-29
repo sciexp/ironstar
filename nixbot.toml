@@ -1,8 +1,11 @@
 # Scope nix-eval-jobs to x86_64-linux workers only.
-# Default "checks" evaluates all systems, and eval failures on unsupported
-# systems (aarch64-linux, aarch64-darwin) poison the build result.
-# See: https://www.github.com/nix-community/buildbot-nix/issues/302 (upstream issue)
-# See: https://www.github.com/nix-community/buildbot-nix/pull/318 (per-repo config support)
+# nixbot's default is `attribute = "checks"`, which evaluates all systems. Our
+# nixbot worker set currently offers a single system-platform combination,
+# x86_64-linux, so the attributes the default produces for aarch64-linux and
+# aarch64-darwin have no worker able to evaluate or build them, and their
+# failures poison the build result. nixbot keeps that default, so this override
+# is still required.
+# https://www.github.com/nix-community/buildbot-nix/issues/302
 attribute = "checks.x86_64-linux"
 effects_branches = ["*"]
 effects_on_pull_requests = true

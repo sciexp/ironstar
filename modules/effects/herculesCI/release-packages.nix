@@ -18,8 +18,8 @@
 # a single `effects.release-packages` attribute that loops at runtime over
 # `apps.list-packages-json` output. That topology is incompatible with
 # ironstar (no list-packages-json by design) and supersedes the audit
-# trail we need: per-package effect attrs give per-package buildbot
-# evidence and isolation, matching the obh.15 deploy-sites topology.
+# trail we need: per-package effect attrs give per-package CI evidence
+# and isolation, matching the obh.15 deploy-sites topology.
 #
 # The effect-name vocabulary is the bare directory name (`release-docs`,
 # `release-eventcatalog`); the `apps.release-packages` and
@@ -135,9 +135,14 @@
                 exit 1
               fi
 
-              # Why: do not use config.repo.remoteHttpUrl — buildbot-nix bakes
-              # the App installation token into it; would leak via banner echo.
-              # Hardcoded clone URL per obh.23.
+              # Why: clone from a hardcoded public URL rather than
+              # config.repo.remoteHttpUrl. Under nixbot that attribute is
+              # token-free — it is the build worktree's own origin, and
+              # nixbot supplies fetch credentials through netrc rather than
+              # by rewriting the remote — so the banner-echo leak this
+              # guarded against no longer applies. Kept because an explicit
+              # URL is independent of how the runner happens to name its
+              # origin. Hardcoded clone URL per obh.23.
               clone_url="https://github.com/sciexp/ironstar.git"
 
               clone_dir="$(mktemp -d -t release-${pkgName}-clone.XXXXXX)"
@@ -161,8 +166,9 @@
                 # `git fetch origin refs/pull/<N>/head` alone updates
                 # FETCH_HEAD but does NOT auto-create the remote-tracking
                 # ref; the explicit `+ref:remote-tracking-ref` mapping
-                # closes that gap (idiom from buildbot-nix
-                # buildbot_nix/buildbot_nix/nix_eval.py:GitLocalPrMerge).
+                # closes that gap (idiom taken from buildbot-nix's
+                # buildbot_nix/nix_eval.py:GitLocalPrMerge, which is where
+                # it was learned; it is not a live dependency).
                 git -C "$clone_dir" fetch origin \
                   "+refs/pull/$IRONSTAR_PR_NUMBER/head:refs/remotes/origin/pr-$IRONSTAR_PR_NUMBER-head"
                 head_sha="$(git -C "$clone_dir" rev-parse "origin/pr-$IRONSTAR_PR_NUMBER-head")"
@@ -210,8 +216,9 @@
               # semantic-release's get-git-auth-url.js treats GIT_CREDENTIALS
               # as user:password and constructs the authenticated URL
               # in-process. The ironstar-effects-secrets PAT (Read+Write) is
-              # the canonical authority — the buildbot-nix App installation
-              # token (Read-only) is NOT reused for release mutation.
+              # the canonical authority for release mutation; the forge
+              # App installation token nixbot uses for CI (Read-only) is NOT
+              # reused here.
               # Username MUST NOT be `x-access-token` here: that string is
               # reserved for GitHub App installation tokens (ghs_*) and
               # routes fine-grained PATs (github_pat_*) into the wrong
@@ -222,9 +229,10 @@
               # fine-grained and classic PATs over HTTPS Basic auth (obh.17).
               export GIT_CREDENTIALS="oauth2:''${GITHUB_TOKEN}"
 
-              # CI=true bypasses semantic-release's env-ci abort.
-              # GIT_AUTHOR/COMMITTER are honoured natively without writing
-              # .git/config (which the bwrap /nix/store ro-bind would block)
+              # CI=true bypasses semantic-release's env-ci abort: nixbot
+              # sets no `CI` variable in the effect sandbox.
+              # GIT_AUTHOR/COMMITTER are honoured natively, so no
+              # .git/config write is needed anywhere in the pipeline
               # (obh.19).
               export CI=true
               export GIT_BRANCH
@@ -234,8 +242,10 @@
               export GIT_COMMITTER_NAME=semantic-release
               export GIT_COMMITTER_EMAIL=semantic-release@ironstar.local
 
-              # Why: bwrap sandbox does not bind working tree; .# cannot
-              # resolve. Use eval-time /nix/store paths (obh.21).
+              # Why: the sandbox mounts no repository, and the clone made
+              # above is not the flake this effect was evaluated from, so
+              # `.#` must not be resolved at runtime. Use the eval-time
+              # /nix/store paths (obh.21).
               RELEASE_PACKAGES=${releasePackagesProgram}
               PREVIEW_VERSION=${previewVersionProgram}
 
