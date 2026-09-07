@@ -22,7 +22,7 @@
 		"happy-dom": "^20.3.4",
 		"postcss": "^8.5.0",
 		"postcss-cli": "^11.0.0",
-		"postcss-custom-media": "^11.0.0",
+		"postcss-custom-media": "^12.0.0",
 		"postcss-import": "^16.1.0",
 		"postcss-preset-env": "^10.1.0",
 		"rolldown": "^1.0.0-rc.3",
